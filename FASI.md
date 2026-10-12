@@ -29,7 +29,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 
 | # | Attività | File principali in `cobalt64/` | Stato |
 |---|---|---|---|
-| 1.1 | Rimuovere la "rotta Apple" — **parziale**: tolte dal plist le 3 personality che caricavano i kext AMD di Apple; il codice resta perché anche la rotta nativa usa header in `apple/` (da separare a passi) (hook in AMDRadeonX6000, xlat12, shadercache, g2capture, personality Apple, AccelPeer) | `src/navi48-bringup/src/apple/`, `src/xlat12/`, `src/shadercache/`, `src/g2capture/`, `Info.plist` | ⬜ |
+| 1.1 | Rotta Apple fuori dalla build (`make APPLE_ROUTE=0`, default): esclusi AppleHardwareHook, Navi48AccelPeer, Navi48Ttl, AppleTtlHook, xlat12, shadercache (~41 000 righe); `src/native/apple_route_off.cpp` dà ai 95 simboli ancora referenziati il comportamento di default, il codice nativo (limite RAM, uptime) è copiato lì; DisplayPipeGuard resta (AGDC nativo, scanout). Personality Apple già tolte dal plist. Dettagli: `research/reports/apple_route_split.md`. Cancellazione definitiva dopo i test su hardware | `src/native/`, `Makefile`, `Navi48Bringup.cpp` | ✅ |
 | 1.2 | Profilo ASIC a compile time (`make ASIC=navi44` default / `navi48`): firmware, ID PCI in `probe()` e nel plist | `src/amd/asic_profile.h`, `Navi48Bringup.cpp`, `Info.plist`, `Makefile` | ✅ |
 | 1.3 | Firmware per profilo: insieme Navi 44 (`gc_12_0_0_*`, `psp_14_0_2_*`, `smu_14_0_2`, `sdma_7_0_0`), sha256 verificati; `fetch-firmware.sh /usr/lib/firmware` | `Makefile`, `src/amd/fw_table.cpp`, `tools/fetch-firmware.sh` | ✅ |
 | 1.4 | Caps GFX dalla tabella discovery (`IpDiscovery::gcInfo`, come Linux) con ripiego sul profilo e limiti sugli array | `src/ipdiscovery.*`, `amdgpu_regs.h`, `gfx_v12_0.cpp` | ✅ |

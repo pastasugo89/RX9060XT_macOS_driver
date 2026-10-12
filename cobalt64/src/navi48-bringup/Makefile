@@ -27,6 +27,24 @@ else
 $(error ASIC must be navi44 or navi48)
 endif
 
+# Apple route (hooks into Apple's AMDRadeonX6000 & co., xlat12, shadercache): OFF by default in this port.
+#   APPLE_ROUTE=0  only the native route: apple/AppleHardwareHook, AppleTtlHook, Navi48AccelPeer, Navi48Ttl, xlat12 and
+#                  shadercache are not built; src/native/apple_route_off.cpp gives the native code their default behaviour.
+#                  apple/DisplayPipeGuard.cpp stays (native AGDC route, scanout descriptor, RDNA4FB helpers).
+#   APPLE_ROUTE=1  Cobalt64's full build, unchanged.
+APPLE_ROUTE ?= 0
+ifeq ($(APPLE_ROUTE),1)
+ROUTE_SRCS   := $(wildcard src/apple/*.cpp)
+ROUTE_OBJS    = $(BUILD)/xlat12.o $(BUILD)/xlat12_ib.o $(BUILD)/xlat12_headless.o $(BUILD)/shadercache.o
+ROUTE_DEFINE := -DN4X_APPLE_ROUTE=1
+else ifeq ($(APPLE_ROUTE),0)
+ROUTE_SRCS   := src/apple/DisplayPipeGuard.cpp src/native/apple_route_off.cpp
+ROUTE_OBJS   :=
+ROUTE_DEFINE := -DN4X_APPLE_ROUTE=0
+else
+$(error APPLE_ROUTE must be 0 or 1)
+endif
+
 BUILD := build
 KEXT  := $(BUILD)/$(PRODUCT).kext
 EXEC  := $(KEXT)/Contents/MacOS/$(PRODUCT)
@@ -34,7 +52,7 @@ EXEC  := $(KEXT)/Contents/MacOS/$(PRODUCT)
 CXX := clang++
 CC  := clang
 
-CXX_SRCS := src/Navi48Bringup.cpp src/Navi48UserClient.cpp src/Navi48NativeClient.cpp src/Navi48MetalNub.cpp src/Navi48DisplayNub.cpp src/ipdiscovery.cpp src/psp.cpp $(wildcard src/amd/*.cpp) $(wildcard src/apple/*.cpp) $(wildcard src/dcn/*.cpp)
+CXX_SRCS := src/Navi48Bringup.cpp src/Navi48UserClient.cpp src/Navi48NativeClient.cpp src/Navi48MetalNub.cpp src/Navi48DisplayNub.cpp src/ipdiscovery.cpp src/psp.cpp $(wildcard src/amd/*.cpp) $(ROUTE_SRCS) $(wildcard src/dcn/*.cpp)
 # Firmware blobs (firmware/*.bin, tracked) are embedded as C arrays generated at build
 # time into src/fw/ (gitignored) by tools/embed-firmware.py: symbol fw_<blob>[] + fw_<blob>_size.
 FW_BINS  := $(wildcard firmware/*.bin)
@@ -112,12 +130,12 @@ src/fw/fw_%.c: firmware/%.bin tools/embed-firmware.py
 	python3 tools/embed-firmware.py $< $@ fw_$*
 
 OBJS := $(patsubst %.cpp,$(BUILD)/%.o,$(CXX_SRCS)) $(patsubst %.c,$(BUILD)/%.o,$(C_SRCS)) \
-        $(BUILD)/xlat12.o $(BUILD)/xlat12_ib.o $(BUILD)/xlat12_headless.o $(BUILD)/shadercache.o $(DCN41_OBJS) \
+        $(ROUTE_OBJS) $(DCN41_OBJS) \
         $(if $(strip $(SHADERCACHE_BLOB)),$(BUILD)/fwalt/fw_shadercache.o)
 
 COMMON := -arch $(ARCH) -target $(ARCH)-apple-macos$(DEPLOY) -isysroot $(SDK) \
   -I$(MKSDK)/Headers -Isrc -Isrc/amd -I$(XLAT12_DIR) -I$(SHADERCACHE_DIR) -I$(DCN41_DIR) -mmacosx-version-min=$(DEPLOY) \
-  -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT $(ASIC_DEFINE) \
+  -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT $(ASIC_DEFINE) $(ROUTE_DEFINE) \
   -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector \
   -mkernel -fapple-kext -Wall -Os -g
 CXXFLAGS := $(COMMON) -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors

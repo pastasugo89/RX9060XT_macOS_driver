@@ -7520,8 +7520,14 @@ IOReturn Navi48Bringup::accelExperiment(uint32_t action, uint64_t *outInstalled,
 	if (outExtra)
 		for (unsigned i = 0; i < kAccelExtraScalars; i++) outExtra[i] = 0;
 	if (outInstalled)       *outInstalled = accelExperimentFired ? 1 : 0;
+#if N4X_APPLE_ROUTE
 	if (outTtlCalls)        *outTtlCalls = gNavi48Ttl.totalCalls();
 	if (outFirstUnsupported) *outFirstUnsupported = (uint64_t)(int64_t)gNavi48Ttl.firstUnsupported();
+#else
+	// no Apple route (native/apple_route_off.cpp): Navi48Ttl is not built; these are its never-called defaults
+	if (outTtlCalls)        *outTtlCalls = 0;
+	if (outFirstUnsupported) *outFirstUnsupported = (uint64_t)(int64_t)-1;
+#endif
 
 	// NATIVE S1b (0.0.600): after the native VM self-test ran on this boot every accel verb but the read-only action 0 refuses
 	// (the self-test left a user VMID and live page tables behind; Apple's driver must not run on top of them).
@@ -8877,8 +8883,12 @@ IOReturn Navi48Bringup::accelExperiment(uint32_t action, uint64_t *outInstalled,
 	}
 	if (accelExperimentFired) return kIOReturnSuccess;     // idempotent
 
+#if N4X_APPLE_ROUTE
 	gNavi48Ttl.bind(this);
 	n48::TtlHookResult hook = n48::install_ttl_hook(pciDevice, &gNavi48Ttl);
+#else
+	n48::TtlHookResult hook = n48::install_ttl_hook(pciDevice, nullptr);   // never installs (native/apple_route_off.cpp)
+#endif
 	setProperty("Navi48,TtlHook", hook.why);
 	if (!hook.installed) {
 		N48LOG("accel-experiment: TTL hook FAILED (%s) — NOT publishing LoadAccelerator.", hook.why);

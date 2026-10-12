@@ -30,7 +30,7 @@ cd "$KEXT" || exit 2
 if [ $# -gt 0 ]; then
   files=("$@")
 else
-  files=(src/*.cpp src/amd/*.cpp src/apple/*.cpp src/dcn/*.cpp src/kmod_info.c ../xlat12/xlat12.c ../xlat12/xlat12_ib.c
+  files=(src/*.cpp src/amd/*.cpp src/apple/*.cpp src/dcn/*.cpp src/native/*.cpp src/kmod_info.c ../xlat12/xlat12.c ../xlat12/xlat12_ib.c
          ../xlat12/xlat12_headless.c ../shadercache/shadercache.c ../dcn41/*.c)
 fi
 
