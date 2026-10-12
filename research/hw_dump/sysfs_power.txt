@@ -1,0 +1,76 @@
+== pp_dpm_sclk
+S: 0Mhz *
+1: 500Mhz 
+2: 2700Mhz 
+== pp_dpm_mclk
+0: 96Mhz *
+1: 456Mhz 
+2: 772Mhz 
+3: 875Mhz 
+4: 1124Mhz 
+5: 1258Mhz 
+== pp_dpm_fclk
+0: 307Mhz 
+1: 666Mhz *
+2: 2400Mhz 
+== pp_dpm_socclk
+0: 417Mhz *
+1: 1476Mhz 
+== pp_dpm_dcefclk
+0: 147Mhz 
+1: 236Mhz *
+2: 1800Mhz 
+== pp_dpm_pcie
+0: 2.5GT/s, x16 250Mhz 
+1: 16.0GT/s, x16 616Mhz *
+2: 16.0GT/s, x16 1143Mhz *
+== pp_od_clk_voltage
+OD_SCLK_OFFSET:
+0Mhz
+OD_MCLK:
+0: 97Mhz
+1: 1259MHz
+OD_RANGE:
+SCLK_OFFSET:    -500Mhz       1000Mhz
+MCLK:      97Mhz       1500Mhz
+VDDGFX_OFFSET:    -200mv          0mv
+OD_VDDGFX_OFFSET:
+0mV
+== pp_power_profile_mode
+PROFILE_INDEX(NAME) CLOCK_TYPE(NAME) FPS MinActiveFreqType MinActiveFreq BoosterFreqType BoosterFreq PD_Data_limit_c PD_Data_error_coeff PD_Data_error_rate_coeff
+ 0 BOOTUP_DEFAULT*:
+                    0(       GFXCLK)       0       1       0       4     800 4587520  -65536       0
+                    1(         FCLK)       0       3       0       1       0 5898240   -6553   -6553
+ 1 3D_FULL_SCREEN :
+                    0(       GFXCLK)       0       1       0       1       0 5570560    -655   -6553
+                    1(         FCLK)       0       1       0       1       0 5898240   -6553   -6553
+ 2   POWER_SAVING :
+                    0(       GFXCLK)       0       1       0       3       0 5898240  -65536       0
+                    1(         FCLK)       0       1       0       1       0 5898240  -65536   -6553
+ 3          VIDEO :
+                    0(       GFXCLK)       0       1       0       4     500 4587520  -65536       0
+                    1(         FCLK)       0       1       0       1       0 5898240   -6553   -6553
+ 4             VR :
+                    0(       GFXCLK)       0       6       0       1       0 4587520  -16384       0
+                    1(         FCLK)       0       1       0       1       0 5898240   -6553   -6553
+ 5        COMPUTE :
+                    0(       GFXCLK)       0       6       0       1       0 4587520  -16384       0
+                    1(         FCLK)       0       1       0       1       0 5898240   -6553   -6553
+ 6         CUSTOM :
+                    0(       GFXCLK)       0       1       0       4     800 4587520  -65536       0
+                    1(         FCLK)       0       3       0       1       0 5898240   -6553   -6553
+ 7      WINDOW_3D :
+                    0(       GFXCLK)       0       1       0       1       0 5570560    -655   -6553
+                    1(         FCLK)       0       3       0       1       0 5898240   -6553   -6553
+== board_info
+type : cem
+== mem_info_vram_vendor
+samsung
+== reset_method
+bus
+== gfx_reset_mask
+queue full 
+== compute_reset_mask
+queue full 
+== sdma_reset_mask
+queue full 

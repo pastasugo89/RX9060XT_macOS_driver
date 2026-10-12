@@ -1,0 +1,281 @@
+name of display: :0
+Device info:
+    name = GFX1200
+    marketing_name = AMD Radeon RX 9060 XT
+    dev_filename = /dev/dri/renderD128
+    num_se = 2
+    num_rb = 8
+    num_cu = 32
+    max_gpu_freq = 2700 MHz
+    max_gflops = 22118 GFLOPS
+    sqc_inst_cache_size = 32 KB (1 per WGP)
+    sqc_scalar_cache_size = 16 KB (1 per WGP)
+    tcp_cache_size = 32 KB
+    l2_cache_size = 4096 KB
+    l3_cache_size = 32 MB
+    memory_channels = 16 (TCC blocks)
+    memory_size = 16 GB (16384 MB)
+    memory_freq = 21 GHz
+    memory_bus_width = 128 bits
+    memory_bandwidth = 323 GB/s
+    pcie_gen = 4
+    pcie_num_lanes = 16
+    pcie_bandwidth = 31.5 GB/s
+    clock_crystal_freq = 100000 KHz
+    IP GFX     12.0 	queues:1 	align:256 	pad_dw:0x7
+    IP COMPUTE 12.0 	queues:4 	align:256 	pad_dw:0x7
+    IP SDMA     7.0 	queues:2 	align:256 	pad_dw:0xf
+    IP VCN      5.0 	queues:1 	align:256 	pad_dw:0x3f
+    IP VCN_JPEG  5.0 	queues:1 	align:256 	pad_dw:0xf
+Identification:
+    pci (domain:bus:dev.func): 0000:03:00.0
+    pci_id = 0x7590
+    pci_rev_id = 0xc0
+    family = 99
+    gfx_level = 17
+    family_id = 152
+    chip_external_rev = 65
+    chip_rev = 1
+Flags:
+    has_graphics = 1
+    has_clear_state = 0
+    has_distributed_tess = 1
+    has_dcc_constant_encode = 1
+    has_rbplus = 1
+    rbplus_allowed = 1
+    has_load_ctx_reg_pkt = 1
+    has_out_of_order_rast = 0
+    cpdma_prefetch_writes_memory = 0
+    has_gfx9_scissor_bug = 0
+    has_htile_stencil_mipmap_bug = 0
+    has_htile_tc_z_clear_bug_without_stencil = 0
+    has_htile_tc_z_clear_bug_with_stencil = 0
+    has_small_prim_filter_sample_loc_bug = 0
+    has_pops_missed_overlap_bug = 0
+    has_32bit_predication = 1
+    has_image_opcodes = 1
+    never_stop_sq_perf_counters = 0
+    has_sqtt_rb_harvest_bug = 0
+    has_sqtt_auto_flush_mode_bug = 0
+    never_send_perfcounter_stop = 0
+    discardable_allows_big_page = 0
+    has_taskmesh_indirect0_bug = 0
+    has_set_context_pairs = 1
+    has_set_context_pairs_packed = 0
+    has_set_sh_pairs = 1
+    has_set_sh_pairs_packed = 0
+    has_set_uconfig_pairs = 1
+    has_smem_partial_oob_access_bug = 0
+    has_out_of_order_uncached_l2 = 1
+Memory info:
+    pte_fragment_size = 2097152
+    gart_page_size = 4096
+    gart_size = 15566 MB
+    vram_size = 16384 MB
+    vram_vis_size = 16304 MB
+    vram_type = 9
+    max_heap_size_kb = 16384 MB
+    min_alloc_size = 256
+    address32_hi = 0xffff8000
+    has_dedicated_vram = 1
+    all_vram_visible = 1
+    high_va_offset = ffff800000000000
+    high_va_max = ffffffffffbf0000
+    virtual_address_max = 800000000000
+    virtual_address_alignment = 1000
+    max_tcc_blocks = 16
+    tcc_cache_line_size = 256
+    tcc_rb_non_coherent = 0
+    cp_sdma_ge_use_system_memory_scope = 1
+    pc_lines = 0
+    lds_alloc_granularity = 1024
+    max_memory_clock = 1258 MHz
+CP info:
+    gfx_ib_pad_with_type2 = 0
+    can_chain_ib2 = 1
+    has_cp_dma = 1
+    me_fw_version = 3090
+    me_fw_feature = 29
+    mec_fw_version = 3450
+    mec_fw_feature = 29
+    pfp_fw_version = 3190
+    pfp_fw_feature = 29
+Userqueue info:
+    userq_ip_mask = 0
+Multimedia info:
+    vcn_unified = 1
+    vcn_enc_major_version = 1
+    vcn_enc_minor_version = 12
+    vcn_dec_version = 9
+    jpeg_decode = 1
+    codec    dec  max_resolution   enc  max_resolution  
+    h264     *    4096x4096        *    4096x4096       
+    hevc     *    8192x4352        *    8192x4352       
+    av1      *    8192x4352        *    8192x4352       
+    vp9      *    8192x4352        -    -               
+    jpeg     *    16384x16384      -    -               
+    mpeg2    -    -                -    -               
+    vc1      -    -                -    -               
+Kernel & winsys capabilities:
+    drm = 3.64.0
+    has_userptr = 1
+    has_timeline_syncobj = 1
+    has_vm_always_valid = 0
+    has_eqaa_surface_allocator = 0
+    has_sparse = 1
+    has_kernelq_reg_shadowing = 0
+    has_tmz_support = 0
+    has_trap_handler_support = 0
+    IP GFX     max_submitted_ibs = 192
+    IP COMPUTE max_submitted_ibs = 125
+    IP SDMA    max_submitted_ibs = 49
+    IP UVD     max_submitted_ibs = 49
+    IP VCE     max_submitted_ibs = 49
+    IP UVD_ENC max_submitted_ibs = 49
+    IP VCN_DEC max_submitted_ibs = 49
+    IP VCN     max_submitted_ibs = 49
+    IP VCN_JPEG max_submitted_ibs = 16
+    IP VPE     max_submitted_ibs = 49
+    kernel_has_modifiers = 1
+Shader core info:
+    cu_mask[SE0][SA0] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE0][SA1] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE1][SA0] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE1][SA1] = 0xff 	(8)	CU_EN = 0xff
+    spi_cu_en_has_effect = 0
+    max_good_cu_per_sa = 8
+    min_good_cu_per_sa = 8
+    max_se = 2
+    max_sa_per_se = 2
+    num_cu_per_sh = 8
+    max_scratch_waves = 1024
+    has_scratch_base_registers = 1
+Compiler info:
+    max_waves_per_simd = 16
+    num_physical_sgprs_per_simd = 1728
+    num_physical_wave64_vgprs_per_simd = 768
+    num_simd_per_compute_unit = 2
+    min_sgpr_alloc = 108
+    max_sgpr_alloc = 108
+    sgpr_alloc_granularity = 108
+    min_wave64_vgpr_alloc = 12
+    max_vgpr_alloc = 256
+    wave64_vgpr_alloc_granularity = 12
+    lds_size_per_workgroup = 65536
+    has_lds_bank_count_16 = 0
+    has_sram_ecc_enabled = 0
+    has_point_sample_accel = 0
+    has_fast_fma32 = 1
+    has_fma_mix = 1
+    has_mad32 = 0
+    has_packed_math_16bit = 1
+    has_accelerated_dot_product = 1
+    has_image_bvh_intersect_ray = 1
+    has_ngg_passthru_no_msg = 1
+    local_invocation_ids_packed = 1
+    has_3d_cube_border_color_mipmap = 1
+    conformant_trunc_coord = 1
+    has_attr_ring = 1
+    smaller_tcs_workgroups = 0
+    has_gfx6_mrt_export_bug = 0
+    has_lbpw_tcs_wg_bug = 0
+    has_vtx_format_alpha_adjust_bug = 0
+    has_smem_oob_access_bug = 0
+    has_image_load_dcc_bug = 0
+    has_ls_vgpr_init_bug = 0
+    has_cb_lt16bit_int_clamp_bug = 0
+    has_vrs_frag_pos_z_bug = 0
+    has_ngg_fully_culled_bug = 0
+    has_attr_ring_wait_bug = 0
+    has_primid_instancing_bug = 0
+    has_cs_regalloc_hang_bug = 0
+    has_smem_with_null_prt_bug = 1
+Ring info:
+    attribute_ring_size_per_se = 1408 KB
+    pos_ring_size_per_se = 256 KB
+    prim_ring_size_per_se = 64 KB
+    total_attribute_pos_prim_ring_size = 4096 KB
+    hs_offchip_workgroup_size = 32768 B
+    tess_factor_ring_size = 96 KB
+    tess_offchip_ring_size = 4096 KB
+Render backend info:
+    pa_sc_tile_steering_override = 0x0
+    max_render_backends = 8
+    num_tile_pipes = 32
+    enabled_rb_mask = 0xff
+    max_alignment = 262144
+    pbb_max_alloc_count = 0
+GB_ADDR_CONFIG: 0x08200545
+    num_pipes = 32
+    pipe_interleave_size = 256
+    num_pkrs = 32
+Modifiers (16 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+Modifiers (32 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+Modifiers (64 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+display: :0  screen: 0
+direct rendering: Yes
+Extended renderer info (GLX_MESA_query_renderer):
+    Vendor: AMD (0x1002)
+    Device: AMD Radeon RX 9060 XT (radeonsi, gfx1200, ACO, DRM 3.64, 7.2.9-1-cachyos) (0x7590)
+    Version: 26.3.0
+    Accelerated: yes
+    Video memory: 16384MB
+    Unified memory: no
+    Preferred profile: core (0x1)
+    Max core profile version: 4.6
+    Max compat profile version: 4.6
+    Max GLES1 profile version: 1.1
+    Max GLES[23] profile version: 3.2
+Memory info (GL_ATI_meminfo):
+    VBO free memory - total: 15740 MB, largest block: 15740 MB
+    VBO free aux. memory - total: 15441 MB, largest block: 15441 MB
+    Texture free memory - total: 15740 MB, largest block: 15740 MB
+    Texture free aux. memory - total: 15441 MB, largest block: 15441 MB
+    Renderbuffer free memory - total: 15740 MB, largest block: 15740 MB
+    Renderbuffer free aux. memory - total: 15441 MB, largest block: 15441 MB
+Memory info (GL_NVX_gpu_memory_info):
+    Dedicated video memory: 16384 MB
+    Total available memory: 31949 MB
+    Currently available dedicated video memory: 15740 MB
+OpenGL vendor string: AMD
+OpenGL renderer string: AMD Radeon RX 9060 XT (radeonsi, gfx1200, ACO, DRM 3.64, 7.2.9-1-cachyos)
+OpenGL core profile version string: 4.6 (Core Profile) Mesa 26.3.0-devel (git-8ea6e9dd41)
+OpenGL core profile shading language version string: 4.60
+OpenGL core profile context flags: (none)
+OpenGL core profile profile mask: core profile
+
+OpenGL version string: 4.6 (Compatibility Profile) Mesa 26.3.0-devel (git-8ea6e9dd41)
+OpenGL shading language version string: 4.60
+OpenGL context flags: (none)
+OpenGL profile mask: compatibility profile
+
+OpenGL ES profile version string: OpenGL ES 3.2 Mesa 26.3.0-devel (git-8ea6e9dd41)
+OpenGL ES profile shading language version string: OpenGL ES GLSL ES 3.20
+

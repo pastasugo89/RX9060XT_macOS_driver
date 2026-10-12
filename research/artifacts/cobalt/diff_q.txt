@@ -1,0 +1,320 @@
+Only in Cobalt64: BUILDING.md
+Only in 7000-macos: BUILDING.txt
+Only in Cobalt64: CHANGES.md
+Only in Cobalt64: docs
+Only in 7000-macos: .github
+Files Cobalt64/mesa-patches/0001-radv-Darwin-macOS-backend-with-canned-gfx1201-device.patch and 7000-macos/mesa-patches/0001-radv-Darwin-macOS-backend-with-canned-gfx1201-device.patch differ
+Files Cobalt64/mesa-patches/0002-radv-Darwin-native-backend-Mesa-half-of-the-Navi48-k.patch and 7000-macos/mesa-patches/0002-radv-Darwin-native-backend-Mesa-half-of-the-Navi48-k.patch differ
+Files Cobalt64/mesa-patches/0003-radv-Darwin-scanout-API-on-the-N48N-connection-ABI-1.patch and 7000-macos/mesa-patches/0003-radv-Darwin-scanout-API-on-the-N48N-connection-ABI-1.patch differ
+Files Cobalt64/mesa-patches/0004-darwin-host-pointer-import-userptr-via-N48N-BoImport.patch and 7000-macos/mesa-patches/0004-darwin-host-pointer-import-userptr-via-N48N-BoImport.patch differ
+Files Cobalt64/mesa-patches/0005-radv-amdgpu-cs_grow-failure-paths-return-instead-of-.patch and 7000-macos/mesa-patches/0005-radv-amdgpu-cs_grow-failure-paths-return-instead-of-.patch differ
+Only in Cobalt64/mesa-patches: 0006-radv-darwin-report-the-kext-s-per-session-VRAM-budge.patch
+Only in Cobalt64/mesa-patches: 0007-radv-darwin-take-GB_ADDR_CONFIG-from-QueryInfo-ReadR.patch
+Only in Cobalt64/mesa-patches: 0008-radv-darwin-radv_darwin_set_service_class-Navi48Brin.patch
+Only in Cobalt64/mesa-patches: 0009-radv-darwin-radv_darwin_n48n_call-selectors-22.26-on.patch
+Files Cobalt64/mesa-patches/README.txt and 7000-macos/mesa-patches/README.txt differ
+Only in Cobalt64: README.md
+Only in 7000-macos: README.txt
+Files Cobalt64/src/dcn41/dcn41_core.c and 7000-macos/src/dcn41/dcn41_core.c differ
+Files Cobalt64/src/dcn41/dcn41.h and 7000-macos/src/dcn41/dcn41.h differ
+Files Cobalt64/src/dcn41/tests/test_dcn41.c and 7000-macos/src/dcn41/tests/test_dcn41.c differ
+Files Cobalt64/src/navi48-bringup/Info.plist and 7000-macos/src/navi48-bringup/Info.plist differ
+Files Cobalt64/src/navi48-bringup/Makefile and 7000-macos/src/navi48-bringup/Makefile differ
+Files Cobalt64/src/navi48-bringup/src/amd/amdgpu_init.cpp and 7000-macos/src/navi48-bringup/src/amd/amdgpu_init.cpp differ
+Files Cobalt64/src/navi48-bringup/src/amd/amdgpu_mes.h and 7000-macos/src/navi48-bringup/src/amd/amdgpu_mes.h differ
+Only in 7000-macos/src/navi48-bringup/src/amd: amdgpu_mmhub.cpp
+Only in 7000-macos/src/navi48-bringup/src/amd: amdgpu_mmhub.h
+Files Cobalt64/src/navi48-bringup/src/amd/amdgpu_regs.h and 7000-macos/src/navi48-bringup/src/amd/amdgpu_regs.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/amdgpu_smu.h and 7000-macos/src/navi48-bringup/src/amd/amdgpu_smu.h differ
+Only in 7000-macos/src/navi48-bringup/src/amd: asic_profile.cpp
+Only in 7000-macos/src/navi48-bringup/src/amd: asic_profile.h
+Files Cobalt64/src/navi48-bringup/src/amd/gmc_v12_0.cpp and 7000-macos/src/navi48-bringup/src/amd/gmc_v12_0.cpp differ
+Files Cobalt64/src/navi48-bringup/src/amd/mes_v12_1.cpp and 7000-macos/src/navi48-bringup/src/amd/mes_v12_1.cpp differ
+Only in Cobalt64/src/navi48-bringup/src/amd: native_d2pin_pure.h
+Files Cobalt64/src/navi48-bringup/src/amd/native_disp.cpp and 7000-macos/src/navi48-bringup/src/amd/native_disp.cpp differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_disp_flow.h and 7000-macos/src/navi48-bringup/src/amd/native_disp_flow.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_disp.h and 7000-macos/src/navi48-bringup/src/amd/native_disp.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_disp_pure.h and 7000-macos/src/navi48-bringup/src/amd/native_disp_pure.h differ
+Only in Cobalt64/src/navi48-bringup/src/amd: native_fb_pure.h
+Only in Cobalt64/src/navi48-bringup/src/amd: native_g1_pure.h
+Only in Cobalt64/src/navi48-bringup/src/amd: native_g2_pure.h
+Only in Cobalt64/src/navi48-bringup/src/amd: native_g4_pure.h
+Only in Cobalt64/src/navi48-bringup/src/amd: native_g5_pure.h
+Files Cobalt64/src/navi48-bringup/src/amd/native_hostimport_pure.h and 7000-macos/src/navi48-bringup/src/amd/native_hostimport_pure.h differ
+Only in Cobalt64/src/navi48-bringup/src/amd: native_m6_pure.h
+Files Cobalt64/src/navi48-bringup/src/amd/native_metal_pure.h and 7000-macos/src/navi48-bringup/src/amd/native_metal_pure.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_open_policy_pure.h and 7000-macos/src/navi48-bringup/src/amd/native_open_policy_pure.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_s1c.cpp and 7000-macos/src/navi48-bringup/src/amd/native_s1c.cpp differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_s1c.h and 7000-macos/src/navi48-bringup/src/amd/native_s1c.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/native_s1c_pure.h and 7000-macos/src/navi48-bringup/src/amd/native_s1c_pure.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/nbif_v6_3_1.cpp and 7000-macos/src/navi48-bringup/src/amd/nbif_v6_3_1.cpp differ
+Only in Cobalt64/src/navi48-bringup/src/amd: rebar_pure.h
+Files Cobalt64/src/navi48-bringup/src/amd/smu_dal.cpp and 7000-macos/src/navi48-bringup/src/amd/smu_dal.cpp differ
+Files Cobalt64/src/navi48-bringup/src/amd/smu_dal.h and 7000-macos/src/navi48-bringup/src/amd/smu_dal.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/smu_dal_pure.h and 7000-macos/src/navi48-bringup/src/amd/smu_dal_pure.h differ
+Files Cobalt64/src/navi48-bringup/src/amd/smu_v14_0.cpp and 7000-macos/src/navi48-bringup/src/amd/smu_v14_0.cpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/AppleHardwareHook.cpp and 7000-macos/src/navi48-bringup/src/apple/AppleHardwareHook.cpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/AppleHardwareHook.hpp and 7000-macos/src/navi48-bringup/src/apple/AppleHardwareHook.hpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/DisplayPipeGuard.cpp and 7000-macos/src/navi48-bringup/src/apple/DisplayPipeGuard.cpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/fastcopy.h and 7000-macos/src/navi48-bringup/src/apple/fastcopy.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_admit112.h and 7000-macos/src/navi48-bringup/src/apple/gfx_admit112.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_capture_scan.h and 7000-macos/src/navi48-bringup/src/apple/gfx_capture_scan.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_cg84.h and 7000-macos/src/navi48-bringup/src/apple/gfx_cg84.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_cgredo.h and 7000-macos/src/navi48-bringup/src/apple/gfx_cgredo.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_cgw108.h and 7000-macos/src/navi48-bringup/src/apple/gfx_cgw108.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_commit.h and 7000-macos/src/navi48-bringup/src/apple/gfx_commit.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_copyguard.h and 7000-macos/src/navi48-bringup/src/apple/gfx_copyguard.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_cp_build.h and 7000-macos/src/navi48-bringup/src/apple/gfx_cp_build.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_cycle80.h and 7000-macos/src/navi48-bringup/src/apple/gfx_cycle80.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_dep.h and 7000-macos/src/navi48-bringup/src/apple/gfx_dep.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_desc_port.h and 7000-macos/src/navi48-bringup/src/apple/gfx_desc_port.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_fence828.h and 7000-macos/src/navi48-bringup/src/apple/gfx_fence828.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_fillset.h and 7000-macos/src/navi48-bringup/src/apple/gfx_fillset.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_flightring.h and 7000-macos/src/navi48-bringup/src/apple/gfx_flightring.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_fs85.h and 7000-macos/src/navi48-bringup/src/apple/gfx_fs85.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_hazard.h and 7000-macos/src/navi48-bringup/src/apple/gfx_hazard.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_heapgen.h and 7000-macos/src/navi48-bringup/src/apple/gfx_heapgen.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_keystone.h and 7000-macos/src/navi48-bringup/src/apple/gfx_keystone.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_memdst.h and 7000-macos/src/navi48-bringup/src/apple/gfx_memdst.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_mib.h and 7000-macos/src/navi48-bringup/src/apple/gfx_mib.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_mmprio.h and 7000-macos/src/navi48-bringup/src/apple/gfx_mmprio.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_neuter.h and 7000-macos/src/navi48-bringup/src/apple/gfx_neuter.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_pgmid.h and 7000-macos/src/navi48-bringup/src/apple/gfx_pgmid.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_present73.h and 7000-macos/src/navi48-bringup/src/apple/gfx_present73.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_reloc.h and 7000-macos/src/navi48-bringup/src/apple/gfx_reloc.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_rnforgive.h and 7000-macos/src/navi48-bringup/src/apple/gfx_rnforgive.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_sk82.h and 7000-macos/src/navi48-bringup/src/apple/gfx_sk82.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_subst_caps.h and 7000-macos/src/navi48-bringup/src/apple/gfx_subst_caps.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_subst_pool.h and 7000-macos/src/navi48-bringup/src/apple/gfx_subst_pool.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_t0src.h and 7000-macos/src/navi48-bringup/src/apple/gfx_t0src.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/gfx_unitdefer.h and 7000-macos/src/navi48-bringup/src/apple/gfx_unitdefer.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/hybrid_policy.h and 7000-macos/src/navi48-bringup/src/apple/hybrid_policy.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/Navi48AccelPeer.cpp and 7000-macos/src/navi48-bringup/src/apple/Navi48AccelPeer.cpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/Navi48Ttl.hpp and 7000-macos/src/navi48-bringup/src/apple/Navi48Ttl.hpp differ
+Files Cobalt64/src/navi48-bringup/src/apple/rootwrite_guards.h and 7000-macos/src/navi48-bringup/src/apple/rootwrite_guards.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/scanout_copy.h and 7000-macos/src/navi48-bringup/src/apple/scanout_copy.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/sdma_dcc.h and 7000-macos/src/navi48-bringup/src/apple/sdma_dcc.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/sdma_gcr.h and 7000-macos/src/navi48-bringup/src/apple/sdma_gcr.h differ
+Files Cobalt64/src/navi48-bringup/src/apple/ws_resprov.h and 7000-macos/src/navi48-bringup/src/apple/ws_resprov.h differ
+Files Cobalt64/src/navi48-bringup/src/dcn/navi48_dcn.cpp and 7000-macos/src/navi48-bringup/src/dcn/navi48_dcn.cpp differ
+Files Cobalt64/src/navi48-bringup/src/dcn/navi48_dcn.hpp and 7000-macos/src/navi48-bringup/src/dcn/navi48_dcn.hpp differ
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_disp2_flow.h
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_disp2.h
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_dispread_flow.h
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_dispread.h
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_dmubcmd_flow.h
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_dmubcmd.h
+Files Cobalt64/src/navi48-bringup/src/dcn/navi48_modetrial_pure.h and 7000-macos/src/navi48-bringup/src/dcn/navi48_modetrial_pure.h differ
+Files Cobalt64/src/navi48-bringup/src/dcn/navi48_scanout_pure.h and 7000-macos/src/navi48-bringup/src/dcn/navi48_scanout_pure.h differ
+Only in Cobalt64/src/navi48-bringup/src/dcn: navi48_scanx_flow.h
+Files Cobalt64/src/navi48-bringup/src/ipdiscovery.hpp and 7000-macos/src/navi48-bringup/src/ipdiscovery.hpp differ
+Only in Cobalt64/src/navi48-bringup/src: Navi48AppKey.h
+Files Cobalt64/src/navi48-bringup/src/Navi48Bringup.cpp and 7000-macos/src/navi48-bringup/src/Navi48Bringup.cpp differ
+Files Cobalt64/src/navi48-bringup/src/Navi48Bringup.hpp and 7000-macos/src/navi48-bringup/src/Navi48Bringup.hpp differ
+Only in Cobalt64/src/navi48-bringup/src: Navi48DisplayNub.cpp
+Only in Cobalt64/src/navi48-bringup/src: Navi48DisplayNub.hpp
+Only in Cobalt64/src/navi48-bringup/src: Navi48DisplayOps.h
+Files Cobalt64/src/navi48-bringup/src/Navi48MetalNub.cpp and 7000-macos/src/navi48-bringup/src/Navi48MetalNub.cpp differ
+Files Cobalt64/src/navi48-bringup/src/Navi48MetalNub.hpp and 7000-macos/src/navi48-bringup/src/Navi48MetalNub.hpp differ
+Files Cobalt64/src/navi48-bringup/src/Navi48MetalOps.h and 7000-macos/src/navi48-bringup/src/Navi48MetalOps.h differ
+Files Cobalt64/src/navi48-bringup/src/Navi48NativeABI.h and 7000-macos/src/navi48-bringup/src/Navi48NativeABI.h differ
+Files Cobalt64/src/navi48-bringup/src/Navi48NativeClient.cpp and 7000-macos/src/navi48-bringup/src/Navi48NativeClient.cpp differ
+Files Cobalt64/src/navi48-bringup/src/Navi48NativeClient.hpp and 7000-macos/src/navi48-bringup/src/Navi48NativeClient.hpp differ
+Files Cobalt64/src/navi48-bringup/src/Navi48UserClient.cpp and 7000-macos/src/navi48-bringup/src/Navi48UserClient.cpp differ
+Only in 7000-macos/src/navi48-bringup/tests: asic_profile_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/frozen/gfx_copyguard_f824012f.h and 7000-macos/src/navi48-bringup/tests/frozen/gfx_copyguard_f824012f.h differ
+Files Cobalt64/src/navi48-bringup/tests/frozen/gfx_fillset_01131813.h and 7000-macos/src/navi48-bringup/tests/frozen/gfx_fillset_01131813.h differ
+Files Cobalt64/src/navi48-bringup/tests/frozen/gfx_fillset_ab336a80.h and 7000-macos/src/navi48-bringup/tests/frozen/gfx_fillset_ab336a80.h differ
+Files Cobalt64/src/navi48-bringup/tests/frozen/gfx_fs85_01131813.h and 7000-macos/src/navi48-bringup/tests/frozen/gfx_fs85_01131813.h differ
+Files Cobalt64/src/navi48-bringup/tests/frozen/gfx_present73_6af255a0.h and 7000-macos/src/navi48-bringup/tests/frozen/gfx_present73_6af255a0.h differ
+Files Cobalt64/src/navi48-bringup/tests/gen_fs85_fixture.py and 7000-macos/src/navi48-bringup/tests/gen_fs85_fixture.py differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_admit112_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_admit112_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_cg84_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_cg84_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_cgredo_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_cgredo_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_commit_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_commit_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_copyguard_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_copyguard_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_cycle515_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_cycle515_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_cycle80_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_cycle80_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_dep_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_dep_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_desc_port_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_desc_port_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_f84_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_f84_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_fence828_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_fence828_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_fillset_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_fillset_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_flightring_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_flightring_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_fs85_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_fs85_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_hg88_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_hg88_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_hw72_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_hw72_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_keystone_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_keystone_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_memdst_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_memdst_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_mib_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_mib_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_mib_units_checks.h and 7000-macos/src/navi48-bringup/tests/gfx_mib_units_checks.h differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_mib_xib_checks.h and 7000-macos/src/navi48-bringup/tests/gfx_mib_xib_checks.h differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_mmprio_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_mmprio_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_pgmid_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_pgmid_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_rnforgive_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_rnforgive_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_sk82_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_sk82_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/gfx_t0src_test.cpp and 7000-macos/src/navi48-bringup/tests/gfx_t0src_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/native_agdc_plant.sh and 7000-macos/src/navi48-bringup/tests/native_agdc_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_agdc_test.cpp and 7000-macos/src/navi48-bringup/tests/native_agdc_test.cpp differ
+Only in Cobalt64/src/navi48-bringup/tests: native_disp2_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_disp2_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/native_disp_plant.sh and 7000-macos/src/navi48-bringup/tests/native_disp_plant.sh differ
+Only in Cobalt64/src/navi48-bringup/tests: native_dispread_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_dispread_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/native_disp_test.cpp and 7000-macos/src/navi48-bringup/tests/native_disp_test.cpp differ
+Only in Cobalt64/src/navi48-bringup/tests: native_dmubcmd_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_dmubcmd_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_fb_monb_battery.h
+Only in Cobalt64/src/navi48-bringup/tests: native_g1_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_g1_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_g2_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_g2_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_g4_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_g4_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_g5_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_g5_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_g6_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_g6_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/native_hostimport_test.cpp and 7000-macos/src/navi48-bringup/tests/native_hostimport_test.cpp differ
+Only in Cobalt64/src/navi48-bringup/tests: native_m6_off_battery.h
+Only in Cobalt64/src/navi48-bringup/tests: native_m6_plant.sh
+Files Cobalt64/src/navi48-bringup/tests/native_metal_plant.sh and 7000-macos/src/navi48-bringup/tests/native_metal_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_metal_test.cpp and 7000-macos/src/navi48-bringup/tests/native_metal_test.cpp differ
+Only in Cobalt64/src/navi48-bringup/tests: native_rebar_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_rebar_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/native_s1b_test.cpp and 7000-macos/src/navi48-bringup/tests/native_s1b_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/native_s1c_plant.sh and 7000-macos/src/navi48-bringup/tests/native_s1c_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_s1c_test.cpp and 7000-macos/src/navi48-bringup/tests/native_s1c_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2a_plant.sh and 7000-macos/src/navi48-bringup/tests/native_s2a_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2a_test.cpp and 7000-macos/src/navi48-bringup/tests/native_s2a_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2_dal_plant.sh and 7000-macos/src/navi48-bringup/tests/native_s2_dal_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2_dal_test.cpp and 7000-macos/src/navi48-bringup/tests/native_s2_dal_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2d_plant.sh and 7000-macos/src/navi48-bringup/tests/native_s2d_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_s2d_test.cpp and 7000-macos/src/navi48-bringup/tests/native_s2d_test.cpp differ
+Only in Cobalt64/src/navi48-bringup/tests: native_scanx_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_scanx_test.cpp
+Only in Cobalt64/src/navi48-bringup/tests: native_sdmaorder_plant.sh
+Only in Cobalt64/src/navi48-bringup/tests: native_sdmaorder_test.cpp
+Files Cobalt64/src/navi48-bringup/tests/native_ws_open_plant.sh and 7000-macos/src/navi48-bringup/tests/native_ws_open_plant.sh differ
+Files Cobalt64/src/navi48-bringup/tests/native_ws_open_test.cpp and 7000-macos/src/navi48-bringup/tests/native_ws_open_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/rootwrite_guards_test.cpp and 7000-macos/src/navi48-bringup/tests/rootwrite_guards_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/scanout_selftest_test.cpp and 7000-macos/src/navi48-bringup/tests/scanout_selftest_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/sc_census_test.cpp and 7000-macos/src/navi48-bringup/tests/sc_census_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/sdma_dcc_test.cpp and 7000-macos/src/navi48-bringup/tests/sdma_dcc_test.cpp differ
+Files Cobalt64/src/navi48-bringup/tests/sdma_gcr_test.cpp and 7000-macos/src/navi48-bringup/tests/sdma_gcr_test.cpp differ
+Files Cobalt64/src/shadercache/shadercache.c and 7000-macos/src/shadercache/shadercache.c differ
+Files Cobalt64/src/shadercache/shadercache.h and 7000-macos/src/shadercache/shadercache.h differ
+Files Cobalt64/src/xlat12/Makefile and 7000-macos/src/xlat12/Makefile differ
+Files Cobalt64/src/xlat12/tests/test_kdtableabi_rows.py and 7000-macos/src/xlat12/tests/test_kdtableabi_rows.py differ
+Files Cobalt64/src/xlat12/tests/test_xlat12_ib.c and 7000-macos/src/xlat12/tests/test_xlat12_ib.c differ
+Files Cobalt64/src/xlat12/tests/test_xlat12_readset.py and 7000-macos/src/xlat12/tests/test_xlat12_readset.py differ
+Files Cobalt64/src/xlat12/xlat12_abi_ptrs.h and 7000-macos/src/xlat12/xlat12_abi_ptrs.h differ
+Files Cobalt64/src/xlat12/xlat12_ib.c and 7000-macos/src/xlat12/xlat12_ib.c differ
+Files Cobalt64/src/xlat12/xlat12_ib.h and 7000-macos/src/xlat12/xlat12_ib.h differ
+Files Cobalt64/src/xlat12/xlat12_readset.h and 7000-macos/src/xlat12/xlat12_readset.h differ
+Only in Cobalt64/third-party: metal2vulkan-n48
+Files Cobalt64/third-party/THIRD-PARTY-LICENSES.txt and 7000-macos/third-party/THIRD-PARTY-LICENSES.txt differ
+Files Cobalt64/tools/conductor/suites.sh and 7000-macos/tools/conductor/suites.sh differ
+Files Cobalt64/tools/dcn41/harness/dmub_linux_side.c and 7000-macos/tools/dcn41/harness/dmub_linux_side.c differ
+Files Cobalt64/tools/native/autotranslate/com.navi48.translate.plist and 7000-macos/tools/native/autotranslate/com.navi48.translate.plist differ
+Files Cobalt64/tools/native/autotranslate/n48-llvm-dis and 7000-macos/tools/native/autotranslate/n48-llvm-dis differ
+Only in Cobalt64/tools/native/autotranslate: n48-translate.sb
+Files Cobalt64/tools/native/autotranslate/pc-translate.py and 7000-macos/tools/native/autotranslate/pc-translate.py differ
+Files Cobalt64/tools/native/autotranslate/pc-translate.sh and 7000-macos/tools/native/autotranslate/pc-translate.sh differ
+Only in Cobalt64/tools/native/autotranslate: test-daemon-plant.sh
+Only in Cobalt64/tools/native/autotranslate: test-daemon.sh
+Files Cobalt64/tools/native/mtlprobe/mtlprobe.m and 7000-macos/tools/native/mtlprobe/mtlprobe.m differ
+Files Cobalt64/tools/native/navi48accel/gates/common.py and 7000-macos/tools/native/navi48accel/gates/common.py differ
+Files Cobalt64/tools/native/navi48accel/gates/layout_gate_host.py and 7000-macos/tools/native/navi48accel/gates/layout_gate_host.py differ
+Files Cobalt64/tools/native/navi48accel/gates/leaves.py and 7000-macos/tools/native/navi48accel/gates/leaves.py differ
+Files Cobalt64/tools/native/navi48accel/Info.plist and 7000-macos/tools/native/navi48accel/Info.plist differ
+Files Cobalt64/tools/native/navi48accel/Makefile and 7000-macos/tools/native/navi48accel/Makefile differ
+Files Cobalt64/tools/native/navi48accel/src/kmod_info.c and 7000-macos/tools/native/navi48accel/src/kmod_info.c differ
+Files Cobalt64/tools/native/navi48accel/src/n48accel_pure.h and 7000-macos/tools/native/navi48accel/src/n48accel_pure.h differ
+Files Cobalt64/tools/native/navi48accel/src/Navi48Accel.cpp and 7000-macos/tools/native/navi48accel/src/Navi48Accel.cpp differ
+Only in Cobalt64/tools/native/navi48accel/src: Navi48DisplayOps.h
+Files Cobalt64/tools/native/navi48accel/src/Navi48MetalOps.h and 7000-macos/tools/native/navi48accel/src/Navi48MetalOps.h differ
+Files Cobalt64/tools/native/navi48accel/tests/gate_plants.sh and 7000-macos/tools/native/navi48accel/tests/gate_plants.sh differ
+Files Cobalt64/tools/native/navi48accel/tests/host_test.cpp and 7000-macos/tools/native/navi48accel/tests/host_test.cpp differ
+Files Cobalt64/tools/native/navi48accel/tests/Makefile and 7000-macos/tools/native/navi48accel/tests/Makefile differ
+Files Cobalt64/tools/native/navi48accel/tests/plant.sh and 7000-macos/tools/native/navi48accel/tests/plant.sh differ
+Files Cobalt64/tools/native/navi48metal/build.sh and 7000-macos/tools/native/navi48metal/build.sh differ
+Files Cobalt64/tools/native/navi48metal/Info.plist and 7000-macos/tools/native/navi48metal/Info.plist differ
+Files Cobalt64/tools/native/navi48metal/n48_cblog.h and 7000-macos/tools/native/navi48metal/n48_cblog.h differ
+Only in Cobalt64/tools/native/navi48metal: n48_census.h
+Only in Cobalt64/tools/native/navi48metal: n48_cienv.h
+Files Cobalt64/tools/native/navi48metal/n48_crc.h and 7000-macos/tools/native/navi48metal/n48_crc.h differ
+Only in Cobalt64/tools/native/navi48metal: n48_depth.h
+Files Cobalt64/tools/native/navi48metal/n48_dispflip.h and 7000-macos/tools/native/navi48metal/n48_dispflip.h differ
+Only in Cobalt64/tools/native/navi48metal: n48_dumpacl.h
+Only in Cobalt64/tools/native/navi48metal: n48_gate.h
+Files Cobalt64/tools/native/navi48metal/n48_impcache.h and 7000-macos/tools/native/navi48metal/n48_impcache.h differ
+Only in Cobalt64/tools/native/navi48metal: n48_intfmt.h
+Only in Cobalt64/tools/native/navi48metal: n48_ioalias.h
+Only in Cobalt64/tools/native/navi48metal: n48_ledger.h
+Only in Cobalt64/tools/native/navi48metal: n48_m6route.h
+Only in Cobalt64/tools/native/navi48metal: n48_m6x.h
+Only in Cobalt64/tools/native/navi48metal: n48_occ.h
+Files Cobalt64/tools/native/navi48metal/n48_plane.h and 7000-macos/tools/native/navi48metal/n48_plane.h differ
+Files Cobalt64/tools/native/navi48metal/n48_scanabi.h and 7000-macos/tools/native/navi48metal/n48_scanabi.h differ
+Only in Cobalt64/tools/native/navi48metal: n48_texdesc.h
+Only in Cobalt64/tools/native/navi48metal: n48_xlate.h
+Files Cobalt64/tools/native/navi48metal/Navi48Device.m and 7000-macos/tools/native/navi48metal/Navi48Device.m differ
+Only in Cobalt64/tools/native/navi48metal: test-b10-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b11-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b13-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b14-diffguard.sh
+Only in Cobalt64/tools/native/navi48metal: test-b14-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b15-diffguard.sh
+Only in Cobalt64/tools/native/navi48metal: test-b15-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b16-diffguard.sh
+Only in Cobalt64/tools/native/navi48metal: test-b16-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b17-diffguard.sh
+Only in Cobalt64/tools/native/navi48metal: test-b17-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b18-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b19-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b20-display-delta.patch
+Only in Cobalt64/tools/native/navi48metal: test-b20-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-b9-plant.sh
+Only in Cobalt64/tools/native/navi48metal: test-census.m
+Only in Cobalt64/tools/native/navi48metal: test-cienv.c
+Only in Cobalt64/tools/native/navi48metal: test-depth.c
+Only in Cobalt64/tools/native/navi48metal: test-depth-shaders.h
+Files Cobalt64/tools/native/navi48metal/test-dispflip.c and 7000-macos/tools/native/navi48metal/test-dispflip.c differ
+Only in Cobalt64/tools/native/navi48metal: test-dumpacl.c
+Only in Cobalt64/tools/native/navi48metal: test-dumpdir.sh
+Only in Cobalt64/tools/native/navi48metal: test-gate.c
+Only in Cobalt64/tools/native/navi48metal: test-gate-plant.sh
+Files Cobalt64/tools/native/navi48metal/test-impcache.c and 7000-macos/tools/native/navi48metal/test-impcache.c differ
+Only in Cobalt64/tools/native/navi48metal: test-intclear-semantics.m
+Only in Cobalt64/tools/native/navi48metal: test-intfmt.c
+Only in Cobalt64/tools/native/navi48metal: test-ioalias.c
+Only in Cobalt64/tools/native/navi48metal: test-ledger.c
+Only in Cobalt64/tools/native/navi48metal: test-m6route.c
+Only in Cobalt64/tools/native/navi48metal: test-m6x.c
+Only in Cobalt64/tools/native/navi48metal: test-occ.c
+Only in Cobalt64/tools/native/navi48metal: test-occlusion-semantics.m
+Files Cobalt64/tools/native/navi48metal/test-plane.c and 7000-macos/tools/native/navi48metal/test-plane.c differ
+Only in Cobalt64/tools/native/navi48metal: test-texdesc.c
+Only in Cobalt64/tools/native/navi48metal: test-vkdepth.c
+Files Cobalt64/tools/native/navi48metal/test-vkimage.c and 7000-macos/tools/native/navi48metal/test-vkimage.c differ
+Only in Cobalt64/tools/native/navi48metal: test-xlate.c
+Only in Cobalt64/tools/native/navi48metal: test-xlate-corpus.c
+Only in Cobalt64/tools/native/navi48metal: test-xlate-corpus.sh
+Only in Cobalt64/tools/native/navi48metal: test-xlate-linked.c
+Only in Cobalt64/tools/native/navi48metal: test-xlate-linked-real.c
+Only in Cobalt64/tools/native/navi48metal: test-xlate-linked-real.m
+Only in Cobalt64/tools/native/navi48metal: test-xlate-linked-real.sh
+Files Cobalt64/tools/native/navi48metal/txn-correlate.py and 7000-macos/tools/native/navi48metal/txn-correlate.py differ
+Only in Cobalt64/tools/native/navi48metal: xlate-corpus-compare.py
+Only in Cobalt64/tools/native/navi48metal: xlate-corpus-prep.py
+Files Cobalt64/tools/pc/accel-run.sh and 7000-macos/tools/pc/accel-run.sh differ
+Only in Cobalt64/tools/pc: arm-gpu-desktop.sh
+Only in Cobalt64/tools/pc: autoarm
+Only in Cobalt64/tools/pc: m6-stage1a-deploy.sh
+Only in Cobalt64/tools/pc: m6-stage1a-run.sh
+Only in Cobalt64/tools/pc: m6-stage1b-deploy.sh
+Only in Cobalt64/tools/pc: m6-stage1b-run.sh
+Only in Cobalt64/tools/pc: m6-stage2-run.sh
+Only in Cobalt64/tools/pc: m6-stage2-sim
+Files Cobalt64/tools/pc/navi48test.c and 7000-macos/tools/pc/navi48test.c differ

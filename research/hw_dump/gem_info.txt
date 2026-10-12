@@ -1,0 +1,582 @@
+pid     6062 command krunner:
+		0x00000001:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000002:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000003:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000004:      2097152 byte VRAM VISIBLE CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000005:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000006:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000007:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:73   signalled
+
+		0x00000008:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000009:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000a:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000b:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000c:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000e:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000000f:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000010:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000011:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x00000012:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000013:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000014:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x00000015:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x00000016:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x00000017:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000018:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x00000019:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:76   signalled
+
+		0x0000001a:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1003:78   signalled
+
+		0x0000001b:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000001c:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:74   signalled
+
+		0x0000001d:       655360 byte VRAM VISIBLE exported as ino:371 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:126715   signalled
+	write fence:1003:85   signalled
+
+		0x0000001e:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x0000001f:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000020:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000021:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000022:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000023:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+		0x00000024:       655360 byte VRAM VISIBLE exported as ino:372 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:126646   signalled
+	write fence:1003:86   signalled
+
+		0x00000025:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1003:87   signalled
+
+pid     4458 command brave:
+pid     4458 command brave:
+		0x00000001:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+	write fence:926:2837   signalled
+	write fence:926:2136   signalled
+
+		0x00000002:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000004:      2097152 byte VRAM VISIBLE CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+	write fence:926:2837   signalled
+	write fence:926:2136   signalled
+
+		0x00000005:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000006:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000007:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000009:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2478   signalled
+
+		0x0000000a:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+	write fence:926:2837   signalled
+	write fence:926:2136   signalled
+
+		0x0000000b:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+	write fence:926:2837   signalled
+	write fence:926:2136   signalled
+
+		0x0000000c:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+	write fence:926:2837   signalled
+
+		0x0000000d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000000e:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000000f:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000011:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000012:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000013:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000014:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000015:      1376256 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000016:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000017:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000018:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000019:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000001a:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000001b:      1392640 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:610   signalled
+
+		0x0000001c:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2135   signalled
+
+		0x0000001d:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000001e:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:928:72   signalled
+	write fence:926:2585   signalled
+
+		0x0000001f:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000021:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000022:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000023:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000024:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2835   signalled
+
+		0x00000026:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:928:72   signalled
+
+		0x00000027:      1376256 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000028:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000029:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000002a:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000002c:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000002e:      2211840 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000002f:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:1887   signalled
+
+		0x00000031:      1392640 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:56   signalled
+
+		0x00000033:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000034:      1392640 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:70   signalled
+
+		0x00000036:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2818   signalled
+
+		0x0000003a:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000003c:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000003d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000003e:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x0000003f:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000044:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000045:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x00000046:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000048:      3932160 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x00000049:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000004c:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x0000004d:      3932160 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x0000004e:      3932160 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x0000004f:      3932160 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:250   signalled
+
+		0x00000053:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000054:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2837   signalled
+
+		0x00000055:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000005e:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000005f:     14417920 byte VRAM VISIBLE exported as ino:409 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2837   signalled
+
+		0x00000060:     14417920 byte VRAM VISIBLE exported as ino:411 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000061:      1392640 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:319   signalled
+
+		0x00000062:     14417920 byte VRAM VISIBLE exported as ino:413 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:928:72   signalled
+
+		0x00000063:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:926:1954   signalled
+
+		0x00000064:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000065:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x00000066:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+		0x00000067:      1966080 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2839   signalled
+
+pid     1469 command plasmashell:
+		0x00000001:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x00000002:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000003:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1011:1   signalled
+	write fence:991:132   signalled
+	write fence:888:128   signalled
+
+		0x00000004:      2097152 byte VRAM VISIBLE CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x00000005:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000006:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1011:2   signalled
+
+		0x00000007:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+
+		0x00000008:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:886:100   signalled
+
+		0x0000000a:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x0000000b:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:988:299   signalled
+	write fence:888:128   signalled
+
+		0x0000000c:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000000d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:7   signalled
+
+		0x0000000e:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x0000000f:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x00000010:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:991:132   signalled
+	write fence:888:128   signalled
+
+		0x00000011:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:991:89   signalled
+	write fence:823:3344   signalled
+
+		0x00000012:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x00000013:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x00000015:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:988:299   signalled
+
+		0x00000016:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x00000017:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x00000018:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:820:3138   signalled
+
+		0x00000019:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+
+		0x0000001a:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:7   signalled
+
+		0x0000001b:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+
+		0x0000001c:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000001d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+
+		0x0000001e:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:7   signalled
+
+		0x0000001f:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x00000020:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+	write fence:820:3138   signalled
+
+		0x00000021:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+
+		0x00000022:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:988:299   signalled
+
+		0x00000023:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:995:45   signalled
+	write fence:823:3314   signalled
+
+		0x00000024:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:15   signalled
+
+		0x00000025:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:886:106   signalled
+	write fence:886:19   signalled
+
+		0x00000026:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:15   signalled
+	write fence:886:22   signalled
+
+		0x00000027:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x00000028:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:15   signalled
+
+		0x00000029:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:995:255   signalled
+
+		0x0000002a:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x0000002b:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x0000002c:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000002d:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:1011:2   signalled
+	write fence:995:45   signalled
+	write fence:823:3314   signalled
+
+		0x0000002e:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000002f:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:1011:2   signalled
+
+		0x00000030:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:7   signalled
+	write fence:886:67   signalled
+
+		0x00000031:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:995:255   signalled
+	write fence:820:18653   signalled
+	write fence:823:3314   signalled
+
+		0x00000032:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+
+		0x00000033:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x00000034:       196608 byte VRAM VISIBLE exported as ino:143 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:21539   signalled
+	write fence:825:45   signalled
+
+		0x00000035:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:988:299   signalled
+
+		0x00000036:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x00000038:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x00000039:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:886:106   signalled
+	write fence:886:19   signalled
+
+		0x0000003a:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000003b:      1048576 byte VRAM VISIBLE exported as ino:145 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:21798   signalled
+	write fence:886:78   signalled
+
+		0x0000003c:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000003d:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:1011:1   signalled
+
+		0x0000003f:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:886:106   signalled
+
+		0x00000040:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:825:45   signalled
+
+		0x00000042:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:988:328   signalled
+	write fence:823:3268   signalled
+
+		0x00000043:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:823:3363   signalled
+	write fence:886:105   signalled
+
+		0x00000044:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000047:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:886:100   signalled
+
+		0x0000004a:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+
+		0x0000004e:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:133   signalled
+	write fence:991:132   signalled
+	write fence:991:22   signalled
+
+		0x0000004f:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000050:      1048576 byte VRAM VISIBLE exported as ino:124 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:21881   signalled
+	write fence:886:77   signalled
+
+		0x00000051:      1327104 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:886:106   signalled
+
+		0x00000052:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:886:106   signalled
+
+		0x00000055:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:991:18   signalled
+
+		0x0000005b:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:825:45   signalled
+
+		0x0000005c:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:995:255   signalled
+
+		0x0000005e:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:995:255   signalled
+
+pid     1269 command kwin_wayland:
+pid     1370 command Xwayland:
+		0x00000001:      4194304 byte NONE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:800:3   signalled
+
+		0x00000002:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:800:3   signalled
+
+		0x00000003:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:800:3   signalled
+
+		0x00000004:      2097152 byte GTT CPU_GTT_USWC VRAM_CLEARED	kernel fence:165:26   signalled
+
+		0x00000005:      2097152 byte GTT NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	kernel fence:163:27   signalled
+
+		0x00000006:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:800:3   signalled
+
+		0x00000007:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	kernel fence:163:33   signalled
+
+		0x00000008:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	kernel fence:163:30   signalled
+
+		0x0000000a:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x0000000b:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:800:3   signalled
+
+		0x0000000c:        65536 byte GTT exported as ino:46 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	kernel fence:165:29   signalled
+
+pid     1269 command kwin_wayland:
+		0x00000002:     30146560 byte VRAM VISIBLE exported as ino:324 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129060   signalled
+	kernel fence:856:334   signalled
+
+		0x00000003:     30146560 byte VRAM VISIBLE exported as ino:325 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129060   signalled
+
+		0x00000006:     30146560 byte VRAM VISIBLE exported as ino:333 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129054   signalled
+	write fence:774:124978   signalled
+
+		0x00000007:     30146560 byte VRAM VISIBLE exported as ino:334 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:128278   signalled
+	write fence:774:124980   signalled
+
+		0x00000008:     30146560 byte VRAM VISIBLE exported as ino:322 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129057   signalled
+
+pid      813 command systemd-logind:
+pid     1269 command kwin_wayland:
+		0x00000001:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129061   signalled
+
+		0x00000002:         4096 byte GTT VRAM_CLEARED EXPLICIT_SYNC
+		0x00000003:      4194304 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:771:86   signalled
+
+		0x00000004:         4096 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED EXPLICIT_SYNC	kernel fence:165:23   signalled
+
+		0x00000005:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED
+		0x00000006:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:774:129061   signalled
+	write fence:771:86   signalled
+
+		0x00000007:      2097152 byte VRAM VISIBLE CPU_GTT_USWC VRAM_CLEARED	write fence:774:129061   signalled
+	write fence:771:86   signalled
+
+		0x00000008:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:774:129061   signalled
+
+		0x00000009:      2097152 byte GTT CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:125007   signalled
+
+		0x0000000a:         4096 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:771:86   signalled
+
+		0x0000000b:     28835840 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x0000000c:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+	write fence:771:86   signalled
+
+		0x0000000d:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:129061   signalled
+	write fence:771:86   signalled
+
+		0x0000000e:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:128142   signalled
+
+		0x0000000f:     14417920 byte VRAM VISIBLE exported as ino:339 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x00000010:     30146560 byte VRAM VISIBLE exported as ino:324 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129060   signalled
+	kernel fence:856:334   signalled
+
+		0x00000011:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:129060   signalled
+
+		0x00000012:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:129060   signalled
+	write fence:774:20458   signalled
+
+		0x00000013:      2097152 byte VRAM VISIBLE CPU_GTT_USWC VRAM_CLEARED	write fence:774:126806   signalled
+	write fence:774:20458   signalled
+
+		0x00000014:      2097152 byte GTT CPU_ACCESS_REQUIRED VRAM_CLEARED	write fence:774:129061   signalled
+
+		0x00000015:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:774:129060   signalled
+	write fence:774:20459   signalled
+
+		0x00000016:     30146560 byte VRAM VISIBLE exported as ino:325 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129060   signalled
+
+		0x00000017:       655360 byte VRAM VISIBLE exported as ino:371 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:126715   signalled
+	write fence:1003:85   signalled
+
+		0x00000018:     14028800 byte GTT imported from ino:404	write fence:774:129059   signalled
+
+		0x00000019:     14417920 byte VRAM VISIBLE exported as ino:409 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2837   signalled
+
+		0x0000001a:     14417920 byte VRAM VISIBLE exported as ino:411 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:926:2838   signalled
+
+		0x0000001b:      7208960 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x0000001c:       655360 byte VRAM VISIBLE exported as ino:372 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:126646   signalled
+	write fence:1003:86   signalled
+
+		0x0000001d:      2097152 byte VRAM VISIBLE CPU_ACCESS_REQUIRED CPU_GTT_USWC VRAM_CLEARED	write fence:965:2   signalled
+
+		0x0000001e:     30146560 byte VRAM VISIBLE exported as ino:322 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129057   signalled
+
+		0x00000020:       196608 byte VRAM VISIBLE exported as ino:415 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED
+		0x00000021:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x00000022:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x00000023:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x00000024:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x00000025:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+	write fence:774:20914   signalled
+
+		0x00000027:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x00000028:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129059   signalled
+
+		0x0000002b:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x0000002d:      1310720 byte VRAM VISIBLE exported as ino:367 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+	write fence:995:213   signalled
+
+		0x0000002e:      1376256 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+	write fence:774:20914   signalled
+
+		0x00000032:      1048576 byte VRAM VISIBLE exported as ino:124 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:21881   signalled
+	write fence:886:77   signalled
+
+		0x00000034:     30146560 byte VRAM VISIBLE exported as ino:333 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED VRAM_CONTIGUOUS	write fence:774:129054   signalled
+	write fence:774:124978   signalled
+
+		0x00000035:     30146560 byte VRAM VISIBLE exported as ino:334 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:128278   signalled
+	write fence:774:124980   signalled
+
+		0x0000003b:     15728640 byte VRAM VISIBLE exported as ino:352 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x0000003c:      1048576 byte VRAM VISIBLE exported as ino:145 NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:21798   signalled
+	write fence:886:78   signalled
+
+		0x0000003e:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+
+		0x0000003f:      2097152 byte VRAM VISIBLE NO_CPU_ACCESS CPU_GTT_USWC VRAM_CLEARED	write fence:774:129053   signalled
+

@@ -1,0 +1,145 @@
+ROM size 58880 bytes, sig 55aa, size-in-512 115
+PCIR @0x1c0 sig=b'PCIR' vendor=1002 device=7590
+ATOM ROM header @0x194
+  rom header size 44 rev 2.3 sig b'ATOM'
+  bios_segment_address       0xc000
+  protectedmodeoffset        0x60f8
+  configfilenameoffset       0x146
+  crc_block_offset           0x1e5
+  vbios_bootupmessageoffset  0x9a
+  int10_offset               0x612e
+  pcibusdevinitcode          0x0
+  iobaseaddress              0x0
+  subsystem_vendor_id        0x1da2
+  subsystem_id               0xa493
+  pci_info_offset            0x1c0
+  masterhwfunction_offset    0x26c0
+  masterdatatable_offset     0x300
+  reserved                   0x4
+  pspdirtableoffset          0x9000000
+
+Master COMMAND table @0x26c0 size 162 rev 2.1
+  [ 0] asic_init                    @0x2764 size   290 rev 2.1
+  [ 6] cmd_function6                @0x2fe0 size    75 rev 1.1
+  [22] cmd_function22               @0x2a30 size    69 rev 2.2
+  [53] cmd_function53               @0x2888 size   424 rev 4.1
+  [66] cmd_function66               @0x2a78 size  1384 rev 2.1
+  -> 5 of 79 command table slots non-zero
+
+Master DATA table @0x300 size 74 rev 2.1
+  [ 2] smc_dpm_info           @0x23c0 size   532 rev 6.0
+  [ 3] sw_datatable3          @0x1c98 size   368 rev 2.1
+  [ 4] firmwareinfo           @0x2314 size   172 rev 3.5
+  [ 5] sw_datatable5          @0x1e08 size    52 rev 2.1
+  [ 6] lcd_info               @0x1964 size    80 rev 3.1
+  [ 9] sw_datatable9          @0x1ef8 size   852 rev 3.3
+  [11] vram_usagebyfirmware   @0x224c size    48 rev 2.2
+  [12] gpio_pin_lut           @0x1a88 size   164 rev 2.1
+  [13] sw_datatable13         @0x1e3c size   164 rev 1.1
+  [14] gfx_info               @0x25d4 size   136 rev 3.1
+  [17] sw_datatable17         @0x1ee0 size    24 rev 2.2
+  [22] displayobjectinfo      @0x227c size   152 rev 1.5
+  [23] indirectioaccess       @0x1c90 size     8 rev 1.1
+  [24] umc_info               @0x265c size    84 rev 4.0
+  [25] sw_datatable25         @0x034c size  5656 rev 1.2
+  [26] sw_datatable26         @0x1b2c size   204 rev 3.1
+  [27] dce_info               @0x19b4 size   212 rev 4.5
+
+firmwareinfo v3.5
+  firmware_revision 0x17040044  firmware_capability 0x4001
+  caps bits: ['FIRMWARE_POSTED']
+  fw_protect_region_size_in_kb 524288
+  bios_scratch_reg_startaddr 0x4c
+  mem_module_id 0 cooling 0 hw_blt_mode 1
+  mc_baseaddr hi/lo 0x80/0x0
+  board_i2c_feature id 2 gpio 0x97 slave 0x50 ras_rom_slave 0x0
+  pplib_pptable_id 0x11f5
+  maco_pwrlimit_mw 0 usb_pwrlimit_mw 0 fw_reserved_size_in_kb 528384
+  spi_rom_size 0x200000 support_dev_in_objinfo 0x288 disp_phy_tunning_size 5656
+
+dce_info (atom_display_controller_info) v4.5 size 212
+  display_caps 0x300
+  bootup_dispclk_10khz 62500 -> 625.0 MHz
+  dce_refclk_10khz 10000  i2c_engine_refclk_10khz 5000
+  ss: dvi 0%o rate 0 | hdmi 0 rate 0 | dp 375 rate 3150 (0.001% / 10Hz)
+  ss modes dvi/hdmi/dp 1/1/0
+  dfp_hardcode_mode 85 @0  vga_hardcode_mode 0 @0
+  dpphy_refclk_10khz 10000  hw_chip_id 0x7590
+  dcnip_min_ver 0x0 dcnip_max_ver 0x4
+  max_disp_pipe_num 4 max_vbios_active_disp_pipe_num 1 max_ppll_num 0 max_disp_phy_num 3 max_aux_pairs 4 remotedisplayconfig 0x0
+  dispclk_pll_vco_freq 450000  dp_ref_clk_freq 720000000
+  max_mclk_chg_lat 0  max_sr_exit_lat 0  max_sr_enter_exit_lat 0 (0.1us)
+  dc_golden_table_offset 0x0 ver 0x0
+  aux_dphy_rx_control0_val   0x103d1110
+  aux_dphy_tx_control_val    0x00021c7a
+  aux_dphy_rx_control1_val   0x00004500
+  dc_gpio_aux_ctrl_0_val     0x00000000
+  dc_gpio_aux_ctrl_1_val     0x00300000
+  dc_gpio_aux_ctrl_2_val     0x00000000
+  dc_gpio_aux_ctrl_3_val     0x0aaa0000
+  dc_gpio_aux_ctrl_4_val     0x00022222
+  dc_gpio_aux_ctrl_5_val     0x0001f2aa
+
+gpio_pin_lut v2.1: 20 entries (data_a_reg_index is absolute dword; DCN seg2 base = 0x34c0)
+  gpio_id 0x01 reg 0x5db5 (seg2+0x28f5 DC_GPIO_HPD_A       ) bitshift  0 HPD1
+  gpio_id 0x02 reg 0x5db5 (seg2+0x28f5 DC_GPIO_HPD_A       ) bitshift  8 HPD2
+  gpio_id 0x03 reg 0x5db5 (seg2+0x28f5 DC_GPIO_HPD_A       ) bitshift 16 HPD3
+  gpio_id 0x04 reg 0x5db5 (seg2+0x28f5 DC_GPIO_HPD_A       ) bitshift 24 HPD4
+  gpio_id 0x05 reg 0x5db5 (seg2+0x28f5 DC_GPIO_HPD_A       ) bitshift 26 HPD5
+  gpio_id 0x90 reg 0x5d91 (seg2+0x28d1 DC_GPIO_DDC1_A      ) bitshift  8  I2C_HW engine=1 line=0
+  gpio_id 0x91 reg 0x5d95 (seg2+0x28d5 DC_GPIO_DDC2_A      ) bitshift  8  I2C_HW engine=1 line=1
+  gpio_id 0x92 reg 0x5d99 (seg2+0x28d9 DC_GPIO_DDC3_A      ) bitshift  8  I2C_HW engine=1 line=2
+  gpio_id 0x93 reg 0x5d9d (seg2+0x28dd DC_GPIO_DDC4_A      ) bitshift  8  I2C_HW engine=1 line=3
+  gpio_id 0x97 reg 0x5da9 (seg2+0x28e9 DC_GPIO_DDCVGA_A    ) bitshift  8  I2C_HW engine=1 line=7
+  gpio_id 0x08 reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift  0 
+  gpio_id 0x09 reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift  8 
+  gpio_id 0x0a reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift 16 
+  gpio_id 0x0b reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift 20 
+  gpio_id 0x0c reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift 21 
+  gpio_id 0x0d reg 0x5d89 (seg2+0x28c9 DC_GPIO_GENERIC_A   ) bitshift 22 
+  gpio_id 0x10 reg 0x5db1 (seg2+0x28f1 DC_GPIO_GENLK_A     ) bitshift  0 
+  gpio_id 0x11 reg 0x5db1 (seg2+0x28f1 DC_GPIO_GENLK_A     ) bitshift  8 
+  gpio_id 0x13 reg 0x5db1 (seg2+0x28f1 DC_GPIO_GENLK_A     ) bitshift 16 
+  gpio_id 0x14 reg 0x5db1 (seg2+0x28f1 DC_GPIO_GENLK_A     ) bitshift 24 
+
+displayobjectinfo v1.5 size 152: supporteddevices 0x288 number_of_path 3
+  path 0: CONNECTOR DISPLAYPORT enum1 (0x3113)
+          encoder ENCODER INTERNAL_UNIPHY enum1 (0x211e) -> TRANSMITTER_UNIPHY_A (PHY A)
+          device_tag 0x0008 (DFP1) disp_recordoffset 0x38
+          record: I2C i2c_id=0x90 (hw_cap=1 engine=1 line=0) slave=0x0 -> DC_GPIO_DDC1_A
+          record: HPD_INT pin_id=0x01 plugin_state=0 -> DC_GPIO_HPD_A HPD1
+          record: CONNECTOR_CAP raw=0000
+          record: CONNECTOR_SPEED_UPTO connector_max_speed=13500 MHz
+          record: BRACKET_LAYOUT_V2 bracketlen=18 width=9 conn_num=1 mini_type=0
+  path 1: CONNECTOR HDMI_TYPE_A enum2 (0x320c)
+          encoder ENCODER INTERNAL_UNIPHY enum2 (0x221e) -> TRANSMITTER_UNIPHY_B (PHY B)
+          device_tag 0x0080 (DFP2) disp_recordoffset 0x58
+          record: I2C i2c_id=0x91 (hw_cap=1 engine=1 line=1) slave=0x0 -> DC_GPIO_DDC2_A
+          record: HPD_INT pin_id=0x02 plugin_state=0 -> DC_GPIO_HPD_A HPD2
+          record: CONNECTOR_CAP raw=0000
+          record: CONNECTOR_SPEED_UPTO connector_max_speed=10000 MHz
+          record: BRACKET_LAYOUT_V2 bracketlen=18 width=9 conn_num=2 mini_type=0
+  path 2: CONNECTOR HDMI_TYPE_A enum3 (0x330c)
+          encoder ENCODER INTERNAL_UNIPHY1 enum1 (0x2120) -> TRANSMITTER_UNIPHY_C (PHY C)
+          device_tag 0x0200 (DFP3) disp_recordoffset 0x78
+          record: I2C i2c_id=0x92 (hw_cap=1 engine=1 line=2) slave=0x0 -> DC_GPIO_DDC3_A
+          record: HPD_INT pin_id=0x03 plugin_state=0 -> DC_GPIO_HPD_A HPD3
+          record: CONNECTOR_CAP raw=0000
+          record: CONNECTOR_SPEED_UPTO connector_max_speed=10000 MHz
+          record: BRACKET_LAYOUT_V2 bracketlen=15 width=7 conn_num=3 mini_type=0
+
+vram_usagebyfirmware v2.2
+  fw_region_start_address_in_kb 0x0 used_by_firmware_in_kb 0 driver_region0_start_kb 0x0 used_by_driver_region0_kb 0
+smu_info               ABSENT
+umc_info               present v4.0 size 84
+vram_info              ABSENT
+integratedsysteminfo   ABSENT
+lcd_info               present v3.1 size 80
+powerplayinfo          ABSENT
+gfx_info               present v3.1 size 136
+multimedia_info        ABSENT
+voltageobject_info     ABSENT
+asic_profiling_info    ABSENT
+smc_dpm_info           present v6.0 size 532
+indirectioaccess       present v1.1 size 8
+utilitypipeline        ABSENT

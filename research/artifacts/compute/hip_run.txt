@@ -1,0 +1,4 @@
+device 0: AMD Radeon RX 9060 XT gcnArchName=gfx1200 CUs=16 warpSize=32 major.minor=12.0 pciBus=03 clock=2700000kHz mem=16304 MiB
+device 1: AMD Ryzen 7 7700 8-Core Processor gcnArchName=gfx1036 CUs=1 warpSize=32 major.minor=10.3 pciBus=0a clock=2200000kHz mem=15565 MiB
+vadd n=16777216 iters=50 avg=0.6685 ms effective=301.2 GB/s mismatches=0 -> PASS
+1000 tiny launches + sync: 3.827 ms (3.83 us/launch)

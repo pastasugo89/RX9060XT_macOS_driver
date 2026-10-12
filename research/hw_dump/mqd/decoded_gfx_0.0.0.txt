@@ -1,0 +1,16 @@
+# v12_gfx_mqd: 512 fields, dump 512 dwords
+  41 0x0a4 reserved_41                              0x00000002
+ 128 0x200 cp_mqd_base_addr                         0xdaad9000
+ 129 0x204 cp_mqd_base_addr_hi                      0x00000083
+ 135 0x21c cp_gfx_hqd_quantum                       0x00000a01
+ 136 0x220 cp_gfx_hqd_base                          0x000028c0
+ 139 0x22c cp_gfx_hqd_rptr_addr                     0x00001080
+ 141 0x234 cp_rb_wptr_poll_addr_lo                  0x000010a0
+ 143 0x23c cp_rb_doorbell_control                   0x00000458
+ 144 0x240 cp_gfx_hqd_offset                        0x00000700
+ 145 0x244 cp_gfx_hqd_cntl                          0x00f0088a
+ 148 0x250 cp_gfx_hqd_csmd_rptr                     0x00000700
+ 149 0x254 cp_gfx_hqd_wptr                          0x0235ff00
+ 160 0x280 cp_gfx_hqd_hq_status0                    0x40000000
+ 162 0x288 cp_gfx_mqd_control                       0x00000100
+ 276 0x450 reserved_276                             0x00000fff

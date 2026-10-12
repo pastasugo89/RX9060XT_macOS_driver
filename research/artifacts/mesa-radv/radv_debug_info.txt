@@ -1,0 +1,567 @@
+ERROR: [Loader Message] Code 0 : loader_create_instance_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so"
+Device info:
+    name = RAPHAEL_MENDOCINO
+    marketing_name = AMD Ryzen 7 7700 8-Core Processor
+    dev_filename = /dev/dri/renderD129
+    num_se = 1
+    num_rb = 1
+    num_cu = 2
+    max_gpu_freq = 2200 MHz
+    max_gflops = 563 GFLOPS
+    tcp_cache_size = 16 KB
+    l1_cache_size = 128 KB
+    l2_cache_size = 256 KB
+    memory_channels = 2 (TCC blocks)
+    memory_size = 1 GB (512 MB)
+    memory_freq = 12 GHz
+    memory_bus_width = 128 bits
+    memory_bandwidth = 192 GB/s
+    pcie_gen = 4
+    pcie_num_lanes = 16
+    pcie_bandwidth = 31.5 GB/s
+    clock_crystal_freq = 100000 KHz
+    IP GFX     10.3 	queues:1 	align:256 	pad_dw:0x7
+    IP COMPUTE 10.3 	queues:4 	align:256 	pad_dw:0x7
+    IP SDMA     5.2 	queues:1 	align:256 	pad_dw:0xf
+    IP VCN_DEC  3.1 	queues:1 	align:256 	pad_dw:0xf
+    IP VCN_ENC  3.1 	queues:1 	align:256 	pad_dw:0x3f
+    IP VCN_JPEG  3.1 	queues:1 	align:256 	pad_dw:0xf
+Identification:
+    pci (domain:bus:dev.func): 0000:0a:00.0
+    pci_id = 0x164e
+    pci_rev_id = 0xc5
+    family = 86
+    gfx_level = 13
+    family_id = 149
+    chip_external_rev = 2
+    chip_rev = 1
+Flags:
+    has_graphics = 1
+    has_clear_state = 1
+    has_distributed_tess = 1
+    has_dcc_constant_encode = 1
+    has_rbplus = 1
+    rbplus_allowed = 1
+    has_load_ctx_reg_pkt = 1
+    has_out_of_order_rast = 0
+    cpdma_prefetch_writes_memory = 0
+    has_gfx9_scissor_bug = 0
+    has_htile_stencil_mipmap_bug = 0
+    has_htile_tc_z_clear_bug_without_stencil = 0
+    has_htile_tc_z_clear_bug_with_stencil = 0
+    has_small_prim_filter_sample_loc_bug = 0
+    has_pops_missed_overlap_bug = 0
+    has_32bit_predication = 1
+    has_image_opcodes = 1
+    never_stop_sq_perf_counters = 1
+    has_sqtt_rb_harvest_bug = 0
+    has_sqtt_auto_flush_mode_bug = 1
+    never_send_perfcounter_stop = 0
+    discardable_allows_big_page = 0
+    has_taskmesh_indirect0_bug = 0
+    has_set_context_pairs = 0
+    has_set_context_pairs_packed = 0
+    has_set_sh_pairs = 0
+    has_set_sh_pairs_packed = 0
+    has_set_uconfig_pairs = 0
+    has_smem_partial_oob_access_bug = 0
+    has_out_of_order_uncached_l2 = 0
+Display features:
+    use_display_dcc_unaligned = 0
+    use_display_dcc_with_retile_blit = 0
+Memory info:
+    pte_fragment_size = 2097152
+    gart_page_size = 4096
+    gart_size = 15566 MB
+    vram_size = 512 MB
+    vram_vis_size = 512 MB
+    vram_type = 10
+    max_heap_size_kb = 15566 MB
+    min_alloc_size = 0
+    address32_hi = 0xffff8000
+    has_dedicated_vram = 0
+    all_vram_visible = 1
+    high_va_offset = ffff800000000000
+    high_va_max = ffffffffffbf0000
+    virtual_address_max = 800000000000
+    virtual_address_alignment = 1000
+    max_tcc_blocks = 2
+    tcc_cache_line_size = 128
+    tcc_rb_non_coherent = 0
+    cp_sdma_ge_use_system_memory_scope = 0
+    pc_lines = 256
+    lds_alloc_granularity = 1024
+    max_memory_clock = 3000 MHz
+CP info:
+    gfx_ib_pad_with_type2 = 0
+    can_chain_ib2 = 1
+    has_cp_dma = 1
+    me_fw_version = 14
+    me_fw_feature = 38
+    mec_fw_version = 28
+    mec_fw_feature = 38
+    pfp_fw_version = 18
+    pfp_fw_feature = 38
+Multimedia info:
+    vcn_decode = 1
+    vcn_encode = 1
+    vcn_enc_major_version = 1
+    vcn_enc_minor_version = 33
+    vcn_dec_version = 4
+    jpeg_decode = 1
+    codec    dec  max_resolution   enc  max_resolution  
+    h264     *    4096x4096        *    4096x4096       
+    hevc     *    8192x4352        *    8192x4352       
+    av1      *    8192x4352        -    -               
+    vp9      *    8192x4352        -    -               
+    jpeg     *    16384x16384      -    -               
+    mpeg2    -    -                -    -               
+    vc1      -    -                -    -               
+Kernel & winsys capabilities:
+    drm = 3.64.0
+    has_userptr = 1
+    has_timeline_syncobj = 1
+    has_vm_always_valid = 1
+    has_eqaa_surface_allocator = 1
+    has_sparse = 1
+    has_kernelq_reg_shadowing = 0
+    has_tmz_support = 0
+    has_trap_handler_support = 0
+    IP GFX     max_submitted_ibs = 192
+    IP COMPUTE max_submitted_ibs = 125
+    IP SDMA    max_submitted_ibs = 49
+    IP UVD     max_submitWARNING: radv is not a conformant Vulkan implementation, testing use only.
+ted_ibs = 1
+    IP VCE     max_submitted_ibs = 1
+    IP UVD_ENC max_submitted_ibs = 1
+    IP VCN_DEC max_submitted_ibs = 1
+    IP VCN_ENC max_submitted_ibs = 1
+    IP VCN_JPEG max_submitted_ibs = 16
+    IP VPE     max_submitted_ibs = 49
+    kernel_has_modifiers = 1
+Shader core info:
+    cu_mask[SE0][SA0] = 0x3 	(2)	CU_EN = 0x3
+    spi_cu_en_has_effect = 0
+    max_good_cu_per_sa = 2
+    min_good_cu_per_sa = 2
+    max_se = 1
+    max_sa_per_se = 1
+    num_cu_per_sh = 2
+    max_scratch_waves = 64
+    has_scratch_base_registers = 0
+Compiler info:
+    max_waves_per_simd = 16
+    num_physical_sgprs_per_simd = 1728
+    num_physical_wave64_vgprs_per_simd = 512
+    num_simd_per_compute_unit = 2
+    min_sgpr_alloc = 108
+    max_sgpr_alloc = 108
+    sgpr_alloc_granularity = 108
+    min_wave64_vgpr_alloc = 8
+    max_vgpr_alloc = 256
+    wave64_vgpr_alloc_granularity = 8
+    lds_size_per_workgroup = 65536
+    has_lds_bank_count_16 = 0
+    has_sram_ecc_enabled = 0
+    has_point_sample_accel = 0
+    has_fast_fma32 = 1
+    has_fma_mix = 1
+    has_mad32 = 0
+    has_packed_math_16bit = 1
+    has_accelerated_dot_product = 1
+    has_image_bvh_intersect_ray = 1
+    has_ngg_passthru_no_msg = 1
+    local_invocation_ids_packed = 0
+    has_3d_cube_border_color_mipmap = 1
+    conformant_trunc_coord = 0
+    has_attr_ring = 0
+    smaller_tcs_workgroups = 0
+    has_gfx6_mrt_export_bug = 0
+    has_lbpw_tcs_wg_bug = 0
+    has_vtx_format_alpha_adjust_bug = 0
+    has_smem_oob_access_bug = 0
+    has_image_load_dcc_bug = 0
+    has_ls_vgpr_init_bug = 0
+    has_cb_lt16bit_int_clamp_bug = 0
+    has_vrs_frag_pos_z_bug = 0
+    has_ngg_fully_culled_bug = 0
+    has_attr_ring_wait_bug = 0
+    has_primid_instancing_bug = 0
+    has_cs_regalloc_hang_bug = 0
+    has_smem_with_null_prt_bug = 1
+Ring info:
+    hs_offchip_workgroup_size = 32768 B
+    tess_factor_ring_size = 6 KB
+    tess_offchip_ring_size = 256 KB
+Render backend info:
+    pa_sc_tile_steering_override = 0x0
+    max_render_backends = 1
+    num_tile_pipes = 4
+    enabled_rb_mask = 0x1
+    max_alignment = 65536
+    pbb_max_alloc_count = 85
+GB_ADDR_CONFIG: 0x00000042
+    num_pipes = 4
+    pipe_interleave_size = 256
+    max_compressed_frags = 2
+    num_pkrs = 1
+Modifiers (16 bpp):
+    0x20000000056bb03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0,DCC,DCC_MAX_COMPRESSED_BLOCK=128B,DCC_INDEPENDENT_128B,DCC_CONSTANT_ENCODE,DCC_PIPE_ALIGN
+    0x200000000401b03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000401603 - GFX10_RBPLUS,4KB_D_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000000a01 - GFX9,64KB_D
+    0x200000000000901 - GFX9,64KB_S
+    0x0 - LINEAR
+Modifiers (32 bpp):
+    0x20000000056bb03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0,DCC,DCC_MAX_COMPRESSED_BLOCK=128B,DCC_INDEPENDENT_128B,DCC_CONSTANT_ENCODE,DCC_PIPE_ALIGN
+    0x200000000401b03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000401603 - GFX10_RBPLUS,4KB_D_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000000901 - GFX9,64KB_S
+    0x0 - LINEAR
+Modifiers (64 bpp):
+    0x20000000056bb03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0,DCC,DCC_MAX_COMPRESSED_BLOCK=128B,DCC_INDEPENDENT_128B,DCC_CONSTANT_ENCODE,DCC_PIPE_ALIGN
+    0x200000000401b03 - GFX10_RBPLUS,64KB_R_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000401603 - GFX10_RBPLUS,4KB_D_X,PIPE_XOR_BITS=2,PACKERS=0
+    0x200000000000a01 - GFX9,64KB_D
+    0x200000000000901 - GFX9,64KB_S
+    0x0 - LINEAR
+Device info:
+    name = GFX1200
+    marketing_name = AMD Radeon RX 9060 XT
+    dev_filename = /dev/dri/renderD128
+    num_se = 2
+    num_rb = 8
+    num_cu = 32
+    max_gpu_freq = 2700 MHz
+    max_gflops = 22118 GFLOPS
+    sqc_inst_cache_size = 32 KB (1 per WGP)
+    sqc_scalar_cache_size = 16 KB (1 per WGP)
+    tcp_cache_size = 32 KB
+    l2_cache_size = 4096 KB
+    l3_cache_size = 32 MB
+    memory_channels = 16 (TCC blocks)
+    memory_size = 16 GB (16384 MB)
+    memory_freq = 21 GHz
+    memory_bus_width = 128 bits
+    memory_bandwidth = 323 GB/s
+    pcie_gen = 4
+    pcie_num_lanes = 16
+    pcie_bandwidth = 31.5 GB/s
+    clock_crystal_freq = 100000 KHz
+    IP GFX     12.0 	queues:1 	align:256 	pad_dw:0x7
+    IP COMPUTE 12.0 	queues:4 	align:256 	pad_dw:0x7
+    IP SDMA     7.0 	queues:2 	align:256 	pad_dw:0xf
+    IP VCN      5.0 	queues:1 	align:256 	pad_dw:0x3f
+    IP VCN_JPEG  5.0 	queues:1 	align:256 	pad_dw:0xf
+Identification:
+    pci (domain:bus:dev.func): 0000:03:00.0
+    pci_id = 0x7590
+    pci_rev_id = 0xc0
+    family = 99
+    gfx_level = 17
+    family_id = 152
+    chip_external_rev = 65
+    chip_rev = 1
+Flags:
+    has_graphics = 1
+    has_clear_state = 0
+    has_distributed_tess = 1
+    has_dcc_constant_encode = 1
+    has_rbplus = 1
+    rbplus_allowed = 1
+    has_load_ctx_reg_pkt = 1
+    has_out_of_order_rast = 0
+    cpdma_prefetch_writes_memory = 0
+    has_gfx9_scissor_bug = 0
+    has_htile_stencil_mipmap_bug = 0
+    has_htile_tc_z_clear_bug_without_stencil = 0
+    has_htile_tc_z_clear_bug_with_stencil = 0
+    has_small_prim_filter_sample_loc_bug = 0
+    has_pops_missed_overlap_bug = 0
+    has_32bit_predication = 1
+    has_image_opcodes = 1
+    never_stop_sq_perf_counters = 0
+    has_sqtt_rb_harvest_bug = 0
+    has_sqtt_auto_flush_mode_bug = 0
+    never_send_perfcounter_stop = 0
+    discardable_allows_big_page = 0
+    has_taskmesh_indirect0_bug = 0
+    has_set_context_pairs = 1
+    has_set_context_pairs_packed = 0
+    has_set_sh_pairs = 1
+    has_set_sh_pairs_packed = 0
+    has_set_uconfig_pairs = 1
+    has_smem_partial_oob_access_bug = 0
+    has_out_of_order_uncached_l2 = 1
+Memory info:
+    pte_fragment_size = 2097152
+    gart_page_size = 4096
+    gart_size = 15566 MB
+    vram_size = 16384 MB
+    vram_vis_size = 16304 MB
+    vram_type = 9
+    max_heap_size_kb = 16384 MB
+    min_alloc_size = 0
+    address32_hi = 0xffff8000
+    has_dedicated_vram = 1
+    all_vram_visible = 1
+    high_va_offset = ffff800000000000
+    high_va_max = ffffffffffbf0000
+    virtual_address_max = 800000000000
+    virtual_address_alignment = 1000
+    max_tcc_blocks = 16
+    tcc_cache_line_size = 256
+    tcc_rb_non_coherent = 0
+    cp_sdma_ge_use_system_memory_scope = 1
+    pc_lines = 0
+    lds_alloc_granularity = 1024
+    max_memory_clock = 1258 MHz
+CP info:
+    gfx_ib_pad_with_type2 = 0
+    can_chain_ib2 = 1
+    has_cp_dma = 1
+    me_fw_version = 3090
+    me_fw_feature = 29
+    mec_fw_version = 3450
+    mec_fw_feature = 29
+    pfp_fw_version = 3190
+    pfp_fw_feature = 29
+Userqueue info:
+    userq_ip_mask = 0
+Multimedia info:
+    vcn_unified = 1
+    vcn_enc_major_version = 1
+    vcn_enc_minor_version = 12
+    vcn_dec_version = 9
+    jpeg_decode = 1
+    codec    dec  max_resolution   enc  max_resolution  
+    h264     *    4096x4096        *    4096x4096       
+    hevc     *    8192x4352        *    8192x4352       
+    av1      *    8192x4352        *    8192x4352       
+    vp9      *    8192x4352        -    -               
+    jpeg     *    16384x16384      -    -               
+    mpeg2    -    -                -    -               
+    vc1      -    -                -    -               
+Kernel & winsys capabilities:
+    drm = 3.64.0
+    has_userptr = 1
+    has_timeline_syncobj = 1
+    has_vm_always_valid = 1
+    has_eqaa_surface_allocator = 0
+    has_sparse = 1
+    has_kernelq_reg_shadowing = 0
+    has_tmz_support = 0
+    has_trap_handler_support = 0
+    IP GFX     max_submitted_ibs = 192
+    IP COMPUTE max_submitted_ibs = 125
+    IP SDMA    max_submitted_ibs = 49
+    IP UVD     max_submitted_ibs = 1
+    IP VCE     max_submitted_ibs = 1
+    IP UVD_ENC max_submitted_ibs = 1
+    IP VCN_DEC max_submitted_ibs = 1
+    IP VCN     max_submitted_ibs = 1
+    IP VCN_JPEG max_submitted_ibs = 16
+    IP VPE     max_submitted_ibs = 49
+    kernel_has_modifiers = 1
+Shader core info:
+    cu_mask[SE0][SA0] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE0][SA1] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE1][SA0] = 0xff 	(8)	CU_EN = 0xff
+    cu_mask[SE1][SA1] = 0xff 	(8)	CU_EN = 0xff
+    spi_cu_en_has_effect = 0
+    max_good_cu_per_sa = 8
+    min_good_cu_per_sa = 8
+    max_se = 2
+    max_sa_per_se = 2
+    num_cu_per_sh = 8
+    max_scratch_waves = 1024
+    has_scratch_base_registers = 1
+Compiler info:
+    max_waves_per_simd = 16
+    num_physical_sgprs_per_simd = 1728
+    num_physical_wave64_vgprs_per_simd = 768
+    num_simd_per_compute_unit = 2
+    min_sgpr_alloc = 108
+    max_sgpr_alloc = 108
+    sgpr_alloc_granularity = 108
+    min_wave64_vgpr_alloc = 12
+    max_vgpr_alloc = 256
+    wave64_vgpr_alloc_granularity = 12
+    lds_size_per_workgroup = 65536
+    has_lds_bank_count_16 = 0
+    has_sram_ecc_enabled = 0
+    has_point_sample_accel = 0
+    has_fast_fma32 = 1
+    has_fma_mix = 1
+    has_mad32 = 0
+    has_packed_math_16bit = 1
+    has_accelerated_dot_product = 1
+    has_image_bvh_intersect_ray = 1
+    has_ngg_passthru_no_msg = 1
+    local_invocation_ids_packed = 1
+    has_3d_cube_border_color_mipmap = 1
+    conformant_trunc_coord = 1
+    has_attr_ring = 1
+    smaller_tcs_workgroups = 0
+    has_gfx6_mrt_export_bug = 0
+    has_lbpw_tcs_wg_bug = 0
+    has_vtx_format_alpha_adjust_bug = 0
+    has_smem_oob_access_bug = 0
+    has_image_load_dcc_bug = 0
+    has_ls_vgpr_init_bug = 0
+    has_cb_lt16bit_int_clamp_bug = 0
+    has_vrs_frag_pos_z_bug = 0
+    has_ngg_fully_culled_bug = 0
+    has_attr_ring_wait_bug = 0
+    has_primid_instancing_bug = 0
+    has_cs_regalloc_hang_bug = 0
+    has_smem_with_null_prt_bug = 1
+Ring info:
+    attribute_ring_size_per_se = 1408 KB
+    pos_ring_size_per_se = 256 KB
+    prim_ring_size_per_se = 64 KB
+    total_attribute_pos_prim_ring_size = 4096 KB
+    hs_offchip_workgroup_size = 32768 B
+    tess_factor_ring_size = 96 KB
+    tess_offchip_ring_size = 4096 KB
+Render backend info:
+    pa_sc_tile_steering_override = 0x0
+    max_render_backends = 8
+    num_tile_pipes = 32
+    enabled_rb_mask = 0xff
+    max_alignment = 262144
+    pbb_max_alloc_count = 0
+GB_ADDR_CONFIG: 0x08200545
+    num_pipes = 32
+    pipe_interleave_size = 256
+    num_pkrs = 32
+Modifiers (16 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+Modifiers (32 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+Modifiers (64 bpp):
+    0x200000000082305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000042305 - GFX12,64KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=128B
+    0x200000000082405 - GFX12,256KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082205 - GFX12,4KB_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000082105 - GFX12,256B_2D,DCC,DCC_MAX_COMPRESSED_BLOCK=256B
+    0x200000000000305 - GFX12,64KB_2D
+    0x200000000000a04 - GFX11,64KB_D
+    0x200000000000105 - GFX12,256B_2D
+    0x0 - LINEAR
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPlanePropertiesKHR!
+WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
+==========
+VULKANINFO
+==========
+
+Vulkan Instance Version: 1.4.363
+
+
+Instance Extensions: count = 26
+-------------------------------
+VK_EXT_acquire_drm_display             : extension revision 1
+VK_EXT_acquire_xlib_display            : extension revision 1
+VK_EXT_debug_report                    : extension revision 10
+VK_EXT_debug_utils                     : extension revision 2
+VK_EXT_direct_mode_display             : extension revision 1
+VK_EXT_display_surface_counter         : extension revision 1
+VK_EXT_headless_surface                : extension revision 1
+VK_EXT_layer_settings                  : extension revision 2
+VK_EXT_surface_maintenance1            : extension revision 1
+VK_EXT_swapchain_colorspace            : extension revision 5
+VK_KHR_device_group_creation           : extension revision 1
+VK_KHR_display                         : extension revision 23
+VK_KHR_external_fence_capabilities     : extension revision 1
+VK_KHR_external_memory_capabilities    : extension revision 1
+VK_KHR_external_semaphore_capabilities : extension revision 1
+VK_KHR_get_display_properties2         : extension revision 1
+VK_KHR_get_physical_device_properties2 : extension revision 2
+VK_KHR_get_surface_capabilities2       : extension revision 1
+VK_KHR_portability_enumeration         : extension revision 1
+VK_KHR_surface                         : extension revision 25
+VK_KHR_surface_maintenance1            : extension revision 1
+VK_KHR_surface_protected_capabilities  : extension revision 1
+VK_KHR_wayland_surface                 : extension revision 6
+VK_KHR_xcb_surface                     : extension revision 6
+VK_KHR_xlib_surface                    : extension revision 6
+VK_LUNARG_direct_driver_loading        : extension revision 1
+
+Instance Layers: count = 14
+---------------------------
+VK_LAYER_FROG_gamescope_wsi_x86_64   Gamescope WSI (XWayland Bypass) Layer (x86_64)               1.3.221  version 1
+VK_LAYER_LSFGVK_frame_generation     Lossless Scaling frame generation layer                      1.4.350  version 2
+VK_LAYER_LSFGVK_frame_generation_x86 Lossless Scaling frame generation layer                      1.4.350  version 2
+VK_LAYER_MAKO_render                 MAKO Renderer graphics layer                                 1.4.328  version 2
+VK_LAYER_MAKO_spatial_scaling        MAKO Renderer spatial-scaling layer                          1.4.328  version 1
+VK_LAYER_MANGOHUD_overlay_x86        Vulkan Hud Overlay                                           1.3.0    version 1
+VK_LAYER_MANGOHUD_overlay_x86_64     Vulkan Hud Overlay                                           1.3.0    version 1
+VK_LAYER_MESA_anti_lag               Open-source implementation of the VK_AMD_anti_lag extension. 1.4.303  version 1
+VK_LAYER_MESA_device_select          Linux device selection layer                                 1.4.303  version 1
+VK_LAYER_MESA_overlay                Mesa Overlay layer                                           1.4.303  version 1
+VK_LAYER_VALVE_steam_fossilize_32    Steam Pipeline Caching Layer                                 1.3.207  version 1
+VK_LAYER_VALVE_steam_fossilize_64    Steam Pipeline Caching Layer                                 1.3.207  version 1
+VK_LAYER_VALVE_steam_overlay_32      Steam Overlay Layer                                          1.3.207  version 1
+VK_LAYER_VALVE_steam_overlay_64      Steam Overlay Layer                                          1.3.207  version 1
+
+Devices:
+========
+GPU0:
+	apiVersion         = 1.4.363
+	driverVersion      = 26.2.99
+	vendorID           = 0x1002
+	deviceID           = 0x7590
+	deviceType         = PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+	deviceName         = AMD Radeon RX 9060 XT (RADV GFX1200)
+	driverID           = DRIVER_ID_MESA_RADV
+	driverName         = radv
+	driverInfo         = Mesa 26.3.0-devel (git-8ea6e9dd41)
+	conformanceVersion = 1.4.5.3
+	deviceUUID         = 00000000-0300-0000-0000-000000000000
+	driverUUID         = 414d442d-4d45-5341-2d44-525600000000
+GPU1:
+	apiVersion         = 1.4.363
+	driverVersion      = 26.2.99
+	vendorID           = 0x1002
+	deviceID           = 0x164e
+	deviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+	deviceName         = AMD Ryzen 7 7700 8-Core Processor (RADV RAPHAEL_MENDOCINO)
+	driverID           = DRIVER_ID_MESA_RADV
+	driverName         = radv
+	driverInfo         = Mesa 26.3.0-devel (git-8ea6e9dd41)
+	conformanceVersion = 1.4.5.3
+	deviceUUID         = 00000000-0a00-0000-0000-000000000000
+	driverUUID         = 414d442d-4d45-5341-2d44-525600000000
+GPU2:
+	apiVersion         = 1.4.363
+	driverVersion      = 26.2.99
+	vendorID           = 0x10005
+	deviceID           = 0x0000
+	deviceType         = PHYSICAL_DEVICE_TYPE_CPU
+	deviceName         = llvmpipe (LLVM 23.1.1, 256 bits)
+	driverID           = DRIVER_ID_MESA_LLVMPIPE
+	driverName         = llvmpipe
+	driverInfo         = Mesa 26.3.0-devel (git-8ea6e9dd41) (LLVM 23.1.1)
+	conformanceVersion = 1.3.1.1
+	deviceUUID         = 6d657361-3236-2e33-2e30-2d6465766500
+	driverUUID         = 6c6c766d-7069-7065-5555-494400000000

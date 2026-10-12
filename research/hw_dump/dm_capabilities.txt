@@ -1,0 +1,2 @@
+mall supported: yes, enabled: no
+sub-viewport supported: yes, enabled: no

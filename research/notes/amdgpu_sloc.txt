@@ -1,0 +1,26 @@
+core-common: 26113
+gfx12 IP total: 11546
+  soc24.c               448
+  nbif_v6_3_1.c         596
+  gmc_v12_0.c           761
+  mmhub_v4_1_0.c        492
+  gfxhub_v12_0.c        394
+  ih_v7_0.c             563
+  psp_v14_0.c           513
+  imu_v12_0.c           329
+  gfx_v12_0.c          4443
+  mes_v12_0.c          1661
+  sdma_v7_0.c          1260
+  hdp_v7_0.c             86
+swsmu core+smu14_0_2: 8239
+DC total (.c): 414947
+DC dcn401 (.c): 14615
+DMUB srv (.c): 4898
+amdkfd (.c): 27624
+whole amd tree (.c): 793446
+whole amd tree (.h lines): 5450756
+gc_12_0_0_offset.h
+gc_12_0_0_sh_mask.h
+  11061 include/asic_reg/gc/gc_12_0_0_offset.h
+  40550 include/asic_reg/gc/gc_12_0_0_sh_mask.h
+  51611 total

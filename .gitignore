@@ -1,0 +1,12 @@
+# Sorgenti di riferimento e progetti di terzi (riscaricabili, troppo grandi)
+/research/src/
+/research/refs/
+/research/ext/
+# Firmware AMD: non versionati (licenza linux-firmware), vedi cobalt64/BUILDING.md
+*.bin.zst
+/cobalt64/src/navi48-bringup/firmware/
+# Output di build
+build/
+*.o
+*.kext/
+.DS_Store
