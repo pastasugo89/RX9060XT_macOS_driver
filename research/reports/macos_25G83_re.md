@@ -71,6 +71,16 @@ Evidence REA (Ghidra 12.1.2, snapshot `research/macos/25G83/rea/pvgmetal.snapsho
    struttura, inserisce il proprio ID di risorsa (preso da `[[device serializer] newBufferRef]`) e chiama
    `-[MTLIOAccelBuffer initWithDevice:options:args:argsSize:]` con 0x80 byte.
 
+5. Inizializzazione del device (`ev_47c17f49…`, `-[AppleParavirtDevice initWithAcceleratorPort:]`):
+   `[super initWithAcceleratorPort:]` (MTLIOAccelDevice, che apre la connessione al servizio IOAccelerator) →
+   `_segmentByteThreshold = 0x40000000` → `setupDeviceInfo` → `setupCompiler` (se fallisce il device viene
+   rilasciato) → `setupResourcePools` → oggetti del driver (allocatore di riferimenti, serializer, heap dei
+   descrittori). `AppleParavirtCommandQueue -initWithDevice:descriptor:` è un semplice passaggio a
+   `MTLIOAccelCommandQueue` (`ev_095e63db…`).
+6. Variante ARM (`AppleParavirtGPUMetalIOGPUFamily`, `ev_ba12b8e0…`): stesso disegno con classi `IOGPUMetal*`
+   (IOGPU.framework) e strutture `IOGPUNewResourceArgs`, `IOGPUKernelCommand`, `IOGPUResourceList` (layout diversi).
+   Su x86 Tahoe il driver paravirtuale usa IOAcceleratorFamily2: per la RX 9060 XT la strada è `MTLIOAccel*`.
+
 **Dedotto (da verificare):**
 - `IOAccelNewResourceData` è lunga 104 byte con l'allineamento x86_64: campi fino a 0x40, poi union da 40 byte.
   Gli altri 24 byte fino a 0x80 sono dati privati del driver, letti da `param_5[1]`.
