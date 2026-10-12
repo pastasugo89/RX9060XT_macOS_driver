@@ -2,6 +2,8 @@
 /research/src/
 /research/refs/
 /research/ext/
+# binari Apple estratti dall installer di macOS: solo analisi locale, mai nel repository
+/research/macos/
 # Firmware AMD: non versionati (licenza linux-firmware), vedi cobalt64/BUILDING.md
 *.bin.zst
 /cobalt64/src/navi48-bringup/firmware/

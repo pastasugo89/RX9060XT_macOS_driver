@@ -21,7 +21,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 0.5 | Dati display con la RX 9060 XT ancora primaria (`research/display/`): EDID, link DP, stato atomico, DTN log a 180 Hz ✅; **manca** lo stato GOP con `amdgpu` in blacklist (serve un riavvio) | 🟨 |
 | 0.6 | VM macOS Tahoe 26.6.2 (build + test) con passthrough VFIO, seriale e gdbstub; workaround reset | ⬜ |
 | 0.7 | Traccia d'oro MMIO di `amdgpu` in VM Linux, partendo da scheda mai inizializzata | ⬜ |
-| 0.8 | KDK di 25G83 + estrazione dei binari Apple da analizzare (IOAcceleratorFamily2, IOGraphicsFamily, AppleParavirtGPU, Metal.framework dal dyld shared cache) | ⬜ |
+| 0.8 | Installer 25G83 verificato (SHA-1) ed estratto in `research/macos/` (fuori da git): kext grafici, kernel, Boot/System KC, driver Metal paravirtuale. REA via CLI con Ghidra 12.1.2 + JDK portatile. Mancano: kext come Mach-O singoli (fuori dalle KC), cryptex RIDIFF con Metal.framework, KDK. Dettagli: `research/reports/macos_25G83_re.md` | 🟨 |
 
 **Uscita**: VM macOS 26.6.2 che avvia con la scheda assegnata e log seriale; binari Apple disponibili per l'analisi.
 
@@ -80,7 +80,7 @@ Da riprendere quando l'utente può fare il riavvio. Fatto finora: mappa connetto
 
 | # | Attività | Stato |
 |---|---|---|
-| 5.1 | Ricostruire il layout di IOAcceleratorFamily2 per 25G83 (il generatore `tools/native/ioaccel-layout` di Cobalt64 non è pubblico): header, `slots.json`, `forwarded.json` | ⬜ |
+| 5.1 | Layout di IOAcceleratorFamily2 per 25G83. **Iniziato**: dal driver Metal paravirtuale di Apple il modello è sottoclassi `MTLIOAccel*` di Metal.framework e ABI `IOAccelNewResourceArgs` (args da 0x80 byte), `IOAccelKernelCommand`, `IOAccelResourceList`. Mancano le vtable del kext (richiede il kext fuori dalla KC) | 🟨 |
 | 5.2 | Compilare `tools/native/navi48accel` e verificare i "layout gate" a runtime | ⬜ |
 | 5.3 | Bundle `navi48metal`: nome prodotto, id device, poi WindowServer | ⬜ |
 
