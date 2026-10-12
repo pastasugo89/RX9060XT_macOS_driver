@@ -1,0 +1,552 @@
+colorop[51]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=56
+colorop[56]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=61
+colorop[61]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=66
+colorop[66]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=71
+colorop[71]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=78
+colorop[78]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=85
+colorop[85]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=90
+colorop[90]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[105]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=110
+colorop[110]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=115
+colorop[115]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=120
+colorop[120]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=125
+colorop[125]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=132
+colorop[132]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=139
+colorop[139]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=144
+colorop[144]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[159]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=164
+colorop[164]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=169
+colorop[169]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=174
+colorop[174]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=179
+colorop[179]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=186
+colorop[186]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=193
+colorop[193]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=198
+colorop[198]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[213]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=218
+colorop[218]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=223
+colorop[223]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=228
+colorop[228]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=233
+colorop[233]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=240
+colorop[240]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=247
+colorop[247]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=252
+colorop[252]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[269]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=274
+colorop[274]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=279
+colorop[279]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=284
+colorop[284]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=289
+colorop[289]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=296
+colorop[296]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=303
+colorop[303]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=308
+colorop[308]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[325]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=330
+colorop[330]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=335
+colorop[335]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=340
+colorop[340]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=345
+colorop[345]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=352
+colorop[352]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=359
+colorop[359]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=364
+colorop[364]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+colorop[381]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=386
+colorop[386]:
+	type=Multiplier
+	bypass=1
+	multiplier=0
+	next=391
+colorop[391]:
+	type=3x4 Matrix
+	bypass=1
+	data blob id=0
+	next=396
+colorop[396]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB Inverse EOTF
+	next=401
+colorop[401]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=408
+colorop[408]:
+	type=3D LUT
+	bypass=1
+	size=17
+	interpolation=Tetrahedral
+	data blob id=0
+	next=415
+colorop[415]:
+	type=1D Curve
+	bypass=1
+	curve_1d_type=sRGB EOTF
+	next=420
+colorop[420]:
+	type=1D LUT
+	bypass=1
+	size=4096
+	interpolation=Linear
+	data blob id=0
+	next=0
+plane[44]: plane-0
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=3
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[98]: plane-1
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=3
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[152]: plane-2
+	crtc=(null)
+	fb=0
+	crtc-pos=2560x1440+0+0
+	src-pos=2560.000000x1440.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=0
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[206]: plane-3
+	crtc=crtc-0
+	fb=481
+		allocated by = kwin_wayland
+		refcount=2
+		format=AB48 little-endian (0x38344241)
+		modifier=0x200000000082305
+		size=2560x1440
+		layers:
+			size[0]=2560x1440
+			pitch[0]=20480
+			offset[0]=0
+			obj[0]:
+				name=0
+				refcount=4
+				start=0011a33f
+				size=30146560
+				imported=no
+	crtc-pos=2560x1440+0+0
+	src-pos=2560.000000x1440.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=0
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[260]: plane-4
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=8
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[316]: plane-5
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=9
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[372]: plane-6
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=a
+	color-encoding=ITU-R BT.709 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[428]: plane-7
+	crtc=(null)
+	fb=0
+	crtc-pos=64x64+1205+692
+	src-pos=64.000000x64.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=1
+	color-encoding=ITU-R BT.601 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[433]: plane-8
+	crtc=(null)
+	fb=0
+	crtc-pos=64x64+16+1304
+	src-pos=64.000000x64.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=1
+	color-encoding=ITU-R BT.601 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[438]: plane-9
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=ff
+	color-encoding=ITU-R BT.601 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+plane[443]: plane-10
+	crtc=(null)
+	fb=0
+	crtc-pos=0x0+0+0
+	src-pos=0.000000x0.000000+0.000000+0.000000
+	rotation=1
+	normalized-zpos=ff
+	color-encoding=ITU-R BT.601 YCbCr
+	color-range=YCbCr limited range
+	color_mgmt_changed=0
+	color-pipeline=0
+crtc[432]: crtc-0
+	enable=1
+	active=1
+	self_refresh_active=0
+	planes_changed=1
+	mode_changed=0
+	active_changed=0
+	connectors_changed=0
+	color_mgmt_changed=0
+	plane_mask=8
+	connector_mask=1
+	encoder_mask=1
+	mode: "2560x1440": 180 719550 2560 2608 2640 2720 1440 1443 1453 1470 0x48 0x9
+	background_color=ffff000000000000
+crtc[437]: crtc-1
+	enable=0
+	active=0
+	self_refresh_active=0
+	planes_changed=0
+	mode_changed=0
+	active_changed=0
+	connectors_changed=0
+	color_mgmt_changed=0
+	plane_mask=0
+	connector_mask=0
+	encoder_mask=0
+	mode: "": 0 0 0 0 0 0 0 0 0 0 0x0 0x0
+	background_color=ffff000000000000
+crtc[442]: crtc-2
+	enable=0
+	active=0
+	self_refresh_active=0
+	planes_changed=0
+	mode_changed=0
+	active_changed=0
+	connectors_changed=0
+	color_mgmt_changed=0
+	plane_mask=0
+	connector_mask=0
+	encoder_mask=0
+	mode: "": 0 0 0 0 0 0 0 0 0 0 0x0 0x0
+	background_color=ffff000000000000
+crtc[447]: crtc-3
+	enable=0
+	active=0
+	self_refresh_active=0
+	planes_changed=0
+	mode_changed=0
+	active_changed=0
+	connectors_changed=0
+	color_mgmt_changed=0
+	plane_mask=0
+	connector_mask=0
+	encoder_mask=0
+	mode: "": 0 0 0 0 0 0 0 0 0 0 0x0 0x0
+	background_color=ffff000000000000
+connector[449]: DP-1
+	crtc=crtc-0
+	self_refresh_aware=0
+	interlace_allowed=0
+	ycbcr_420_allowed=1
+	max_requested_bpc=16
+	colorspace=Default
+connector[459]: HDMI-A-1
+	crtc=(null)
+	self_refresh_aware=0
+	interlace_allowed=0
+	ycbcr_420_allowed=1
+	max_requested_bpc=16
+	colorspace=Default
+	broadcast_rgb=Automatic
+	is_limited_range=n
+	output_bpc=0
+	output_format=RGB
+	tmds_char_rate=0
+connector[466]: HDMI-A-2
+	crtc=(null)
+	self_refresh_aware=0
+	interlace_allowed=0
+	ycbcr_420_allowed=1
+	max_requested_bpc=16
+	colorspace=Default
+	broadcast_rgb=Automatic
+	is_limited_range=n
+	output_bpc=0
+	output_format=RGB
+	tmds_char_rate=0
+connector[472]: Writeback-1
+	crtc=(null)
+	self_refresh_aware=0
+	interlace_allowed=0
+	ycbcr_420_allowed=0
+	max_requested_bpc=8
+	colorspace=Default

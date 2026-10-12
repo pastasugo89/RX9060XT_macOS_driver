@@ -1,0 +1,300 @@
+{
+ "rom_header": 404,
+ "master_data_table": 768,
+ "subsystem": "1da2:a493",
+ "gpio_segment_base": 13504,
+ "gpio_pins": [
+  {
+   "gpio_id": 1,
+   "reg_index": 23989,
+   "bitshift": 0,
+   "mask_bitshift": 0,
+   "reg_name": "DC_GPIO_HPD_A"
+  },
+  {
+   "gpio_id": 2,
+   "reg_index": 23989,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_HPD_A"
+  },
+  {
+   "gpio_id": 3,
+   "reg_index": 23989,
+   "bitshift": 16,
+   "mask_bitshift": 16,
+   "reg_name": "DC_GPIO_HPD_A"
+  },
+  {
+   "gpio_id": 4,
+   "reg_index": 23989,
+   "bitshift": 24,
+   "mask_bitshift": 20,
+   "reg_name": "DC_GPIO_HPD_A"
+  },
+  {
+   "gpio_id": 5,
+   "reg_index": 23989,
+   "bitshift": 26,
+   "mask_bitshift": 24,
+   "reg_name": "DC_GPIO_HPD_A"
+  },
+  {
+   "gpio_id": 8,
+   "reg_index": 23945,
+   "bitshift": 0,
+   "mask_bitshift": 0,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 9,
+   "reg_index": 23945,
+   "bitshift": 8,
+   "mask_bitshift": 4,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 10,
+   "reg_index": 23945,
+   "bitshift": 16,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 11,
+   "reg_index": 23945,
+   "bitshift": 20,
+   "mask_bitshift": 12,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 12,
+   "reg_index": 23945,
+   "bitshift": 21,
+   "mask_bitshift": 16,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 13,
+   "reg_index": 23945,
+   "bitshift": 22,
+   "mask_bitshift": 20,
+   "reg_name": "DC_GPIO_GENERIC_A"
+  },
+  {
+   "gpio_id": 16,
+   "reg_index": 23985,
+   "bitshift": 0,
+   "mask_bitshift": 0,
+   "reg_name": "DC_GPIO_GENLK_A"
+  },
+  {
+   "gpio_id": 17,
+   "reg_index": 23985,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_GENLK_A"
+  },
+  {
+   "gpio_id": 19,
+   "reg_index": 23985,
+   "bitshift": 16,
+   "mask_bitshift": 16,
+   "reg_name": "DC_GPIO_GENLK_A"
+  },
+  {
+   "gpio_id": 20,
+   "reg_index": 23985,
+   "bitshift": 24,
+   "mask_bitshift": 24,
+   "reg_name": "DC_GPIO_GENLK_A"
+  },
+  {
+   "gpio_id": 144,
+   "reg_index": 23953,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_DDC1_A"
+  },
+  {
+   "gpio_id": 145,
+   "reg_index": 23957,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_DDC2_A"
+  },
+  {
+   "gpio_id": 146,
+   "reg_index": 23961,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_DDC3_A"
+  },
+  {
+   "gpio_id": 147,
+   "reg_index": 23965,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_DDC4_A"
+  },
+  {
+   "gpio_id": 151,
+   "reg_index": 23977,
+   "bitshift": 8,
+   "mask_bitshift": 8,
+   "reg_name": "DC_GPIO_DDCVGA_A"
+  }
+ ],
+ "displayobjectinfo": {
+  "offset": 8828,
+  "size": 152,
+  "rev": "1.5",
+  "supported_devices": 648
+ },
+ "paths": [
+  {
+   "index": 0,
+   "connector_objid": "0x3113",
+   "connector": "DisplayPort",
+   "connector_enum": 1,
+   "encoder_objid": "0x211e",
+   "transmitter": "UNIPHY_A",
+   "device_tag": "DFP1",
+   "records": [
+    {
+     "type": "I2C",
+     "raw": "01049000",
+     "i2c_id": "0x90",
+     "hw_cap": true,
+     "engine": 1,
+     "line": 0,
+     "slave": 0,
+     "gpio": "DC_GPIO_DDC1_A"
+    },
+    {
+     "type": "HPD_INT",
+     "raw": "02040100",
+     "hpd_gpio_id": 1,
+     "plugin_state": 0,
+     "gpio": "DC_GPIO_HPD_A",
+     "gpio_bitshift": 0,
+     "hpd": "HPD1"
+    },
+    {
+     "type": "CONNECTOR_CAP",
+     "raw": "03040000",
+     "caps": "0x0"
+    },
+    {
+     "type": "CONNECTOR_SPEED",
+     "raw": "0408bc3400000000",
+     "max_speed_mhz": 13500
+    },
+    {
+     "type": "BRACKET_LAYOUT_V2",
+     "raw": "1908120901000000",
+     "bracket_len_mm": 18,
+     "bracket_width_mm": 9,
+     "conn_num": 1,
+     "mini": 0
+    }
+   ]
+  },
+  {
+   "index": 1,
+   "connector_objid": "0x320c",
+   "connector": "HDMI-A",
+   "connector_enum": 2,
+   "encoder_objid": "0x221e",
+   "transmitter": "UNIPHY_B",
+   "device_tag": "DFP2",
+   "records": [
+    {
+     "type": "I2C",
+     "raw": "01049100",
+     "i2c_id": "0x91",
+     "hw_cap": true,
+     "engine": 1,
+     "line": 1,
+     "slave": 0,
+     "gpio": "DC_GPIO_DDC2_A"
+    },
+    {
+     "type": "HPD_INT",
+     "raw": "02040200",
+     "hpd_gpio_id": 2,
+     "plugin_state": 0,
+     "gpio": "DC_GPIO_HPD_A",
+     "gpio_bitshift": 8,
+     "hpd": "HPD2"
+    },
+    {
+     "type": "CONNECTOR_CAP",
+     "raw": "03040000",
+     "caps": "0x0"
+    },
+    {
+     "type": "CONNECTOR_SPEED",
+     "raw": "0408102700000000",
+     "max_speed_mhz": 10000
+    },
+    {
+     "type": "BRACKET_LAYOUT_V2",
+     "raw": "1908120902000000",
+     "bracket_len_mm": 18,
+     "bracket_width_mm": 9,
+     "conn_num": 2,
+     "mini": 0
+    }
+   ]
+  },
+  {
+   "index": 2,
+   "connector_objid": "0x330c",
+   "connector": "HDMI-A",
+   "connector_enum": 3,
+   "encoder_objid": "0x2120",
+   "transmitter": "UNIPHY_C",
+   "device_tag": "DFP3",
+   "records": [
+    {
+     "type": "I2C",
+     "raw": "01049200",
+     "i2c_id": "0x92",
+     "hw_cap": true,
+     "engine": 1,
+     "line": 2,
+     "slave": 0,
+     "gpio": "DC_GPIO_DDC3_A"
+    },
+    {
+     "type": "HPD_INT",
+     "raw": "02040300",
+     "hpd_gpio_id": 3,
+     "plugin_state": 0,
+     "gpio": "DC_GPIO_HPD_A",
+     "gpio_bitshift": 16,
+     "hpd": "HPD3"
+    },
+    {
+     "type": "CONNECTOR_CAP",
+     "raw": "03040000",
+     "caps": "0x0"
+    },
+    {
+     "type": "CONNECTOR_SPEED",
+     "raw": "0408102700000000",
+     "max_speed_mhz": 10000
+    },
+    {
+     "type": "BRACKET_LAYOUT_V2",
+     "raw": "19080f0703000000",
+     "bracket_len_mm": 15,
+     "bracket_width_mm": 7,
+     "conn_num": 3,
+     "mini": 0
+    }
+   ]
+  }
+ ]
+}

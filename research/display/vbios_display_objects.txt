@@ -1,0 +1,24 @@
+VBIOS: header ATOM 0x194, displayobjectinfo v1.5 a 0x227c, subsystem 1da2:a493, 3 percorsi
+
+[0] DisplayPort  (obj 0x3113, enum 1)  encoder 0x211e -> UNIPHY_A  tag DFP1
+     I2C                  {'i2c_id': '0x90', 'hw_cap': True, 'engine': 1, 'line': 0, 'slave': 0, 'gpio': 'DC_GPIO_DDC1_A'}
+     HPD_INT              {'hpd_gpio_id': 1, 'plugin_state': 0, 'gpio': 'DC_GPIO_HPD_A', 'gpio_bitshift': 0, 'hpd': 'HPD1'}
+     CONNECTOR_CAP        {'caps': '0x0'}
+     CONNECTOR_SPEED      {'max_speed_mhz': 13500}
+     BRACKET_LAYOUT_V2    {'bracket_len_mm': 18, 'bracket_width_mm': 9, 'conn_num': 1, 'mini': 0}
+
+[1] HDMI-A       (obj 0x320c, enum 2)  encoder 0x221e -> UNIPHY_B  tag DFP2
+     I2C                  {'i2c_id': '0x91', 'hw_cap': True, 'engine': 1, 'line': 1, 'slave': 0, 'gpio': 'DC_GPIO_DDC2_A'}
+     HPD_INT              {'hpd_gpio_id': 2, 'plugin_state': 0, 'gpio': 'DC_GPIO_HPD_A', 'gpio_bitshift': 8, 'hpd': 'HPD2'}
+     CONNECTOR_CAP        {'caps': '0x0'}
+     CONNECTOR_SPEED      {'max_speed_mhz': 10000}
+     BRACKET_LAYOUT_V2    {'bracket_len_mm': 18, 'bracket_width_mm': 9, 'conn_num': 2, 'mini': 0}
+
+[2] HDMI-A       (obj 0x330c, enum 3)  encoder 0x2120 -> UNIPHY_C  tag DFP3
+     I2C                  {'i2c_id': '0x92', 'hw_cap': True, 'engine': 1, 'line': 2, 'slave': 0, 'gpio': 'DC_GPIO_DDC3_A'}
+     HPD_INT              {'hpd_gpio_id': 3, 'plugin_state': 0, 'gpio': 'DC_GPIO_HPD_A', 'gpio_bitshift': 16, 'hpd': 'HPD3'}
+     CONNECTOR_CAP        {'caps': '0x0'}
+     CONNECTOR_SPEED      {'max_speed_mhz': 10000}
+     BRACKET_LAYOUT_V2    {'bracket_len_mm': 15, 'bracket_width_mm': 7, 'conn_num': 3, 'mini': 0}
+
+scritto research/display/vbios_display_objects.json

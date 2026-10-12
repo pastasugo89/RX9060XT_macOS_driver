@@ -32,7 +32,11 @@ int main(void)
     size_t i;
     const struct dcn41_mode *m;
 
+#if defined(N4X_ASIC_NAVI48)
     CHECK(DCN41_MODE_COUNT == 9, "9 modes, got %zu", DCN41_MODE_COUNT);
+#else
+    CHECK(DCN41_MODE_COUNT == 5, "5 modes (every detailed timing of the DP monitor), got %zu", DCN41_MODE_COUNT);
+#endif
     for (i = 0; i < DCN41_MODE_COUNT; i++) {
         const struct dcn41_mode *e = &dcn41_modes[i];
         uint16_t v_front = e->v_front < 1 ? 1 : e->v_front;    /* apply_front_porch_workaround */
@@ -72,6 +76,29 @@ int main(void)
         }
     }
 
+#if defined(N4X_ASIC_NAVI44) || !defined(N4X_ASIC_NAVI48)
+    /* Navi 44 (RX 9060 XT): the DP monitor's 180 Hz timing from its DisplayID block. Expectations are what Linux amdgpu
+     * programmed on this card (research/display/debugfs: the atomic state's mode line "2560x1440": 180 719550 2560 2608
+     * 2640 2720 1440 1443 1453 1470, and the DTN log's OTG0 row v_bs 1467 v_be 27 v_se 10 vpol 1 h_bs 2672 h_be 112
+     * h_se 32 hpol 0 htot 2719 vtot 1469; link_settings 4 lanes 0x1e at 10 bpc). */
+    m = find("SINK-A", "2560x1440@180");
+    CHECK(m != NULL, "1440p180 present");
+    if (m) {
+        CHECK(m->source == DCN41_MODE_EDID_DISPLAYID, "from the DisplayID extension");
+        CHECK(m->pix_clk_100hz == 7195500u, "719.55 MHz");
+        CHECK(m->h_front == 48 && m->h_sync == 32 && m->v_front == 3 && m->v_sync == 10, "porches as Linux's mode line");
+        CHECK(m->h_pos && !m->v_pos, "+hsync -vsync");
+        CHECK(m->otg_h_total == 2719 && m->otg_v_total == 1469, "DTN htot 2719 vtot 1469");
+        CHECK(m->otg_h_blank_start == 2672 && m->otg_h_blank_end == 112, "DTN h_bs 2672 h_be 112");
+        CHECK(m->otg_v_blank_start == 1467 && m->otg_v_blank_end == 27, "DTN v_bs 1467 v_be 27");
+        CHECK(m->otg_h_sync_a_pol == 0 && m->otg_v_sync_a_pol == 1, "DTN hpol 0 vpol 1");
+        CHECK(m->phyid == 0 && m->dig == 0 && m->hpd == 1 && m->ddc == 0, "UNIPHY_A, DIGA, HPD1, AUX0 (VBIOS)");
+        CHECK(m->dp_lanes_10 == 4 && m->dp_rate_code_10 == 0x1e, "4 lanes HBR3 at 10 bpc, as link_settings");
+    }
+    m = find("SINK-A", "2560x1440@60");
+    CHECK(m != NULL && m->h_total == 2720 && m->v_total == 1481 && m->pix_clk_100hz == 2415000u,
+          "1440p60 is the CVT-RB v1 timing 2720 x 1481 at 241.5 MHz");
+#else
     /* the stage-2 first-light mode: a 1080p panel's own detailed timing, CEA 1080p60 */
     m = find("SINK-B", "1920x1080@60");
     CHECK(m != NULL, "1080p60 present");
@@ -105,6 +132,7 @@ int main(void)
         CHECK(m->hdmi_scramble_8 && m->hdmi_within_dio_8, "scrambling at 594 MHz, inside 600 MHz");
         CHECK(m->hdmi_tmds_khz_10 == 742500u && !m->hdmi_within_dio_10, "10 bpc needs 742.5 MHz: beyond DIO, FRL");
     }
+#endif
     printf("test_dcn41_modes: %d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }

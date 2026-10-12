@@ -18,7 +18,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 0.2 | Repository GitHub privato collegato (`git remote add origin …`) | ⬜ (lo predispone l'utente) |
 | 0.3 | Strumenti RE su Linux: Ghidra 12.1.2 + REA 6.4.0 (MCP `rea` + skill `reverse-engineer-anything` in Claude Code) | ✅ |
 | 0.4 | Precauzioni BIOS/dischi (piano §12.4) e SSD dedicato a macOS | ⬜ |
-| 0.5 | Dati display con la RX 9060 XT ancora primaria: EDID, log DTN per modo, stato GOP con `amdgpu` in blacklist | ⬜ |
+| 0.5 | Dati display con la RX 9060 XT ancora primaria (`research/display/`): EDID, link DP, stato atomico, DTN log a 180 Hz ✅; **manca** lo stato GOP con `amdgpu` in blacklist (serve un riavvio) | 🟨 |
 | 0.6 | VM macOS Tahoe 26.6.2 (build + test) con passthrough VFIO, seriale e gdbstub; workaround reset | ⬜ |
 | 0.7 | Traccia d'oro MMIO di `amdgpu` in VM Linux, partendo da scheda mai inizializzata | ⬜ |
 | 0.8 | KDK di 25G83 + estrazione dei binari Apple da analizzare (IOAcceleratorFamily2, IOGraphicsFamily, AppleParavirtGPU, Metal.framework dal dyld shared cache) | ⬜ |
@@ -65,9 +65,9 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 
 | # | Attività | Stato |
 |---|---|---|
-| 4.1 | Mappa connettori dal VBIOS (DP = PHY A, HDMI = PHY B/C; niente PHY D) al posto delle costanti di `navi48_disp2.h` | ⬜ |
-| 4.2 | Adozione della pipe GOP e flip su HUBP; RDNA4FB con `0x7590` per la console | ⬜ |
-| 4.3 | Modi dalle EDID dei monitor dell'utente (dati della fase 0.5) | ⬜ |
+| 4.1 | Mappa connettori dal VBIOS (`tools/vbios_display_objects.py`): DP = PHY A/AUX0/HPD1, HDMI = PHY B/HPD2 e PHY C/HPD3, niente PHY D ✅. Sostituzione delle costanti di `navi48_disp2.h`/`navi48_dmubcmd.h`/guardie: piano in `research/display/README.md` §4, dopo l'osservazione del GOP | 🟨 |
+| 4.2 | Adozione della pipe GOP e flip su HUBP; RDNA4FB con `0x7590` per la console (RDNA4FB **non è nel repository pubblico** di Cobalt64: il Makefile lo cita solo per `MacKernelSDK`, da passare con `MKSDK=`) | ⬜ |
+| 4.3 | Tabella dei modi per scheda: `ASIC=navi44 tools/dcn41/gen_modes.py` legge EDID (base, CTA, DisplayID) → `dcn41_modes_navi44.h` (5 modi fino a 180 Hz, registri OTG uguali al DTN log); `dcn41_modes.h` sceglie per profilo | ✅ |
 
 ## Fase 5 — Acceleratore e bundle Metal
 

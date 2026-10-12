@@ -1,0 +1,9 @@
+{
+ "_source": "VBIOS 113-P816G493-S05 (Sapphire 1da2:a493), displayobjectinfo v1.5, decoded by tools/vbios_display_objects.py; Linux amdgpu on the same card: DP-1 = link encoder 0 trained, HDMI-A-1, HDMI-A-2",
+ "_fields": "key = Cobalt64 sink name (AUX<line> for DP, DDC<line> for HDMI); link/phyid = UNIPHY index (A=0); hpd 1-based; ddc = I2C/AUX line; edid = file in this directory, or null when no monitor was attached",
+ "sinks": {
+  "AUX0": {"name": "SINK-A", "link": 0, "signal": "DP",   "phy": "UNIPHY_A", "phyid": 0, "dig": "DIGA", "hpd": 1, "ddc": 0, "edid": "edid-AUX0.bin"},
+  "DDC1": {"name": "SINK-B", "link": 1, "signal": "HDMI", "phy": "UNIPHY_B", "phyid": 1, "dig": "DIGB", "hpd": 2, "ddc": 1, "edid": null},
+  "DDC2": {"name": "SINK-C", "link": 2, "signal": "HDMI", "phy": "UNIPHY_C", "phyid": 2, "dig": "DIGC", "hpd": 3, "ddc": 2, "edid": null}
+ }
+}

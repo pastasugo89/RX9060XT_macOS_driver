@@ -1,0 +1,10 @@
+== output_bpc
+cat: /sys/kernel/debug/dri/1/HDMI-A-2/output_bpc: No such device
+== vrr_range
+cat: /sys/kernel/debug/dri/1/HDMI-A-2/vrr_range: No such device
+== odm_combine_segments
+cat: /sys/kernel/debug/dri/1/HDMI-A-2/odm_combine_segments: No such device
+== hdcp_sink_capability
+cat: /sys/kernel/debug/dri/1/HDMI-A-2/hdcp_sink_capability: No such device
+== internal_display
+Internal: 0

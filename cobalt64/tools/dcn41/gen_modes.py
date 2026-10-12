@@ -18,15 +18,26 @@ Inputs, all local, nothing downloaded:
     (the FRL rates), CalculateMaxVStartup (the VSTARTUP bound).
 No floating point reaches the header: every emitted number is an integer computed here.
 """
-import pathlib, re, sys
+import json, os, pathlib, re, sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import dcn41lib as L  # noqa: E402
+try:
+    import dcn41lib as L  # noqa: E402
+except ImportError:          # dcn41lib needs the unpublished m4lib (memory guard); only ROOT/SRC are used here
+    class L:  # noqa: N801
+        ROOT = pathlib.Path(__file__).resolve().parents[2]
+        SRC = ROOT / "src/dcn41"
 
-EDID_LOG = L.ROOT / "edid-capture.txt"
-OUT_H = L.SRC / "dcn41_modes.h"
-OUT_TSV = L.SRC / "dcn41_modes.tsv"
+# Board profile, as `make ASIC=...`: navi44 (RX 9060 XT, default) or navi48 (RX 9070 XT, Cobalt64's card).
+# Each board writes its own dcn41_modes_<board>.{h,tsv}; dcn41_modes.h picks one at compile time.
+BOARD = os.environ.get("ASIC", "navi44")
+if BOARD not in ("navi44", "navi48"):
+    raise SystemExit("gen_modes: ASIC must be navi44 or navi48")
+EDID_LOG = L.ROOT / "edid-capture.txt"                      # navi48: the macOS capture (not published)
+BOARD_DIR = pathlib.Path(__file__).resolve().parent / "boards" / BOARD   # navi44: connectors.json + EDID files
+OUT_H = L.SRC / f"dcn41_modes_{BOARD}.h"
+OUT_TSV = L.SRC / f"dcn41_modes_{BOARD}.tsv"
 
 # Connector layout of this card: "AtomBIOS,Connectors" =
 # "DisplayPort/ddc0/hpd1,DisplayPort/ddc1/hpd2,HDMI-A/ddc2/hpd3,HDMI-A/ddc3/hpd4" (framebuffer-pre.txt), and the
@@ -36,6 +47,12 @@ SINKS = {
     "DDC2": dict(name="SINK-B", link=2, signal="HDMI", phy="UNIPHY_C", phyid=2, dig="DIGC", hpd=3, ddc=2),
     "DDC3": dict(name="SINK-C", link=3, signal="HDMI", phy="UNIPHY_D", phyid=3, dig="DIGD", hpd=4, ddc=3),
 }
+if BOARD != "navi48":
+    # Navi 44: the board's VBIOS display object table (boards/navi44/connectors.json, from
+    # tools/vbios_display_objects.py): DP on UNIPHY_A / AUX0 / HPD1, HDMI on UNIPHY_B and UNIPHY_C, no UNIPHY_D.
+    _conn = json.loads((BOARD_DIR / "connectors.json").read_text())["sinks"]
+    SINKS = {k: {f: v[f] for f in ("name", "link", "signal", "phy", "phyid", "dig", "hpd", "ddc")}
+             for k, v in _conn.items()}
 # DP link rate codes (dc_dp_types.h): code * 27 MHz * 10 bits = kbps per lane
 DP_RATES = [("RBR", 0x06), ("HBR", 0x0A), ("HBR2", 0x14), ("HBR3", 0x1E)]
 # frl_link_bandwidth_kbps (link_validation.c)
@@ -155,7 +172,79 @@ def max_vstartup(t):
     return min(t["v_total"] - t["v_active"] - 1, 1023)
 
 
+def decode_displayid_type1(b, o):
+    """DisplayID 1.3 section 4.4.1 Type I detailed timing (20 bytes, data block tag 0x03). Every field is stored
+    minus one; pixel clock in 10 kHz units; bit 15 of the front porches is the sync polarity (1 = positive)."""
+    pc_khz = ((b[o] | (b[o + 1] << 8) | (b[o + 2] << 16)) + 1) * 10
+    w = lambda i: b[o + i] | (b[o + i + 1] << 8)  # noqa: E731
+    ha, hb, hf, hs = w(4) + 1, w(6) + 1, (w(8) & 0x7FFF) + 1, w(10) + 1
+    va, vb, vf, vs = w(12) + 1, w(14) + 1, (w(16) & 0x7FFF) + 1, w(18) + 1
+    return dict(pix_clk_khz=pc_khz, h_active=ha, h_front=hf, h_sync=hs, h_back=hb - hf - hs, h_total=ha + hb,
+                v_active=va, v_front=vf, v_sync=vs, v_back=vb - vf - vs, v_total=va + vb,
+                interlaced=bool(b[o + 3] & 0x10), h_pos=bool(w(8) & 0x8000), v_pos=bool(w(16) & 0x8000),
+                preferred=bool(b[o + 3] & 0x80))
+
+
+def edid_timings(b):
+    """Every detailed timing of an EDID with its extensions, in order: base block DTDs (E-EDID 1.4 3.10.2),
+    CTA-861 extension DTDs, DisplayID extension Type I timings. Returns (source, timing) pairs."""
+    out = []
+    for o in (54, 72, 90, 108):
+        t = decode_dtd(b, o)
+        if t:
+            out.append(("EDID_DTD", t))
+    for n in range(1, len(b) // 128):
+        ext = b[128 * n:128 * (n + 1)]
+        if ext[0] == 0x02:                                     # CTA-861
+            o = ext[2]
+            while o and o + 18 <= 127 and (ext[o] or ext[o + 1]):
+                out.append(("EDID_CTA_DTD", decode_dtd(ext, o)))
+                o += 18
+        elif ext[0] == 0x70:                                   # DisplayID (section starts at byte 1)
+            o, end = 5, 5 + ext[2]
+            while o + 3 <= end:
+                tag, length = ext[o], ext[o + 2]
+                if tag == 0 and length == 0:
+                    break                                      # padding
+                if tag == 0x03:
+                    for k in range(length // 20):
+                        out.append(("EDID_DISPLAYID", decode_displayid_type1(ext, o + 3 + 20 * k)))
+                o += 3 + length
+    return out
+
+
+def build_board():
+    """Navi 44: every detailed timing of every attached sink's EDID (boards/<board>/connectors.json). Nothing computed:
+    the table only has to contain the raster the GOP lit, whichever it is, so liveRaster can match it."""
+    modes = []
+    conn = json.loads((BOARD_DIR / "connectors.json").read_text())["sinks"]
+    for sink, c in conn.items():
+        if not c.get("edid"):
+            continue
+        b = (BOARD_DIR / c["edid"]).read_bytes()
+        seen = set()
+        for source, t in edid_timings(b):
+            if t["interlaced"]:
+                continue
+            key = (t["pix_clk_khz"], t["h_active"], t["h_total"], t["v_active"], t["v_total"])
+            if key in seen:
+                continue
+            seen.add(key)
+            label = f'{t["h_active"]}x{t["v_active"]}@{(refresh_mhz(t) + 500) // 1000}'
+            modes.append(dict(sink=sink, label=label, source=source, note="preferred" if t.get("preferred") else "",
+                              t=t, **SINKS[sink]))
+    if not modes:
+        raise SystemExit(f"gen_modes: no EDID timing in {BOARD_DIR}: refusing")
+    ctl = cvt_rb(2560, 1440, 60, 1)
+    got = (ctl["h_total"], ctl["v_total"], ctl["pix_clk_khz"])
+    if got != (2720, 1481, 241500):
+        raise SystemExit(f"gen_modes: CVT-RB v1 control failed: {got} != (2720, 1481, 241500): refusing")
+    return modes, got
+
+
 def build():
+    if BOARD != "navi48":
+        return build_board()
     e = edids()
     for k in ("EDID,AUX1", "EDID,DDC2", "EDID,DDC3", "IODisplayEDID"):
         if k not in e:
@@ -237,7 +326,9 @@ def tsv(rows_):
 
 
 def header(rows_, ctl):
-    out = [
+    if BOARD != "navi48":
+        return header_board(rows_, ctl)
+    return header_rows(rows_, ctl, [
         "/* dcn41_modes.h - GENERATED by tools/dcn41/gen_modes.py; do not edit (regenerate, then --check).",
         " *",
         " * Precomputed timings for three attached sinks, with the OTG register values",
@@ -250,10 +341,32 @@ def header(rows_, ctl):
         " */",
         "#ifndef N48_DCN41_MODES_H",
         "#define N48_DCN41_MODES_H",
+    ])
+
+
+def header_board(rows_, ctl):
+    return header_rows(rows_, ctl, [
+        f"/* dcn41_modes_{BOARD}.h - GENERATED by ASIC={BOARD} tools/dcn41/gen_modes.py; do not edit (regenerate, then --check).",
+        " *",
+        " * Every detailed timing of the monitors attached to this board (tools/dcn41/boards/" + BOARD + "/), with the",
+        " * OTG register values optc1_program_timing would write, the DCCG pixel-rate divider, the link requirement and the",
+        " * VSTARTUP bound. Sources: EDID_DTD, EDID_CTA_DTD and EDID_DISPLAYID (Type I) are the sink's own bytes, read",
+        " * under Linux; nothing is computed, so the table holds whichever raster the GOP lights. Connectors (PHY, HPD, DDC)",
+        " * from the board VBIOS display object table (tools/vbios_display_objects.py).",
+        " */",
+        f"#ifndef N4X_DCN41_MODES_{BOARD.upper()}_H",
+        f"#define N4X_DCN41_MODES_{BOARD.upper()}_H",
+        f'#define DCN41_MODES_BOARD "{BOARD}"',
+    ])
+
+
+def header_rows(rows_, ctl, top):
+    out = top + [
         "",
         "#include <stdint.h>",
         "",
-        "enum dcn41_mode_source { DCN41_MODE_EDID_DTD = 0, DCN41_MODE_EDID_CTA_DTD, DCN41_MODE_CVT_RB2 };",
+        "enum dcn41_mode_source { DCN41_MODE_EDID_DTD = 0, DCN41_MODE_EDID_CTA_DTD, DCN41_MODE_CVT_RB2"
+        + (", DCN41_MODE_EDID_DISPLAYID" if BOARD != "navi48" else "") + " };",
         "enum dcn41_mode_signal { DCN41_MODE_SIGNAL_DP = 0, DCN41_MODE_SIGNAL_HDMI };",
         "",
         "struct dcn41_mode {",
@@ -284,7 +397,7 @@ def header(rows_, ctl):
     ]
     for r in rows_:
         src = {"EDID_DTD": "DCN41_MODE_EDID_DTD", "EDID_CTA_DTD": "DCN41_MODE_EDID_CTA_DTD",
-               "CVT_RB2": "DCN41_MODE_CVT_RB2"}[r["source"]]
+               "CVT_RB2": "DCN41_MODE_CVT_RB2", "EDID_DISPLAYID": "DCN41_MODE_EDID_DISPLAYID"}[r["source"]]
         sig = "DCN41_MODE_SIGNAL_DP" if r["signal"] == "DP" else "DCN41_MODE_SIGNAL_HDMI"
         dig = "ABCDEFG".index(r["dig"][-1])
         dp = r["signal"] == "DP"
@@ -316,7 +429,7 @@ def header(rows_, ctl):
                        f'{r["hdmi10_within_dio"]},')
         out.append("    },")
     out += ["};", "", "#define DCN41_MODE_COUNT (sizeof(dcn41_modes) / sizeof(dcn41_modes[0]))", "",
-            "#endif /* N48_DCN41_MODES_H */", ""]
+            "#endif" + (" /* N48_DCN41_MODES_H */" if BOARD == "navi48" else ""), ""]
     return "\n".join(out)
 
 
