@@ -69,6 +69,13 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 4.2 | Adozione della pipe GOP e flip su HUBP; RDNA4FB con `0x7590` per la console (RDNA4FB **non è nel repository pubblico** di Cobalt64: il Makefile lo cita solo per `MacKernelSDK`, da passare con `MKSDK=`) | ⬜ |
 | 4.3 | Tabella dei modi per scheda: `ASIC=navi44 tools/dcn41/gen_modes.py` legge EDID (base, CTA, DisplayID) → `dcn41_modes_navi44.h` (5 modi fino a 180 Hz, registri OTG uguali al DTN log); `dcn41_modes.h` sceglie per profilo | ✅ |
 
+### ⏸ In sospeso (decisione del 12/10/2026)
+
+Il completamento di 0.5, 4.1 e 4.2 è **sospeso**. Serve un avvio con `amdgpu` disattivato per leggere, in sola
+lettura, quale pipe (OTG / DIG / PHY) accende il GOP sulla nostra scheda; senza quel dato non si adattano le
+guardie e le istanze di `navi48_disp2.h` / `navi48_dmubcmd.h` (piano in `research/display/README.md` §4).
+Da riprendere quando l'utente può fare il riavvio. Fatto finora: mappa connettori, dati del monitor, tabella dei modi.
+
 ## Fase 5 — Acceleratore e bundle Metal
 
 | # | Attività | Stato |
