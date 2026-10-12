@@ -57,8 +57,8 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 
 | # | Attività | Stato |
 |---|---|---|
-| 3.1 | Applicare le 9 patch Mesa su `f5cb8ee` e sostituire il canned `gfx1201` con i valori reali gfx1200 (`research/artifacts/mesa-radv/gfx1200_canned_dump.txt`) o con un `QUERY_DEVICE` dal kext | ⬜ |
-| 3.2 | Id PCI reale `0x7590`, nome "AMD Radeon RX 9060 XT" | ⬜ |
+| 3.1 | Patch Mesa 0010: profilo ASIC del backend Darwin (`ac_darwin_asic.h`, default gfx1200) e record canned gfx1200 con i valori reali; verificata con drm-shim (`tools/mesa-shim-check.sh`), test host Darwin e `-fsyntax-only` di entrambi i profili | ✅ |
+| 3.2 | Id PCI reale `0x7590`, nome "AMD Radeon RX 9060 XT" (in 0010) | ✅ |
 | 3.3 | `vulkaninfo` e sottoinsieme CTS confrontati con Linux | ⬜ |
 
 ## Fase 4 — Display (adozione del GOP)

@@ -1,0 +1,266 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: rx9060xt-metal-driver contributors <noreply@example.invalid>
+Date: Mon, 12 Oct 2026 00:00:00 +0000
+Subject: [PATCH 10/10] radv/darwin: ASIC profile, default gfx1200 (Navi 44,
+ RX 9060 XT)
+
+The Darwin backend was hardwired to the gfx1201 canned record and PCI id
+0x7550 (Navi 48). Add ac_darwin_asic.h, a compile-time profile used by
+ac_darwin_drm.c (canned record) and radv_physical_device.c (PCI identity):
+default gfx1200 / 0x7590 "AMD Radeon RX 9060 XT", -DRADV_DARWIN_NAVI48 for
+the previous gfx1201 / 0x7550 behaviour.
+
+Add a gfx1200 canned record to amdgpu_devices.c with the values read from a
+real RX 9060 XT under Linux amdgpu (2 SE, 32 CU, 8 RB, 128-bit GDDR6, 32 MiB
+MALL). cpu_accessible_vram stays at 256 MiB like the gfx1201 record: on macOS
+the kext's QueryInfo overrides the heaps, so the canned value only matters
+for RADV_DARWIN_MOCK and drm-shim.
+
+Checked on Linux: drm-shim (AMDGPU_GPU_ID=gfx1200) vulkaninfo matches the
+real card's shader-core properties; ac_darwin_drm.c and the Darwin block of
+radv_physical_device.c pass -fsyntax-only with both profiles.
+---
+  src/amd/common/amdgpu_devices.c        | 131 +++++++++++++++++++++++++++++++
+  src/amd/common/darwin/ac_darwin_asic.h |  32 ++++++++
+  src/amd/common/darwin/ac_darwin_drm.c  |   5 +-
+  src/amd/vulkan/radv_physical_device.c  |  11 +--
+  4 files changed, 171 insertions(+), 8 deletions(-)
+
+diff --git a/src/amd/common/amdgpu_devices.c b/src/amd/common/amdgpu_devices.c
+index 2899e9749e3..4f149b5623b 100644
+--- a/src/amd/common/amdgpu_devices.c
++++ b/src/amd/common/amdgpu_devices.c
+@@ -2571,6 +2571,137 @@ const struct amdgpu_device amdgpu_devices[] = {
+          },
+       },
+    },
++   {
++      /* RX 9060 XT (Navi 44), values from AMDGPU_INFO on the reference card
++       * (Linux 7.2.9, research/artifacts/mesa-radv/gfx1200_canned_dump.txt). */
++      .name = "gfx1200",
++      .radeon_family = CHIP_GFX1200,
++      .hw_ip_gfx = {
++         .hw_ip_version_major = 12,
++         .hw_ip_version_minor = 0,
++         .capabilities_flags = UINT64_C(0),
++         .ib_start_alignment = 32,
++         .ib_size_alignment = 32,
++         .available_rings = 0x1,
++         .ip_discovery_version = 0xc0000,
++      },
++      .hw_ip_compute = {
++         .hw_ip_version_major = 12,
++         .hw_ip_version_minor = 0,
++         .capabilities_flags = UINT64_C(0),
++         .ib_start_alignment = 32,
++         .ib_size_alignment = 32,
++         .available_rings = 0xf,
++         .ip_discovery_version = 0xc0000,
++      },
++      .fw_gfx_me = {
++         .ver = 3090,
++         .feature = 29,
++      },
++      .fw_gfx_pfp = {
++         .ver = 3190,
++         .feature = 29,
++      },
++      .fw_gfx_mec = {
++         .ver = 3450,
++         .feature = 29,
++      },
++      .mmr_regs = {
++         0x263e, 0xffffffff, 0x08200545,
++      },
++      .mmr_reg_count = 1,
++      .dev = {
++         .device_id = 0x7590,
++         .chip_rev = 0x01,
++         .external_rev = 0x41,
++         .pci_rev = 0xc0,
++         .family = AMDGPU_FAMILY_GC_12_0_0,
++         .num_shader_engines = 2,
++         .num_shader_arrays_per_engine = 2,
++         .gpu_counter_freq = 100000,
++         .max_engine_clock = UINT64_C(2700000),
++         .max_memory_clock = UINT64_C(1258000),
++         .cu_active_number = 32,
++         .cu_ao_mask = 0x0,
++         .cu_bitmap = {
++            { 0xff, 0xff, 0x0, 0x0, },
++            { 0xff, 0xff, 0x0, 0x0, },
++            { 0x0, 0x0, 0x0, 0x0, },
++            { 0x0, 0x0, 0x0, 0x0, },
++         },
++         .enabled_rb_pipes_mask = 0xff,
++         .num_rb_pipes = 8,
++         .num_hw_gfx_contexts = 8,
++         .pcie_gen = 4,
++         .ids_flags = UINT64_C(0x8), /* CONFORMANT_TRUNC_COORD; no GANG_SUBMIT (the kext has one GFX ring) */
++         .virtual_address_offset = UINT64_C(0x10000),
++         .virtual_address_max = UINT64_C(0x800000000000),
++         .virtual_address_alignment = 4096,
++         .pte_fragment_size = 2097152,
++         .gart_page_size = 4096,
++         .ce_ram_size = 0,
++         .vram_type = 9,
++         .vram_bit_width = 128,
++         .vce_harvest_config = 0,
++         .gc_double_offchip_lds_buf = 64,
++         .prim_buf_gpu_addr = UINT64_C(0),
++         .pos_buf_gpu_addr = UINT64_C(0),
++         .cntl_sb_buf_gpu_addr = UINT64_C(0),
++         .param_buf_gpu_addr = UINT64_C(0),
++         .prim_buf_size = 0,
++         .pos_buf_size = 0,
++         .cntl_sb_buf_size = 0,
++         .param_buf_size = 0,
++         .wave_front_size = 32,
++         .num_shader_visible_vgprs = 1536,
++         .num_cu_per_sh = 8,
++         .num_tcc_blocks = 16,
++         .gs_vgt_table_depth = 32,
++         .gs_prim_buffer_depth = 1792,
++         .max_gs_waves_per_vgt = 32,
++         .pcie_num_lanes = 16,
++         .cu_ao_bitmap = {
++            { 0x0, 0x0, 0x0, 0x0, },
++            { 0x0, 0x0, 0x0, 0x0, },
++            { 0x0, 0x0, 0x0, 0x0, },
++            { 0x0, 0x0, 0x0, 0x0, },
++         },
++         .high_va_offset = UINT64_C(0xffff800000000000),
++         .high_va_max = UINT64_C(0xffffffffffbf0000),
++         .pa_sc_tile_steering_override = 0,
++         .tcc_disabled_mask = UINT64_C(0),
++         .min_engine_clock = UINT64_C(500000),
++         .min_memory_clock = UINT64_C(96000),
++         .tcp_cache_size = 32,
++         .num_sqc_per_wgp = 1,
++         .sqc_data_cache_size = 16,
++         .sqc_inst_cache_size = 32,
++         .gl1c_cache_size = 256,
++         .gl2c_cache_size = 4096,
++         .mall_size = UINT64_C(33554432),
++         .enabled_rb_pipes_mask_hi = 0,
++      },
++      .mem = {
++         .vram = {
++            .total_heap_size = UINT64_C(17095983104),
++            .usable_heap_size = UINT64_C(17027702784),
++            .heap_usage = UINT64_C(555782144),
++            .max_allocation = UINT64_C(12770777088),
++         },
++         .cpu_accessible_vram = {
++            .total_heap_size = UINT64_C(268435456),
++            .usable_heap_size = UINT64_C(265252864),
++            .heap_usage = UINT64_C(4526080),
++            .max_allocation = UINT64_C(198939648),
++         },
++         .gtt = {
++            .total_heap_size = UINT64_C(16785289216),
++            .usable_heap_size = UINT64_C(16769716224),
++            .heap_usage = UINT64_C(15622144),
++            .max_allocation = UINT64_C(12577287168),
++         },
++      },
++   },
+    {
+       .name = "gfx1201",
+       .radeon_family = CHIP_GFX1201,
+diff --git a/src/amd/common/darwin/ac_darwin_asic.h b/src/amd/common/darwin/ac_darwin_asic.h
+new file mode 100644
+index 00000000000..6d7e89812e0
+--- /dev/null
++++ b/src/amd/common/darwin/ac_darwin_asic.h
+@@ -0,0 +1,32 @@
++/*
++ * Copyright © 2026 rx9060xt_metal_driver contributors
++ * SPDX-License-Identifier: MIT
++ *
++ * ASIC profile of the Darwin backend: must match the kext build
++ * (make ASIC=navi44|navi48). Default: Navi 44 (RX 9060 XT, gfx1200).
++ * Build with -DRADV_DARWIN_NAVI48 for Navi 48 (RX 9070 XT / R9700, gfx1201).
++ *
++ * The canned record only seeds what the kext does not report; it must be the
++ * record of the real chip, because num_shader_engines / cu_bitmap /
++ * enabled_rb_pipes_mask drive CU masks and per-SE ring sizes (a gfx1201
++ * record on a Navi 44 would describe 2 SE and 32 CU that do not exist).
++ */
++#ifndef AC_DARWIN_ASIC_H
++#define AC_DARWIN_ASIC_H
++
++#ifdef RADV_DARWIN_NAVI48
++#define ACD_CANNED_NAME     "gfx1201"
++#define ACD_PCI_DEVICE_ID   0x7550
++#define ACD_PCI_SUBVENDOR   0x1002
++#define ACD_PCI_SUBDEVICE   0x0000
++#define ACD_MARKETING_NAME  "AMD Radeon RX 9070 XT"   /* amdgpu.ids: 7550,C0 */
++#else
++#define ACD_CANNED_NAME     "gfx1200"
++#define ACD_PCI_DEVICE_ID   0x7590
++#define ACD_PCI_SUBVENDOR   0x1002
++#define ACD_PCI_SUBDEVICE   0x0000
++#define ACD_MARKETING_NAME  "AMD Radeon RX 9060 XT"   /* amdgpu.ids: 7590,C0 */
++#endif
++#define ACD_PCI_REVISION    0xC0
++
++#endif
+diff --git a/src/amd/common/darwin/ac_darwin_drm.c b/src/amd/common/darwin/ac_darwin_drm.c
+index 9e35f8434dc..296122676d0 100644
+--- a/src/amd/common/darwin/ac_darwin_drm.c
++++ b/src/amd/common/darwin/ac_darwin_drm.c
+@@ -26,8 +26,7 @@
+ #define ACD_DRM_MAJOR AC_AMDGPU_DRM_MAJOR
+ #define ACD_DRM_MINOR AC_AMDGPU_DRM_MINOR
+ 
+-/* amdgpu.ids: 7550,C0 */
+-#define ACD_MARKETING_NAME "AMD Radeon RX 9070 XT"
++#include "ac_darwin_asic.h"   /* ACD_CANNED_NAME, ACD_MARKETING_NAME */
+ 
+ #define ACD_METADATA_MAX 256
+ /* How long a submit blocks on a dependency that was never submitted (WAIT_FOR_SUBMIT). */
+@@ -257,7 +256,7 @@ acd_device_initialize(uint32_t *drm_major, uint32_t *drm_minor, acd_device_handl
+    if (!dev)
+       return -ENOMEM;
+ 
+-   dev->canned = find_canned("gfx1201");
++   dev->canned = find_canned(ACD_CANNED_NAME);
+    if (!dev->canned) {
+       free(dev);
+       return -ENODEV;
+diff --git a/src/amd/vulkan/radv_physical_device.c b/src/amd/vulkan/radv_physical_device.c
+index 1730aab48d0..cafbd38c5b4 100644
+--- a/src/amd/vulkan/radv_physical_device.c
++++ b/src/amd/vulkan/radv_physical_device.c
+@@ -2988,6 +2988,7 @@ create_drm_physical_device(struct vk_instance *vk_instance, struct _drmDevice *d
+ }
+ 
+ #ifdef HAVE_AMDGPU_DARWIN
++#include "darwin/ac_darwin_asic.h"   /* profiled PCI identity */
+ /* macOS has no DRM devices to enumerate.  The one GPU is described by the
+  * Darwin ac_drm backend, which needs the Navi48 kext's native client (or the
+  * RADV_DARWIN_MOCK=1 / RADV_DARWIN_HOST_BO=1 stand-ins).  If the backend cannot
+@@ -2999,15 +3000,15 @@ radv_darwin_enumerate_physical_devices(struct vk_instance *vk_instance)
+    struct radv_instance *instance = (struct radv_instance *)vk_instance;
+    struct radv_physical_device *pdev = NULL;
+ 
+-   /* Fake PCI identity of the RX 9070 XT (vendor 0x1002, device 0x7550). */
++   /* PCI identity of the profiled ASIC (ac_darwin_asic.h: RX 9060 XT 0x7590 by default). */
+    static char *nodes[DRM_NODE_MAX];
+    static drmPciBusInfo bus_info;
+    static drmPciDeviceInfo device_info = {
+       .vendor_id = 0x1002,
+-      .device_id = 0x7550,
+-      .subvendor_id = 0x1002,
+-      .subdevice_id = 0x0000,
+-      .revision_id = 0xC0,
++      .device_id = ACD_PCI_DEVICE_ID,
++      .subvendor_id = ACD_PCI_SUBVENDOR,
++      .subdevice_id = ACD_PCI_SUBDEVICE,
++      .revision_id = ACD_PCI_REVISION,
+    };
+    drmDevice drm_device = {
+       .nodes = nodes,
+-- 
+2.51.0
