@@ -79,6 +79,7 @@
 
 #include <string.h>
 #include "amdgpu_gfx.h"
+#include "asic_profile.h"
 #include "amdgpu_log.h"
 
 namespace amdgpu {
@@ -367,12 +368,26 @@ gfx_gpu_early_init(const DeviceContext &dev, GFXConfig &cfg)
 {
     const IPVersion gc = dev.ip.getVersion(IPBlock::GC);
 
-    // Navi 48 die geometry: 4 SE x 2 SA/SE x 4 WGP/SA x 2 CU/WGP = 64 CU,
-    // 4 RB/SE = 16 RBs, 8 hardware contexts.
-    cfg.max_shader_engines  = 4;
-    cfg.max_sh_per_se       = 2;
-    cfg.max_backends_per_se = 4;
-    cfg.max_cu_per_sh       = 8;
+    // Die geometry, as upstream: from the discovery GC table when it was
+    // read (buildDeviceContext), otherwise from the compiled ASIC profile.
+    //   Navi 44: 2 SE x 2 SA/SE x 4 WGP/SA x 2 CU/WGP = 32 CU, 4 RB/SE = 8 RBs
+    //   Navi 48: 4 SE x 2 SA/SE x 4 WGP/SA x 2 CU/WGP = 64 CU, 4 RB/SE = 16 RBs
+    if (dev.gcTopo.valid) {
+        cfg.max_shader_engines  = dev.gcTopo.numSe;
+        cfg.max_sh_per_se       = dev.gcTopo.saPerSe;
+        cfg.max_backends_per_se = dev.gcTopo.rbPerSe;
+        cfg.max_cu_per_sh       = dev.gcTopo.cuPerSh;
+    } else {
+        cfg.max_shader_engines  = N4X_ASIC_MAX_SE;
+        cfg.max_sh_per_se       = N4X_ASIC_MAX_SA_PER_SE;
+        cfg.max_backends_per_se = N4X_ASIC_MAX_RB_PER_SE;
+        cfg.max_cu_per_sh       = N4X_ASIC_MAX_CU_PER_SA;
+    }
+    // get_cu_info / setup_rb index active_cu_bitmap[4][2] (amdgpu_gfx.h):
+    // never let a malformed table walk past it.
+    if (cfg.max_shader_engines == 0 || cfg.max_shader_engines > 4) cfg.max_shader_engines = N4X_ASIC_MAX_SE;
+    if (cfg.max_sh_per_se == 0 || cfg.max_sh_per_se > 2)           cfg.max_sh_per_se = N4X_ASIC_MAX_SA_PER_SE;
+    if (cfg.max_cu_per_sh == 0 || cfg.max_cu_per_sh > 16)          cfg.max_cu_per_sh = N4X_ASIC_MAX_CU_PER_SA;
     cfg.max_hw_contexts     = 8;
 
     // gfx_v12_0.c:1643-1647 — IP_VERSION(12, 0, 0) / (12, 0, 1).
@@ -673,6 +688,21 @@ gfx_constants_init(const DeviceContext &dev, GFXConfig &cfg)
         GFX_LOG("constants_init: GRBM_CNTL@%#x %#010x -> %#010x "
                 "(READ_TIMEOUT=%#x)",
                 reg, old, v, kGRBM_CNTL_READ_TIMEOUT_VALUE);
+    }
+
+    // Golden settings (gfx_v12_0_init_golden_registers, gfx_v12_0.c:3673-3693), absent
+    // from the Navi 48 reference port: for GC 12.0.0 AND 12.0.1 Linux programs
+    // golden_settings_gc_12_0 = { DB_MEM_CONFIG mask 0x8000, value 0x8000 }
+    // (soc15_program_register_sequence: reg = (reg & ~mask) | (value & mask)).
+    // The extra golden_settings_gc_12_0_rev0 set applies only when rev_id == 0
+    // (A0 silicon); the RX 9060 XT reports rev_id 1, so it is not applied here.
+    {
+        const uint32_t reg = GC_REG(dev, DB_MEM_CONFIG);
+        const uint32_t mask = 0x00008000u, value = 0x00008000u;
+        uint32_t old = RREG32(dev, reg);
+        uint32_t v = (old & ~mask) | (value & mask);
+        if (v != old) WREG32(dev, reg, v);
+        GFX_LOG("constants_init: golden DB_MEM_CONFIG@%#x %#010x -> %#010x", reg, old, v);
     }
 
     // gfx_v12_0.c:1814-1816 — setup_rb + get_cu_info + get_tcc_info.

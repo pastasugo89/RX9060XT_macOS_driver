@@ -73,6 +73,19 @@ public:
 	bool regByteOffset(uint16_t hwId, uint8_t instance, uint8_t segment,
 	                   uint32_t regDwordOffset, uint32_t &byteOffset) const;
 
+	// GC topology from the GC table (discovery.h gc_info_v1_0 prefix, valid for
+	// v1.0..v1.3 and v2.x). Linux derives the GFX caps from these fields in
+	// amdgpu_discovery_get_gfx_info: max_shader_engines = numSe,
+	// max_sh_per_se = saPerSe, max_backends_per_se = rbPerSe,
+	// max_cu_per_sh = 2 * (wgp0PerSa + wgp1PerSa).
+	// Navi 44 (RX 9060 XT): 2 / 2 / 4 / 8.  Navi 48 (RX 9070 XT): 4 / 2 / 4 / 8.
+	struct GcInfo {
+		uint16_t verMajor, verMinor;
+		uint32_t numSe, wgp0PerSa, wgp1PerSa, rbPerSe, numGl2c, numGprs;
+		uint32_t waveSize, maxWavesPerSimd, ldsSize, saPerSe;
+	};
+	bool gcInfo(GcInfo &out) const;
+
 private:
 	const uint8_t *data { nullptr };
 	size_t size { 0 };

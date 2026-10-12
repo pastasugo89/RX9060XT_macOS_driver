@@ -34,6 +34,7 @@
 //  no allocation, no static-initialization-order dependency.
 //
 #include "../fw/fw_table.h"
+#include "asic_profile.h"
 
 namespace amdgpu {
 
@@ -44,35 +45,17 @@ namespace amdgpu {
 // aligned) + `const size_t <sym>_size`.
 extern "C" {
 
-extern const uint8_t fw_psp_14_0_3_sos[];
-extern const size_t  fw_psp_14_0_3_sos_size;
-
-extern const uint8_t fw_psp_14_0_3_ta[];
-extern const size_t  fw_psp_14_0_3_ta_size;
-
-extern const uint8_t fw_gc_12_0_1_imu[];
-extern const size_t  fw_gc_12_0_1_imu_size;
-
-extern const uint8_t fw_gc_12_0_1_pfp[];
-extern const size_t  fw_gc_12_0_1_pfp_size;
-
-extern const uint8_t fw_gc_12_0_1_me[];
-extern const size_t  fw_gc_12_0_1_me_size;
-
-extern const uint8_t fw_gc_12_0_1_mec[];
-extern const size_t  fw_gc_12_0_1_mec_size;
-
-extern const uint8_t fw_gc_12_0_1_uni_mes[];
-extern const size_t  fw_gc_12_0_1_uni_mes_size;
-
-extern const uint8_t fw_gc_12_0_1_rlc[];
-extern const size_t  fw_gc_12_0_1_rlc_size;
-
-extern const uint8_t fw_smu_14_0_3[];
-extern const size_t  fw_smu_14_0_3_size;
-
-extern const uint8_t fw_sdma_7_0_1[];
-extern const size_t  fw_sdma_7_0_1_size;
+// Symbols chosen by the compiled ASIC profile (asic_profile.h).
+extern const uint8_t N4X_FW_SYM(PSP_SOS)[];    extern const size_t N4X_FW_SIZE(PSP_SOS);
+extern const uint8_t N4X_FW_SYM(PSP_TA)[];     extern const size_t N4X_FW_SIZE(PSP_TA);
+extern const uint8_t N4X_FW_SYM(GC_IMU)[];     extern const size_t N4X_FW_SIZE(GC_IMU);
+extern const uint8_t N4X_FW_SYM(GC_PFP)[];     extern const size_t N4X_FW_SIZE(GC_PFP);
+extern const uint8_t N4X_FW_SYM(GC_ME)[];      extern const size_t N4X_FW_SIZE(GC_ME);
+extern const uint8_t N4X_FW_SYM(GC_MEC)[];     extern const size_t N4X_FW_SIZE(GC_MEC);
+extern const uint8_t N4X_FW_SYM(GC_UNI_MES)[]; extern const size_t N4X_FW_SIZE(GC_UNI_MES);
+extern const uint8_t N4X_FW_SYM(GC_RLC)[];     extern const size_t N4X_FW_SIZE(GC_RLC);
+extern const uint8_t N4X_FW_SYM(SMU)[];        extern const size_t N4X_FW_SIZE(SMU);
+extern const uint8_t N4X_FW_SYM(SDMA)[];       extern const size_t N4X_FW_SIZE(SDMA);
 
 } // extern "C"
 
@@ -91,39 +74,39 @@ bool   g_built = false;
 // single-threaded through this point, so no guard/lock is used — see
 // the file header.
 //
-// GC_MES, GC_MES1 and GC_TOC have no embedded blob on this card's
-// non-kicker psp_14_0_3/gfx1201 bring-up ladder (uni_mes supersedes the
+// GC_MES, GC_MES1 and GC_TOC have no embedded blob on either profile's
+// non-kicker bring-up ladder (Navi 44: psp_14_0_2/gfx1200; Navi 48: psp_14_0_3/gfx1201) (uni_mes supersedes the
 // legacy split MES pair; TOC is only loaded for psp_14_0_5), so those
 // rows keep data=nullptr, size=0 — see fw_table.h.
 void build_table() {
     if (g_built) return;
 
     g_table[static_cast<uint32_t>(FwId::PSP_SOS)] =
-        FwBlob{ fw_psp_14_0_3_sos, fw_psp_14_0_3_sos_size, "psp_14_0_3_sos", FwId::PSP_SOS };
+        FwBlob{ N4X_FW_SYM(PSP_SOS), N4X_FW_SIZE(PSP_SOS), N4X_FW_PSP "_sos", FwId::PSP_SOS };
     g_table[static_cast<uint32_t>(FwId::PSP_TA)] =
-        FwBlob{ fw_psp_14_0_3_ta, fw_psp_14_0_3_ta_size, "psp_14_0_3_ta", FwId::PSP_TA };
+        FwBlob{ N4X_FW_SYM(PSP_TA), N4X_FW_SIZE(PSP_TA), N4X_FW_PSP "_ta", FwId::PSP_TA };
     g_table[static_cast<uint32_t>(FwId::GC_IMU)] =
-        FwBlob{ fw_gc_12_0_1_imu, fw_gc_12_0_1_imu_size, "gc_12_0_1_imu", FwId::GC_IMU };
+        FwBlob{ N4X_FW_SYM(GC_IMU), N4X_FW_SIZE(GC_IMU), N4X_FW_GC "_imu", FwId::GC_IMU };
     g_table[static_cast<uint32_t>(FwId::GC_PFP)] =
-        FwBlob{ fw_gc_12_0_1_pfp, fw_gc_12_0_1_pfp_size, "gc_12_0_1_pfp", FwId::GC_PFP };
+        FwBlob{ N4X_FW_SYM(GC_PFP), N4X_FW_SIZE(GC_PFP), N4X_FW_GC "_pfp", FwId::GC_PFP };
     g_table[static_cast<uint32_t>(FwId::GC_ME)] =
-        FwBlob{ fw_gc_12_0_1_me, fw_gc_12_0_1_me_size, "gc_12_0_1_me", FwId::GC_ME };
+        FwBlob{ N4X_FW_SYM(GC_ME), N4X_FW_SIZE(GC_ME), N4X_FW_GC "_me", FwId::GC_ME };
     g_table[static_cast<uint32_t>(FwId::GC_MEC)] =
-        FwBlob{ fw_gc_12_0_1_mec, fw_gc_12_0_1_mec_size, "gc_12_0_1_mec", FwId::GC_MEC };
+        FwBlob{ N4X_FW_SYM(GC_MEC), N4X_FW_SIZE(GC_MEC), N4X_FW_GC "_mec", FwId::GC_MEC };
     g_table[static_cast<uint32_t>(FwId::GC_MES)] =
-        FwBlob{ nullptr, 0, "gc_12_0_1_mes", FwId::GC_MES };
+        FwBlob{ nullptr, 0, N4X_FW_GC "_mes", FwId::GC_MES };
     g_table[static_cast<uint32_t>(FwId::GC_MES1)] =
-        FwBlob{ nullptr, 0, "gc_12_0_1_mes1", FwId::GC_MES1 };
+        FwBlob{ nullptr, 0, N4X_FW_GC "_mes1", FwId::GC_MES1 };
     g_table[static_cast<uint32_t>(FwId::GC_UNI_MES)] =
-        FwBlob{ fw_gc_12_0_1_uni_mes, fw_gc_12_0_1_uni_mes_size, "gc_12_0_1_uni_mes", FwId::GC_UNI_MES };
+        FwBlob{ N4X_FW_SYM(GC_UNI_MES), N4X_FW_SIZE(GC_UNI_MES), N4X_FW_GC "_uni_mes", FwId::GC_UNI_MES };
     g_table[static_cast<uint32_t>(FwId::GC_RLC)] =
-        FwBlob{ fw_gc_12_0_1_rlc, fw_gc_12_0_1_rlc_size, "gc_12_0_1_rlc", FwId::GC_RLC };
+        FwBlob{ N4X_FW_SYM(GC_RLC), N4X_FW_SIZE(GC_RLC), N4X_FW_GC "_rlc", FwId::GC_RLC };
     g_table[static_cast<uint32_t>(FwId::GC_TOC)] =
-        FwBlob{ nullptr, 0, "gc_12_0_1_toc", FwId::GC_TOC };
+        FwBlob{ nullptr, 0, N4X_FW_GC "_toc", FwId::GC_TOC };
     g_table[static_cast<uint32_t>(FwId::SMU)] =
-        FwBlob{ fw_smu_14_0_3, fw_smu_14_0_3_size, "smu_14_0_3", FwId::SMU };
+        FwBlob{ N4X_FW_SYM(SMU), N4X_FW_SIZE(SMU), N4X_FW_SMU, FwId::SMU };
     g_table[static_cast<uint32_t>(FwId::SDMA)] =
-        FwBlob{ fw_sdma_7_0_1, fw_sdma_7_0_1_size, "sdma_7_0_1", FwId::SDMA };
+        FwBlob{ N4X_FW_SYM(SDMA), N4X_FW_SIZE(SDMA), N4X_FW_SDMA, FwId::SDMA };
 
     g_built = true;
 }

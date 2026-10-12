@@ -151,3 +151,39 @@ bool IpDiscovery::regByteOffset(uint16_t hwId, uint8_t instance, uint8_t segment
 	byteOffset = (ip.bases[segment] + regDwordOffset) * 4;
 	return true;
 }
+
+// GC table: table_list[1] of the binary header (discovery.h `enum table`:
+// IP_DISCOVERY = 0, GC = 1). The table starts with gpu_info_header
+// {u32 table_id, u16 version_major, u16 version_minor, u32 size}; the
+// gc_info_v1_0 fields follow at +12, all u32, in this order:
+// num_se, num_wgp0_per_sa, num_wgp1_per_sa, num_rb_per_se, num_gl2c, num_gprs,
+// num_max_gs_thds, gs_table_depth, gsprim_buff_depth, parameter_cache_depth,
+// double_offchip_lds_buffer, wave_size, max_waves_per_simd,
+// max_scratch_slots_per_cu, lds_size, num_sc_per_se, num_sa_per_se, ...
+bool IpDiscovery::gcInfo(GcInfo &out) const {
+	if (!valid) return false;
+	uint16_t vmajor;
+	if (!readU16(binBase + 4, vmajor)) return false;
+	size_t tableList = binBase + (vmajor >= 2 ? 16 : 12);
+	uint16_t gcOffset, gcSize;
+	if (!readU16(tableList + 8, gcOffset) || !readU16(tableList + 8 + 4, gcSize))
+		return false;
+	if (gcOffset == 0 || gcSize < 12 + 17 * 4)
+		return false;
+
+	size_t gc = binBase + gcOffset;
+	uint16_t hmaj, hmin;
+	if (!readU16(gc + 4, hmaj) || !readU16(gc + 6, hmin))
+		return false;
+	if (hmaj != 1 && hmaj != 2)
+		return false;
+
+	auto field = [&](unsigned index, uint32_t &v) { return readU32(gc + 12 + 4 * index, v); };
+	out.verMajor = hmaj;
+	out.verMinor = hmin;
+	return field(0, out.numSe) && field(1, out.wgp0PerSa) && field(2, out.wgp1PerSa) &&
+	       field(3, out.rbPerSe) && field(4, out.numGl2c) && field(5, out.numGprs) &&
+	       field(11, out.waveSize) && field(12, out.maxWavesPerSimd) && field(14, out.ldsSize) &&
+	       field(16, out.saPerSe) &&
+	       out.numSe > 0 && out.numSe <= 8 && out.saPerSe > 0 && out.saPerSe <= 4;
+}

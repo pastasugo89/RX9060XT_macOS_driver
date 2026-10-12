@@ -8,6 +8,7 @@
 #include "apple/AppleHardwareHook.hpp"
 #include "apple/pairing_policy.h"
 #include "regs.hpp"
+#include "amd/asic_profile.h"
 #include "amd/amdgpu_discovery.h"
 #include "amd/amdgpu_init.h"
 #include "amd/amdgpu_regs.h"
@@ -40,8 +41,8 @@
                                      // yields are both timed (mirrors AppleHardwareHook.cpp's n48_pol_ns)
 
 extern "C" {
-extern const uint8_t fw_psp_14_0_3_sos[];
-extern const size_t  fw_psp_14_0_3_sos_size;
+extern const uint8_t N4X_FW_SYM(PSP_SOS)[];   // psp_14_0_2_sos (Navi 44) / psp_14_0_3_sos (Navi 48)
+extern const size_t  N4X_FW_SIZE(PSP_SOS);
 }
 
 OSDefineMetaClassAndStructors(Navi48Bringup, IOService)
@@ -583,7 +584,7 @@ void Navi48Bringup::stagePSP() {
 
 	HwBridge hw(this);
 	n48::PspLoader psp(hw);
-	if (!psp.parseContainer(fw_psp_14_0_3_sos, fw_psp_14_0_3_sos_size)) {
+	if (!psp.parseContainer(N4X_FW_SYM(PSP_SOS), N4X_FW_SIZE(PSP_SOS))) {
 		N48LOG("psp-stage: embedded container failed to parse; aborting"); setProperty("PSP,Stage", "bad-container"); return;
 	}
 	setProperty("PSP,ContainerSOSVersion", static_cast<uint64_t>(psp.sosVersion()), 32);
@@ -623,6 +624,21 @@ bool Navi48Bringup::buildDeviceContext() {
 	if (fbBase == 0xFFFFFFFF) { N48LOG("dev: cannot read FB_LOCATION_BASE"); return false; }
 	dev.vramMcBase = static_cast<uint64_t>(fbBase & 0x00FFFFFF) << 24;
 	if (!amdgpu::fill_ip_base_table(ipDiscovery, dev.ip)) { N48LOG("dev: IP base table incomplete"); return false; }
+	{
+		IpDiscovery::GcInfo g {};
+		if (ipDiscovery.gcInfo(g)) {
+			dev.gcTopo.valid   = true;
+			dev.gcTopo.numSe   = g.numSe;
+			dev.gcTopo.saPerSe = g.saPerSe;
+			dev.gcTopo.rbPerSe = g.rbPerSe;
+			dev.gcTopo.cuPerSh = 2 * (g.wgp0PerSa + g.wgp1PerSa);
+			N48LOG("dev: gc_info v%u.%u: %u SE x %u SA x %u CU, %u RB/SE (%u CU total)", g.verMajor, g.verMinor,
+			       dev.gcTopo.numSe, dev.gcTopo.saPerSe, dev.gcTopo.cuPerSh, dev.gcTopo.rbPerSe,
+			       dev.gcTopo.numSe * dev.gcTopo.saPerSe * dev.gcTopo.cuPerSh);
+		} else {
+			N48LOG("dev: gc_info unreadable - GFX caps fall back to the %s profile", N4X_ASIC_NAME);
+		}
+	}
 	N48LOG("dev: context ready — MC base 0x%llx, region vram+[0x%llx, 0x%llx), GC base 0x%x MP0 base 0x%x MMHUB base 0x%x",
 	       dev.vramMcBase, dev.vramBase, dev.vramLimit, dev.ip.get(amdgpu::IPBlock::GC),
 	       dev.ip.get(amdgpu::IPBlock::MP0), dev.ip.get(amdgpu::IPBlock::MMHUB));
@@ -7332,10 +7348,14 @@ IOService *Navi48Bringup::probe(IOService *provider, SInt32 *score) {
 	if (!pci) return nullptr;
 	uint32_t vendorDevice = pci->configRead32(kIOPCIConfigVendorID);
 	uint16_t device = static_cast<uint16_t>(vendorDevice >> 16);
-	if ((vendorDevice & 0xffff) != 0x1002 || (device != 0x7550 && device != 0x7551)) {
-		N48LOG("probe: 0x%08x not Navi 48, ignoring", vendorDevice); return nullptr;
+	// The embedded firmware is per-ASIC and the PSP verifies its signatures: only the card this build's
+	// profile targets is accepted (asic_profile.h; make ASIC=navi44|navi48).
+	if ((vendorDevice & 0xffff) != 0x1002 || (device != N4X_ASIC_DEV0 && device != N4X_ASIC_DEV1)) {
+		N48LOG("probe: 0x%08x is not a %s card (this build's ASIC profile), ignoring", vendorDevice, N4X_ASIC_NAME);
+		return nullptr;
 	}
-	N48LOG("probe: Navi 48 %s (0x%04x) — bring-up enabled", device == 0x7550 ? "RX 9070/XT" : "R9700", device);
+	N48LOG("probe: %s %s (0x%04x, rev 0x%02x) — bring-up enabled", N4X_ASIC_NAME, N4X_ASIC_MARKETING(device), device,
+	       pci->configRead8(kIOPCIConfigRevisionID));
 	return this;
 }
 

@@ -49,6 +49,17 @@ struct DeviceContext {
     // --- IP register bases from on-die discovery ---
     IPBaseTable ip;
 
+    // --- GC topology from the discovery GC table (gc_info), as Linux
+    //     amdgpu_discovery_get_gfx_info. valid=false => gfx_gpu_early_init
+    //     falls back to the compiled ASIC profile (asic_profile.h). ---
+    struct GcTopology {
+        bool     valid      { false };
+        uint32_t numSe      { 0 };   // max_shader_engines
+        uint32_t saPerSe    { 0 };   // max_sh_per_se
+        uint32_t rbPerSe    { 0 };   // max_backends_per_se
+        uint32_t cuPerSh    { 0 };   // max_cu_per_sh = 2 * (wgp0 + wgp1) per SA
+    } gcTopo;
+
     // --- state flags kept for API compatibility with the reference ---
     bool psoCAlive { false };   // (sic) SOS alive
     bool smuOnline { false };

@@ -10,6 +10,23 @@ DEPLOY    := 11.0
 SDK       := $(shell xcrun --sdk macosx --show-sdk-path)
 MKSDK     := ../RDNA4FB/MacKernelSDK
 
+# ASIC profile (src/amd/asic_profile.h): navi44 (RX 9060 XT, default) or navi48 (RX 9070 XT / R9700).
+# Selects the embedded firmware set and the PCI ids in Info.plist; everything else comes from IP discovery.
+ASIC ?= navi44
+ifeq ($(ASIC),navi48)
+ASIC_DEFINE := -DN4X_ASIC_NAVI48
+PCI_MATCH   := 0x75501002 0x75511002
+FW_REQUIRED := gc_12_0_1_imu gc_12_0_1_me gc_12_0_1_mec gc_12_0_1_pfp gc_12_0_1_rlc gc_12_0_1_uni_mes \
+               psp_14_0_3_sos psp_14_0_3_ta sdma_7_0_1 smu_14_0_3
+else ifeq ($(ASIC),navi44)
+ASIC_DEFINE :=
+PCI_MATCH   := 0x75901002
+FW_REQUIRED := gc_12_0_0_imu gc_12_0_0_me gc_12_0_0_mec gc_12_0_0_pfp gc_12_0_0_rlc gc_12_0_0_uni_mes \
+               psp_14_0_2_sos psp_14_0_2_ta sdma_7_0_0 smu_14_0_2
+else
+$(error ASIC must be navi44 or navi48)
+endif
+
 BUILD := build
 KEXT  := $(BUILD)/$(PRODUCT).kext
 EXEC  := $(KEXT)/Contents/MacOS/$(PRODUCT)
@@ -24,8 +41,7 @@ FW_BINS  := $(wildcard firmware/*.bin)
 FW_SRCS  := $(patsubst firmware/%.bin,src/fw/fw_%.c,$(FW_BINS))
 # REQUIRED blobs: AMD firmware from linux-firmware, NOT in this repository (see BUILDING.md and
 # tools/fetch-firmware.sh). The kext cannot link without them, so fail early with a clear message.
-FW_REQUIRED := gc_12_0_1_imu gc_12_0_1_me gc_12_0_1_mec gc_12_0_1_pfp gc_12_0_1_rlc gc_12_0_1_uni_mes \
-               psp_14_0_3_sos psp_14_0_3_ta sdma_7_0_1 smu_14_0_3
+# FW_REQUIRED is set by the ASIC profile above.
 FW_MISSING  := $(filter-out $(patsubst firmware/%.bin,%,$(FW_BINS)),$(FW_REQUIRED))
 # Our own compute test shaders, assembled from shaders/*.s (tools/build-shader.sh) and tracked as
 # shaders/*.bin so no LLVM is needed to build the kext.
@@ -101,7 +117,7 @@ OBJS := $(patsubst %.cpp,$(BUILD)/%.o,$(CXX_SRCS)) $(patsubst %.c,$(BUILD)/%.o,$
 
 COMMON := -arch $(ARCH) -target $(ARCH)-apple-macos$(DEPLOY) -isysroot $(SDK) \
   -I$(MKSDK)/Headers -Isrc -Isrc/amd -I$(XLAT12_DIR) -I$(SHADERCACHE_DIR) -I$(DCN41_DIR) -mmacosx-version-min=$(DEPLOY) \
-  -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT \
+  -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT $(ASIC_DEFINE) \
   -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector \
   -mkernel -fapple-kext -Wall -Os -g
 CXXFLAGS := $(COMMON) -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors
@@ -180,7 +196,7 @@ $(KEXT): $(OBJS) Info.plist
 	  echo "$$bad" | sed 's/^/    /'; \
 	  rm -f $(EXEC); exit 1; \
 	fi
-	cp Info.plist $(KEXT)/Contents/Info.plist
+	sed 's/@PCI_MATCH@/$(PCI_MATCH)/' Info.plist > $(KEXT)/Contents/Info.plist
 	find $(KEXT) \( -name '.DS_Store' -o -name '._*' \) -delete
 	# xattr -cr does NOT remove com.apple.FinderInfo from the bundle ROOT, and
 	# codesign refuses any bundle carrying it ("resource fork, Finder information,

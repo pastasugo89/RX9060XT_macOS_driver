@@ -16,7 +16,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 |---|---|---|
 | 0.1 | Repository git del progetto con Cobalt64 come subtree, analisi e piano | ✅ |
 | 0.2 | Repository GitHub privato collegato (`git remote add origin …`) | ⬜ (lo predispone l'utente) |
-| 0.3 | Strumenti RE su Linux: Ghidra 12.1.2 | ✅ |
+| 0.3 | Strumenti RE su Linux: Ghidra 12.1.2 + REA 6.4.0 (MCP `rea` + skill `reverse-engineer-anything` in Claude Code) | ✅ |
 | 0.4 | Precauzioni BIOS/dischi (piano §12.4) e SSD dedicato a macOS | ⬜ |
 | 0.5 | Dati display con la RX 9060 XT ancora primaria: EDID, log DTN per modo, stato GOP con `amdgpu` in blacklist | ⬜ |
 | 0.6 | VM macOS Tahoe 26.6.2 (build + test) con passthrough VFIO, seriale e gdbstub; workaround reset | ⬜ |
@@ -29,13 +29,14 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 
 | # | Attività | File principali in `cobalt64/` | Stato |
 |---|---|---|---|
-| 1.1 | Rimuovere la "rotta Apple" (hook in AMDRadeonX6000, xlat12, shadercache, g2capture, personality Apple, AccelPeer) | `src/navi48-bringup/src/apple/`, `src/xlat12/`, `src/shadercache/`, `src/g2capture/`, `Info.plist` | ⬜ |
-| 1.2 | Profilo ASIC (idea `asic_profile` di 7000-macos): PCI id → nomi firmware, nome marketing; versioni IP solo come controllo incrociato | nuovo `src/amd/asic_profile.*`, `Navi48Bringup.cpp:7334-7338` | ⬜ |
-| 1.3 | Firmware per profilo: insieme Navi 44 (`gc_12_0_0_*`, `psp_14_0_2_*`, `smu_14_0_2`, `sdma_7_0_0`) | `Makefile:27`, `src/amd/fw_table.cpp`, `tools/fetch-firmware.sh` | ⬜ |
-| 1.4 | Caps GFX dalla tabella discovery (`gc_info`: 2 SE, 2 SA/SE, 8 CU/SA, 4 RB/SE) invece delle costanti 4 SE | `src/amd/gfx_v12_0.cpp:372-376`, `amdgpu_gfx.h` | ⬜ |
-| 1.5 | Golden `DB_MEM_CONFIG |= 0x8000` (assente in Cobalt64) | `src/amd/gfx_v12_0.cpp` | ⬜ |
-| 1.6 | Shader di self-test riassemblati per `gfx1200` | `src/navi48-bringup/shaders/*.s` | ⬜ |
-| 1.7 | Test host dei parser con i dump reali (`research/hw_dump/`) | `src/navi48-bringup/tests/` | ⬜ |
+| 1.1 | Rimuovere la "rotta Apple" — **parziale**: tolte dal plist le 3 personality che caricavano i kext AMD di Apple; il codice resta perché anche la rotta nativa usa header in `apple/` (da separare a passi) (hook in AMDRadeonX6000, xlat12, shadercache, g2capture, personality Apple, AccelPeer) | `src/navi48-bringup/src/apple/`, `src/xlat12/`, `src/shadercache/`, `src/g2capture/`, `Info.plist` | ⬜ |
+| 1.2 | Profilo ASIC a compile time (`make ASIC=navi44` default / `navi48`): firmware, ID PCI in `probe()` e nel plist | `src/amd/asic_profile.h`, `Navi48Bringup.cpp`, `Info.plist`, `Makefile` | ✅ |
+| 1.3 | Firmware per profilo: insieme Navi 44 (`gc_12_0_0_*`, `psp_14_0_2_*`, `smu_14_0_2`, `sdma_7_0_0`), sha256 verificati; `fetch-firmware.sh /usr/lib/firmware` | `Makefile`, `src/amd/fw_table.cpp`, `tools/fetch-firmware.sh` | ✅ |
+| 1.4 | Caps GFX dalla tabella discovery (`IpDiscovery::gcInfo`, come Linux) con ripiego sul profilo e limiti sugli array | `src/ipdiscovery.*`, `amdgpu_regs.h`, `gfx_v12_0.cpp` | ✅ |
+| 1.5 | Golden `DB_MEM_CONFIG |= 0x8000` (assente in Cobalt64) | `src/amd/gfx_v12_0.cpp`, `amdgpu_gfx.h` | ✅ |
+| 1.6 | Shader di self-test: verificato che il codice per gfx1200 è identico byte per byte a quello per gfx1201 (nessuna modifica necessaria) | `shaders/*.bin` | ✅ |
+| 1.7 | Test host dei parser con i dump reali: `tools/hosttests/run.sh` (discovery/gc_info) — da estendere | `tools/hosttests/` | 🟨 |
+| 1.8 | Controllo di compilazione da Linux di tutti i sorgenti del kext (MacKernelSDK + clang) | `tools/linux-check-kext.sh` | ✅ |
 
 **Uscita**: il kext compila per entrambi i profili (Navi 44 e Navi 48), test host verdi.
 

@@ -38,6 +38,8 @@ namespace amdgpu {
 // drivers/gpu/drm/amd/include/asic_reg/gc/gc_12_0_0_offset.h.
 namespace GFXRegs {
     constexpr uint32_t GRBM_CNTL        = 0x0DA0;
+    // gc_12_0_0_offset.h: regDB_MEM_CONFIG = 0x13d2 (golden settings).
+    constexpr uint32_t DB_MEM_CONFIG    = 0x13D2;
     constexpr uint32_t GRBM_GFX_CNTL    = 0x0900;
     // gc_12_0_0_offset.h: regGRBM_GFX_INDEX = 0x2200.
     constexpr uint32_t GRBM_GFX_INDEX   = 0x2200;
@@ -91,6 +93,7 @@ namespace GFXRegs {
 //
 namespace GFXRegBaseIdx {
     constexpr int GRBM_CNTL                   = 0;  // regGRBM_CNTL_BASE_IDX 0
+    constexpr int DB_MEM_CONFIG               = 0;  // regDB_MEM_CONFIG_BASE_IDX 0
     constexpr int GRBM_GFX_CNTL               = 1;  // regGRBM_GFX_CNTL_BASE_IDX 1
     constexpr int GRBM_GFX_INDEX              = 1;  // regGRBM_GFX_INDEX_BASE_IDX 1
     constexpr int SH_MEM_BASES                = 1;  // regSH_MEM_BASES_BASE_IDX 1
