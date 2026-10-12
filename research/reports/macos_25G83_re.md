@@ -77,6 +77,21 @@ Evidence REA (Ghidra 12.1.2, snapshot `research/macos/25G83/rea/pvgmetal.snapsho
 - Per il nostro bundle (`navi48metal`) la strada è la stessa: sottoclassi `MTLIOAccel*` più argomenti
   `IOAccelNewResourceArgs` coerenti con IOAcceleratorFamily2 di 25G83. È il "layout gate" della fase 5.
 
+## 4b. Come un servizio IOAccelerator aggancia il suo driver Metal (dagli Info.plist di 25G83)
+
+**Osservato:**
+- `AppleParavirtGPU` (v15.0.0, x86, PCI `0xEEEE106B`, `IOClass AppleParavirtGPUControl`) dichiara
+  `AcceleratorProperties = { IOMatchCategory = IOAccelerator, MetalPluginName = "AppleParavirtGPUMetal",
+  MetalPluginClassName = "AppleParavirtDevice", IOAccelDisplayPipeCapabilities = { DisplayPipeSupported = true,
+  TransactionsSupported = true } }`. Metal cerca il bundle per nome in `/System/Library/Extensions` e istanzia
+  quella classe, una sottoclasse di `MTLIOAccelDevice`.
+- `AMDRadeonX6000` (v7.0.1) si attacca al dispositivo PCI solo con `IOPropertyMatch = { LoadAccelerator = true }`,
+  lo stesso interruttore che Cobalt64 pubblica. Il nome del plugin Metal non è nell'Info.plist: lo imposta il kext a
+  runtime.
+- Versioni da dichiarare in `OSBundleLibraries` per 25G83: IOAcceleratorFamily2 487.4.3 (compatibile 2.0.0),
+  IOGPUFamily 130.16.4 (2.0.0), IOGraphicsFamily 600 (1.0.0b1), IOSurface 393.5.8 (1.0); i kext grafici chiedono
+  `com.apple.iokit.IOSurface` ≥ 87.0 e `com.apple.kpi.*` 9.0.0b1/16.7.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
