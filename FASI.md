@@ -35,7 +35,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 1.4 | Caps GFX dalla tabella discovery (`IpDiscovery::gcInfo`, come Linux) con ripiego sul profilo e limiti sugli array | `src/ipdiscovery.*`, `amdgpu_regs.h`, `gfx_v12_0.cpp` | ✅ |
 | 1.5 | Golden `DB_MEM_CONFIG |= 0x8000` (assente in Cobalt64) | `src/amd/gfx_v12_0.cpp`, `amdgpu_gfx.h` | ✅ |
 | 1.6 | Shader di self-test: verificato che il codice per gfx1200 è identico byte per byte a quello per gfx1201 (nessuna modifica necessaria) | `shaders/*.bin` | ✅ |
-| 1.7 | Test host dei parser con i dump reali: `tools/hosttests/run.sh` (discovery/gc_info) — da estendere | `tools/hosttests/` | 🟨 |
+| 1.7 | Test host: `tools/hosttests/run.sh` (discovery/gc_info sui dump reali) e `tools/hosttests/run-cobalt64-tests.py`, che esegue su Linux i 108 test di Cobalt64 per profilo e li confronta con `cobalt64-baseline.txt` (65 PASS su entrambi i profili; i 13 FAIL e 28 BUILD sono identici sull'albero originale d6c9aed: dipendono da file non pubblicati da Cobalt64) | `tools/hosttests/` | ✅ |
 | 1.8 | Controllo di compilazione da Linux di tutti i sorgenti del kext (MacKernelSDK + clang) | `tools/linux-check-kext.sh` | ✅ |
 
 **Uscita**: il kext compila per entrambi i profili (Navi 44 e Navi 48), test host verdi.

@@ -10,3 +10,6 @@ build/
 *.o
 *.kext/
 .DS_Store
+
+# collegamento locale ai sorgenti Linux, dove i test di Cobalt64 li cercano (re/linux-dc)
+/cobalt64/re/
