@@ -102,6 +102,24 @@ Evidence REA (Ghidra 12.1.2, snapshot `research/macos/25G83/rea/pvgmetal.snapsho
   IOGPUFamily 130.16.4 (2.0.0), IOGraphicsFamily 600 (1.0.0b1), IOSurface 393.5.8 (1.0); i kext grafici chiedono
   `com.apple.iokit.IOSurface` ≥ 87.0 e `com.apple.kpi.*` 9.0.0b1/16.7.
 
+## 4c. System KC analizzata con REA; simboli per kext
+
+- Con `REA_GHIDRA_STARTUP_TIMEOUT_MS` = 4 h e `GHIDRA_HEADLESS_MAXMEM` = 8G (non 16G: sulla macchina gira un altro
+  servizio Java dell'utente), REA/Ghidra ha caricato tutta la System KC (`ev_f43deaa1…`): 2343 segmenti,
+  245 186 procedure, 355 866 stringhe. Le sezioni di IOAcceleratorFamily2 sono al loro posto (`__text`
+  0x14582600-0x145d9a00), ma Ghidra non dà alle funzioni i nomi delle tabelle dei simboli dei singoli kext.
+- Le stringhe contengono le firme complete dei metodi (`ev_94a7387e…`), per esempio
+  `IOAccelSharedUserClient2::new_resource(IOAccelNewResourceArgs *, struct IOAccelNewResourceReturnData *, …)` e
+  `s_new_resource(IOAccelSharedUserClient2 *, void *, IOExternalMethodArguments *)`.
+- `llvm-nm` legge i simboli di ogni voce del fileset: in `research/macos/25G83/symbols/` (fuori da git) ci sono
+  IOAcceleratorFamily2 (4167 simboli, 125 vtable tra classi e MetaClass: IOAccelDevice2, IOAccelContext2,
+  IOAccelSurfaceMTL, IOAccelSubmitter2, IOAccelEventMachine2, IOAccelMemory, …), IOGPUFamily (3067),
+  IOGraphicsFamily (1590), AppleParavirtGPU (1229), AMDRadeonX6000 (4877) e la Boot KC (kernel compreso).
+
+**Non fatto:** il layout slot per slot delle vtable. Il lavoro sulle Kernel Collection oltre a questo punto è stato
+interrotto due volte durante la sessione e lasciato in sospeso, in attesa di una decisione dell'utente. Fonte più
+pulita: il KDK di 25G83, che contiene i kext già separati e con simboli.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
