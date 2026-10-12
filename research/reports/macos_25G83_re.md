@@ -120,6 +120,21 @@ Evidence REA (Ghidra 12.1.2, snapshot `research/macos/25G83/rea/pvgmetal.snapsho
 interrotto due volte durante la sessione e lasciato in sospeso, in attesa di una decisione dell'utente. Fonte più
 pulita: il KDK di 25G83, che contiene i kext già separati e con simboli.
 
+## 4d. Verifica del codice di Cobalt64 contro 25G83
+
+- `tools/native/navi48accel/Info.plist`: la personality `Navi48Accelerator` (IOMatchCategory `IOAccelerator`)
+  pubblica `MetalPluginName = Navi48Metal` e `MetalPluginClassName = Navi48Device`. È lo stesso meccanismo di
+  `AppleParavirtGPU` (§4b).
+- `tools/native/navi48metal/Navi48Device.m`: `Navi48Device : MTLIOAccelDevice`, con ingresso
+  `-initWithAcceleratorPort:` che chiama `super`, come `AppleParavirtDevice` (§4, punto 5). Cobalt64 documenta che
+  i resource pool IOAccel non ci sono (`-currentAllocatedSize`, `-newFence` vanno in crash): è coerente con il fatto
+  che nel driver Apple li crea `setupResourcePools`, che Cobalt64 non usa.
+- Librerie: navi48accel richiede IOAcceleratorFamily2 2.0.0 (25G83: 487.4.3, compatibile 2.0.0) e IOGraphicsFamily
+  1.0 (25G83: 600, compatibile 1.0.0b1); il kext di bring-up dichiara IOPCIFamily 1.0 e kpi 20.0.0. Tutte compatibili.
+
+Conclusione: il modello "accelerator + bundle Metal `MTLIOAccel*`" di Cobalt64 è confermato sui binari di 25G83, in
+modo indipendente. Per la RX 9060 XT cambiano solo il nome del prodotto e l'id del device (fase 5.3).
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
