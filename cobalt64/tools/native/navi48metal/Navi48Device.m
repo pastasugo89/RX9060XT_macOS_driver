@@ -36,6 +36,7 @@
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include "n48_spvrefl.h"
+#include "n48_asic.h"        // the board (build.sh ASIC=navi44|navi48): product name, the PCI id RADV must report
 #include "n48_heapalloc.h"
 #include "n48_plane.h"
 #include "n48_fallback_spv.h"
@@ -549,6 +550,9 @@ static BOOL n48_radv_open_once(NSError **err) {
         }
         VkPhysicalDeviceProperties pp; vkGetPhysicalDeviceProperties(N48R.pd, &pp);
         N48LOG("radv: physical device %s", pp.deviceName);
+        if (!n48m_radv_matches(pp.vendorID, pp.deviceID))   // bundle and RADV built for different boards: log it, keep going
+            N48LOG("radv: device %04x:%04x is not this bundle's board (%s, %s, 1002:%04x): rebuild RADV with the matching mesa-patches/0010 profile",
+                   pp.vendorID, pp.deviceID, N48M_PRODUCT_NAME, N48M_GFX_NAME, N48M_PCI_DEVICE);
         uint32_t nq = 0; vkGetPhysicalDeviceQueueFamilyProperties(N48R.pd, &nq, NULL);
         VkQueueFamilyProperties qf[16]; if (nq > 16) nq = 16;
         vkGetPhysicalDeviceQueueFamilyProperties(N48R.pd, &nq, qf);
@@ -5943,7 +5947,8 @@ N48_ENCODER_NOOPS
 
 // MTLGPUFamily values: n48_gate.h (N48G_FAMILY_*, n48g_supports_family).
 
-// Conservative limits, from our RADV gfx1201 vulkaninfo (~/navi48-native/mesa-mac-out/vulkaninfo-full.txt):
+// Conservative limits, from our RADV gfx1201 vulkaninfo (~/navi48-native/mesa-mac-out/vulkaninfo-full.txt); the same values hold
+// for the RX 9060 XT (gfx1200: n48_asic.h records the check against its own vulkaninfo):
 // device-local heap 16911433728 B (15.75 GiB); maxStorageBufferRange 4294967295.
 #define N48_MAX_BUFFER_LENGTH        (0x100000000ULL)   /* 4 GiB */
 #define N48_RECOMMENDED_WORKING_SET  (0x300000000ULL)   /* 12 GiB (< 15.75 GiB VRAM) */
@@ -6256,10 +6261,11 @@ static void n48_census_log(void) {
 - (BOOL)supportLazyInitialization { return N48_LAZY ? YES : NO; }
 
 // _MTLDevice -name composes vendorName/familyName/productName, skipping empty parts, joined by " "
-// (SUSPECTED from -[_MTLDevice name] at 0x7ff80f49a2f6; fallback string "Unnamed_GPU") -> "AMD Radeon RX 9070 XT".
+// (SUSPECTED from -[_MTLDevice name] at 0x7ff80f49a2f6; fallback string "Unnamed_GPU") -> "AMD Radeon " N48M_PRODUCT_NAME
+// (n48_asic.h: "RX 9060 XT" by default, "RX 9070 XT" with ASIC=navi48).
 - (NSString *)vendorName  { return @"AMD"; }
 - (NSString *)familyName  { return @"Radeon"; }
-- (NSString *)productName { return @"RX 9070 XT"; }
+- (NSString *)productName { return @N48M_PRODUCT_NAME; }
 
 // featureProfile: -[AppleParavirtDevice featureProfile] (pvm.x86 0xacc3) is `mov eax,0x2710; ret` = 10000 (CONFIRMED).
 - (NSUInteger)featureProfile { return 10000; }

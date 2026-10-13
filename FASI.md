@@ -82,7 +82,7 @@ Da riprendere quando l'utente può fare il riavvio. Fatto finora: mappa connetto
 |---|---|---|
 | 5.1 | Layout di IOAcceleratorFamily2 per 25G83. Fatto: modello `MTLIOAccel*` + ABI `IOAccelNewResourceArgs`/`IOAccelKernelCommand`/`IOAccelResourceList`, simboli e indirizzi delle 125 vtable (`research/macos/25G83/symbols/`). **Messo da parte (decisione utente 13/10/2026)**: il layout slot per slot delle vtable estratto dalle Kernel Collection, bloccato due volte dal controllo di sicurezza; da riprendere solo con il KDK (kext separati) o con un'esportazione fatta dall'utente con Ghidra | ⏸ |
 | 5.2 | Compilare `tools/native/navi48accel` e verificare i "layout gate" a runtime | ⬜ |
-| 5.3 | Bundle `navi48metal`: nome prodotto, id device, poi WindowServer. Il modello `MTLIOAccelDevice` + `MetalPluginName` di Cobalt64 è confermato sui binari di 25G83 (`research/reports/macos_25G83_re.md` §4d) | ⬜ |
+| 5.3 | Bundle `navi48metal`: profilo ASIC (`n48_asic.h`, `build.sh ASIC=navi44` default): nome "AMD Radeon RX 9060 XT", controllo che il RADV incluso riporti 1002:7590; limiti verificati sul vulkaninfo reale ✅. Da fare su macOS: build con RADV patch 0001-0010, census dei selettori (`N48M_CENSUS=1`) per l'allineamento ai protocolli Metal di 25G83, poi WindowServer | 🟨 |
 
 **Uscita**: desktop composto da WindowServer sulla RX 9060 XT.
 
