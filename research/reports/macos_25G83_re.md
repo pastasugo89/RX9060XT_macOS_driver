@@ -135,6 +135,23 @@ pulita: il KDK di 25G83, che contiene i kext già separati e con simboli.
 Conclusione: il modello "accelerator + bundle Metal `MTLIOAccel*`" di Cobalt64 è confermato sui binari di 25G83, in
 modo indipendente. Per la RX 9060 XT cambiano solo il nome del prodotto e l'id del device (fase 5.3).
 
+## 4e. Controlli di compatibilità del nostro kext con 25G83
+
+1. **Simboli del kernel.** Il kext di bring-up (`APPLE_ROUTE=0`, profilo navi44), compilato da Linux con i flag del
+   Makefile, importa **419 simboli esterni**: tutti presenti nei simboli del kernel e delle famiglie IOKit di 25G83
+   (`llvm-nm` su Boot e System KC). Senza `-fno-c++-static-destructors` comparirebbero `___cxa_atexit` e
+   `___dso_handle`, che un kext non può importare: il Makefile vero li evita già.
+2. **Resizable BAR (fase 2.5).** IOPCIFamily di 25G83 esporta solo gli ID delle capability
+   (`gIOPCIExpressCapabilityIDResizableBARSym`, `…VFResizableBAR…`); nelle sue sezioni le uniche stringhe sul tema
+   sono "ResizableBAR"/"VFResizableBAR", senza boot-arg, proprietà o messaggi di ridimensionamento. Dedotto: Tahoe non
+   ridimensiona i BAR da sé e usa le dimensioni impostate dal firmware o da OpenCore. È coerente con Cobalt64
+   (`rebar_pure.h`: un BAR sopra 1 GiB risulta di lunghezza 0 per IOPCIFamily). **Decisione per la RX 9060 XT**, che
+   sotto Linux ha BAR0 = 16 GiB: OpenCore `UEFI → Quirks → ResizeGpuBars = 10` (2^10 MiB = 1 GiB). Il kext la verifica
+   già incrociando la capability ReBAR (`kRebarMismatch`).
+3. **AGDC.** La `ConfigMap` di AppleGraphicsDevicePolicy (8.1.12) elenca 22 board-id con Config1-4/none; **MacPro7,1
+   (`Mac-27AD2F918AE68F61`) non c'è**: nessuna politica di display applicata alla nostra scheda, non serve
+   `agdpmod=pikera`. Conferma la scelta di SMBIOS del piano.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore

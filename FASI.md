@@ -49,7 +49,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 2.2 | SMU: verifica FAN_CONTROL/THROTTLERS/FW_CTF attivi prima di carichi prolungati | ⬜ |
 | 2.3 | Confronto con la traccia d'oro e con MQD/ring di `research/hw_dump/` | ⬜ |
 | 2.4 | Compute di test (`research/artifacts/compute/kernels/`) e self-test S1b (VMID 8) | ⬜ |
-| 2.5 | ReBAR: decidere la dimensione di BAR0 accettata da IOPCIFamily di Tahoe (`rebar_pure.h` limita a 1 GiB) | ⬜ |
+| 2.5 | ReBAR: Tahoe (IOPCIFamily di 25G83) non ridimensiona i BAR; decisione: OpenCore `ResizeGpuBars = 10` (BAR0 1 GiB), coerente con `rebar_pure.h` (`research/reports/macos_25G83_re.md` §4e) | ✅ |
 
 **Uscita**: stage 17 + S1b positivi su Navi 44, 20 avvii consecutivi della VM.
 
