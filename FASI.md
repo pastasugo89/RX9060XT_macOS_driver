@@ -21,7 +21,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | 0.5 | Dati display con la RX 9060 XT ancora primaria (`research/display/`): EDID, link DP, stato atomico, DTN log a 180 Hz ✅; **manca** lo stato GOP con `amdgpu` in blacklist (serve un riavvio) | 🟨 |
 | 0.6 | VM macOS Tahoe 26.6.2 (build + test) con passthrough VFIO, seriale e gdbstub; workaround reset | ⬜ |
 | 0.7 | Traccia d'oro MMIO di `amdgpu` in VM Linux, partendo da scheda mai inizializzata | ⬜ |
-| 0.8 | Installer 25G83 verificato (SHA-1) ed estratto in `research/macos/` (fuori da git): kext grafici, kernel, Boot/System KC, driver Metal paravirtuale. REA via CLI con Ghidra 12.1.2 + JDK portatile. Mancano: kext come Mach-O singoli (fuori dalle KC), cryptex RIDIFF con Metal.framework, KDK. Dettagli: `research/reports/macos_25G83_re.md` | 🟨 |
+| 0.8 | Installer 25G83 verificato (SHA-1) ed estratto in `research/macos/` (fuori da git): kext grafici, kernel, Boot/System KC, cryptex x86_64 ricostruito (dyld shared cache validato con ipsw; Metal, IOAccelerator, driver Metal AMD estratti). REA via CLI con Ghidra 12.1.2 + JDK portatile. Analisi degli interni dei kext Apple ferma (§5.1). Dettagli: `research/reports/macos_25G83_re.md` | ✅ |
 
 **Uscita**: VM macOS 26.6.2 che avvia con la scheda assegnata e log seriale; binari Apple disponibili per l'analisi.
 
@@ -66,7 +66,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | # | Attività | Stato |
 |---|---|---|
 | 4.1 | Mappa connettori dal VBIOS (`tools/vbios_display_objects.py`): DP = PHY A/AUX0/HPD1, HDMI = PHY B/HPD2 e PHY C/HPD3, niente PHY D ✅. Sostituzione delle costanti di `navi48_disp2.h`/`navi48_dmubcmd.h`/guardie: piano in `research/display/README.md` §4, dopo l'osservazione del GOP | 🟨 |
-| 4.2 | Adozione della pipe GOP e flip su HUBP; RDNA4FB con `0x7590` per la console (RDNA4FB **non è nel repository pubblico** di Cobalt64: il Makefile lo cita solo per `MacKernelSDK`, da passare con `MKSDK=`) | ⬜ |
+| 4.2 | Adozione della pipe GOP e flip su HUBP; RDNA4FB con `0x7590` per la console (RDNA4FB non è nel repository di Cobalt64 ma è un progetto separato, `somestupidgirl/RDNA4FB`, BSD-3, clonato in `research/refs/RDNA4FB`; il Makefile del kext lo usa anche per `MacKernelSDK`, da passare con `MKSDK=`) | ⬜ |
 | 4.3 | Tabella dei modi per scheda: `ASIC=navi44 tools/dcn41/gen_modes.py` legge EDID (base, CTA, DisplayID) → `dcn41_modes_navi44.h` (5 modi fino a 180 Hz, registri OTG uguali al DTN log); `dcn41_modes.h` sceglie per profilo | ✅ |
 
 ### ⏸ In sospeso (decisione del 12/10/2026)
@@ -81,7 +81,7 @@ Da riprendere quando l'utente può fare il riavvio. Fatto finora: mappa connetto
 | # | Attività | Stato |
 |---|---|---|
 | 5.1 | Layout di IOAcceleratorFamily2 per 25G83. Fatto: modello `MTLIOAccel*` + ABI `IOAccelNewResourceArgs`/`IOAccelKernelCommand`/`IOAccelResourceList`, simboli e indirizzi delle 125 vtable (`research/macos/25G83/symbols/`). **Messo da parte (decisione utente 13/10/2026)**: il layout slot per slot delle vtable estratto dalle Kernel Collection, bloccato due volte dal controllo di sicurezza; da riprendere solo con il KDK (kext separati) o con un'esportazione fatta dall'utente con Ghidra | ⏸ |
-| 5.2 | Compilare `tools/native/navi48accel` e verificare i "layout gate" a runtime | ⬜ |
+| 5.2 | Compilare `tools/native/navi48accel` e verificare i "layout gate" a runtime. Richiede le intestazioni generate da `tools/native/ioaccel-layout`, che Cobalt64 non pubblica (sono il layout delle vtable di IOAcceleratorFamily2): in attesa del KDK o di un'esportazione dell'utente | ⏸ |
 | 5.3 | Bundle `navi48metal`: profilo ASIC (`n48_asic.h`, `build.sh ASIC=navi44` default): nome "AMD Radeon RX 9060 XT", controllo che il RADV incluso riporti 1002:7590; limiti verificati sul vulkaninfo reale ✅. Da fare su macOS: build con RADV patch 0001-0010, census dei selettori (`N48M_CENSUS=1`) per l'allineamento ai protocolli Metal di 25G83, poi WindowServer | 🟨 |
 
 **Uscita**: desktop composto da WindowServer sulla RX 9060 XT.
