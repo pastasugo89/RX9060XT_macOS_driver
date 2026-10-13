@@ -213,6 +213,30 @@ autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione espli
   `minLinearTextureAlignmentForPixelFormat:`, `sparseTileSize…`), indirect command buffer e argument encoder,
   `sampleTimestamps:gpuTimestamp:`. Elenco completo: `research/macos/25G83/rea/amd_device_methods_missing.txt`.
 
+## 4i. Classi base `MTLIOAccel*` di Metal.framework 373.7 (metadati Objective-C)
+
+`ipsw class-dump` di Metal dal dyld cache (565 header, 35 classi `MTLIOAccel*`, in `research/macos/25G83/rea/classdump/metal/`).
+
+- `MTLIOAccelDevice : _MTLDevice` (25 ivar, 67 metodi). Configurazione che il driver imposta:
+  `initialKernelCommandShmemSize`, `initialSegmentListShmemSize`, `setSegmentListShmemSize:`,
+  `setComputePipelineStateCommandShmemSize:`, `setHwResourcePool:count:`, `updateResourcePoolPurgeability`;
+  gestione: `_setAcceleratorService:`, `lazyInitialize`, `newFence`/`releaseFenceIndex:`, `kickCleanupQueue`,
+  `retain/releasePeerConnection:`, `newArgumentEncoderWithLayout:`.
+- `MTLIOAccelCommandBuffer : _MTLCommandBuffer` (7 ivar, 43 metodi): **modello di invio**.
+  - **Kernel command buffer** in memoria condivisa: il driver ci scrive i propri comandi (`IOAccelKernelCommand`)
+    con `_reserveKernelCommandBufferSpace:`, `getCurrentKernelCommandBufferPointer:end:`,
+    `setCurrentKernelCommandBufferPointer:`, `growKernelCommandBuffer:`, `kernelCommandCollectTimeStamp`.
+  - **Segment list**: per ogni segmento le risorse usate (`beginSegment:`, `endCurrentSegment`, `growSegmentList`,
+    `getSegmentListPointerStart:current:end:`). Il layout esposto da `getSegmentListHeader`:
+    `IOAccelSegmentListHeader { u64; u32; u32; IOAccelSegmentResourceListHeader[] }`,
+    `IOAccelSegmentResourceListHeader { u64; u32 ×4; IOAccelSegmentResourceDescriptorGroup[] }`,
+    `IOAccelSegmentResourceDescriptorGroup { u32[6]; u64[6]; u16[6]; u16; u16 }` (6 risorse per gruppo).
+  - Invio: `commit`, `commitAndReset`, `commitEncoder`; completamento:
+    `didCompleteWithStartTime:endTime:error:`; eventi: `encodeSignalEvent:value:`, `encodeWaitForEvent:value:`.
+- Per noi: il driver Metal (bundle) riempie kernel command buffer e segment list, e il kext acceleratore li riceve da
+  IOAcceleratorFamily2 e li traduce in pacchetti PM4 per la GPU. Sono proprio questi i due buffer che il kext
+  di Cobalt64 deve interpretare.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
