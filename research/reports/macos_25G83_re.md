@@ -175,6 +175,13 @@ autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione espli
 - Estratti con `ipsw dyld extract` in `research/macos/25G83/dylibs/`: Metal (373.7), IOAccelerator (487.4.3, la stessa
   versione del kext), IOGPU (130.16.4), AMDRadeonX6000MTLDriver e AMDMTLBronzeDriver (7.1.6), AMDShared,
   libAppleParavirtCompilerPlugin.
+- **IOAccelerator.framework 487.4.3** analizzato con REA/Ghidra (`ev_38a0d871…`): 279 procedure `IOAccel*`
+  (elenco in `research/macos/25G83/rea/ioaccelfw_api.txt`, fuori da git). È l'API C con cui Metal e i driver in spazio
+  utente parlano con IOAcceleratorFamily2: device (`IOAccelDeviceCreate`, `…GetConfig64`, `…GetConnect`), shared
+  (`IOAccelSharedCreate`, `…GetConnect`, `…AllocateFenceMemory`), risorse (`IOAccelResourceCreate`,
+  `…GetGPUVirtualAddress`, `…SetPurgeable`), liste di risorse (`IOAccelResourceListInit/AddResource/Reset`), code
+  (`IOAccelCommandQueueCreateWithQoS`, `IOAccelCommandQueueSubmitCommandBuffers`) e contesti GL/video. Per noi è il
+  confine da rispettare: il kext acceleratore deve rispondere a queste chiamate come IOAcceleratorFamily2.
 - Resta da capire a cosa servono il file da 26 MB con il suo `.symbols` (un secondo cache principale, piccolo) e i
   160 MB finali dello stream. Non servono per Metal.framework.
 
