@@ -185,6 +185,34 @@ autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione espli
 - Resta da capire a cosa servono il file da 26 MB con il suo `.symbols` (un secondo cache principale, piccolo) e i
   160 MB finali dello stream. Non servono per Metal.framework.
 
+## 4h. Driver Metal AMD di Apple (AMDRadeonX6000MTLDriver 7.1.6, dal dyld cache)
+
+- REA/Ghidra (`ev_a61ae545…`): 13 283 procedure, 32 009 stringhe. Le decompilazioni dei metodi Objective-C non sono
+  affidabili su una libreria estratta dal dyld cache: gli stub verso le altre librerie (es. `objc_msgSendSuper2`)
+  risultano chiamate senza ritorno verso simboli sbagliati (`ev_b217bf20…`, `ev_acb2f2f4…`). Per la struttura si sono
+  usati i metadati Objective-C (`ipsw class-dump`, 128 header in `research/macos/25G83/rea/classdump/`, fuori da git).
+- **Classi e base di Metal.framework** (`ev_3edc1447…` e class-dump):
+  `GFXAAMD_MtlDevice : MTLIOAccelDevice` (sottoclasse `GFX10_MtlDevice`), `GFXAAMD_MtlCmdQueue : MTLIOAccelCommandQueue`,
+  `GFXAAMD_MtlCmdBuffer : MTLIOAccelCommandBuffer` (→ `GFX10_MtlCmdBuffer`), `GFXAAMD_MtlBuffer : MTLIOAccelBuffer`,
+  `GFXAAMD_MtlTexture : MTLIOAccelTexture` (→ `GFX10_MtlTexture`), `GFXAAMD_MtlHeap : MTLIOAccelHeap`,
+  `GFXAAMD_MtlBlitCmdEncoder : MTLIOAccelBlitCommandEncoder`, `GFX10_MtlRenderCmdEncoder : MTLIOAccelRenderCommandEncoder`,
+  `GFX10_MtlComputeCmdEncoder : MTLIOAccelComputeCommandEncoder`, `GFXAAMD_MtlIndirectCmdBuffer`,
+  `GFXAAMD_MtlIndirectArgumentBufferEncoder`, `GFX10_MTLAccelerationStructure`, tabelle di funzioni visibili e di
+  intersezione; pipeline, sampler e depth/stencil derivano da `_MTLRenderPipelineState`, `_MTLComputePipelineState`,
+  `_MTLSamplerState`, `_MTLDepthStencilState`.
+- **Schema a due livelli**: `GFXAAMD_*` contiene la logica comune sopra `MTLIOAccel*`, `GFX10_*` la specializza per
+  generazione. Per la RX 9060 XT il nostro bundle può seguire lo stesso schema (una base comune più una classe RDNA4).
+- **IOAccelerator.framework usato da AMD**: un sottoinsieme ridotto (`IOAccelDeviceGetConnect`, `…GetMaxResourceSize`,
+  `IOAccelSharedGetConnect`, `…SetupDirtyRing`, `IOAccelResourceList*`, `IOAccelResourceDirty*`, `…TestEvent`).
+- **Copertura del device rispetto a Cobalt64**: il device AMD dichiara 164 metodi (`GFXAAMD` + `GFX10`), il
+  `Navi48Device` di Cobalt64 ne copre 24. Il confronto è fatto per selettore con regex, quindi i metodi in categorie
+  potrebbero sfuggire. Gruppi standard mancanti, utili per la fase 5.3: aggancio al compilatore
+  (`…FunctionKeyWith…Descriptor…`, `…VariantWithCompilerOutput:…`,
+  `newRenderPipelineWithDescriptor:vertexVariant:fragmentVariant:`, `newComputePipelineWithDescriptor:variant:`),
+  capacità (`supportsRaytracing`, `supportsFunctionPointers`, `supportsDynamicLibraries`, `supportsInt64`,
+  `minLinearTextureAlignmentForPixelFormat:`, `sparseTileSize…`), indirect command buffer e argument encoder,
+  `sampleTimestamps:gpuTimestamp:`. Elenco completo: `research/macos/25G83/rea/amd_device_methods_missing.txt`.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
