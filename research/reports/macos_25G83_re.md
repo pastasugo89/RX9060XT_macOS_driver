@@ -152,6 +152,14 @@ modo indipendente. Per la RX 9060 XT cambiano solo il nome del prodotto e l'id d
    (`Mac-27AD2F918AE68F61`) non c'è**: nessuna politica di display applicata alla nostra scheda, non serve
    `agdpmod=pikera`. Conferma la scelta di SMBIOS del piano.
 
+## 4f. Fermo sull'analisi degli interni dei kext Apple (13/10/2026)
+
+Un terzo intervento del controllo di sicurezza è arrivato mentre si confrontavano i nomi dei metodi di
+AMDRadeonX6000 con quelli di IOAcceleratorFamily2. È stato fermato anche il controllo dei simboli importati da
+`navi48accel`: richiede le intestazioni generate da `ioaccel-layout`, non pubblico, cioè di fatto il layout delle vtable.
+Da qui in poi **non si analizzano gli interni dei kext Apple** (vtable, override, tabelle dei metodi) in modo
+autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione esplicita dell'utente.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
