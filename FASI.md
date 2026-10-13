@@ -80,7 +80,7 @@ Da riprendere quando l'utente può fare il riavvio. Fatto finora: mappa connetto
 
 | # | Attività | Stato |
 |---|---|---|
-| 5.1 | Layout di IOAcceleratorFamily2 per 25G83. **Iniziato**: dal driver Metal paravirtuale di Apple il modello è sottoclassi `MTLIOAccel*` di Metal.framework e ABI `IOAccelNewResourceArgs` (args da 0x80 byte), `IOAccelKernelCommand`, `IOAccelResourceList`. Mancano le vtable del kext (richiede il kext fuori dalla KC) | 🟨 |
+| 5.1 | Layout di IOAcceleratorFamily2 per 25G83. Fatto: modello `MTLIOAccel*` + ABI `IOAccelNewResourceArgs`/`IOAccelKernelCommand`/`IOAccelResourceList`, simboli e indirizzi delle 125 vtable (`research/macos/25G83/symbols/`). **Messo da parte (decisione utente 13/10/2026)**: il layout slot per slot delle vtable estratto dalle Kernel Collection, bloccato due volte dal controllo di sicurezza; da riprendere solo con il KDK (kext separati) o con un'esportazione fatta dall'utente con Ghidra | ⏸ |
 | 5.2 | Compilare `tools/native/navi48accel` e verificare i "layout gate" a runtime | ⬜ |
 | 5.3 | Bundle `navi48metal`: nome prodotto, id device, poi WindowServer. Il modello `MTLIOAccelDevice` + `MetalPluginName` di Cobalt64 è confermato sui binari di 25G83 (`research/reports/macos_25G83_re.md` §4d) | ⬜ |
 

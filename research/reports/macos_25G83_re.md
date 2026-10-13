@@ -116,7 +116,7 @@ Evidence REA (Ghidra 12.1.2, snapshot `research/macos/25G83/rea/pvgmetal.snapsho
   IOAccelSurfaceMTL, IOAccelSubmitter2, IOAccelEventMachine2, IOAccelMemory, …), IOGPUFamily (3067),
   IOGraphicsFamily (1590), AppleParavirtGPU (1229), AMDRadeonX6000 (4877) e la Boot KC (kernel compreso).
 
-**Non fatto:** il layout slot per slot delle vtable. Il lavoro sulle Kernel Collection oltre a questo punto è stato
+**Messo da parte (decisione dell'utente, 13/10/2026):** il layout slot per slot delle vtable. Il lavoro sulle Kernel Collection oltre a questo punto è stato
 interrotto due volte durante la sessione e lasciato in sospeso, in attesa di una decisione dell'utente. Fonte più
 pulita: il KDK di 25G83, che contiene i kext già separati e con simboli.
 
