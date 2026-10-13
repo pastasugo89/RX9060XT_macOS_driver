@@ -45,7 +45,7 @@ Legenda stato: ⬜ da fare · 🟨 in corso · ✅ fatto
 | # | Attività | Stato |
 |---|---|---|
 | 2.0 | Stato iniziale: se `C2PMSG_81` ≠ 0 → mode1 via SMU + `asic_init` AtomBIOS (interprete minimo) | ⬜ |
-| 2.1 | Scala `navi48-stage=1..17` su Navi 44: discovery, IH, GMC, PSP (sOS senza RAS/RL), SMU 14.0.2, IMU/RLC, CP, MES, SDMA | ⬜ |
+| 2.1 | Scala `navi48-stage=1..17` su Navi 44: discovery, IH, GMC, PSP (sOS senza RAS/RL), SMU 14.0.2, IMU/RLC, CP, MES, SDMA. Preparazione da Linux ✅ (`research/reports/navi44_kernel_checks.md`): nessun controllo di versione esclude Navi 44; parser PSP e estrattore firmware del kext PASS sui blob reali; RAS/RL assenti gestiti. Esecuzione su hardware: da fare | 🟨 |
 | 2.2 | SMU: verifica FAN_CONTROL/THROTTLERS/FW_CTF attivi prima di carichi prolungati | ⬜ |
 | 2.3 | Confronto con la traccia d'oro e con MQD/ring di `research/hw_dump/` | ⬜ |
 | 2.4 | Compute di test (`research/artifacts/compute/kernels/`) e self-test S1b (VMID 8) | ⬜ |
