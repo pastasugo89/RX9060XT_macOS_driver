@@ -160,12 +160,30 @@ AMDRadeonX6000 con quelli di IOAcceleratorFamily2. È stato fermato anche il con
 Da qui in poi **non si analizzano gli interni dei kext Apple** (vtable, override, tabelle dei metodi) in modo
 autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione esplicita dell'utente.
 
+## 4g. Cryptex x86_64: dyld shared cache ricostruito (13/10/2026)
+
+- La patch `cryptex-system-x86_64` (RIDIFF10) applica a un'immagine vuota uno stream dati di 6 188 664 275 byte
+  (sezione 2). La lunghezza è registrata nella sezione 1, e la sezione 0 contiene l'hash, la dimensione 0x96400000 e
+  le tabelle degli extent. Lo stream decompresso alterna blob grezzi e voci Apple Archive (`AA01`).
+- Non è servito ricostruire il volume APFS. I file del dyld shared cache stanno nello stream come blob grezzi, e la loro
+  dimensione si ricava dall'intestazione (offset della firma del codice più la sua dimensione). Dal quarto file in poi
+  sono contigui esattamente.
+- Risultato in `research/macos/25G83/cryptex/dsc/` (fuori da git): `dyld_shared_cache_x86_64h` (UUID
+  `F25A411F-0E2B-394F-861B-412F1A52F90D`, lo stesso del `.plist` nel cryptex) più `.01`–`.06` e `.symbols`;
+  3626 immagini. Validato con **ipsw 3.1.737** (strumento open source MIT, Linux, SHA-256 verificato, in
+  `research/ext/ipsw/`): `ipsw dyld info` legge l'intero set con i 6 sotto-cache.
+- Estratti con `ipsw dyld extract` in `research/macos/25G83/dylibs/`: Metal (373.7), IOAccelerator (487.4.3, la stessa
+  versione del kext), IOGPU (130.16.4), AMDRadeonX6000MTLDriver e AMDMTLBronzeDriver (7.1.6), AMDShared,
+  libAppleParavirtCompilerPlugin.
+- Resta da capire a cosa servono il file da 26 MB con il suo `.symbols` (un secondo cache principale, piccolo) e i
+  160 MB finali dello stream. Non servono per Metal.framework.
+
 ## 5. Bloccato o rimandato
 
 - **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
   apposito è stato interrotto durante la sessione e non è stato ripreso. Strade alternative: le
   analizza una sessione con gli strumenti MCP di REA caricati (dopo il riavvio), oppure il loader "file system" di
   Ghidra per le kernel collection, oppure il KDK di 25G83 (kext con simboli completi, da developer.apple.com).
-- **Cryptex x86_64 (RIDIFF10)**: intestazione e sezioni identificate (offset a 0x1e/0x26/0x2e; sezione 0 pbzx da
+- **Cryptex x86_64 (RIDIFF10)**: RISOLTO, vedi §4g. Storico: intestazione e sezioni identificate (offset a 0x1e/0x26/0x2e; sezione 0 pbzx da
   1 317 571 byte di metadati, sezione 1 da 16 byte, sezione 2 pbzx con 5902 blocchi, 6,19 GB decompressi). Lo
   strumento `ipsw` applica queste patch solo su macOS. Serve per Metal.framework e i driver Metal AMD.
