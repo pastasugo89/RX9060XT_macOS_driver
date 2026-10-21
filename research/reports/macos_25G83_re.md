@@ -4,6 +4,12 @@ Data: 12/10/2026. Fonte: `InstallAssistant.pkg` scaricato con gibMacOS
 (`research/ext/gibMacOS/macOS Downloads/publicrelease/140-93587 - 26.6.2 macOS Tahoe (25G83)/`).
 I binari Apple estratti stanno in `research/macos/` (escluso da git, mai ridistribuiti; uso per interoperabilità).
 
+Aggiornamento 13/10/2026: indagine ripresa su richiesta esplicita dell'utente con MCP REA disponibile.
+Risultati nuovi in [ioaccelerator_abi_re.md](ioaccelerator_abi_re.md),
+[ioaccel_vtable_inventory.md](ioaccel_vtable_inventory.md) e
+[metal_selector_audit.md](metal_selector_audit.md). Le note di fermo sottostanti descrivono
+la sessione precedente; il generatore C++ completo resta da ricostruire.
+
 ## 1. Integrità e struttura dell'installer
 
 | Strato | Formato | Verifica |
@@ -148,17 +154,23 @@ modo indipendente. Per la RX 9060 XT cambiano solo il nome del prodotto e l'id d
    (`rebar_pure.h`: un BAR sopra 1 GiB risulta di lunghezza 0 per IOPCIFamily). **Decisione per la RX 9060 XT**, che
    sotto Linux ha BAR0 = 16 GiB: OpenCore `UEFI → Quirks → ResizeGpuBars = 10` (2^10 MiB = 1 GiB). Il kext la verifica
    già incrociando la capability ReBAR (`kRebarMismatch`).
+   **Aggiornamento hardware20/10:** la precedente scelta1GiB non basta nella VM: BAR0 a0x800000000
+   manca in IOPCIFamily. Riduzione host VFIO a256MiB, con ResizeGpuBars=8: BAR0 guest0x90000000
+   viene pubblicato correttamente, latch concorde e tre aperture check passano. Non è ancora isolato
+   il contributo della dimensione rispetto al posizionamento sotto4GiB. Dettagli: `navi44_bringup_progress.md`.
 3. **AGDC.** La `ConfigMap` di AppleGraphicsDevicePolicy (8.1.12) elenca 22 board-id con Config1-4/none; **MacPro7,1
    (`Mac-27AD2F918AE68F61`) non c'è**: nessuna politica di display applicata alla nostra scheda, non serve
    `agdpmod=pikera`. Conferma la scelta di SMBIOS del piano.
 
-## 4f. Fermo sull'analisi degli interni dei kext Apple (13/10/2026)
+## 4f. Fermo nella sessione precedente (13/10/2026); inventario ripreso
 
 Un terzo intervento del controllo di sicurezza è arrivato mentre si confrontavano i nomi dei metodi di
 AMDRadeonX6000 con quelli di IOAcceleratorFamily2. È stato fermato anche il controllo dei simboli importati da
 `navi48accel`: richiede le intestazioni generate da `ioaccel-layout`, non pubblico, cioè di fatto il layout delle vtable.
-Da qui in poi **non si analizzano gli interni dei kext Apple** (vtable, override, tabelle dei metodi) in modo
-autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione esplicita dell'utente.
+La sessione precedente aveva quindi sospeso questo filone fino al KDK o a una decisione esplicita dell'utente.
+La nuova richiesta dell'utente di caricare REA e studiare ciò che manca ha ripreso l'indagine: un parser statico
+legge direttamente le KC locali e ha recuperato tutte le vtable richieste dall'acceleratore, senza estrarre
+o eseguire i kext. Vedi [inventario](ioaccel_vtable_inventory.md). Il generatore degli header resta incompleto.
 
 ## 4g. Cryptex x86_64: dyld shared cache ricostruito (13/10/2026)
 
@@ -206,7 +218,10 @@ autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione espli
   `IOAccelSharedGetConnect`, `…SetupDirtyRing`, `IOAccelResourceList*`, `IOAccelResourceDirty*`, `…TestEvent`).
 - **Copertura del device rispetto a Cobalt64**: il device AMD dichiara 164 metodi (`GFXAAMD` + `GFX10`), il
   `Navi48Device` di Cobalt64 ne copre 24. Il confronto è fatto per selettore con regex, quindi i metodi in categorie
-  potrebbero sfuggire. Gruppi standard mancanti, utili per la fase 5.3: aggancio al compilatore
+  potrebbero sfuggire. **Questo conteggio storico misura gli override, non le API mancanti**: il nuovo audit
+  conta 162 dichiarazioni esplicite AMD e 23 override comuni, e 65 dei 139 selettori senza override sono già
+  dichiarati dalle basi. La presenza di una dichiarazione non prova che il metodo funzioni col backend nativo.
+  Vedi [audit riproducibile](metal_selector_audit.md). Gruppi da verificare per la fase 5.3: aggancio al compilatore
   (`…FunctionKeyWith…Descriptor…`, `…VariantWithCompilerOutput:…`,
   `newRenderPipelineWithDescriptor:vertexVariant:fragmentVariant:`, `newComputePipelineWithDescriptor:variant:`),
   capacità (`supportsRaytracing`, `supportsFunctionPointers`, `supportsDynamicLibraries`, `supportsInt64`,
@@ -233,16 +248,18 @@ autonomo. Ciò che resta di questo filone passa dal KDK o da una decisione espli
     `IOAccelSegmentResourceDescriptorGroup { u32[6]; u64[6]; u16[6]; u16; u16 }` (6 risorse per gruppo).
   - Invio: `commit`, `commitAndReset`, `commitEncoder`; completamento:
     `didCompleteWithStartTime:endTime:error:`; eventi: `encodeSignalEvent:value:`, `encodeWaitForEvent:value:`.
-- Per noi: il driver Metal (bundle) riempie kernel command buffer e segment list, e il kext acceleratore li riceve da
-  IOAcceleratorFamily2 e li traduce in pacchetti PM4 per la GPU. Sono proprio questi i due buffer che il kext
-  di Cobalt64 deve interpretare.
+- **Confine del modello:** questi kernel command buffer e segment list descrivono i driver Apple che usano
+  `MTLIOAccelCommandBuffer`. Il bundle nativo corrente usa invece `N48CommandBuffer : _MTLCommandBuffer` e
+  `N48CommandQueue : _MTLCommandQueue`, inviando tramite `vkQueueSubmit` → RADV → N48N. La famiglia IOAccel
+  resta necessaria per inizializzare il device e per il display; il formato di submission Apple non va assunto
+  come formato render del bundle nativo. Vedi [ABI REA](ioaccelerator_abi_re.md) e [audit](metal_selector_audit.md).
 
 ## 5. Bloccato o rimandato
 
-- **Kext dentro le KC**: per analizzarli con REA servono come Mach-O singoli. Il tentativo di scrivere un estrattore
-  apposito è stato interrotto durante la sessione e non è stato ripreso. Strade alternative: le
-  analizza una sessione con gli strumenti MCP di REA caricati (dopo il riavvio), oppure il loader "file system" di
-  Ghidra per le kernel collection, oppure il KDK di 25G83 (kext con simboli completi, da developer.apple.com).
+- **Kext dentro le KC**: l'inventario delle 13 vtable dell'acceleratore è ora recuperato direttamente dalle KC
+  con `tools/kc_vtable_inventory.py` (2720 slot). La decompilazione mirata dei singoli kext e il generatore C++
+  completo restano da affrontare: dimensioni delle classi, firme e forwarder non sono risolti dall'inventario.
+  Il KDK o il loader fileset di Ghidra restano alternative per questi passi successivi.
 - **Cryptex x86_64 (RIDIFF10)**: RISOLTO, vedi §4g. Storico: intestazione e sezioni identificate (offset a 0x1e/0x26/0x2e; sezione 0 pbzx da
   1 317 571 byte di metadati, sezione 1 da 16 byte, sezione 2 pbzx con 5902 blocchi, 6,19 GB decompressi). Lo
   strumento `ipsw` applica queste patch solo su macOS. Serve per Metal.framework e i driver Metal AMD.

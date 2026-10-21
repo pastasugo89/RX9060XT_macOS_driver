@@ -10,7 +10,7 @@
   C  the generated header is fresh (regenerated into a temp dir == the committed one) and check_layout.py (test subclasses of the 9 family classes
      against the KC vtables: slot count, slot order, exact symbols) still says MATCH.
 Usage: gate_link.py <linked kext binary> <object file>"""
-import os, re, subprocess, sys, tempfile, hashlib
+import os, re, shutil, subprocess, sys, tempfile, hashlib
 from common import *
 import kextimg
 import exports
@@ -62,8 +62,11 @@ def gate_b(k):
 
 def gate_c():
     problems = []
+    # upstream gen_header.py writes to $C64_LAYOUT_OUT and reads model.json from there (it does not know N48_GEN_OUT):
+    # regenerate into a temp dir that holds a copy of model.json, so the committed generated/ is never touched
     tmp = tempfile.mkdtemp(prefix='n48gen')
-    env = dict(os.environ, N48_GEN_OUT=tmp)
+    shutil.copy(os.path.join(LAYOUT, 'generated', 'model.json'), tmp)
+    env = dict(os.environ, C64_LAYOUT_OUT=tmp)
     r = subprocess.run([sys.executable, os.path.join(LAYOUT, 'gen_header.py')], env=env, capture_output=True, text=True)
     if r.returncode:
         problems.append('gen_header.py failed: ' + r.stderr[-300:])
@@ -71,7 +74,7 @@ def gate_c():
         a = open(os.path.join(tmp, 'IOAccelFamily2_decl.h'), 'rb').read()
         b = open(os.path.join(LAYOUT, 'generated', 'IOAccelFamily2_decl.h'), 'rb').read()
         if a != b:
-            problems.append('generated/IOAccelFamily2_decl.h is STALE (regenerating gives a different file): run tools/native/ioaccel-layout/gen_header.py')
+            problems.append('generated/IOAccelFamily2_decl.h is STALE (regenerating gives a different file): run tools/ioaccel-layout/gen_header.py')
         else:
             print('  C generated header fresh: sha256 %s' % hashlib.sha256(a).hexdigest()[:16])
     cl = subprocess.run([sys.executable, os.path.join(LAYOUT, 'check_layout.py')], capture_output=True, text=True)

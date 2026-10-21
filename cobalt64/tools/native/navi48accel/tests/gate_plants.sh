@@ -12,21 +12,21 @@ trap 'rm -rf "$SCR"' EXIT
 escaped=0; total=0
 FIRST=${1:-0}; LAST=${2:-9999}
 A=tools/native/navi48accel
-L=tools/native/ioaccel-layout
+L=tools/ioaccel-layout
 
 fresh() {
   rm -rf "$SCR"; mkdir -p "$SCR/tools/native" "$SCR/src"
   rsync -a --exclude build "$HERE/" "$SCR/$A/"
-  rsync -a --exclude build --exclude vtables "$ROOT/$L/" "$SCR/$L/"
+  rsync -aL --exclude build --exclude vtables "$ROOT/$L/" "$SCR/$L/"
   ln -s "$ROOT/src/RDNA4FB" "$SCR/src/RDNA4FB"
 }
 run_make() {   # -> 0 if make succeeded (gates passed), 1 if it failed
-  (cd "$SCR/$A" && make > "$SCR/make.log" 2>&1)
+  (cd "$SCR/$A" && C64_LAYOUT_OUT="$SCR/$L/generated" make MKSDK="${MKSDK:?set MKSDK}" > "$SCR/make.log" 2>&1)
 }
 twin() {       # the host twin on the planted binary, if it linked
   local exe="$SCR/$A/build/Navi48Accel.kext/Contents/MacOS/Navi48Accel"
   [ -f "$exe" ] || { echo "no binary"; return 9; }
-  (cd "$SCR/$A" && python3 gates/layout_gate_host.py "$exe" 2>&1 | tail -1)
+  (cd "$SCR/$A" && C64_LAYOUT_OUT="$SCR/$L/generated" python3 gates/layout_gate_host.py "$exe" 2>&1 | tail -1)
 }
 plant() {   # plant <id> <file relative to the scratch root> <description> <old1> <new1> ...
   local id="$1" file="$2" desc="$3" want_twin="$4"; shift 4

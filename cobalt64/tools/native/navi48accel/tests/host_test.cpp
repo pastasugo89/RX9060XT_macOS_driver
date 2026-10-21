@@ -509,9 +509,9 @@ static void a8_framebuffer(const std::string &root) {
     expect(decl.find("isConsoleDevice") == std::string::npos && src.find("Navi48Framebuffer::isConsoleDevice") == std::string::npos, "isConsoleDevice is NOT overridden (the base returns 0)");
     for (const char *t : { "registerForInterruptType", "unregisterInterrupt", "setInterruptState", "getNotificationSemaphore" }) expect(decl.find(t) == std::string::npos && src.find(std::string("Navi48Framebuffer::") + t) == std::string::npos, (std::string("the interrupts are super's: ") + t).c_str());
     expect(decl.find("virtual") == std::string::npos, "the leaf declares no new virtual");
-    // the slot numbers, against the KC's IOFramebuffer vtable listing (ioaccel-layout/vtables/IOFramebuffer.tsv: idx, ..., demangled)
-    { std::string tsv = slurp(root + "/../ioaccel-layout/vtables/IOFramebuffer.tsv"); if (tsv.empty()) tsv = slurp(root + "/ioaccel/IOFramebuffer.tsv");     // the plant scratch tree carries a copy
-      if (tsv.empty()) std::printf("NOTE: IOFramebuffer.tsv not readable under %s/../ioaccel-layout\n", root.c_str());
+    // the slot numbers, against the KC's IOFramebuffer vtable listing (ioaccel-layout/generated/vtables/IOFramebuffer.tsv: idx, ..., demangled)
+    { std::string tsv = slurp(root + "/../../ioaccel-layout/generated/vtables/IOFramebuffer.tsv"); if (tsv.empty()) tsv = slurp(root + "/ioaccel/IOFramebuffer.tsv");     // the plant scratch tree carries a copy
+      if (tsv.empty()) std::printf("NOTE: IOFramebuffer.tsv not readable under %s/../../ioaccel-layout/generated\n", root.c_str());
       else {
         std::map<int, std::pair<std::string, bool>> row; std::istringstream is(tsv); std::string ln;
         while (std::getline(is, ln)) { if (ln.empty() || ln[0] == '#') continue; std::vector<std::string> f; size_t a = 0; while (true) { const size_t t = ln.find('\t', a); f.push_back(ln.substr(a, t == std::string::npos ? std::string::npos : t - a)); if (t == std::string::npos) break; a = t + 1; } if (f.size() >= 7) row[atoi(f[0].c_str())] = { f[6], f[3] == "PURE" }; }

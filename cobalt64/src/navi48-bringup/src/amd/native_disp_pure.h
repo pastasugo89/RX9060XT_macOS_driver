@@ -4,7 +4,7 @@
 //  (tests/native_disp_plant.sh).
 //
 //  Design: an internal design note, section 3.4 (the aux alternative: Navi48DisplayPipe in the aux kext 0.0.3) and the "11h.1 RE facts" section, which
-//  CORRECTS the memo and is binding where they differ. Layout facts come ONLY from that note, the memo, tools/native/ioaccel-layout (summary.md and the
+//  CORRECTS the memo and is binding where they differ. Layout facts come ONLY from that note, the memo, tools/ioaccel-layout (summary.md and the
 //  vtables) and the repo's own pure headers; nothing here was re-derived from an Apple binary. Every offset below is a NAMED CONSTANT with its source.
 //
 //  Everything is behind boot-arg navi48-metal-disp=1 (latched once, at the first use). OFF = 0.0.612: the ops table the bring-up kext publishes is the

@@ -1,6 +1,6 @@
 import json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-LAYOUT = os.path.abspath(os.path.join(HERE, '../../ioaccel-layout'))
+LAYOUT = os.path.abspath(os.path.join(HERE, '../../../ioaccel-layout'))
 sys.path.insert(0, LAYOUT)
 sys.path.insert(0, HERE)
 from leaves import LEAVES, OSDEFINE_SLOTS, TRAMP, HAND, EXPECT_CLASSES, EXPECT_SLOTS, NEGATIVE_CLASS, FB_LEAF, FB_EXTRA, FB_PURE

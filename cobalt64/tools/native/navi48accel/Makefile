@@ -8,7 +8,9 @@ ARCH    := x86_64
 DEPLOY  := 11.0
 SDK     := $(shell xcrun --sdk macosx --show-sdk-path)
 MKSDK   := ../../../src/RDNA4FB/MacKernelSDK
-LAYOUT  := ../ioaccel-layout
+# check_layout.py (gates/gate_link.py) needs the same SDK as the compile (no trailing comment: make keeps its spaces)
+export C64_MKSDK := $(MKSDK)
+LAYOUT  := ../../ioaccel-layout
 BUILD   := build
 KEXT    := $(BUILD)/$(PRODUCT).kext
 EXEC    := $(KEXT)/Contents/MacOS/$(PRODUCT)

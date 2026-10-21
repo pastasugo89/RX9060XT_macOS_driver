@@ -2,7 +2,7 @@
 #   all       the host test (fast) - BRING_ROOT=<bring-up tree root> compares the two Navi48MetalOps.h copies
 #   plants    the planted breaks of the host test (about 1 minute)
 #   gates     the planted breaks of the link gates A/B/C and of the host twin (about 5 minutes)
-BRING_ROOT ?= ../../..
+BRING_ROOT ?= $(abspath ../../../..)   # the cobalt64/ root, absolute: 'all' cds to ../ and 'plants' runs in a scratch tree, so a relative default resolved differently in each
 ROOT := ..
 all:
 	clang++ -std=c++17 -Wall -Wextra -Werror -O1 -fsanitize=address,undefined -fno-sanitize-recover=all -I $(ROOT)/src $(ROOT)/tests/host_test.cpp -o /tmp/n48accel_host

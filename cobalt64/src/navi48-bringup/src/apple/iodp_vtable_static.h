@@ -1,4 +1,4 @@
-// iodp_vtable_static.h - GENERATED (0.0.613, #11 step 11h.2) from tools/native/ioaccel-layout/vtables/IOAccelDisplayPipe.tsv (sha256 prefix adc37edf76f1a879).
+// iodp_vtable_static.h - GENERATED (0.0.613, #11 step 11h.2) from tools/ioaccel-layout/generated/vtables/IOAccelDisplayPipe.tsv (sha256 prefix adc37edf76f1a879).
 // __ZTV18IOAccelDisplayPipe (IOAcceleratorFamily2, tahoe 26.6.2 x86_64): 306 slots. level 1 = an IOAcceleratorFamily2 (System KC) address, slid by the
 // family slide; level 0 = a kernel (Boot KC) address, slid by the kernel slide. tests/native_disp_test.cpp re-reads the TSV and compares every row.
 // Regenerate: see the awk line in the 0.0.613 report; never edit by hand.

@@ -16,7 +16,7 @@ fresh() {
   cp -R "$HERE/src" "$SCR/src"; cp -R "$HERE/gates" "$SCR/gates"; mkdir -p "$SCR/build/gen"; cp "$HERE/build/gen/n48_tramp.inc" "$SCR/build/gen/" 2>/dev/null
   cp "$HERE/Info.plist" "$HERE/Makefile" "$SCR/"
   cp "$HERE/tests/host_test.cpp" "$SCR/tests/"
-  cp "$HERE/INSTALL.md" "$SCR/"; mkdir -p "$SCR/ioaccel"; cp "$HERE/../ioaccel-layout/vtables/IOFramebuffer.tsv" "$SCR/ioaccel/"     # aux 0.0.4: the INSTALL.md pins and the KC vtable listing the framebuffer tests read
+  cp "$HERE/INSTALL.md" "$SCR/"; mkdir -p "$SCR/ioaccel"; cp "$HERE/../../ioaccel-layout/generated/vtables/IOFramebuffer.tsv" "$SCR/ioaccel/"     # aux 0.0.4: the INSTALL.md pins and the KC vtable listing the framebuffer tests read
 }
 build_run() {
   local out
