@@ -27,6 +27,7 @@
 #pragma once
 #include <stdint.h>
 #include "../Navi48NativeABI.h"
+#include "navi48_disp_profile.h"   // the live DP / DIG indices and their absolute dwords per ASIC (Navi 48 values unchanged)
 #include "navi48_modetrial_tables.h"
 #include "navi48_scanout_pure.h"
 #include "../amd/smu_dal_pure.h"
@@ -38,9 +39,9 @@ using tab::kCap; using tab::kCapN;
 // ---- the read-only witnesses (absolute BAR5 dwords; census s2d0-census-1 read every one; none is in kCap, so none is ever written) ----------------------------------------
 constexpr uint32_t kRegPixelRateCntl = 0x140u;     // OTG0_PIXEL_RATE_CNTL: seg1 0xc0 + 0x80 (scanQuery reads the same dword). DP_DTO0_ENABLE bit 4, DIO_FIFO_ERROR 15:14, DIO_ERROR_COUNT 27:16
 constexpr uint32_t kRegDpStream[4] = { 0x55E2u, 0x5706u, 0x582Au, 0x594Eu };   // DPn_DP_VID_STREAM_CNTL: seg2 0x34c0 + 0x2122 / 0x2246 / 0x236a / 0x248e. bit 0 enable, bit 16 status
-constexpr uint32_t kRegDp1Steer = 0x5707u;         // DP1_DP_STEER_FIFO: seg2 0x34c0 + 0x2247; bit 4 overflow flag
-constexpr uint32_t kRegDigFifoCtrl0 = 0x567Fu;     // DIG1_DIG_FIFO_CTRL0 (read only): bits 29:28 are the DIG FIFO error flags
-constexpr uint32_t kLitDp = 1u;                    // the census: DP1 is the live stream (DP0/2/3 read M 0, MSA 0)
+constexpr uint32_t kRegDp1Steer = n4xdisp::dpSteerAbs(n4xdisp::kLitDp);   // the live DP_STEER_FIFO (DP1 on Navi 48 = 0x5707; DP0 on Navi 44); bit 4 overflow flag
+constexpr uint32_t kRegDigFifoCtrl0 = n4xdisp::digFifoCtrl0Abs(n4xdisp::kLitDig);   // the live DIG_FIFO_CTRL0 (read only; DIG1 on Navi 48 = 0x567F): bits 29:28 are the DIG FIFO error flags
+constexpr uint32_t kLitDp = n4xdisp::kLitDp;        // the census: DP1 is the live stream on Navi 48 (DP0/2/3 read M 0, MSA 0); DP0 on Navi 44
 constexpr uint32_t kFifoErrMask = 0x0000C000u, kErrCountMask = 0x0FFF0000u, kDtoEnableBit = 0x10u;
 constexpr uint32_t fifo_err(uint32_t prc) { return (prc & kFifoErrMask) >> 14; }
 constexpr uint32_t err_count(uint32_t prc) { return (prc & kErrCountMask) >> 16; }
@@ -59,8 +60,13 @@ constexpr uint32_t kRegMasterLock = 0x5049u;       // OTG0_OTG_MASTER_UPDATE_LOC
 constexpr uint32_t kRegGlobalCtrl2 = 0x5050u;      // OTG0_OTG_GLOBAL_CONTROL2: MASTER_UPDATE_LOCK_SEL b27:25
 constexpr uint32_t kRegPipeUpd = 0x505Eu;          // OTG0_OTG_PIPE_UPDATE_STATUS: DC_REG_UPDATE_PENDING b4
 constexpr uint32_t kRegStatusPos = 0x500Au;        // OTG0_OTG_STATUS_POSITION: VERT_COUNT b14:0
-constexpr uint32_t kRegDp1Vid = 0x5706u;           // DP1_DP_VID_STREAM_CNTL (the same dword as kRegDpStream[kLitDp]): ENABLE b0, DIS_DEFER b9:8, STATUS b16
-static_assert(kRegDpStream[kLitDp] == kRegDp1Vid && kRegDp1Steer == 0x5707u && kRegDigFifoCtrl0 == 0x567Fu, "the resync registers are DP1 and DIG1 (never DP0 / DP2 / DP3)");
+constexpr uint32_t kRegDp1Vid = n4xdisp::dpVidAbs(n4xdisp::kLitDp);   // DPn_DP_VID_STREAM_CNTL of the live stream (the same dword as kRegDpStream[kLitDp]): ENABLE b0, DIS_DEFER b9:8, STATUS b16
+static_assert(kRegDpStream[kLitDp] == kRegDp1Vid && kLitDp < 4u, "the resync registers belong to the live DP link (never another link)");
+#if defined(N4X_ASIC_NAVI48)
+static_assert(kRegDp1Steer == 0x5707u && kRegDigFifoCtrl0 == 0x567Fu && kRegDp1Vid == 0x5706u && kLitDp == 1u, "Navi 48: the resync registers are DP1 and DIG1 (never DP0 / DP2 / DP3)");
+#else
+static_assert(kRegDp1Steer == 0x55E3u && kRegDigFifoCtrl0 == 0x555Bu && kRegDp1Vid == 0x55E2u && kLitDp == 0u, "Navi 44: the resync registers are DP0 and DIG0 (dump-confirmed)");
+#endif
 
 // P1: an underflow status the trial can act on. An unreadable dword counts as an underflow (fail closed).
 namespace uf {

@@ -43,6 +43,8 @@ extern "C" {
 }
 #include "navi48_liveraster.h"   // build 0.0.515: the read-only raster device (no bind dependency)
 #include "navi48_dispread_flow.h"   // build 0.0.622 (M1): the sequences of ddcread / dmubring / dispcensus (host-tested over fake engines)
+#include "navi48_disp_profile.h"  // the multi-display feature gate per ASIC (dmubcmd, disp2, mode trial refused on Navi 44)
+#include "navi48_gopsnap.h"         // GOP observation table (boot-arg navi48-gopsnap=1; read-only, host-tested by tools/hosttests/test_gopsnap.cpp)
 #include "navi48_dmubcmd_flow.h"     // build 0.0.625 (M2/M3): the sequences of dmubsend / dmubmode / dmubctx (host-tested over a fake DMUB)
 #include "navi48_scanx_flow.h"       // build 0.0.661 (M6 Stage 1b): the sequences of instance 2's scanout (host-tested over a fake HUBP2)
 #include "navi48_disp2_flow.h"       // build 0.0.631 (M4d): the sequence of `disp2 timing|connect|off|status` (host-tested over a register-file model with the real allowlist)
@@ -189,6 +191,7 @@ uint64_t now_ns() {
 // build 0.0.625: boot-arg navi48-dmubcmd=1 (default OFF) latches the three DMUB command verbs (95 / 96 / 97). Read and latched ONCE (attach() at start() reads it; the first verb call reads it if attach did not); first writer wins.
 volatile uint32_t gDmLatch = N48DM_LATCH_UNSET;
 bool dm_latched_on() {
+	if (!n4xdisp::supported(n4xdisp::kFeatDmubCmd)) { static volatile uint32_t once = 0; if (!__atomic_exchange_n(&once, 1u, __ATOMIC_ACQ_REL)) N48LOG("dmubcmd: boot-arg navi48-dmubcmd REFUSED on %s (the DMUB command verbs address the Navi 48 PHY D / DIG3 monitor B): verbs 95-97 are OFF", N4X_ASIC_NAME); return false; }
 	uint32_t l = __atomic_load_n(&gDmLatch, __ATOMIC_ACQUIRE);
 	if (l == N48DM_LATCH_UNSET) {
 		uint32_t v = 0;
@@ -204,6 +207,7 @@ bool dm_latched_on() {
 // build 0.0.631: boot-arg navi48-disp2=1 (default OFF) latches verb 98 `disp2` (the second-display test pattern, stage M4d). Same shape as the dmubcmd latch: read once, first writer wins.
 volatile uint32_t gD2Latch = N48D2_LATCH_UNSET;
 bool d2_latched_on() {
+	if (!n4xdisp::supported(n4xdisp::kFeatDisp2)) { static volatile uint32_t once = 0; if (!__atomic_exchange_n(&once, 1u, __ATOMIC_ACQ_REL)) N48LOG("disp2: boot-arg navi48-disp2 REFUSED on %s (the second display path is Navi 48 only: DIG3 / PHY D): verb 98 is OFF", N4X_ASIC_NAME); return false; }
 	uint32_t l = __atomic_load_n(&gD2Latch, __ATOMIC_ACQUIRE);
 	if (l == N48D2_LATCH_UNSET) {
 		uint32_t v = 0;
@@ -272,13 +276,55 @@ uint32_t liveRaster(uint32_t *hAct, uint32_t *vAct, uint32_t *hTot, uint32_t *vT
 // build 0.0.542: `accel scanout full`'s display read - the read-only device only (never gDcn, never a write).
 uint32_t roScanSurface(n48_sf_dcn *s) { return n48lr_scan_surface(&gLr, s); }
 
+// GOP observation (research/display/gop_vm_readout_plan.md): boot-arg navi48-gopsnap=1 (default OFF). Reads every row of navi48_gopsnap.h ONCE,
+// through the read-only device, and logs it as `gopsnap: <name> abs <dword> = <value>`. attach() calls it before any stage writes; nothing is written.
+static uint32_t gopRead(const struct n48gop_reg &r, uint32_t *absOut) {
+	const uint32_t a = dcn41_abs_rd(&gLr.d, r.off, r.base_idx);
+	if (absOut) *absOut = a;
+	return a == DCN41_BAD_OFFSET ? 0xFFFFFFFFu : gLr.d.rreg(gLr.d.cookie, a);
+}
+static void gopSnapshot() {
+	if (gLr.state != N48LR_READY) { N48LOG("gopsnap: read-only device not ready: nothing read"); return; }
+	uint32_t readable = 0;
+	for (uint32_t i = 0; i < N48GOP_COUNT; i++) {
+		const struct n48gop_reg &r = n48gop_regs[i];
+		uint32_t a = 0;
+		const uint32_t v = gopRead(r, &a);
+		if (a != DCN41_BAD_OFFSET) readable++;
+		N48LOG("gopsnap: %-30s abs %#07x = %#010x", r.name, a, v);
+	}
+	N48LOG("gopsnap: %u of %u rows resolved (read-only: no register written)", readable, (unsigned)N48GOP_COUNT);
+	// liveness: the OTG frame counters again, 50 ms later. A running OTG advances; a dark one stays put.
+	uint32_t first[N48GOP_LIVE_COUNT];
+	for (uint32_t i = 0; i < N48GOP_LIVE_COUNT; i++) first[i] = gopRead(n48gop_live[i], nullptr) & 0x00FFFFFFu;
+	dcn_udelay(nullptr, 50000u);
+	for (uint32_t i = 0; i < N48GOP_LIVE_COUNT; i++) {
+		const uint32_t second = gopRead(n48gop_live[i], nullptr) & 0x00FFFFFFu;
+		N48LOG("gopsnap: %-30s frames %u -> %u in 50 ms (%s)", n48gop_live[i].name, first[i], second,
+		       second == first[i] ? "STOPPED" : "running");
+	}
+}
+
 // build 0.0.515: the read-only raster device, built ONCE at start() - no register I/O (dcn41_dev_init only checks its
 // arguments) - from the same device context and IP-discovery DMU bases bind() uses. Nothing here arms the display layer.
+// GOP observation (boot-arg navi48-gopsnap=1 only): the read-only device's own context at stage 1, where dev.rmmio is still null.
+static amdgpu::DeviceContext gRoDev;
+
 void attach(Navi48Bringup *owner) {
 	(void)dm_latched_on();                                   // 0.0.625: latch navi48-dmubcmd at start (no register, no memory touched)
 	(void)d2_latched_on();                                   // 0.0.631: latch navi48-disp2 at start (no register, no memory touched)
 	if (!owner || gLr.state != N48LR_NONE) return;
 	amdgpu::DeviceContext *dev = owner->deviceContext();
+	// At stage 1 buildDeviceContext has not run, so dev->rmmio is null and the read-only path would not be built. With the
+	// GOP observation boot-arg the read-only device gets gRoDev, which carries only the BAR5 mapping (RREG32 reads nothing
+	// else). dev itself is left unchanged.
+	uint32_t gopBoot = 0;
+	if (PE_parse_boot_argn("navi48-gopsnap", &gopBoot, sizeof(gopBoot)) && gopBoot == 1u && dev &&
+	    (!dev->rmmio || dev->rmmioSize == 0) && owner->bar5Mmio()) {
+		gRoDev.rmmio = owner->bar5Mmio();
+		gRoDev.rmmioSize = owner->bar5Size();
+		dev = &gRoDev;
+	}
 	if (!dev || !dev->rmmio || dev->rmmioSize == 0) {
 		N48LOG("dcn: read-only raster path NOT BUILT - no mapped BAR5 in the device context (the LINKCFG reply keeps the CEA fallback)");
 		return;
@@ -294,6 +340,8 @@ void attach(Navi48Bringup *owner) {
 	const uint32_t ok = n48lr_ro_build(&gLr, dev, lr_rreg, seg, (uint32_t)(dev->rmmioSize / 4));
 	N48LOG("dcn: read-only raster path %s (dcn41_dev_init %d; segs %08x %08x %08x %08x %08x; no register read or written here)",
 	       ok ? "BUILT" : "NOT BUILT", gLr.init_rc, seg[0], seg[1], seg[2], seg[3], seg[4]);
+	uint32_t gop = 0;
+	if (ok && PE_parse_boot_argn("navi48-gopsnap", &gop, sizeof(gop)) && gop == 1u) gopSnapshot();   // read-only, once, before any stage
 }
 
 static uint32_t bind_locked(Navi48Bringup *owner);
@@ -2058,6 +2106,7 @@ static void mt_delay_us(void *, uint32_t us) { IODelay(us); }         // 0.0.606
 static uint64_t mt_now_us(void *) { return now_ns() / 1000ull; }
 static bool mt_frame(void *, uint32_t *fc) { return gDcn.armed && dcn41_otg_get_frame_count(&gDcn.d, 0u, fc) == DCN41_OK; }
 static bool mt_gate_ok(void *) {
+	if (!n4xdisp::supported(n4xdisp::kFeatModeTrial)) return false;   // Navi 44: no same-mode golden yet; the trial is DENIED (no register written)
 	const amdgpu::NativeS1bState &s = amdgpu::native_s1b_state();
 	return s.gate == n48native::kGateOn && s.positivePass;
 }

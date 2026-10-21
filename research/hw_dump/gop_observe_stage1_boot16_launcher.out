@@ -1,0 +1,12 @@
+0000:03:00.0: driver=vfio-pci gruppo=15
+0000:03:00.1: driver=vfio-pci gruppo=16
+0000:0a:00.0: driver=amdgpu gruppo=20
+Questo inventario non valida reset, policy kext, snapshot o driver.
+Overlay, EFI e piano stage1 verificati.
+ROM fisica: rombar=1 (QEMU la legge dalla scheda via VFIO).
+Display primario: la RX 9060 XT è l'unico display (nessuna VGA emulata, nessuna finestra GTK).
+Avvio dello stage preparato, con lo stato IRQ fissato dal piano e senza stack Metal. Log in diagnostics/serial.log.
+QEMU 11.1.2 monitor - type 'help' for more information
+(qemu) qemu-system-x86_64: kvm_set_user_memory_region: KVM_SET_USER_MEMORY_REGION failed, slot=7, start=0x8008800000000000, size=0x400000000: Invalid argument
+kvm_set_phys_mem: error registering slot: Invalid argument
+./OpenCore-Boot.sh: line 103: 53783 Aborted                    (core dumped) qemu-system-x86_64 "${args[@]}"

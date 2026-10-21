@@ -128,11 +128,13 @@ int main()
     expect_u("  +0x08 bit0 = 0 (no extra link-caps gather, 0x7ff81599cc6f)", (uint64_t)(lc[0x08] & 1u), 0u);
     expect_u("  +0x44 HorizontalActive = 1920 (GetEndpointSize's width)", (uint64_t)rd32(lc, 0x44), 1920u);
     expect_u("  +0x54 VerticalActive   = 1080 (GetEndpointSize's height)", (uint64_t)rd32(lc, 0x54), 1080u);
-    expect_u("  +0x2c PixelClock = 2200*1125*60 (CEA-861 1080p60, derived)", rd64(lc, 0x2c), 148500000u);
+    // Fallback blanking is the profile's (N48_AGDC_* = N4X_AGDC_FB_*): Navi 48 gives 2200*1125*60 = 148500000 (CEA-861 1080p60).
+    expect_u("  +0x2c PixelClock = (w+HBLANK)*(h+VBLANK)*REFRESH (Navi 48: 2200*1125*60 = 148500000, CEA-861 1080p60)", rd64(lc, 0x2c),
+             (uint64_t)(1920u + N48_AGDC_HBLANK) * (uint64_t)(1080u + N48_AGDC_VBLANK) * (uint64_t)N48_AGDC_REFRESH_HZ);
     expect_u("  +0xa4 stream address still zeroed", rd64(lc, 0xa4), 0u);
-    expect_u("  a zero mode is CLAMPED to 1920x1080, never left zero",
-             (uint64_t)(n48_agdc_fill_link_config(lc, sizeof lc, 0u, 0u) == 0 && rd32(lc, 0x44) == 1920u &&
-                        rd32(lc, 0x54) == 1080u), 1u);
+    expect_u("  a zero mode is CLAMPED to the profile fallback (Navi 48 1920x1080, Navi 44 2560x1440), never left zero",
+             (uint64_t)(n48_agdc_fill_link_config(lc, sizeof lc, 0u, 0u) == 0 && rd32(lc, 0x44) == N4X_AGDC_FB_W &&
+                        rd32(lc, 0x54) == N4X_AGDC_FB_H), 1u);
     expect_u("  wrong length refused", (uint64_t)n48_agdc_fill_link_config(lc, 0xaf, 1920u, 1080u), 1u);
     expect_u("  null buffer refused", (uint64_t)n48_agdc_fill_link_config(nullptr, 0xb0, 1920u, 1080u), 1u);
 
@@ -362,8 +364,8 @@ int main()
             static int fill(uint8_t *out, size_t len, uint32_t w, uint32_t h) {
                 if (!out || len != N48_AGDC_LINK_CONFIG_LEN) return 1;
                 for (size_t i = 0; i < len; i++) out[i] = 0;
-                if (!w) w = 1920u;
-                if (!h) h = 1080u;
+                if (!w) w = N4X_AGDC_FB_W;   // the profile fallback (1920x1080 Navi 48: 0.0.513's constant)
+                if (!h) h = N4X_AGDC_FB_H;
                 const uint64_t hTotal = (uint64_t)w + (uint64_t)N48_AGDC_HBLANK;
                 const uint64_t vTotal = (uint64_t)h + (uint64_t)N48_AGDC_VBLANK;
                 const uint64_t pixelClock = hTotal * vTotal * (uint64_t)N48_AGDC_REFRESH_HZ;
@@ -396,7 +398,8 @@ int main()
             const int rb = n48_agdc_fill_link_config(b, sizeof b, sz[0], sz[1]);
             std::snprintf(what, sizeof what, "B5 %ux%u: n48_agdc_fill_link_config's reply == 0.0.513's, byte for byte", sz[0], sz[1]);
             expect_u(what, (uint64_t)(ra == rb && std::memcmp(a, b, sizeof a) == 0), 1u);
-            if (sz[0] == 2560u) continue;   // 2560x1440 with the raster is the live case below
+            // the endpoint 0x0 resolves to the profile fallback: 1920x1080 on Navi 48 (CEA check below), 2560x1440 on Navi 44 (live case)
+            if ((sz[0] ? sz[0] : N4X_AGDC_FB_W) == 2560u && (sz[1] ? sz[1] : N4X_AGDC_FB_H) == 1440u) continue;   // the 1440p raster is the live case below
             n48_agdc_timing t {};
             n48_agdc_timing_for(sz[0], sz[1], &panel, &t);
             std::memset(b, 0xa5, sizeof b);
@@ -425,9 +428,9 @@ int main()
                      rd64(b, 0x2c) * 1000ull / ((uint64_t)(rd32(b, 0x44) + rd32(b, 0x48)) * (rd32(b, 0x54) + rd32(b, 0x58))), 59950u);
             n48_agdc_timing c {};
             n48_agdc_timing_for(2560u, 1440u, nullptr, &c);
-            expect_u("B2 2560x1440 with the raster UNKNOWN: the old CEA blanking, clock derived for 60 Hz",
+            expect_u("B2 2560x1440 with the raster UNKNOWN: the profile's fallback blanking, clock derived from its refresh",
                      (uint64_t)(c.live == 0u && c.h_blank == N48_AGDC_HBLANK && c.v_blank == N48_AGDC_VBLANK &&
-                                c.pixel_clock == 2840ull * 1485ull * 60ull), 1u);
+                                c.pixel_clock == (2560ull + N48_AGDC_HBLANK) * (1440ull + N48_AGDC_VBLANK) * N48_AGDC_REFRESH_HZ), 1u);
             n48_agdc_raster bad = panel; bad.h_total = 2560u;
             n48_agdc_timing_for(2560u, 1440u, &bad, &c);
             expect_u("B2 an incoherent raster (total == active) is not used", c.live, 0u);

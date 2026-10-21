@@ -147,7 +147,8 @@ int main(int argc, char **argv)
         (void)n48_agdc_fill_link_config_t(a, sizeof a, &lt);
         (void)n48_agdc_fill_link_config(b, sizeof b, 1920u, 1080u);
         expect_u("B2 1080p: reply byte-identical to 0.0.513's", std::memcmp(a, b, sizeof a) == 0, 1u);
-        expect_u("B3 1080p: pixel clock 148.5 MHz", lt.pixel_clock, 148500000ull);
+        expect_u("B3 1080p: pixel clock = (w+HBLANK)*(h+VBLANK)*REFRESH (Navi 48: 148.5 MHz)", lt.pixel_clock,
+                 (uint64_t)(1920u + N48_AGDC_HBLANK) * (uint64_t)(1080u + N48_AGDC_VBLANK) * (uint64_t)N48_AGDC_REFRESH_HZ);
         std::free(m);
     }
     // ---- C: fail directions -> the CEA fallback -------------------------------------------------------------------------

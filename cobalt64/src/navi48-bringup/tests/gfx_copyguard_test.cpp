@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <regex>
 #include <string>
 #include <vector>
 #include "gfx_copyguard.h"
@@ -4531,10 +4532,10 @@ static size_t b514_pins(const std::string &bu, const std::string &dpg, const std
     };
     chk("T30 B1: no AGDC reply falls straight from gRa to the constant any more",
         !has(dpg, "gRa.width ? gRa.width : 1920u") && !has(dpg, "gRa.height ? gRa.height : 1080u"));
-    chk("T30 B1: LINK_CONFIG and the 0x711 scaler reply both take gRa, else the live Console size, else 1920x1080",
+    chk("T30 B1: LINK_CONFIG and the 0x711 scaler reply both take gRa, else the live Console size, else the profile fallback N4X_AGDC_FB_W x N4X_AGDC_FB_H",
         order(fn_text(dpg, "static __attribute__((noinline)) void agdc_endpoint(uint32_t *w, uint32_t *h) {"),
-              { "if (!gRa.width || !gRa.height) (void)navi48_scanout_live_dims(&cw, &ch);", "*w = n48_agdc_endpoint_dim(gRa.width, cw, 1920u);",
-                "*h = n48_agdc_endpoint_dim(gRa.height, ch, 1080u);" }) &&
+              { "if (!gRa.width || !gRa.height) (void)navi48_scanout_live_dims(&cw, &ch);", "*w = n48_agdc_endpoint_dim(gRa.width, cw, N4X_AGDC_FB_W);",
+                "*h = n48_agdc_endpoint_dim(gRa.height, ch, N4X_AGDC_FB_H);" }) &&
         order(dpg, { "} else if (cmd == N48_AGDC_CMD_LINK_CONFIG) {", "agdc_endpoint(&lw, &lh);",
                      "kr = agdc_link_config(reinterpret_cast<uint8_t *>(outp), len, lw, lh);",
                      "} else if (cmd == N48_AGDC_CMD_PIPELINE_CAPS) {", "agdc_endpoint(&w, &h);",
@@ -4582,8 +4583,35 @@ static void test_T30_pins(const char *bringupPath, const char *peerPath) {
         expect("T30 the kext sources are readable", false); return;
     }
     expect("T30 every pin holds on the REAL sources", b514_pins(bu, dpg, peer, dcn, lrh, true) == 0u);
+    // The endpoint fallback is per profile (asic_profile.h N4X_AGDC_FB_*): Navi 44 = the native 2560x1440@120 row of the generated
+    // table (2720x1525 totals, front 48/3, sync 32/10, pixel clock 4977500 x 100 Hz); Navi 48 keeps 1920x1080 and CEA-861 1080p60 blanking.
+    {
+        std::string prof, rows44;
+        const bool readOk = read_file(sib(bringupPath, "amd/asic_profile.h").c_str(), prof) &&
+                            read_file(sib(bringupPath, "../../dcn41/dcn41_modes_navi44.h").c_str(), rows44);
+        const size_t elseAt = prof.find("\n#else");
+        const size_t endAt = prof.rfind("\n#endif");
+        const bool split = elseAt != std::string::npos && endAt != std::string::npos && elseAt < endAt;
+        const std::string p48 = split ? prof.substr(0, elseAt) : std::string();
+        const std::string p44 = split ? prof.substr(elseAt, endAt - elseAt) : std::string();
+        auto def = [](const std::string &t, const char *name, const char *val) {
+            return std::regex_search(t, std::regex(std::string("#define ") + name + "\\s+" + val + "u\\b"));
+        };
+        bool n44 = true, n48 = true;
+        const char *names[] = { "N4X_AGDC_FB_W", "N4X_AGDC_FB_H", "N4X_AGDC_FB_HBLANK", "N4X_AGDC_FB_HSYNC_OFF", "N4X_AGDC_FB_HSYNC_W",
+                                "N4X_AGDC_FB_VBLANK", "N4X_AGDC_FB_VSYNC_OFF", "N4X_AGDC_FB_VSYNC_W", "N4X_AGDC_FB_REFRESH_HZ" };
+        const char *v44[] = { "2560", "1440", "160", "48", "32", "85", "3", "10", "120" };
+        const char *v48[] = { "1920", "1080", "280", "88", "44", "45", "4", "5", "60" };
+        for (size_t i = 0; i < 9; i++) { n44 = n44 && def(p44, names[i], v44[i]); n48 = n48 && def(p48, names[i], v48[i]); }
+        const bool rowOk = rows44.find("2560, 48, 32, 80, 2720,") != std::string::npos &&
+                           rows44.find("1440, 3, 10, 72, 1525,") != std::string::npos &&
+                           rows44.find("4977500u, 119998u,") != std::string::npos;
+        expect("T30 B2: the Navi 44 endpoint fallback is the native 2560x1440 row (asic_profile.h = SINK-A @120 in dcn41_modes_navi44.h)",
+               readOk && split && n44 && rowOk);
+        expect("T30 B2: the Navi 48 endpoint fallback is unchanged (1920x1080, CEA-861 1080p60 blanking)", readOk && split && n48);
+    }
     struct { int file; const char *what, *from, *to; } plant[] = {   // 0 bringup, 1 dpg, 2 peer, 3 dcn, 4 navi48_liveraster.h
-        { 1, "B1 the endpoint's width back to the 1920 constant", "*w = n48_agdc_endpoint_dim(gRa.width, cw, 1920u);",
+        { 1, "B1 the endpoint's width back to the 1920 constant", "*w = n48_agdc_endpoint_dim(gRa.width, cw, N4X_AGDC_FB_W);",
           "*w = gRa.width ? gRa.width : 1920u;" },
         { 0, "B3 mode 6 back to the constant", "scanout_full_case(dev, inst, lw, lh, 0x5CA11F10u, &c1, false);",
           "scanout_full_case(dev, inst, 1920u, 1080u, 0x5CA11F10u, &c1, false);" },

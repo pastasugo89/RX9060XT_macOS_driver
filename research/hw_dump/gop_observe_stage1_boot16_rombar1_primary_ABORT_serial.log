@@ -1,0 +1,309 @@
+[2J[001;001H[=3h[2J[001;001H[2J[001;001H[8;056;240t[2J[001;001HBdsDxe: failed to load Boot0080 "Mac OS X" from PciRoot(0x0)/Pci(0x4,0x0)/Sata(0x4,0x0,0x0)/HD(2,GPT,114E0074-9BCF-44B2-B54C-D97425941848,0x64028,0xFF9BFB0)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,993734B16EAEF747BB85B86C1CC66F47)/\3C1B9072-47A9-49E9-99A1-1610289E85FB\System\Library\CoreServices\boot.efi: Not FouBdsDxe: loading Boot0000 "UEFI QEMU HARDDISK QM00017 " from PciRoot(0x0)/Pci(0x4,0x0)/Sata(0x2,0xFFFF,0x0)
+BdsDxe: starting Boot0000 "UEFI QEMU HARDDISK QM00017 " from PciRoot(0x0)/Pci(0x4,0x0)/Sata(0x2,0xFFFF,0x0)
+OCC: Missing compatible GOP - Not Found
+OCC: Missing GOP on ConOut - Unsupported
+OC: Changed resolution to 0x0@0 (max: 1, force: 0) from Max - Unsupported
+OC: Failed to find ACPI SSDT-USBX.aml
+OCUI: Failed to initialise output
+OCB: External interface ShowMenu failure, fallback to builtin - Unsupported
+[2J[001;001H[2J[001;001HOpenCore Boot Menu (REL-106-2025-11-03)
+
+  1. EFI[004;001H* 2. macOS[005;001H
+ |Shutdown|  |Restart|
+
+Choose the Operating System: Timeout
+#[EB|LOG:VERBOSE] 2026-10-21T10:27:53
+#[EB|OPT:BM] 0x80182
+#[EB|P:CPR] N
+#[EB|P:MPI] N
+#[EB|P:BPI] N
+#[EB.OPT.RKS|!] Err(0xE) <- BS.LocP EDB4A040-6D8A-11EC-8FAD-3E22FB93ADCF
+#[EB|KMR] 205910016
+#[EB.CS.CSKSD|+]
+#[EB.CS.CSKSD|!] Err(0xE) <- RT.GV boot-info-payload 8D63D4FE-BD3C-4AAD-881D-86FD974BC1DF
+#[EB|WL] 0 0 0x01 0x01   6 0x0E
+#[EB.CS.LFC|+]
+#[EB.LD.LF|IN] 0 1 <"System\\Library\\Caches\\com.apple.corestorage\\EncryptedRoot.plist.wipekey"> <"0">
+#[EB.FS.AGSVH|PU] 3C1B9072-47A9-49E9-99A1-1610289E85FB
+#[EB.FS.AGSVH|!] Err(0xE) <- BS.LocHB 59D76AE4-37E3-55A7-B460-EF13D46E6020
+#[EB.G.CS|-?] Ok(0)
+#[EB.LD.LF|IN] 0 1 <"<null string>"> <"1">
+#[EB.B.SBS|SZ] 723512
+#[EB|B:SHA] <d85ea7b2b2744b1423dcce9821e776704bd42da7>
+#[EB.WL.PWLFNV|!] Err(0xE) <- RT.GV wake-failure 7C436110-AB2A-4BBB-A880-FE41995C9F82
+#[EB.WL.DT|!] Err(0xE) <- EB.WL.PWLFNV
+#[EB|WL:DT] 0xffffffff
+#[EB.LD.LKC|D] <"boot\System\Library\KernelCollections\BootKernelExtensions.kc.development">
+#[EB.LD.OFS|OPEN!] Err(0xE) <"boot\\System\\Library\\KernelCollections\\BootKernelExtensions.kc.development">
+#[EB.LD.LKC|R.2] <"boot\System\Library\KernelCollections\BootKernelExtensions.kc">
+#[EB.LD.LKFS|-?] Ok(0)
+#[EB.LD.LKC|-?] Ok(0)
+#[EB|BST:REV1]
+#[EB|CSR:IN] 0x00000000
+#[EB|CSR:OUT] 0x00000000
+#[EB.BST.FBS|+]
+#[EB.BST.FBS|ADSZ] 0
+#[EB.BST.FBS|KSSZ] 0
+#[EB|SB:SBGMFNS] x86legacyap.im4m
+#[EB|RH:PF] usr\standalone\OS.dmg.root_hash
+#[EB|RH:MF] <"usr\\standalone\\OS.dmg.root_hash.x86legacyap.im4m">
+#[EB.LD.LF|IN] 0 1 <"usr\\standalone\\OS.dmg.root_hash"> <"0">
+#[EB.LD.LF|IN] 0 1 <"usr\\standalone\\OS.dmg.root_hash.x86legacyap.im4m"> <"0">
+#[EB.BST.FBS|RHPSZ] 229
+#[EB.BST.FBS|RHMSZ] 3657
+#[EB|LOG:DT] 2026-10-21T10:27:53
+#[EB|LOG:EXITBS:START] 2026-10-21T10:27:53
+#[EB|LOG:EXITBS:END] _
+#[EB.BST.FBS|-]
+#[EB|B:BOOT]
+#[EB|LOG:HANDOFF TO XNU] _
+======== End of efiboot serial output. ========
+kprintf initialized
+Serial mode specified: 00000003
+version_variant = 0
+version         = Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:49 PDT 2026; root:xnu-12377.161.14~5/RELEASE_X86_64
+KASLR slide: 0x000000000fa00000 dynamic
+Hiding local relocations
+WARNING: ignoring first page in [0x0:0x86]
+Physical memory 12288 MB
+avail_remaining = 0x2ff650
+PMAP: Supervisor Mode Execute Protection enabled
+PMAP: Supervisor Mode Access Protection enabled
+Kernel virtual space from 0xffffff8000000000 to 0xffffffffffffefff.
+Available physical space from 0x14cf3000 to 0x37ffff000
+initialize_screen: b=00000000, w=00000000, h=00000000, r=00000000, d=00000001
+initialize_screen: No video - forcing serial mode
+[processor_init] processor 0 belongs to processor set 0 of type 0
+Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:49 PDT 2026; root:xnu-12377.161.14~5/RELEASE_X86_64
+pmap_startup() delaying init/free of page nums > 0x200000
+pmap_startup() init/release time: 41254 microsec
+pmap_startup() delayed init/release of 1609488 pages
+vm_page_bootstrap: 1469928 free pages, 1659416 wired pages, (up to 1609488 of which are delayed free)
+VM bootstrap: 73 maps, 128 entries and 16 nodes available
+Maximum number of VM swap files: 100
+kext submap [0x<ptr> - 0x<ptr>], kernel text [0x<ptr> - 0x<ptr>]
+vm: "vm_compressor_mode" is 4
+VM bootstrap done: 69 maps, 105 entries and 10 nodes left
+IOKit IOMD setownership ENABLED
+ATM subsystem is initialized
+standard timeslicing quantum is 10000 us
+standard background quantum is 2500 us
+Scheduler: Default of dualq
+Setting scheduler priority decay band limit 18
+Firehose configured: 16 chunks, 8 io pages
+Log queues configured: slot count: 72, per-slot size: 32768, total size: 2359296
+OSLog stream configured: stream: 8192 bytes, cache: 2112 bytes
+Long logs support configured: size: 16384
+[trap_telemetry] trap_telemetry_init
+IPC_PTHREAD_PRIORITY subsystem is initialized
+mig_table_max_displ = 90 mach_kobj_count = 384
+BANK subsystem is initialized
+Reallocated master cpu data: 0xffffff8010b6ae80, interrupt stack: 0xffffffd0e6fe7000, fault stack: 0xffffff800fb0c800
+CPU identification: Intel Core Processor (Skylake)
+CPU features: FPU VME DE PSE TSC MSR PAE MCE CX8 APIC SEP MTRR PGE MCA CMOV PAT PSE36 CLFSH MMX FXSR SSE SSE2 HTT SSE3 PCLMULQDQ SSSE3 FMA CX16 SSE4.1 SSE4.2 x2APIC MOVBE POPCNT AES VMM XSAVE TSCTMR AVX1.0 RDRAND F16C RDWRFSGS BMI1 AVX2 SMEP BMI2 ERMS INVPCID RDSEED ADX SMAP
+  HTT: 4 cores per package; 8 logical cpus per package
+CPU extended features: SYSCALL XD EM64T LAHF LZCNT PREFETCHW RDTSCP TSCI
+Initializing EFI runtime services
+MSR_IA32_APIC_BASE 0xfee00000 enabled legacy mode BSP
+x2APIC supported and will be enabled
+x2APIC mode enabled
+ID: 0x0 LDR: 0x1
+Boot cpu local APIC id 0x0
+TSC sync margin disabled
+fpu_state: AVX, state_size: 832
+Kernel text 0xffffff800fce8000-0xffffff80106e4000 to be write-protected
+Marking (0xffffff800fc10000, 0xffffff800fce7000) as rwx
+Marking (0xffffff8010e26000, 0xffffff8010e66000) as rwx
+Marking (0xffffff8010e66000, 0xffffff8010e67000) as rwx
+Marking (0xffffff80106e4000, 0xffffff80106f6000) as rwx
+Marking (0xffffff8010e67000, 0xffffff8010e67000) as rwx
+Marking (0xffffff800fce7000, 0xffffff800fce8000) as rwx
+Marking (0xffffff80106f6000, 0xffffff80106f6000) as rwx
+Marking (0xffffff80143e7000, 0xffffff8014786000) as rwx
+Marking (0xffffff8012e00000, 0xffffff8012e4e000) as rwx
+Marking (0xffffff800fc10000, 0xffffff800fc10000) as rwx
+Marking (0xffffff8012e98000, 0xffffff8013ae5000) as rwx
+[RTCLOCK] frequency 3800000000 (3799986000)
+TSC Deadline Timer supported and enabled
+suspend_cluster_powerdown_locked>calling sched_update_powered_cores to suspend powerdown
+kdp_core zlib memory 0x7000
+Registered coredump handler for kernel
+Kernel boot args: 'keepsyms=1 -v debug=0x108 serial=3 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0 navi48-gopsnap=1'
+corecrypto_kext_start (tracing disabled)
+FIPSPOST_KEXT [293001169] fipspost_post:157: [FIPSPOST][Module-ID] Apple corecrypto Module v26.0 [Intel, Kernel, Software, SL1, N/A]
+FIPSPOST_KEXT [294844086] fipspost_post:165: PASSED: (0 ms) - fipspost_post_hmac
+FIPSPOST_KEXT [296729203] fipspost_post:170: PASSED: (0 ms) - fipspost_post_integrity
+FIPSPOST_KEXT [298038017] fipspost_post:175: PASSED: (0 ms) - fipspost_post_indicator
+FIPSPOST_KEXT [299223282] fipspost_post:176: PASSED: (0 ms) - fipspost_post_aes_ecb
+FIPSPOST_KEXT [300381996] fipspost_post:177: PASSED: (0 ms) - fipspost_post_aes_cbc
+FIPSPOST_KEXT [303453987] fipspost_post:178: PASSED: (1 ms) - fipspost_post_rsa_sig
+FIPSPOST_KEXT [309331029] fipspost_post:179: PASSED: (4 ms) - fipspost_post_ecdsa
+FIPSPOST_KEXT [310634584] fipspost_post:180: PASSED: (0 ms) - fipspost_post_ecdh
+FIPSPOST_KEXT [311754048] fipspost_post:181: PASSED: (0 ms) - fipspost_post_aes_ccm
+FIPSPOST_KEXT [312913192] fipspost_post:182: PASSED: (0 ms) - fipspost_post_aes_gcm
+FIPSPOST_KEXT [314074696] fipspost_post:183: PASSED: (0 ms) - fipspost_post_aes_cmac
+FIPSPOST_KEXT [315251871] fipspost_post:184: PASSED: (0 ms) - fipspost_post_hkdf
+FIPSPOST_KEXT [320699051] fipspost_post:185: PASSED: (4 ms) - fipspost_post_pbkdf
+FIPSPOST_KEXT [321864155] fipspost_post:186: PASSED: (0 ms) - fipspost_post_drbg_hmac
+FIPSPOST_KEXT [323066530] fipspost_post:188: PASSED: (0 ms) - fipspost_post_kdf_ctr
+FIPSPOST_KEXT [324240374] fipspost_post:189: PASSED: (0 ms) - fipspost_post_kdf_ctr_cmac
+FIPSPOST_KEXT [325736999] fipspost_post:190: PASSED: (0 ms) - fipspost_post_aes_xts
+FIPSPOST_KEXT [327053154] fipspost_post:191: PASSED: (0 ms) - fipspost_post_drbg_ctr
+FIPSPOST_KEXT [328516710] fipspost_post:217: all tests PASSED (35 ms)
+corecrypto_kext_start completed successfully
+Matching service count = 0
+Matching service count = 0
+ulock_initialize>thread_max=15360, ull_hash_buckets=4096
+vm: creating swapout thread
+vm: creating swapfile creation thread
+vm: creating swapfile GC thread
+Darwin Image4 Extension Version 7.0.0: Fri Jul 31 18:12:07 PDT 2026; root:AppleImage4-349.160.2~555/AppleImage4/RELEASE_X86_64
+calling mpo_policy_init for AppleImage4
+Security policy loaded: AppleImage4 hooks (AppleImage4)
+initUDIDEnforcement: /product node not found
+AMFI: queried model name from device tree: ACPI
+calling mpo_policy_init for AMFI
+Security policy loaded: Apple Mobile File Integrity (AMFI)
+AMFI: Booted in a VM
+calling mpo_policy_init for Sandbox
+Security policy loaded: Seatbelt sandbox policy (Sandbox)
+calling mpo_policy_init for Quarantine
+Security policy loaded: Quarantine policy (Quarantine)
+Lilu    config: @ automatically disabling on an unsupported operating system
+Lilu    config: @ found a disabling argument or no arguments, exiting
+WhateverGreen      init: @ failed to call parent 7
+ACMTRM: initU32FromBootArg: acm_fastsim = 0xffffffff <--- not found.
+ACMTRM: initU32FromEDTProp: /defaults/insecure_hpr = 0x0 <--- not found.
+ACMTRM: isFastSimTarget: isFastSim = NO.
+ACMTRM: initU32FromEDTProp: /efi/platform/apple-coprocessor-version = 0x0 <--- not found.
+ACMTRM: geACPI: RSDP 0x000000007F97E014 000024 (v02 BOCHS )
+ACPI: XSDT 0x000000007F9E6000 00005C (v01 BOCHS  BXPC     00000001      01000013)
+ACPI: FACP 0x000000007F979000 0000F4 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: DSDT 0x000000007F97A000 0023BD (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: FACS 0x000000007F9DD000 000040
+ACPI: APIC 0x000000007F978000 0000B0 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: HPET 0x000000007F977000 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: MCFG 0x000000007F976000 00003C (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: WAET 0x000000007F975000 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)tEOSDeviceType: eosDeviceType = 0.
+IOServicePH::kIOMessageSystemCapabilityChange: will 0xf->0xf
+IOServicePH::systemPowerChange to 0x30
+IOServicePH::kIOMessageSystemCapabilityChange: did 0xf->0xf
+ACPI: RSDP 0x000000007F97E014 000024 (v02 BOCHS )
+ACPI: XSDT 0x000000007F9E6000 00005C (v01 BOCHS  BXPC     00000001      01000013)
+ACPI: FACP 0x000000007F979000 0000F4 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: DSDT 0x000000007F97A000 0023BD (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: FACS 0x000000007F9DD000 000040
+ACPI: APIC 0x000000007F978000 0000B0 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: HPET 0x000000007F977000 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: MCFG 0x000000007F
+ACPI: VFCT 0x000000007E625000 00E684 (v01 BOCHS  BXPC     00000001 AMD  33504F47)
+ACPI: SSDT 0x000000007F9E7000 00010B (v02 ACDT   SsdtEC   00001000 INTL 20190509)
+ACPI: 2 ACPI AML tables successfully acquired and loaded
+976000 00003C (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: WAET 0x000000007F975000 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+ACPI: VFCT 0x000000007E625000 00E684 (v01 BOCHS  BXPC     00000001 AMD  33504F47)
+ACPI: SSDT 0x000000007F9E7000 00010B (v02 ACDT   SsdtEC   00001000 INTL 20190509)
+ACPI: 2 ACPI AML tables successfully acquired and loaded
+pci (build 19:00:35 Jul 31 2026), flags 0xc3080, log mode flags 0x4, log flags 0x80000001, log RCs 0xffffffff
+AppleCredentialManager: init: inited KE[1] (ready=NO AVP=NO SIM=NO SIMT=NO USESEP=NO) -> true.
+AppleCredentialManager: probe: probed KE[1] (ready=NO) -> true (score=0).
+AppleCyrus[0x10000012f]::probe(IOResources)
+AppleKeyStoreTest[0x100000133]::probe(IOResources)
+AppleACPICPU: ProcessorId=0 LocalApicId=0 Enabled
+AppleACPICPU: ProcessorId=1 LocalApicId=1 Enabled
+cpu_data_alloc(1) 0xffffff8010b6c4c0 desc_table: 0xffffff800fb2c320 ldt: 0xffffffd0e5b9f000 int_stack: 0xffffffd0e70bf000-0xffffffd0e70c3000
+AppleACPICPU: ProcessorId=2 LocalApicId=2 Enabled
+cpu_data_alloc(2) 0xffffff8010b6db00 desc_table: 0xffffff800fb2c640 ldt: 0xffffffd0e5baf000 int_stack: 0xffffffd0e70c5000-0xffffffd0e70c9000
+AppleACPICPU: ProcessorId=3 LocalApicId=3 Enabled
+cpu_data_alloc(3) 0xffffff8010b6f140 desc_table: 0xffffff800fb2c960 ldt: 0xffffffd0e5bbf000 int_stack: 0xffffffd0e70cb000-0xffffffd0e70cf000
+AppleACPICPU: ProcessorId=4 LocalApicId=4 Enabled
+cpu_data_alloc(4) 0xffffff8010b70780 desc_table: 0xffffff800fb2cc80 ldt: 0xffffffd0e5bcf000 int_stack: 0xffffffd0e70d1000-0xffffffd0e70d5000
+AppleCredentialManager: start: starting KE[1] (ready=NO) -> true.
+AppleCredentialManager: initImpl: called, KE[1].
+AppleCredentialManager: initImpl: eosDeviceType=0, useOptionalSEP=NO.
+ACM: Env_SetVariableWithParams: set var[6] len=1 <00>.
+ACM: InitCredentialEngine: Global credential set created, CS[20].
+ACM: Env_SetVariableWithParams: set var[5] len=1 <00>.
+ACM: Env_SetVariableWithParams: set var[23] len=1 <01>.
+ACM: Env_SetVariableWithParams: set var[24] len=22 <4a756c20333120323032362c2032303a34373a343000>.
+ACM: Env_SetDataProvider: data provider *set* for var[25].
+ACM: Env_SetDataProvider: data provider *set* for var[27].
+ACM: Env_SetDataProvider: data provider *set* for var[36].
+ACM: Env_Setcpu_data_alloc(5) 0xffffff8010b71dc0 desc_table: 0xffffff800fb2cfa0 ldt: 0xffffffd0e5bdf000 int_stack: 0xffffffd0e70d7000-0xffffffd0e70db000
+cpu_data_alloc(6) 0xffffff8010b73400 desc_table: 0xffffff800fb2d2c0 ldt: 0xffffffd0e5bef000 int_stack: 0xffffffd0e70dd000-0xffffffd0e70e1000
+cpu_data_alloc(7) 0xffffff8010b74a40 desc_table: 0xffffff800fb2d5e0 ldt: 0xffffffd0e5bff000 int_stack: 0xffffffd0e70e3000-0xffffffd0e70e7000
+DataProvider: data provider *set* for var[69].
+AppleACPICPU: ProcessorId=5 LocalApicId=5 Enabled
+AppleACPICPU: ProcessorId=6 LocalApicId=6 Enabled
+AppleACPICPU: ProcessorId=7 LocalApicId=7 Enabled
+ASP: initializing bastion sandbox callback
+no external trust caches found (segment length is zero)
+ACM: Env_SetDataProvider: data provider *set* for var[22].
+ACM: Env_SetDataProvider: data provider *set* for var[29].
+ACM: Env_SetVariableWithParams: set var[7] len=1 <00>.
+ACM: Env_SetVariableWithParams: set var[26] len=1 <00>.
+ACM: Env_SetVariableWithParams: set var[33] len=1 <01>.
+ACM: Env_SetVariableWithParams: set var[34] len=1 <00>.
+ACM: Env_SetDataProvider: data provider *set* for var[47].
+ACM: SEPContro[processor_init] processor 1 belongs to processor set 0 of type 0
+[processor_init] processor 2 belongs to processor set 0 of type 0
+[processor_init] processor 3 belongs to processor set 0 of type 0
+[processor_init] processor 4 belongs to processor set 0 of type 0
+[processor_init] processor 5 belongs to processor set 0 of type 0
+[processor_init] processor 6 belongs to processor set 0 of type 0
+[processor_init] processor 7 belongs to processor set 0 of type 0
+l_SetCallback: ACM control provider *set* for control code[4].
+ACMFirstResponderKernelService: init: called, .
+ACMTRM-S: init: called, starting PersistentStore service.
+ACMTRM-A: init: called, starting TRM Analytics service.
+ACMTRM-C: init: called, starting AccessoryCache service.
+ACMTRM: init: called, starting TRM service.
+ACMTRM: initU32FromBootArg: trm_default = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_enabled = 0xffffffff <--- not found.
+ACMTRM: initU32FromEDTProp: /defaults/trm-enabled = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_unification = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_all_policy_modes = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_base_system = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: hidrm_default = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: hidrm_enabled = 0xffffffff <--- not found.
+ACMTRM: initU32FromEDTProp: /defaults/hidrm-enabled = 0xffffffff <--- not found.
+ACMTRM: initU32FromEDTProp: /options/stress-rack = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_change_policy_mode = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_profile = 0xffffffff <--- not found.
+ACMTRM: initU32FromEDTProp: /defaults/trm-profile = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_analytics_period = 0xffffffff <--- not found.
+ACMTRM: initU32FromBootArg: trm_acc_cache_size = 0xfx2APIC mode enabled
+Sftfafrtfedf fcfp u< -1- -( lnaoptic  fido 0u00n00d0.01
+)
+ACMTx2APIC mode enabled
+StRarMte:d  cipnui t2U 3(2lFarpoimcB oiodt A0r0g0:0 0t0r0m2_)a
+cc_cx2APIC mode enabled
+aSctahret_eedx pciprua t3i o(nl a=p i0cx fifdf f0f0f0f0f0 0<0-3-)-
+ not fx2APIC mode enabled
+oSuntd.a
+rAtCeMdT RcMp:u  i4n i(tlUa3p2iFcr oimdB o0o0t0A0r0g0:0 4tr)m_
+relaxex2APIC mode enabled
+dS_pteraiordt_etdi mcepouu t5  =( l0axpfifcf fifdf f0f0 0<0-0-0-0 5n)o
+t foux2APIC mode enabled
+nSdt.ar
+tAeCdM TcRpMu:  6i n(iltaUp3i2cF riodm B0o0o0t0A0r0g0:6 )t
+rm_ux2APIC mode enabled
+nSltocakredt_epde rcipoud _7t i(mleaopuitc  =i d0 x0f0f0f0f0f0f0f7f) 
+<--re-s unmoet_c lufsoteur_npdo.we
+rACdMoTwRnM:_ loicnkietdU>3c2aFlrloimnBgo ostcAhregd:_u pudsabt_es_tpaonwdearredd__mcoodree_st itmoe oruets u=m e0 xpfofwfefrfdfofwfn 
+<-A-C-P In oWta rfnoiunng:d .G
+PIEO A_PEI0C1:  hVaesr snioo ni m0pxl1e1m eVnetcattoirosn  6(42:081760
+9A3C0P/Ie vWgapreniinnigt:- 4G6P5E) 
+_E01 haAsC PnIo:  iEmxpelceumteendt a1t ibolno c(k2s0 1o6f0 9m3o0d/uelveg-pleeivneilt -e4x6e5c)ut
+aAbClPeI :A MLA CcMoTdReM:
+ initU32FromBootArg: trm_policy_timeout = 0xffffffff <--- not found.
+Executed 1 blocks of module-level executable AML code
+ACMTRM: initU32FromBootArg: usb_standard_mode_lock_timeout = 0xffffffff <--- not found.
+ACPI: sleep states S3 S4 S5
+ACMTRM: initU32FromBootArg: trm_grace_period_timeout = 0xffffffff <--- not founkPEdD.isa
+bl[eaSdcdrMeeemno r-y1R
+ange()] AppleVTD is not yet installed as gSystem
+[addMemoryRange()] AppleVTD is not yet installed aswatchdog disabled by platform configuration gSystem
+[addMemoryRange()] AppleVTD is not yet installed as gSystem
+[addMemoryRange()] AppleVTD is not yet installeMdat achesd  agSgainystesmt S
+MC[ ( 

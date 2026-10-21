@@ -4,6 +4,10 @@ set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SRC="$ROOT/cobalt64/src/navi48-bringup/src"
 OUT="${TMPDIR:-/tmp}/rx9060-hosttests"; mkdir -p "$OUT"
+c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_mes_set_hw_resources_1_wire.cpp" -o "$OUT/test_mes_set_hw_resources_1_wire"
+"$OUT/test_mes_set_hw_resources_1_wire"
+c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_vadd_ir_abi.cpp" -o "$OUT/test_vadd_ir_abi"
+"$OUT/test_vadd_ir_abi"
 c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_ipdiscovery.cpp" "$SRC/ipdiscovery.cpp" -o "$OUT/test_ipdiscovery"
 # Navi 44 (questa scheda): 2 SE, 2 SA/SE, 4 RB/SE, 8 CU per SA
 "$OUT/test_ipdiscovery" "$ROOT/research/hw_dump/ip_discovery_table.bin" 2 2 4 8
@@ -32,3 +36,23 @@ for pair in "12_0_0 7_0_0" "12_0_1 7_0_1"; do
     "$OUT/test_ucode_extract" $k "$fw" | tail -1
   done
 done
+
+# GOP observation table (dcn/navi48_gopsnap.h): every row against the DCN 4.1.0 header, the DMU segment bases of the dump, and the
+# display connector constants of asic_profile.h for each profile. Skipped (not failed) when research/src is not cloned.
+GOPHDR="$ROOT/research/src/linux/drivers/gpu/drm/amd/include/asic_reg/dcn/dcn_4_1_0_offset.h"
+if [ -f "$GOPHDR" ]; then
+  c++ -std=c++17 -O1 -Wall -I"$SRC" -I"$SRC/dcn" -I"$SRC/amd" "$ROOT/tools/hosttests/test_gopsnap.cpp" "$SRC/ipdiscovery.cpp" -o "$OUT/test_gopsnap"
+  "$OUT/test_gopsnap" "$GOPHDR" "$ROOT/research/hw_dump/ip_discovery_table.bin" 0xc0 0x34c0 0x9000
+  c++ -std=c++17 -O1 -Wall -DN4X_ASIC_NAVI48 -I"$SRC" -I"$SRC/dcn" -I"$SRC/amd" "$ROOT/tools/hosttests/test_gopsnap.cpp" "$SRC/ipdiscovery.cpp" -o "$OUT/test_gopsnap48"
+  "$OUT/test_gopsnap48" "$GOPHDR" "$ROOT/research/hw_dump/ip_discovery_table.bin" 0xc0 0x34c0 0x9000
+else
+  echo "skip test_gopsnap (research/src DCN header not present)"
+fi
+
+# Display profile seam (dcn/navi48_disp_profile.h): formulas against dcn_4_1_0_offset.h and the live path / feature policy per ASIC.
+if [ -f "$GOPHDR" ]; then
+  c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_disp_profile.cpp" -o "$OUT/test_disp_profile44"
+  "$OUT/test_disp_profile44" "$GOPHDR"
+  c++ -std=c++17 -O1 -Wall -DN4X_ASIC_NAVI48 -I"$SRC" "$ROOT/tools/hosttests/test_disp_profile.cpp" -o "$OUT/test_disp_profile48"
+  "$OUT/test_disp_profile48" "$GOPHDR"
+fi

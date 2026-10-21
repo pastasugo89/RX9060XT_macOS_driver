@@ -7,6 +7,7 @@
 //  and the v1 present: rows of plane 0 into the console buffer through the BAR0 aperture (Navi48Bringup::vramWrite), every byte pre-checked by bounds_check.
 //  It touches no GPU register and no page table. The decisions are n48disp:: (host-tested with planted breaks); this file supplies the kernel primitives to the tested flows.
 //
+#include "../dcn/navi48_disp_profile.h"   // the multi-display feature gate per ASIC (refuses M6 on Navi 44)
 #include <string.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
@@ -579,6 +580,7 @@ bool n48disp_latched_on(void) {
 
 // 0.0.659 (M6 Stage 1a): boot-arg navi48-m6 == 1, read and latched ONCE (first writer wins, never re-read). Default OFF: with it absent every M6 branch of the flows is skipped and the code is 0.0.658's.
 bool n48m6_latched_on(void) {
+    if (!n4xdisp::supported(n4xdisp::kFeatM6)) { static volatile uint32_t once = 0; if (!__atomic_exchange_n(&once, 1u, __ATOMIC_ACQ_REL)) DLOG("boot-arg navi48-m6: REFUSED on %s (multi-display is Navi 48 only): nothing is latched", N4X_ASIC_NAME); return false; }
     return n48m6::latch_is_on(n48m6::latch_get(&gM6Latch, []() -> uint32_t {
         uint32_t v = 0;
         const bool present = PE_parse_boot_argn("navi48-m6", &v, sizeof(v));
@@ -589,6 +591,7 @@ bool n48m6_latched_on(void) {
 
 // 0.0.661 (M6 Stage 1b): boot-arg navi48-m6flip == 1, read and latched ONCE (first writer wins, never re-read). Default OFF. Every Stage-1b path (selectors 22..26, the flip-side notes, the Stage-1b CLI report) asks this AND navi48-m6.
 bool n48m6flip_latched_on(void) {
+    if (!n4xdisp::supported(n4xdisp::kFeatM6Flip)) { static volatile uint32_t once = 0; if (!__atomic_exchange_n(&once, 1u, __ATOMIC_ACQ_REL)) DLOG("boot-arg navi48-m6flip: REFUSED on %s (multi-display is Navi 48 only): nothing is latched", N4X_ASIC_NAME); return false; }
     return n48m6::latch_is_on(n48m6::latch_get(&gM6FlipLatch, []() -> uint32_t {
         uint32_t v = 0;
         const bool present = PE_parse_boot_argn("navi48-m6flip", &v, sizeof(v));
@@ -599,6 +602,7 @@ bool n48m6flip_latched_on(void) {
 // 0.0.662 (M6 Stage 2): boot-arg navi48-m6flip1 == 1, read and latched ONCE (first writer wins, never re-read). Default OFF. INSTANCE 1 (the monitor A's HUBP1 / OTG1 scanout) needs ALL THREE latches (navi48-m6, navi48-m6flip, navi48-m6flip1); with this one OFF a request
 // for instance 1 is answered exactly as 0.0.661 answered it (kIOReturnBadArgument) and nothing of instance 1 exists.
 bool n48m6flip1_latched_on(void) {
+    if (!n4xdisp::supported(n4xdisp::kFeatM6Flip1)) { static volatile uint32_t once = 0; if (!__atomic_exchange_n(&once, 1u, __ATOMIC_ACQ_REL)) DLOG("boot-arg navi48-m6flip1: REFUSED on %s (multi-display is Navi 48 only): nothing is latched", N4X_ASIC_NAME); return false; }
     return n48m6::latch_is_on(n48m6::latch_get(&gM6Flip1Latch, []() -> uint32_t {
         uint32_t v = 0;
         const bool present = PE_parse_boot_argn("navi48-m6flip1", &v, sizeof(v));

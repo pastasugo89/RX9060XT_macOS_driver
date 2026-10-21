@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../amd/asic_profile.h"   // N4X_AGDC_FB_*: the endpoint fallback of this ASIC profile (1920x1080 Navi 48, 2560x1440 Navi 44)
 
 #define N48_DPG_TOKEN "display-pipe-guard 0.0.286"
 
@@ -225,18 +226,17 @@ static inline int n48_agdc_fill_gpu_capability(uint8_t *out, size_t len, uint64_
     return 0;
 }
 
-/* CEA-861 1080p60 blanking. SUSPECTED, NOT read from this panel's EDID: the DP link runs the monitor's native
- * 2560x1440 and the framebuffer is a deliberate 1920x1080 (OpenCore GOP resolution, set to cut CPU load), so the
- * OTG registers describe the LINK, not the endpoint we are declaring. Only HorizontalActive / VerticalActive are
- * load-bearing — DisplayPipe::Commit's gate is a plain `ucomisd` against 0.0, so any non-zero pair passes. The
- * blanking exists to keep the derived refresh coherent, not because Commit reads it. */
-#define N48_AGDC_HBLANK    280u
-#define N48_AGDC_HSYNC_OFF 88u
-#define N48_AGDC_HSYNC_W   44u
-#define N48_AGDC_VBLANK    45u
-#define N48_AGDC_VSYNC_OFF 4u
-#define N48_AGDC_VSYNC_W   5u
-#define N48_AGDC_REFRESH_HZ 60u
+/* Fallback blanking of the profile (asic_profile.h N4X_AGDC_FB_*): Navi 48 keeps CEA-861 1080p60 blanking; Navi 44 uses the
+ * blanking of its native 2560x1440 row (dcn41_modes_navi44.h). It is NOT read from the panel's EDID: the OTG registers describe
+ * the LINK, and only HorizontalActive / VerticalActive are load-bearing (DisplayPipe::Commit's gate is a plain `ucomisd` against
+ * 0.0). The blanking exists to keep the derived refresh coherent, not because Commit reads it. */
+#define N48_AGDC_HBLANK     N4X_AGDC_FB_HBLANK
+#define N48_AGDC_HSYNC_OFF  N4X_AGDC_FB_HSYNC_OFF
+#define N48_AGDC_HSYNC_W    N4X_AGDC_FB_HSYNC_W
+#define N48_AGDC_VBLANK     N4X_AGDC_FB_VBLANK
+#define N48_AGDC_VSYNC_OFF  N4X_AGDC_FB_VSYNC_OFF
+#define N48_AGDC_VSYNC_W    N4X_AGDC_FB_VSYNC_W
+#define N48_AGDC_REFRESH_HZ N4X_AGDC_FB_REFRESH_HZ
 
 /* getLinkConfig (selector 0x921), AGDCLinkConfig_t 0xb0 bytes. Reply-relative offsets, ALL CONFIRMED from
  * IOPresentment bytes (0.0.336,). The reply carries an IODetailedTimingInformationV2 at +0x04:
@@ -269,8 +269,9 @@ static inline uint32_t n48_agdc_endpoint_dim(uint32_t ra, uint32_t live, uint32_
  * clock and porches come from the sink's own EDID row with the SAME active size and totals (src/dcn41/dcn41_modes.h: the
  * SINK-A's 2560x1440@60 DTD, 2720x1481 totals, 241.5 MHz, front 48/3, sync 32/5 -'s measured raster). The live raster
  * is used ONLY when its active size IS the endpoint being declared (no DPP scaling: a native framebuffer) and it is coherent
- * (totals above the actives, porches inside the blanking, a non-zero clock); otherwise - and always at 1920x1080 - the timing
- * is 0.0.513's CEA-861 1080p60 blanking with the clock derived for 60 Hz, byte for byte. */
+ * (totals above the actives, porches inside the blanking, a non-zero clock); otherwise the timing is the profile's fallback
+ * (Navi 48: 0.0.513's CEA-861 1080p60 blanking, byte for byte; Navi 44: the 2560x1440 row's blanking, N4X_AGDC_FB_*), with the
+ * clock derived from the refresh of that profile. */
 typedef struct {
     uint32_t h_active, v_active, h_total, v_total;
     uint32_t h_front, h_sync, v_front, v_sync;
@@ -285,8 +286,8 @@ static inline void n48_agdc_timing_for(uint32_t w, uint32_t h, const n48_agdc_ra
 {
     if (!t) return;
     /* A zero here is the exact bug the link-config reply fixed, so it can never leave: clamp rather than trust. */
-    if (!w) w = 1920u;
-    if (!h) h = 1080u;
+    if (!w) w = N4X_AGDC_FB_W;
+    if (!h) h = N4X_AGDC_FB_H;
     t->w = w; t->h = h;
     if (r && r->h_active == w && r->v_active == h && r->h_total > w && r->v_total > h && r->pixel_clock_hz &&
         r->h_sync && r->v_sync &&

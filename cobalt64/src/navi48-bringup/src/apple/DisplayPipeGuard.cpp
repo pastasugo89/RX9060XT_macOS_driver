@@ -1739,13 +1739,14 @@ static void agdc_dump_reply(uint32_t cmd, uint32_t type, const uint8_t *buf, siz
 // unsigned long *outLen, IOExternalMethodArguments *args). Called by AGDC::start (13d3c40e / 13d3c44f) and by the user-client
 // path (filtered_doDeviceAttribute 13d3cba5 for 0x980, with a 0xdc temp buffer it then converts and copies).
 // build 0.0.514 B1: THE ENDPOINT SIZE the AGDC replies declare - route A's captured mode (gRa), else RDNA4FB's
-// LIVE Console,Width/Height (navi48_scanout_live_dims: the same source scanout_copy.h's geometry reads), else 0.0.513's documented
-// 1920x1080. 0.0.513 went from gRa straight to the constant. Read-only (registry properties). noinline: agdc_vendor's frame.
+// LIVE Console,Width/Height (navi48_scanout_live_dims: the same source scanout_copy.h's geometry reads), else the profile's
+// documented fallback (N4X_AGDC_FB_*: 1920x1080 on Navi 48, the native 2560x1440 on Navi 44). 0.0.513 went from gRa straight to
+// the constant. Read-only (registry properties). noinline: agdc_vendor's frame.
 static __attribute__((noinline)) void agdc_endpoint(uint32_t *w, uint32_t *h) {
     uint32_t cw = 0u, ch = 0u;
     if (!gRa.width || !gRa.height) (void)navi48_scanout_live_dims(&cw, &ch);
-    *w = n48_agdc_endpoint_dim(gRa.width, cw, 1920u);
-    *h = n48_agdc_endpoint_dim(gRa.height, ch, 1080u);
+    *w = n48_agdc_endpoint_dim(gRa.width, cw, N4X_AGDC_FB_W);
+    *h = n48_agdc_endpoint_dim(gRa.height, ch, N4X_AGDC_FB_H);
 }
 // build 0.0.514 B2: getLinkConfig's reply. The timing is the lit OTG's raster (n48dcn::liveRaster:
 // read-only; clock and porches from the sink's EDID row with the same totals) when that raster IS this endpoint - a native
@@ -1833,10 +1834,10 @@ static uint32_t agdc_vendor(void *self, uint32_t cmd, unsigned long *in, unsigne
         if (!(gAg.dumpedCmd & 2u)) { gAg.dumpedCmd |= 2u; agdc_dump_reply(cmd, 0u, reinterpret_cast<const uint8_t *>(outp), len, kr); }
     } else if (cmd == N48_AGDC_CMD_LINK_CONFIG) {
         gAg.linkCfg++;
-        // The endpoint must describe the FRAMEBUFFER (1920x1080 by deliberate OpenCore GOP choice), not the DP link,
-        // which runs the panel's native 2560x1440 through the DPP scaler. Same live-mode source and same fallback the
+        // The endpoint must describe the FRAMEBUFFER, not the DP link (on Navi 48 the framebuffer is a deliberate 1920x1080 OpenCore
+        // GOP choice behind the DPP scaler; on Navi 44 it is the native 2560x1440). Same live-mode source and same fallback the
         // 0x711 branch below uses. A zero pair here is the "Invalid end point size" blocker itself.
-        // build 0.0.514 B1/B2: the endpoint (gRa, else the LIVE Console size, else 1920x1080) and its timing,
+        // build 0.0.514 B1/B2: the endpoint (gRa, else the LIVE Console size, else the profile fallback) and its timing,
         // in two noinline helpers so this frame keeps 0.0.513's size.
         uint32_t lw = 0u, lh = 0u;
         agdc_endpoint(&lw, &lh);
@@ -1845,8 +1846,8 @@ static uint32_t agdc_vendor(void *self, uint32_t cmd, unsigned long *in, unsigne
     } else if (cmd == N48_AGDC_CMD_PIPELINE_CAPS) {
         gAg.pipeCaps++;
         // The scaler entry body comes from the live framebuffer mode (route A captured it into gRa at arm time); if route A
-        // is not armed, fall back to this display's documented 1920x1080. count=1 clears 0x2006 either way.
-        // build 0.0.514 B1: gRa, else the LIVE Console,Width/Height, else 1920x1080.
+        // is not armed, fall back to the profile's documented framebuffer (N4X_AGDC_FB_*). count=1 clears 0x2006 either way.
+        // build 0.0.514 B1: gRa, else the LIVE Console,Width/Height, else the profile fallback.
         uint32_t w = 0u, h = 0u;
         agdc_endpoint(&w, &h);
         kr = n48_agdc_fill_pipeline_caps(reinterpret_cast<uint8_t *>(outp), len, w, h) ? 0xe00002c2u : 0u;

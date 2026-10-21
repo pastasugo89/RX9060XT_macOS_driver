@@ -54,6 +54,9 @@ public:
 	                       OSDictionary *properties, IOUserClient **handler) override;
 	amdgpu::BringupContext *bringupContext();
 	amdgpu::DeviceContext  *deviceContext() { return &dev; }
+	// read-only BAR5 view for the GOP observation at stage 1 (buildDeviceContext has not run yet): the mapping and its size, nothing else.
+	volatile uint32_t *bar5Mmio() const { return rmmio; }
+	size_t bar5Size() const { return rmmioSize; }
 	// Navi48Ttl answers Apple's queryHwBlockRegisterBase straight out of this.
 	const IpDiscovery      &ipDisc() const { return ipDiscovery; }
 	bool interruptsArmed() const { return intArmed; }
