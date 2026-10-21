@@ -3,17 +3,27 @@
 Progetto per portare la **AMD Radeon RX 9060 XT** (Navi 44, RDNA 4, `1002:7590`) su macOS con accelerazione Metal,
 sul modello di quanto fatto da NullMoth per le GeForce RTX e da Cobalt64 per la RX 9070 XT.
 
-**Stato: sviluppo in corso, nessun test su hardware ancora.** Il port di Cobalt64 (`cobalt64/`) è parametrizzato per la
-RX 9060 XT e verificato da Linux (compilazione, test host, firmware reale). Mancano la VM macOS e il bring-up sulla scheda.
-Nessun driver è stato installato. Stato fase per fase: [`FASI.md`](FASI.md).
+**Stato: bring-up hardware e due kernel compute verificati in VM; desktop accelerato ancora da completare.**
+Il port Cobalt64 (`cobalt64/`) è parametrizzato per Navi44. Su Tahoe 25G83 lo stage17 raggiunge l'ACK GFXHUB obbligatorio, PM4, SDMA e compute baseline32/32. Sono stati completati13 boot stage17; le20 ripetizioni compute appartengono solo ai boot1–2. S1b/VMID8 boot6 è PASS completo (positive4/4 e fault/recovery EOP); vadd_ir HSACO gfx1200 è PASS boot12 con32 somme e canary. Rimangono tre fault GCVM spontanei VMID0 durante la configurazione MES (riprodotti nei boot IRQ7–13); boot13 usa timeout SET1 Navi44 `0xa` allineato a Linux e non li rimuove. L'oracolo Linux idle ha inizializzato gli stessi firmware, completato i frame MES senza fault e riportato GART0..512MiB; il GART macOS è alto a `0x8400000000..0x840fffffff`. Il confronto PTE0/GART è il prossimo passo. Nessuna serie di20 boot consecutivi è iniziata, e reset ASIC completo/telemetria IF0x33 restano da validare. RADV direct ICD ha inizializzato device/coda ma non sottomesso comandi; IOAccelerator, compute Vulkan, Metal e WindowServer restano da integrare. Vedi [`FASI.md`](FASI.md) e [`phase2_mes_fault_checkpoint.md`](research/reports/phase2_mes_fault_checkpoint.md).
+Il driver sperimentale è stato caricato soltanto nella VM di test. Stato fase per fase: [`FASI.md`](FASI.md).
 
 ## Da dove partire
 
 - [`PIANO_DRIVER_METAL_RX9060XT.md`](PIANO_DRIVER_METAL_RX9060XT.md): il piano di sviluppo (architettura, strategia,
   ambiente, milestone, test, rischi, licenze, prime azioni).
 - [`FASI.md`](FASI.md): le fasi di sviluppo e il loro stato, compresi i punti sospesi e il motivo.
+- [`VM_MACOS.md`](VM_MACOS.md): istruzioni per avviare direttamente Tahoe 25G83 con i supporti estratti dall'installer locale; toolchain e snapshot. Installazione e primo login completati; build del kext verificata, riavvio automatico della VM ancora difettoso.
+- [`gfxhub_ack_compute.md`](research/reports/gfxhub_ack_compute.md): ACK GFXHUB risolto, 13 boot stage17, prove compute e limiti MES/Fase2.
+- [`navi44_bringup_progress.md`](research/reports/navi44_bringup_progress.md): cronologia BAR0, PSP/SMU/RLC, SDMA e risoluzione GFXHUB.
+- [`navi44_first_hardware_test.md`](research/reports/navi44_first_hardware_test.md): prima discovery sulla vera RX9060XT in macOS; risultati e blocco BAR0.
+- [`macos_build_validation.md`](research/reports/macos_build_validation.md): prima build macOS del kext, verifica import, RADV e n48xlate compilati; blocchi ABI/cache dei componenti acceleratore e Metal.
+- [`radv_icd_smoke.md`](research/reports/radv_icd_smoke.md): test RADV direct-ICD su GPU passthrough, prerequisito root-only, identità profilo, code e limiti della prova.
 - [`research/reports/`](research/reports/): gli 8 report dell'analisi più i resoconti dello sviluppo (`apple_route_split.md`,
   `macos_25G83_re.md`, `navi44_kernel_checks.md`) e il piano del display in `research/display/README.md`.
+- Reverse engineering ripreso con REA MCP: [`ioaccelerator_abi_re.md`](research/reports/ioaccelerator_abi_re.md)
+  (ABI e mismatch `lazyInitialize`), [`ioaccel_vtable_inventory.md`](research/reports/ioaccel_vtable_inventory.md)
+  (13 vtable / 2720 slot) e [`metal_selector_audit.md`](research/reports/metal_selector_audit.md)
+  (override, ereditarietà e gap del bundle).
 - [`research/hw_dump/README.md`](research/hw_dump/README.md): i dati hardware misurati sulla scheda.
 
 ## Contenuto

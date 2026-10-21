@@ -15,3 +15,11 @@ build/
 
 # collegamento locale ai sorgenti Linux, dove i test di Cobalt64 li cercano (re/linux-dc)
 /cobalt64/re/
+# ioaccel-layout: output derivato dalle kernel collection Apple (il symlink punta a research/ext/layout-out, gia ignorato)
+/cobalt64/tools/ioaccel-layout/generated
+
+# spvcache 25G83 generata in locale da shader Apple (SkyLight, CoreDisplay): non versionare, non ridistribuire
+/research/ext/spvcache-25G83/
+
+# bytecode Python (cache di import, rigenerata a ogni esecuzione)
+__pycache__/
