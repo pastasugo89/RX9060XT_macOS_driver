@@ -64,8 +64,8 @@ int main(int argc, char **argv) { @autoreleasepool {
     NSString *src = slurp(dir, @"Navi48Device.m");
     CHECK("pin: Navi48Device.m is readable", src.length > 0);
     if (src.length) {
-        NSRange l = [src rangeOfString:@"+ (void)load {"], lEnd = [src rangeOfString:@"// lazyInitialize: log, then run the base"];
-        NSString *load = (l.location != NSNotFound && lEnd.location > l.location) ? [src substringWithRange:NSMakeRange(l.location, lEnd.location - l.location)] : @"";
+        NSRange l = [src rangeOfString:@"+ (void)load {"], lEnd = [src rangeOfString:@"- (BOOL)lazyInitialize {"];
+        NSString *load = (l.location != NSNotFound && lEnd.location != NSNotFound && lEnd.location > l.location) ? [src substringWithRange:NSMakeRange(l.location, lEnd.location - l.location)] : @"";
         for (NSString *pp in @[ @"MTLRenderCommandEncoder", @"MTLComputeCommandEncoder", @"MTLBlitCommandEncoder", @"MTLCommandBuffer", @"MTLDevice", @"MTLTexture", @"MTLBuffer" ]) {
             BOOL okp = [load containsString:[NSString stringWithFormat:@"\"%@\" }", pp]];
             NSString *nm = [NSString stringWithFormat:@"pin: +load runs the census against %@", pp];

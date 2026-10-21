@@ -119,6 +119,27 @@ static int write_png(const char *path, const uint8_t *bgra) {
     return ok;
 }
 
+// CPU reference of the triangle (tri.metal, vertices and clear colour of cmd_triangle, default viewport, origin top-left), as cmd_quad computes its own.
+// Pixel centre inside the triangle -> fs colour (1.0,0.8,0.0,1.0); otherwise the clear colour (0.0,0.2,0.4,1.0). RGBA bytes, like expected.raw.
+// Checked on the host against the real GPU render of boot22 (research/hw_dump/p0_boot22/out-triangle.png): 0 of 65536 pixels differ;
+// no pixel centre lies within 0.04 px of an edge, so the rule is not ambiguous there.
+static void tri_reference(uint8_t *e) {
+    const double vx[3] = { -0.8, 0.8, 0.0 }, vy[3] = { 0.8, 0.8, -0.8 };
+    double px[3], py[3];
+    for (int k = 0; k < 3; k++) { px[k] = (vx[k] + 1.0) * 0.5 * W; py[k] = (1.0 - vy[k]) * 0.5 * H; }
+    double sgn = ((px[1] - px[0]) * (py[2] - py[0]) - (py[1] - py[0]) * (px[2] - px[0])) < 0 ? -1.0 : 1.0;
+    for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
+        double cx = x + 0.5, cy = y + 0.5; int in = 1;
+        for (int k = 0; k < 3 && in; k++) {
+            int i = k, j = (k + 1) % 3;
+            if (((px[j] - px[i]) * (cy - py[i]) - (py[j] - py[i]) * (cx - px[i])) * sgn < 0) in = 0;
+        }
+        uint8_t *p = e + (y * W + x) * 4;
+        if (in) { p[0] = 255; p[1] = 204; p[2] = 0; p[3] = 255; }
+        else    { p[0] = 0;   p[1] = 51;  p[2] = 102; p[3] = 255; }
+    }
+}
+
 static int cmd_triangle(const char *out, uint64_t rid, int haveRid, BOOL precompiled, const char *metallib, const char *expPath) {
     id<MTLDevice> dev = nil;
     if (haveRid) {
@@ -188,9 +209,12 @@ static int cmd_triangle(const char *out, uint64_t rid, int haveRid, BOOL precomp
 
     const uint8_t *px = buf.contents;
     if (write_png(out, px)) printf("mtlprobe: wrote %s\n", out); else printf("mtlprobe: WARN PNG write failed for %s\n", out);
-    NSData *exp = [NSData dataWithContentsOfFile:@(expPath)];
-    if (!exp || exp.length != W * H * 4) { printf("mtlprobe: FAIL cannot read expected %s (%lu bytes)\n", expPath, (unsigned long)exp.length); return 2; }
-    const uint8_t *e = exp.bytes; int diff = 0, edge = 0;
+    // Reference: in-process CPU render like cmd_quad, unless --expected names a raw RGBA file explicitly.
+    static uint8_t tri_exp[W * H * 4];
+    NSData *fileExp = expPath ? [NSData dataWithContentsOfFile:@(expPath)] : nil;
+    if (expPath && (!fileExp || fileExp.length != W * H * 4)) { printf("mtlprobe: FAIL cannot read expected %s (%lu bytes)\n", expPath, (unsigned long)fileExp.length); return 2; }
+    if (!expPath) { tri_reference(tri_exp); printf("mtlprobe: reference: CPU render of tri.metal (in-process)\n"); }
+    const uint8_t *e = expPath ? fileExp.bytes : tri_exp; int diff = 0, edge = 0;
     for (int i = 0; i < W * H; i++) {
         // Metal readback is BGRA; expected.raw is RGBA
         uint8_t got[4] = { px[i*4+2], px[i*4+1], px[i*4+0], px[i*4+3] };
@@ -3536,7 +3560,8 @@ static int cmd_hotswap(uint64_t rid, int haveRid, double waitS, const char *spvS
     if (!side) { snprintf(sidebuf, sizeof sidebuf, "/private/var/tmp/n48m-spv-probe.%d", (int)getpid()); side = sidebuf; }
     setenv("N48M_TEST_FALLBACK_AS_WS", "1", 1); setenv("N48M_TEST_HIDE_BUNDLE_SPV", "1", 1); setenv("N48M_TEST_SIDE_DIR", side, 1);   // read by the bundle at its first lookup (root + N48M_ALLOW=1 only)
     id<MTLDevice> dev = pick_device(rid, haveRid); if (!dev) return 2;
-    if (![dev.name containsString:@"9070"]) { printf("mtlprobe: SKIP hotswap: %s is not the Navi48 device (the oracle needs the bundle with N48M_ALLOW=1 as root); nothing was run\n", dev.name.UTF8String); return 3; }
+    // Navi48 device names: the ASIC profile product names (n48_asic.h: "RX 9060 XT" default, "RX 9070 XT" with ASIC=navi48).
+    if (![dev.name containsString:@"9060"] && ![dev.name containsString:@"9070"]) { printf("mtlprobe: SKIP hotswap: %s is not the Navi48 device (the oracle needs the bundle with N48M_ALLOW=1 as root); nothing was run\n", dev.name.UTF8String); return 3; }
     if (geteuid() != 0 || !getenv("N48M_ALLOW")) { printf("mtlprobe: SKIP hotswap: needs root and N48M_ALLOW=1 (the bundle ignores the test hooks otherwise)\n"); return 3; }
     NSString *src = @(spvSrc ? spvSrc : getenv("N48M_PROBE_SPVSRC") ? getenv("N48M_PROBE_SPVSRC") : "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache");
     id<MTLLibrary> lib = n_lib(dev); if (!lib) return 2;
@@ -3847,13 +3872,12 @@ int main(int argc, char **argv) {
             if (argc >= 3 && argv[2][0] == '-') { char **nv = malloc(sizeof(char *) * (argc + 2)); nv[0] = argv[0]; nv[1] = argv[1]; nv[2] = (char *)defout;
                 for (int k = 2; k < argc; k++) nv[k + 1] = argv[k]; nv[argc + 1] = NULL; argv = nv; argc++; }
             if (argc < 3) { argv = (char *[]){ argv[0], argv[1], (char *)defout, NULL }; argc = 3; }
-            uint64_t rid = 0; int haveRid = 0; BOOL pre = NO; const char *lib = "tri.metallib"; const char *exp = "expected.raw";
-            // default expected.raw / metallib next to the executable
-            static char expbuf[1024], libbuf[1024];
+            uint64_t rid = 0; int haveRid = 0; BOOL pre = NO; const char *lib = "tri.metallib"; const char *exp = NULL;   // NULL: in-process reference (tri_reference)
+            // default metallib next to the executable
+            static char libbuf[1024];
             NSString *dir = [[[NSProcessInfo processInfo] arguments][0] stringByDeletingLastPathComponent];
             if ([dir length] == 0) dir = @".";
             NSString *d = [[NSURL fileURLWithPath:dir] URLByResolvingSymlinksInPath].path;
-            snprintf(expbuf, sizeof expbuf, "%s/expected.raw", [d UTF8String]); exp = expbuf;
             snprintf(libbuf, sizeof libbuf, "%s/tri.metallib", [d UTF8String]); lib = libbuf;
             for (int i = 3; i < argc; i++) {
                 if (!strcmp(argv[i], "--registry-id") && i + 1 < argc) { rid = strtoull(argv[++i], NULL, 0); haveRid = 1; }

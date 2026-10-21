@@ -22,3 +22,8 @@ src/navi48-bringup/firmware/
 runs/
 *.log
 .DS_Store
+
+# spvcache del bundle Metal (fill-spvcache.py, pc-translate): derivata da shader Apple, mai versionata
+/tools/native/navi48metal/spvcache/
+# n48nub: built by tools/native/build.sh (Mac)
+/tools/native/n48nub

@@ -1,0 +1,9 @@
+13:18  up 3 mins, 0 users, load averages: 1.01 0.84 0.40
+   76    0 0xffffff8004249000 0x79e000   0x79e000   com.navi48.bringup (0.0.664) 8E6F15CB-63CB-34C6-A112-77A4630B5DA2 <19 9 7 6 3 1>
+  154    0 0xffffff7f9662a000 0x624e     0x624e     com.navi48.accelprobe (0.0.7) 8081E748-A6B5-34E8-A666-74BAF8CC84C8 <153 115 9 7 6 3>
+boot-args	keepsyms=1 -v debug=0x108 serial=3 msgbuf=1048576 navi48bringup=1 navi48-stage=17 navi48-interrupts=0 navi48-native=1 navi48-metal=1 navi48-aux=1
+System Integrity Protection status: unknown (Custom Configuration).
+  |   "IOKitDiagnostics" = {"Instance allocation"=1803552,"Container allocation"=3307571,"Pageable allocation"=1167504,"Classes"={"IONDRVFramebuffer"=2,"IOHIDAc
+    | |   | | +-o Navi48MetalNub  <class Navi48MetalNub, id 0x100000441, registered, matched, active, busy 0 (63 ms), retain 7>
+    | |   | |   +-o Navi48Accelerator  <class Navi48Accelerator, id 0x100000442, registered, matched, active, busy 0 (2 ms), retain 6>
+    | |   | |         "IOClass" = "Navi48Accelerator"

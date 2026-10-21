@@ -3,6 +3,8 @@
 #   build.sh            -> build/Navi48Metal.bundle (x86_64, for the PC) + arm64 compile/link sanity build (NOT shipped)
 #   N48_LAZY=0 build.sh -> 9e variant (supportLazyInitialization not YES)
 #   N48_9D=0  build.sh  -> without the 9d feature overrides
+#   N48_SPVCACHE_DIR=<dir> build.sh -> take the spvcache pairs from <dir> (default: spvcache/ beside this script)
+#   N48_ALLOW_EMPTY_SPVCACHE=1 build.sh -> allow an EMPTY spvcache (fallback-only bundle: WindowServer shows magenta until the daemon's translations hot-swap in)
 set -euo pipefail
 D="$(cd "$(dirname "$0")" && pwd)"
 # Work dir is OUTSIDE the repo: the repo lives in a file-provider folder that stamps com.apple.FinderInfo on
@@ -32,7 +34,18 @@ rm -rf "$B"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$B/sanity
 cp "$D/Info.plist" "$APP/Contents/Info.plist"
 cp "$RADV" "$APP/Contents/Resources/libvulkan_radeon.dylib"
 cp "$XL" "$APP/Contents/Resources/libn48xlate.dylib"
-mkdir -p "$APP/Contents/Resources/spvcache"; for f in "$D"/spvcache/*.spv "$D"/spvcache/*.meta.json; do cat "$f" > "$APP/Contents/Resources/spvcache/${f:t}"; done   # cat, not cp: cp(1) hung forever in lseek on spvcache/eee33f36...meta.json   # 10d SPIR-V cache
+# 10d SPIR-V cache. N48_SPVCACHE_DIR: the .spv/.meta.json pairs (default: spvcache/ beside this script; the locally generated 25G83
+# set lives outside the repo, research/ext/spvcache-25G83/spvcache). A PARTIAL cache is always packaged: every miss takes the fallback
+# (WindowServer: magenta, compute no-op; the translation daemon's output hot-swaps in, n48_hotswap.h). An EMPTY cache is refused unless
+# N48_ALLOW_EMPTY_SPVCACHE=1 is set on purpose. The glob is null-safe (zsh (N)): before, an absent spvcache/ stopped the build.
+SPVC="${N48_SPVCACHE_DIR:-$D/spvcache}"
+spvf=("$SPVC"/*.spv(N)); metaf=("$SPVC"/*.meta.json(N))
+echo "spvcache: ${#spvf} .spv, ${#metaf} .meta.json from $SPVC"
+if [ ${#spvf} -eq 0 ] && [ "${N48_ALLOW_EMPTY_SPVCACHE:-0}" != 1 ]; then
+  echo "build.sh: no .spv in $SPVC (set N48_SPVCACHE_DIR, or N48_ALLOW_EMPTY_SPVCACHE=1 to package an empty cache on purpose)" >&2; exit 1
+fi
+[ ${#spvf} -eq ${#metaf} ] || echo "build.sh: WARNING: ${#spvf} .spv but ${#metaf} .meta.json (a kernel without its meta fails at dispatch)" >&2
+mkdir -p "$APP/Contents/Resources/spvcache"; for f in "${spvf[@]}" "${metaf[@]}"; do cat "$f" > "$APP/Contents/Resources/spvcache/${f:t}"; done   # cat, not cp: cp(1) hung forever in lseek on spvcache/eee33f36...meta.json
 clang $VKINC -arch x86_64 -mmacosx-version-min=12.0 -fobjc-arc -O2 -Wall -Wextra -Werror \
       -DN48_LAZY=$LAZY -DN48_9D=$F9D ${=ASIC_DEF} -I"$D" -bundle -framework Foundation -framework Metal -framework IOKit -framework IOSurface \
       -o "$APP/Contents/MacOS/Navi48Metal" "$D/Navi48Device.m"

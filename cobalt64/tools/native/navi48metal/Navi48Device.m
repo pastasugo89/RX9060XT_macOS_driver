@@ -73,7 +73,7 @@
 // Forward declaration, deliberately without ivars.
 @interface MTLIOAccelDevice : NSObject
 - (instancetype)initWithAcceleratorPort:(uint32_t)port;
-- (void)lazyInitialize;
+- (BOOL)lazyInitialize;
 @end
 
 // Metal's generic resource base (exported, F8). Declared without ivars for the same reason.
@@ -6005,12 +6005,13 @@ static void n48_census_log(void) {
     N48LOG("census: %lu (class, selector) pair(s) missing in this process", (unsigned long)n48cen_missing_set.count);
 }
 
-// lazyInitialize: log, then run the base (only if some superclass implements it).
-- (void)lazyInitialize {
+// Tahoe 25G83's caller consumes a BOOL result, including with N48_LAZY=0.
+// Preserve the base's failure/success; absence of the method cannot succeed.
+- (BOOL)lazyInitialize {
     Class sup = class_getSuperclass([Navi48Device class]);
     BOOL has = class_getInstanceMethod(sup, @selector(lazyInitialize)) != NULL;
     N48LOG("lazyInitialize (super implements: %d)", has);
-    if (has) [super lazyInitialize];
+    return has ? [super lazyInitialize] : NO;
 }
 
 // ---- 10a: buffers ----

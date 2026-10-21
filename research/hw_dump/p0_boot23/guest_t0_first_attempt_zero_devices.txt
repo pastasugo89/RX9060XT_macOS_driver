@@ -1,0 +1,16 @@
++zsh:1> sudo -n /Users/test/n48-metal/n48nub publish
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x10000046d, ops table ABI 3, 152 bytes
+nub rc=0
++zsh:1> echo 'nub rc=0'
++zsh:1> sudo -n /Users/test/n48-metal/n48nub status
++zsh:1> head -5
+NO Navi48MetalNub in the registry
+== T0
++zsh:1> echo '== T0'
++zsh:1> sudo 'N48M_ALLOW=1' /Users/test/navi48-staging/mtlprobe list
+mtlprobe: MTLCopyAllDevices returned 0 device(s)
+mtlprobe: MTLCreateSystemDefaultDevice returned nil
+t0 rc=1
++zsh:1> echo 't0 rc=1'

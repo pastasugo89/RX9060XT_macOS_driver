@@ -1,0 +1,64 @@
+Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+2026-10-21 13:44:18.174 mtlprobe[2399:8670] Navi48Metal: initWithAcceleratorPort 0x2103
+Navi48Metal: census: N48RenderEncoder lacks 40 of 139 MTLRenderCommandEncoder methods: !setTileSamplerStates:withRange: !dispatchThreadsPerTile: !drawIndexedPatches:patchIndexBuffer:patchIndexBufferOffset:controlPointIndexBuffer:controlPointIndexBufferOffset:indirectBuffer:indirectBufferOffset: !drawIndexedPatches:patchStart:patchCount:patchIndexBuffer:patchIndexBufferOffset:controlPointIndexBuffer:controlPointIndexBufferOffset:instanceCount:baseInstance: !drawIndexedPrimitives:indexType:indexBuffer:indexBufferOffset:indirectBuffer:indirectBufferOffset: !drawPatches:patchIndexBuffer:patchIndexBufferOffset:indirectBuffer:indirectBufferOffset:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !drawPatches:patchStart:patchCount:patchIndexBuffer:patchIndexBufferOffset:instanceCount:baseInstance: !drawPrimitives:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:withRange: !sampleCountersInBuffer:atSampleIndex:withBarrier: !setDepthTestMinBound:maxBound: !setFragmentIntersectionFunctionTable:atBufferIndex: !setFragmentIntersectionFunctionTables:withBufferRange: !setFragmentSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setFragmentVisibleFunctionTables:withBufferRange: !setTessellationFactorBuffer:offset:instanceStride: !setTessellationFactorScale:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !setThreadgroupMemoryLength:offset:atIndex: !setTileBuffer:offset:atIndex: !setTileBufferOffset:atIndex: !setTileBuffers:offsets:withRange: !setTileBytes:length:atIndex: !setTileIntersectionFunctionTable:atBufferIndex: !setTileIntersectionFunctionTables:withBufferRange: !setTileSamplerState:atIndex: !setTileSamplerState:lodMinClamp:lodMaxClamp:atIndex: !setTileSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setTileTexture:atIndex: !setTileTextures:withRange: !setTileVisibleFunctionTable:atBufferIndex: !setTileVisibleFunctionTables:withBufferRange: !setVertexAmplificationCount:viewMappings:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !setVertexIntersectionFunctionTable:atBufferIndex: !setVertexIntersectionFunctionTables:withBufferRange: !setVertexSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setVertexVisibleFunctionTable:atBufferIndex: !setVertexVisibleFunctionTables:withBufferRange: !tileHeight !tileWidth
+Navi48Metal: census: N48ComputeEncoder lacks 12 of 47 MTLComputeCommandEncoder methods: !dispatchThreadgroupsWithIndirectBuffer:indirectBufferOffset:threadsPerThreadgroup: !executeCommandsInBuffer:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:withRange: !sampleCountersInBuffer:atSampleIndex:withBarrier: !setImageblockWidth:height: !setIntersectionFunctionTable:atBufferIndex: !setIntersectionFunctionTables:withBufferRange: !setSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setStageInRegion: !setStageInRegionWithIndirectBuffer:indirectBufferOffset: !setVisibleFunctionTable:atBufferIndex: !setVisibleFunctionTables:withBufferRange:
+Navi48Metal: census: N48BlitEncoder lacks 8 of 34 MTLBlitCommandEncoder methods: !copyFromTexture:sourceSlice:sourceLevel:toTexture:destinationSlice:destinationLevel:sliceCount:levelCount: !copyIndirectCommandBuffer:sourceRange:destination:destinationIndex: !optimizeIndirectCommandBuffer:withRange: !resetCommandsInBuffer:withRange: !resolveCounters:inRange:destinationBuffer:destinationOffset: !sampleCountersInBuffer:atSampleIndex:withBarrier: getTextureAccessCounters:region:mipLevel:slice:resetCounters:countersBuffer:countersBufferOffset: resetTextureAccessCounters:region:mipLevel:slice:
+Navi48Metal: census: N48CommandBuffer lacks 2 of 39 MTLCommandBuffer methods: !parallelRenderCommandEncoderWithDescriptor: !resourceStateCommandEncoder
+Navi48Metal: census: Navi48Device lacks 2 of 139 MTLDevice methods: !sparseTileSizeWithTextureType:pixelFormat:sampleCount: !sparseTileSizeWithTextureType:pixelFormat:sampleCount:sparsePageSize:
+Navi48Metal: census: N48Texture lacks 1 of 53 MTLTexture methods: !gpuResourceID
+Navi48Metal: census: N48Buffer lacks 2 of 25 MTLBuffer methods: !newRemoteBufferViewForDevice: !remoteStorageBuffer
+Navi48Metal: census: N48RenderPipelineState lacks 0 of 27 MTLRenderPipelineState methods:
+Navi48Metal: census: N48ComputePipelineState lacks 12 of 19 MTLComputePipelineState methods: !functionHandleWithBinaryFunction: !functionHandleWithFunction: !functionHandleWithName: !gpuResourceID !newComputePipelineStateWithAdditionalBinaryFunctions:error: !newComputePipelineStateWithBinaryFunctions:error: !newIntersectionFunctionTableWithDescriptor: !newVisibleFunctionTableWithDescriptor: !reflection !requiredThreadsPerThreadgroup !shaderValidation !allocatedSize
+Navi48Metal: census: N48CommandQueue lacks 0 of 11 MTLCommandQueue methods:
+Navi48Metal: census: N48SamplerState lacks 1 of 3 MTLSamplerState methods: !gpuResourceID
+Navi48Metal: census: N48DepthStencilState lacks 1 of 3 MTLDepthStencilState methods: !gpuResourceID
+Navi48Metal: census: N48Fence lacks 0 of 3 MTLFence methods:
+Navi48Metal: census: N48Heap lacks 0 of 22 MTLHeap methods:
+Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+Navi48Metal: argumentBuffersSupport -> Tier1 (0) for this application: argument buffers beyond the basics are not implemented
+mtlprobe: MTLCopyAllDevices returned 1 device(s)
+device[0]: AMD Radeon RX 9060 XT
+    registryID=0x10000046e (4294968430)
+    location=BuiltIn locationNumber=1
+    isLowPower=0 isHeadless=1 isRemovable=0 hasUnifiedMemory=0
+    recommendedMaxWorkingSetSize=12884901888 maxBufferLength=4294967296
+    supportsFamily: Apple1=0 Apple2=0 Apple3=0 Apple4=0 Apple5=0 Apple6=0 Apple7=0 Apple8=0 Apple9=0 Mac1=0 Mac2=1 Common1=1 Common2=1 Common3=1 Metal3=0
+    class chain: Navi48Device <- MTLIOAccelDevice <- _MTLDevice <- NSObject
+Navi48Metal: supportsFamily(Metal3) -> NO for this application: argument buffers / gpuAddress are not implemented (build 6; WindowServer keeps YES)
+    ioreg: class=Navi48Accelerator name=Navi48Accelerator
+    ioreg path: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/Navi48Bringup/Navi48MetalNub/Navi48Accelerator
+    ioreg MetalPluginName = Navi48Metal
+    ioreg MetalPluginClassName = Navi48Device
+    ioreg IOClass = Navi48Accelerator
+    ioreg CFBundleIdentifier = com.navi48.accelprobe
+    ioreg IOProviderClass = Navi48MetalNub
+    ioreg parent[0]: Navi48MetalNub
+    ioreg parent[1]: Navi48Bringup
+    ioreg parent[2]: IOPCIDevice
+    ioreg parent[3]: AppleACPIPCI
+    ioreg parent[4]: IOACPIPlatformDevice
+    ioreg parent[5]: AppleACPIPlatformExpert
+default: AMD Radeon RX 9060 XT
+    registryID=0x10000046e (4294968430)
+    location=BuiltIn locationNumber=1
+    isLowPower=0 isHeadless=1 isRemovable=0 hasUnifiedMemory=0
+    recommendedMaxWorkingSetSize=12884901888 maxBufferLength=4294967296
+    supportsFamily: Apple1=0 Apple2=0 Apple3=0 Apple4=0 Apple5=0 Apple6=0 Apple7=0 Apple8=0 Apple9=0 Mac1=0 Mac2=1 Common1=1 Common2=1 Common3=1 Metal3=0
+    class chain: Navi48Device <- MTLIOAccelDevice <- _MTLDevice <- NSObject
+    ioreg: class=Navi48Accelerator name=Navi48Accelerator
+    ioreg path: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/Navi48Bringup/Navi48MetalNub/Navi48Accelerator
+    ioreg MetalPluginName = Navi48Metal
+    ioreg MetalPluginClassName = Navi48Device
+    ioreg IOClass = Navi48Accelerator
+    ioreg CFBundleIdentifier = com.navi48.accelprobe
+    ioreg IOProviderClass = Navi48MetalNub
+    ioreg parent[0]: Navi48MetalNub
+    ioreg parent[1]: Navi48Bringup
+    ioreg parent[2]: IOPCIDevice
+    ioreg parent[3]: AppleACPIPCI
+    ioreg parent[4]: IOACPIPlatformDevice
+    ioreg parent[5]: AppleACPIPlatformExpert
+EXIT=0

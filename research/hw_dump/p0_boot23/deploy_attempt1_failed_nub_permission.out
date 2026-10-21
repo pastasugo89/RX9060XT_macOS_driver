@@ -1,0 +1,39 @@
+
+== Controlli locali su /mnt/vm/builds/metal-stack-20261021-p0b
+sha256 del pacchetto: OK (64 file)
+bundle: spvcache con 35 file .spv
+sintassi pc-translate.sh: OK
+kext aux presente nella raccolta: <string>0.0.7</string>
+AVVISO: navi48test non presente nella raccolta (non indispensabile per T0-T7)
+VM di test: lock occupato (VM in esecuzione o in preparazione)
+log: /mnt/vm/images/macos-gpu-test/diagnostics/deploy/deploy-20261021-134300.log
+
+== Trasferimento del pacchetto nel guest
+
+== Esecuzione nel guest
+== preflight
+macOS 26.6.2 (25G83)
+System Integrity Protection status: unknown (Custom Configuration).
+
+Configuration:
+	Apple Internal: disabled
+	Kext Signing: disabled
+	Filesystem Protections: disabled
+	Debugging Restrictions: enabled
+	DTrace Restrictions: enabled
+	NVRAM Protections: enabled
+	BaseSystem Verification: enabled
+
+This is an unsupported configuration, likely to break in the future and leave your machine in an unknown state.
+== verifica sha256 nel guest
+sha256 nel guest: OK
+== bundle in /Library/GPUBundles
+bundle precedente spostato in Navi48Metal.bundle.prev-20261021-134300
+/Library/GPUBundles/Navi48Metal.bundle: valid on disk
+/Library/GPUBundles/Navi48Metal.bundle: satisfies its Designated Requirement
+spvcache nel bundle:       35 .spv
+== daemon di traduzione (file sempre copiati; avvio solo con --daemon)
+daemon non avviato (--daemon non passato)
+== strumenti utente (~/navi48-staging, nessun privilegio)
+cp: /Users/test/n48-metal/n48nub: Permission denied
+exit guest: 1

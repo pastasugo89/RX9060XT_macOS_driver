@@ -1,0 +1,94 @@
+log: /mnt/vm/images/macos-gpu-test/diagnostics/deploy/deploy-20261021-125014.log
+
+== Trasferimento del pacchetto nel guest
+
+== Esecuzione nel guest
+== preflight
+macOS 26.6.2 (25G83)
+System Integrity Protection status: enabled.
+== verifica sha256 nel guest
+sha256 nel guest: OK
+== bundle in /Library/GPUBundles
+Navi48Metal.bundle/: Can't create 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/_CodeSignature/: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/MacOS/: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Info.plist: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/libn48xlate.dylib: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d5c2965f05c4f0b5a0be4851ba59181dd8b8fa1ad6b6c3516ee4921c550b84bd.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a02f84e4f909ad80258fae5c917d4a7459ed263b329b81b56e3ee33ef153e645.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/b10dd7065774e9227603a2b2c01ef150f82c5870f30491fa598172744e0f1296.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/9050a053aa290d6b1d106c10bd3ba9c15f61dcde2d4e9baf345cd31933a11d03.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/7401147e2517d3c8508da5c33efb9223ae362f90dfe8d36cebdf7e290789fce7.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a0a6a744307833dec48c78c863db1afce051de8249e781aa762e7b455e401491.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d5c2965f05c4f0b5a0be4851ba59181dd8b8fa1ad6b6c3516ee4921c550b84bd.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/7401147e2517d3c8508da5c33efb9223ae362f90dfe8d36cebdf7e290789fce7.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/1493852ac3ac9e2baaf8a74271cf975dbd9dc5c137c22b23e78687939d5a7ce3.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a0a6a744307833dec48c78c863db1afce051de8249e781aa762e7b455e401491.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/89789ef9012da85477690b839cd4455ad5a744b97f4ca9d70f099f57bd975763.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/c21609d9f81745d86f98ec48ecd1b21c90111fd11ed4e1e933cacb01037df06a.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2fd8d7dedf976f8f37ec64bd1b7cbd7a0751c74dd2811411cc4daa7de61944fe.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/8ca23b41fba9acc6d1b21c80429e84d04082927856e17bfaebc75ff0d49242e6.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/c09bdbd5a7eeb78c41f37a6a656670ed03a52784e833d3ffeb39ae323f15401b.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f3805940c617ce00ac7048dbde2a9274bfe0dd83c39f807b1e4915a8fd9edbae.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/3b7fb2ca5c2a158eb28d34208a7fc69146410c8a5592e103d9b7f6c046e1423c.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d8c56dec89875e241d73a5157f8663d6de1357c52bfcb26fa16438abbc54b5b4.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/8b358ad52c8c3729ef0ccf44e89abf6c9462a621ae9d5dc17fc4cce3e910e936.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d8c56dec89875e241d73a5157f8663d6de1357c52bfcb26fa16438abbc54b5b4.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e7d61d9c840c934d22280fd935c3b0200bff0b6b0095fbbdef2a0c138d04bea0.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2c1b8ac933ee5fa591a00b39806cd377528b45a82ae3f3e2f094c8b31808143c.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a52d359769df8810c386fac95e315146b68b224484cb5f27749d1045dc32a49f.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/8ca23b41fba9acc6d1b21c80429e84d04082927856e17bfaebc75ff0d49242e6.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/c21609d9f81745d86f98ec48ecd1b21c90111fd11ed4e1e933cacb01037df06a.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2a1b182e0bef0ce832a80a09d44a68645676578c95ce79675bfdbfe6b75224f3.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f4c62e3fde055d2ad22bc5cc905f2aaf30d52784df0781edf82c20a6df11d49d.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/92f07c78294c18ae3e3730c521fece07c9ca293de30a99f16608e4305288a087.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2fd8d7dedf976f8f37ec64bd1b7cbd7a0751c74dd2811411cc4daa7de61944fe.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/71852acccef26048f7250194965104b19bb286475a6e971a79984d117ce505ae.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/cc2058f94b2ea76814c24a8ee19f84f617a1b8aa5a3f9463f42c8f9ee2dbcaf0.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d7547059194b5d81bfcb3256aa94afde650e263f5e4fcb8fadfbbc9a89377b37.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/c09bdbd5a7eeb78c41f37a6a656670ed03a52784e833d3ffeb39ae323f15401b.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e27c677fd93b5885339d0f1d4e44d551b09a547638560bed9213b5a397f6b48e.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a52d359769df8810c386fac95e315146b68b224484cb5f27749d1045dc32a49f.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/d7547059194b5d81bfcb3256aa94afde650e263f5e4fcb8fadfbbc9a89377b37.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/600fb59bb8c76316aec3b8128eb2ad4463d7ca1f54ba955111ee3c50915bb70b.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e1d2b828b2ea75813a807072bdfd353df490b96f241709fbe3938d5ea4df11ba.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e7d61d9c840c934d22280fd935c3b0200bff0b6b0095fbbdef2a0c138d04bea0.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/cc2058f94b2ea76814c24a8ee19f84f617a1b8aa5a3f9463f42c8f9ee2dbcaf0.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/92f07c78294c18ae3e3730c521fece07c9ca293de30a99f16608e4305288a087.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/9050a053aa290d6b1d106c10bd3ba9c15f61dcde2d4e9baf345cd31933a11d03.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/487fa598d7a44f9eb1a31f5958186750325cb29e34647f3b8579e9a8b6c1c085.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/356d1b7136f8ff95f64c04491da7d47c11c4964e3d6c9123644230d6a160b727.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/356d1b7136f8ff95f64c04491da7d47c11c4964e3d6c9123644230d6a160b727.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e27c677fd93b5885339d0f1d4e44d551b09a547638560bed9213b5a397f6b48e.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/4e193d4d6cfe90a3662e0136f236fdd72bd99a2a7f73fd031a3b1e6b1e80c779.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/13703fd14f1af2c5e972092468a3e90d6855a2bfd0f00084e241613067bd44df.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/53cf3c1e40b2b8e29363e60358768537eb1c60d99593ba782b63bc4bf4e2a05f.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/3b7fb2ca5c2a158eb28d34208a7fc69146410c8a5592e103d9b7f6c046e1423c.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/53cf3c1e40b2b8e29363e60358768537eb1c60d99593ba782b63bc4bf4e2a05f.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/b10dd7065774e9227603a2b2c01ef150f82c5870f30491fa598172744e0f1296.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/df0fa343d1026117617cedd5ebf7a4a085bf7243635fbe66f8fc3f0f69425013.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/8b358ad52c8c3729ef0ccf44e89abf6c9462a621ae9d5dc17fc4cce3e910e936.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2c1b8ac933ee5fa591a00b39806cd377528b45a82ae3f3e2f094c8b31808143c.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/71852acccef26048f7250194965104b19bb286475a6e971a79984d117ce505ae.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/e1d2b828b2ea75813a807072bdfd353df490b96f241709fbe3938d5ea4df11ba.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/2a1b182e0bef0ce832a80a09d44a68645676578c95ce79675bfdbfe6b75224f3.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/13703fd14f1af2c5e972092468a3e90d6855a2bfd0f00084e241613067bd44df.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f3b8f399343e65c9b5ba9593d2ce707bc0adb33ae47547e7be0b8380820d3653.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/600fb59bb8c76316aec3b8128eb2ad4463d7ca1f54ba955111ee3c50915bb70b.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/a02f84e4f909ad80258fae5c917d4a7459ed263b329b81b56e3ee33ef153e645.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/89789ef9012da85477690b839cd4455ad5a744b97f4ca9d70f099f57bd975763.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f4c62e3fde055d2ad22bc5cc905f2aaf30d52784df0781edf82c20a6df11d49d.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/df0fa343d1026117617cedd5ebf7a4a085bf7243635fbe66f8fc3f0f69425013.meta.json: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f3b8f399343e65c9b5ba9593d2ce707bc0adb33ae47547e7be0b8380820d3653.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/4e193d4d6cfe90a3662e0136f236fdd72bd99a2a7f73fd031a3b1e6b1e80c779.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/487fa598d7a44f9eb1a31f5958186750325cb29e34647f3b8579e9a8b6c1c085.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/1493852ac3ac9e2baaf8a74271cf975dbd9dc5c137c22b23e78687939d5a7ce3.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/Resources/spvcache/f3805940c617ce00ac7048dbde2a9274bfe0dd83c39f807b1e4915a8fd9edbae.spv: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/MacOS/Navi48Metal: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+Navi48Metal.bundle/Contents/_CodeSignature/CodeResources: Failed to create dir 'Navi48Metal.bundle': Operation not permitted
+tar: Error exit delayed from previous errors.
+exit guest: 1
