@@ -6954,6 +6954,8 @@ void Navi48Bringup::runStages(uint32_t target) {
 	ctx.wantKcq = (kcq != 0);
 	uint32_t hsa = 0;
 	ctx.hsaAbi = PE_parse_boot_argn("navi48-hsa-abi", &hsa, sizeof(hsa)) && hsa != 0;
+	uint32_t vaddIr = 0;
+	ctx.vaddIr = PE_parse_boot_argn("navi48-vadd-ir", &vaddIr, sizeof(vaddIr)) && vaddIr != 0;
 	uint32_t legacyDb = 0;
 	ctx.doorbellLegacy = PE_parse_boot_argn("navi48-doorbell-legacy", &legacyDb, sizeof(legacyDb)) && legacyDb != 0;
 	dev.doorbell.index.legacy_map = ctx.doorbellLegacy;
@@ -7099,6 +7101,10 @@ void Navi48Bringup::runStages(uint32_t target) {
 		setProperty("Navi48,IBTest", ctx.computeResult.ib_test_passed ? "passed" : "failed");
 		setProperty("Navi48,ComputeLanesCorrect", static_cast<uint64_t>(ctx.computeResult.lanes_checked - ctx.computeResult.lanes_mismatched), 32);
 		setProperty("Navi48,ComputeObserved0", static_cast<uint64_t>(ctx.computeResult.observed[0]), 32);
+		if (ctx.vaddIr) {
+			setProperty("Navi48,VaddIR", ctx.vaddPassed ? "passed" : "failed");
+			setProperty("Navi48,VaddIRLanesCorrect", static_cast<uint64_t>(ctx.vaddResult.lanes_checked - ctx.vaddResult.lanes_mismatched), 32);
+		}
 	}
 	if (ctx.reached >= amdgpu::BringupStage::PM4Test || ctx.failedAt == amdgpu::BringupStage::PM4Test) {
 		setProperty("Navi48,GFXQueueMappedByMES", ctx.cpLegacyRb ? "legacy-rb" : (ctx.kgqMapped ? "yes" : "no"));

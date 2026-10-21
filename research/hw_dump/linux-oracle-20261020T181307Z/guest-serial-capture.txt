@@ -1,0 +1,7 @@
+linux-oracle guest begin
+kernel: Linux cachyos 7.2.10-1-cachyos #1 SMP PREEMPT_DYNAMIC Wed, 14 Oct 2026 07:02:02 +0000 x86_64 GNU/Linux
+cmdline: console=ttyS0,115200n8 rdinit=/home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
+PCI device before driver load:
+/sys/bus/pci/devices/0000:00:01.0 0x1002:0x7590
+target_card=card0
+linux-oracle guest end; poweroff

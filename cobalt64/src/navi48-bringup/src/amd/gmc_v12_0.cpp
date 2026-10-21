@@ -108,6 +108,7 @@
 #include <IOKit/IOLib.h>
 
 #include "amdgpu_gmc.h"
+#include "gfxhub_fault_pure.h"
 #include "rebar_pure.h"   // 0.0.663: visible_size / pool_sizes (pure, host-tested)
 #include "amdgpu_log.h"
 #include "amdgpu_field_defs.h"
@@ -1536,17 +1537,51 @@ gmc_set_fault_enable_default(DeviceContext &dev,
                         WRITE_PROTECTION_FAULT_ENABLE_DEFAULT, value);
     tmp = REG_SET_FIELD(tmp, MMVM_L2_PROTECTION_FAULT_CNTL,
                         EXECUTE_PROTECTION_FAULT_ENABLE_DEFAULT, value);
-    if (!value) {
-        tmp = REG_SET_FIELD(tmp, MMVM_L2_PROTECTION_FAULT_CNTL,
-                            CRASH_ON_NO_RETRY_FAULT, 1);
-        tmp = REG_SET_FIELD(tmp, MMVM_L2_PROTECTION_FAULT_CNTL,
-                            CRASH_ON_RETRY_FAULT, 1);
-    }
+    tmp = REG_SET_FIELD(tmp, MMVM_L2_PROTECTION_FAULT_CNTL,
+                        CRASH_ON_NO_RETRY_FAULT, !value);
+    tmp = REG_SET_FIELD(tmp, MMVM_L2_PROTECTION_FAULT_CNTL,
+                        CRASH_ON_RETRY_FAULT, !value);
     WREG32(dev, reg, tmp);
     GMC_LOG("set_fault_enable_default(ip=%u, value=%d): "
             "L2_PROTECTION_FAULT_CNTL %#x -> %#x",
             (unsigned)hub.ip, value ? 1 : 0,
             (unsigned)before, (unsigned)tmp);
+    return kIOReturnSuccess;
+}
+
+// Exact ordering/semantics from Linux gfxhub_v12_0_set_fault_enable_default
+// (research/src/linux/drivers/gpu/drm/amd/amdgpu/gfxhub_v12_0.c:417-445):
+// first disable CP's halt-on-UTCL1-error behavior, then configure GCVM L2.
+kern_return_t
+gmc_gfxhub_set_fault_enable_default(DeviceContext &dev,
+                                    const HubContext &hub, bool value)
+{
+    if (hub.ip != IPBlock::GC || !hub.inited || !dev.ip.isResolved(IPBlock::GC))
+        return kIOReturnNotReady;
+
+    const uint32_t cpReg = SOC15_REG_OFFSET_BIDX(dev, IPBlock::GC, 0, 0x1e1f);
+    const uint32_t cpBefore = RREG32(dev, cpReg);
+    const uint32_t cpWrite = cp_debug_allow_utcl1_fault_recovery(cpBefore);
+    WREG32(dev, cpReg, cpWrite);
+    const uint32_t cpAfter = RREG32(dev, cpReg);
+    GMC_LOG("gfxhub CP_DEBUG %#x: %#010x -> %#010x readback=%#010x bit15=%u",
+            (unsigned)cpReg, (unsigned)cpBefore, (unsigned)cpWrite,
+            (unsigned)cpAfter,
+            (unsigned)((cpAfter & kCpDebugUtcl1ErrorHaltDisable) != 0));
+    if ((cpAfter & kCpDebugUtcl1ErrorHaltDisable) == 0)
+        return kIOReturnError;
+
+    kern_return_t r = gmc_set_fault_enable_default(dev, hub, value);
+    if (r != kIOReturnSuccess) return r;
+    const uint32_t l2Reg = SOC15_REG_OFFSET_BIDX(dev, hub.ip, hub.base_idx,
+                                                hub.vm_l2_protection_fault_cntl);
+    const uint32_t l2 = RREG32(dev, l2Reg);
+    const uint32_t crashMask = MMVM_L2_PROTECTION_FAULT_CNTL__CRASH_ON_NO_RETRY_FAULT_MASK |
+                               MMVM_L2_PROTECTION_FAULT_CNTL__CRASH_ON_RETRY_FAULT_MASK;
+    const bool crashBitsClear = (l2 & crashMask) == 0;
+    GMC_LOG("gfxhub GCVM L2 fault control readback=%#010x crash_mask=%#010x clear=%u",
+            (unsigned)l2, (unsigned)crashMask, crashBitsClear ? 1u : 0u);
+    if (value && !crashBitsClear) return kIOReturnError;
     return kIOReturnSuccess;
 }
 

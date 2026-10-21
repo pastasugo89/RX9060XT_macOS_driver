@@ -273,10 +273,29 @@ static kern_return_t ensure_gfxhub_gart(BringupContext &ctx) {
     if (ctx.gfxhubReady) return kIOReturnSuccess;
     DeviceContext &dev = *ctx.dev;
     if (!dev.ip.isResolved(IPBlock::GC)) { INIT_LOG("gfxhub: GC base unresolved"); return kIOReturnNotReady; }
+#ifndef N4X_ASIC_NAVI48
+    // Manual register invalidation cannot complete while GFXOFF has the
+    // hub asleep. Linux uses the powered firmware path once MES is ready;
+    // this early bring-up path has no MES yet. Hold the core awake and
+    // require the real invalidate ACK, rather than ignoring its timeout.
+    if (!ctx.gfxOffHeld) {
+        if (!ctx.smuOnline) return kIOReturnNotReady;
+        const kern_return_t wake = smu_send_msg(dev, PPSMC::DisallowGfxOff);
+        INIT_LOG("gfxhub: DisallowGfxOff before manual GART setup: %#x", wake);
+        if (wake != kIOReturnSuccess) return wake;
+        ctx.gfxOffHeld = true;
+    }
+#endif
     kern_return_t r = gmc_gfxhub_gart_enable(dev, ctx.gmc);
     if (r != kIOReturnSuccess) { INIT_LOG("gfxhub: gart_enable failed %#x", r); return r; }
     gmc_hdp_flush(dev);
-    gmc_flush_gpu_tlb(dev, ctx.gmc, ctx.gmc.gfxhub, /*vmid*/ 0, /*type*/ 0);
+    r = gmc_gfxhub_set_fault_enable_default(dev, ctx.gmc.gfxhub, true);
+    if (r != kIOReturnSuccess) {
+        INIT_LOG("gfxhub: upstream fault defaults/readback failed %#x", r);
+        return r;
+    }
+    r = gmc_flush_gpu_tlb(dev, ctx.gmc, ctx.gmc.gfxhub, /*vmid*/ 0, /*type*/ 0);
+    if (r != kIOReturnSuccess) { INIT_LOG("gfxhub: required initial TLB flush failed %#x", r); return r; }
     r = gart_init(dev, ctx.gmc, ctx.gart);
     if (r != kIOReturnSuccess) INIT_LOG("gfxhub: gart_init failed %#x — GTT buffers unavailable", r);
     ctx.gfxhubReady = true;
@@ -420,8 +439,6 @@ kern_return_t run_stage(BringupContext &ctx, BringupStage s) {
     case BringupStage::CPInit: {
         kern_return_t r = doorbell_init(dev, dev.doorbell);
         if (r != kIOReturnSuccess) return r;
-        r = ensure_gfxhub_gart(ctx);
-        if (r != kIOReturnSuccess) return r;
         // RS64 instruction/data cache bases: the PSP told us where it placed each image in the
         // TMR (LOAD_IP_FW responses); in the PSP-load flow nothing else programs these.
         {
@@ -438,6 +455,13 @@ kern_return_t run_stage(BringupContext &ctx, BringupStage s) {
                      (unsigned long long)ctx.cp.tmr_me_ic, (unsigned long long)ctx.cp.tmr_me_dc,
                      (unsigned long long)ctx.cp.tmr_mec_ic, (unsigned long long)ctx.cp.tmr_mec_dc0, (unsigned long long)ctx.cp.tmr_mec_dc1);
         }
+        // Linux gfx_v12_0_hw_init configures RS64 before gfxhub_enable.
+        // Preparing halted front-ends requires no GART queue; the initial
+        // invalidate must complete before any queue is enabled or mapped.
+        r = cp_prepare_rs64(dev, ctx.cp);
+        if (r != kIOReturnSuccess) return r;
+        r = ensure_gfxhub_gart(ctx);
+        if (r != kIOReturnSuccess) return r;
         if (ctx.wantInterrupts) cp_set_eop_interrupt(dev, true);
         return cp_init_full(dev, ctx.gmc, ctx.cp, ctx.cpLegacyRb);
     }
@@ -735,13 +759,22 @@ kern_return_t run_stage(BringupContext &ctx, BringupStage s) {
         const ComputeTestResult &cr = ctx.computeResult;
         ctx.computePassed = (r == kIOReturnSuccess) && cr.lanes_mismatched == 0;
         INIT_LOG("ComputeDispatch: %s — kr=%#x IB test %s, fence %s (%llu us), lanes %u/%u correct, observed %08x %08x %08x %08x expected %08x %08x %08x %08x",
-                 ctx.computePassed ? "PASSED — a shader ran on the RX 9070 XT and wrote VRAM" : "FAILED", r,
+                 ctx.computePassed ? "PASSED — a shader ran on the GPU and wrote VRAM" : "FAILED", r,
                  cr.ib_test_passed ? "passed" : "FAILED",
                  cr.fence_landed ? "landed" : "did not land", (unsigned long long)cr.elapsed_us,
                  cr.lanes_checked - cr.lanes_mismatched, cr.lanes_checked,
                  cr.observed[0], cr.observed[1], cr.observed[2], cr.observed[3],
                  cr.expected[0], cr.expected[1], cr.expected[2], cr.expected[3]);
         if (!ctx.computePassed) { dump_failure_state(ctx, "ComputeDispatch"); return r != kIOReturnSuccess ? r : kIOReturnIOError; }
+        if (ctx.vaddIr) {
+            const kern_return_t vr = compute_dispatch_test(dev, ctx.gmc, ctx.cp, &ctx.vaddResult, false, true);
+            ctx.vaddPassed = (vr == kIOReturnSuccess) && ctx.vaddResult.lanes_mismatched == 0;
+            INIT_LOG("ComputeDispatch vadd_ir (opt-in): %s — kr=%#x lanes %u/%u correct, fence %s",
+                     ctx.vaddPassed ? "PASSED" : "FAILED", vr,
+                     ctx.vaddResult.lanes_checked - ctx.vaddResult.lanes_mismatched,
+                     ctx.vaddResult.lanes_checked,
+                     ctx.vaddResult.fence_landed ? "landed" : "missing");
+        }
         return kIOReturnSuccess;
     }
     }
@@ -834,6 +867,12 @@ void bringup_teardown(BringupContext &ctx) {
     psp_release(ctx.psp);
     gmc_release_resources(ctx.gmc);
 
+    if (ctx.gfxOffHeld) {
+        const kern_return_t r = smu_send_msg(dev, PPSMC::AllowGfxOff);
+        INIT_LOG("teardown: release GFXOFF hold %#x", r);
+        if (r == kIOReturnSuccess) ctx.gfxOffHeld = false;
+    }
+
     ctx.gfxhubReady      = false;
     ctx.doorbellPathReady = false;
     ctx.reached          = BringupStage::None;
@@ -848,6 +887,10 @@ kern_return_t bringup_to(BringupContext &ctx, BringupStage target) {
         ctx.lastResult = r;
         if (r != kIOReturnSuccess) {
             ctx.failedAt = (BringupStage)s;
+            if (ctx.idleClamp && ctx.smuOnline) {
+                const kern_return_t pr = smu_set_power_state(*ctx.dev, SMUPowerState::Low);
+                INIT_LOG("failure idle clamp: GFXCLK -> low %#x", pr);
+            }
             if (s >= (uint32_t)BringupStage::RLCInit && s != (uint32_t)BringupStage::MESInit) dump_failure_state(ctx, stage_name((BringupStage)s));
             INIT_LOG("stage %u (%s) FAILED: %#x — ladder stopped; reached %s", s, stage_name((BringupStage)s), r, stage_name(ctx.reached));
             return r;

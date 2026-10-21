@@ -3,6 +3,8 @@
 #   make          build build/Navi48Bringup.kext
 #   make clean
 
+.DEFAULT_GOAL := all
+
 PRODUCT   := Navi48Bringup
 BUNDLE_ID := com.navi48.bringup
 ARCH      := x86_64
@@ -63,7 +65,7 @@ FW_SRCS  := $(patsubst firmware/%.bin,src/fw/fw_%.c,$(FW_BINS))
 FW_MISSING  := $(filter-out $(patsubst firmware/%.bin,%,$(FW_BINS)),$(FW_REQUIRED))
 # Our own compute test shaders, assembled from shaders/*.s (tools/build-shader.sh) and tracked as
 # shaders/*.bin so no LLVM is needed to build the kext.
-SHADER_FW      := shader_store_magic shader_store_magic_hsa
+SHADER_FW      := shader_store_magic shader_store_magic_hsa shader_vadd_ir
 SHADER_FW_SRCS := $(patsubst %,src/fw/fw_%.c,$(SHADER_FW))
 FW_SRCS        := $(sort $(FW_SRCS) $(SHADER_FW_SRCS))
 $(SHADER_FW_SRCS): src/fw/fw_shader_%.c: shaders/%.bin tools/embed-firmware.py

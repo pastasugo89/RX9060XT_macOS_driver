@@ -368,6 +368,10 @@ namespace PPSMC {
     // See smu_v14_0_set_soft_freq_limited_range (smu_v14_0.c:1099).
     constexpr uint32_t SetSoftMinByFreq           = 0x19;
     constexpr uint32_t SetSoftMaxByFreq           = 0x1A;
+    constexpr uint32_t GetMinDpmFreq              = 0x1D;
+    constexpr uint32_t GetMaxDpmFreq              = 0x1E;
+    constexpr uint32_t AllowGfxOff                = 0x28;
+    constexpr uint32_t DisallowGfxOff             = 0x29;
     // v0.1.29 — AC/DC source notify. Upstream smu_smc_hw_setup sends
     // this after RunDcBtc. Param: 0=DC, 1=AC. Opcode per upstream
     // smu_v14_0_2_ppsmc.h (#define PPSMC_MSG_NotifyPowerSource 0x35).

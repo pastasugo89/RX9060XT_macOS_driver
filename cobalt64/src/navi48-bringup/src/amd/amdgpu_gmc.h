@@ -391,6 +391,12 @@ extern n48_tlb83_stats gTlb83S;
 kern_return_t gmc_set_fault_enable_default(DeviceContext &dev,
                                            const HubContext &hub, bool value);
 
+// GFXHUB-only Linux gfxhub_v12_0_set_fault_enable_default port. Sets and
+// verifies CP_DEBUG's UTCL1 error-halt-disable bit before programming GCVM.
+kern_return_t gmc_gfxhub_set_fault_enable_default(DeviceContext &dev,
+                                                  const HubContext &hub,
+                                                  bool value);
+
 // Top-level GMCInit stage entry (the GMC hw_init) — runs the chain.
 kern_return_t gmc_init(DeviceContext &dev, GMCContext &gmc);
 

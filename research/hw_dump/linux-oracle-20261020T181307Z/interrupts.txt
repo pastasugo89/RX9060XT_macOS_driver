@@ -1,0 +1,28 @@
+            CPU0       CPU1       CPU2       CPU3       
+   0:         65          0          0          0  IO-APIC                  2-edge      timer
+   1:          9          0          0          0  IO-APIC                  1-edge      i8042
+   4:          0          0          4          0  IO-APIC                  4-edge      ttyS0
+   8:          0          1          0          0  IO-APIC                  8-edge      rtc0
+   9:          0          0          0          0  IO-APIC                  9-fasteoi   acpi
+  12:          0          0          0          3  IO-APIC                 12-edge      i8042
+  24:          0          0          0          0  PCI-MSI-0000:00:1f.2     0-edge      ahci[0000:00:1f.2]
+  25:          0          0          0          0  PCI-MSIX-0000:00:02.0    0-edge      virtio0-config
+  26:        107          0          0          0  PCI-MSIX-0000:00:02.0    1-edge      virtio0-requests
+  27:          0         17          0          0  PCI-MSI-0000:00:01.0     0-edge      amdgpu
+ NMI:          0          0          0          0  Non-maskable interrupts
+ LOC:       2293       1560       1879        520  Local timer interrupts
+ PMI:          0          0          0          0  Performance monitoring interrupts
+ IWI:          0          0          0          4  IRQ work interrupts
+ RES:         23         42         36         52  Rescheduling interrupts
+ CAL:        598       3949       3938       2947  Function call interrupts
+ TLB:          5          1          1         20  TLB shootdowns
+ TRM:          0          0          0          0  Thermal event interrupts
+ THR:          0          0          0          0  Threshold APIC interrupts
+ DFR:          0          0          0          0  Deferred Error APIC interrupts
+ MCE:          0          0          0          0  Machine check exceptions
+ MCP:          1          1          1          1  Machine check polls
+ HYP:          1          1          1          1  Hypervisor callback interrupts
+ PIN:          0          0          0          0  Posted-interrupt notification event
+ NPI:          0          0          0          0  Nested posted-interrupt event
+ PIW:          0          0          0          0  Posted-interrupt wakeup event
+VPMI:          0          0          0          0  Perf Guest Mediated PMI

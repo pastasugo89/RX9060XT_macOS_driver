@@ -82,6 +82,7 @@ struct ComputeTestResult {
     uint64_t      result_gpu_va;   // MC address of the result buffer in VRAM
     uint64_t      ib_gpu_va;       // MC address of the indirect buffer in VRAM
     bool          ib_test_passed;  // WRITE_DATA-in-an-IB (vmid 0) landed before the dispatch
+    bool          output_guard_passed; // first dword after the tested range remains poisoned
 
     // ---- extra diagnostics (cheap, and the log is all we get on HW) -----
     uint32_t      fence_expected;      // value cp_emit_eop_fence promised
@@ -126,7 +127,8 @@ kern_return_t compute_dispatch_test(DeviceContext &dev,
                                     GMCContext &gmc,
                                     CPContext &cp,
                                     ComputeTestResult *out,
-                                    bool hsaAbi = false);
+                                    bool hsaAbi = false,
+                                    bool vaddIr = false);
 
 // NATIVE S1b (0.0.600): the hand-written shader's bytes, and compute_dispatch_test's PM4 stream (steps 5 (a)-(k), hsaAbi = false)
 // for a caller-chosen code VA and result VA. `pkt` needs room for 64 dwords; the return is the dword count (0 = refused). No

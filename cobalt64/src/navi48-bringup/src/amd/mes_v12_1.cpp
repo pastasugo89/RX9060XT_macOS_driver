@@ -100,9 +100,64 @@
 #include "amdgpu_gmc.h"
 #include "amdgpu_ucode_psp.h"
 #include "amdgpu_log.h"
+#include "mes_api_wire.h"
 #include "../fw/fw_table.h"
 
 namespace amdgpu {
+
+// Read-only checkpoint around the first scheduler resource packets.  The
+// stage17 interrupt run observed GCVM faults at VA 0 while MES processed
+// SET_HW_RSRC/SET_HW_RSRC_1.  Keep this narrowly scoped so a diagnostic boot
+// can correlate the VMID-0 translation state and the scheduler's two output
+// buffers without changing packet contents or fault policy.
+static void
+mes_log_hwresources_checkpoint(DeviceContext &dev,
+                               const GMCContext &gmc,
+                               const MESContext &mes,
+                               const char *when)
+{
+    const HubContext &hub = gmc.gfxhub;
+    if (hub.inited && dev.ip.isResolved(hub.ip)) {
+        const uint32_t cntl = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_cntl));
+        const uint32_t pt_lo = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_base_lo));
+        const uint32_t pt_hi = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_base_hi));
+        const uint32_t start_lo = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_start_lo));
+        const uint32_t start_hi = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_start_hi));
+        const uint32_t end_lo = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_end_lo));
+        const uint32_t end_hi = RREG32(dev, SOC15_REG_OFFSET_BIDX(
+            dev, hub.ip, hub.base_idx, hub.ctx0_pt_end_hi));
+        MES_LOG("hwresource-checkpoint[%s]: VMID0 cntl=%#x pt=%08x_%08x "
+                "start=%08x_%08x end=%08x_%08x GART=[%#llx..%#llx]",
+                when, cntl, pt_hi, pt_lo, start_hi, start_lo, end_hi, end_lo,
+                (unsigned long long)gmc.gart_start,
+                (unsigned long long)gmc.gart_end);
+    } else {
+        MES_LOG("hwresource-checkpoint[%s]: GFXHUB VMID0 registers unavailable",
+                when);
+    }
+
+    auto log_words = [&](const char *name, const SysMem &mem) {
+        const volatile uint32_t *w =
+            static_cast<const volatile uint32_t *>(mem.cpu);
+        if (w == nullptr) {
+            MES_LOG("hwresource-checkpoint[%s]: %s buffer unavailable",
+                    when, name);
+            return;
+        }
+        sysmem_rmb();
+        MES_LOG("hwresource-checkpoint[%s]: %s dword[0..3]=%08x/%08x/%08x/%08x",
+                when, name, w[0], w[1], w[2], w[3]);
+    };
+    log_words("sch_ctx", mes.sch_ctx_mem);
+    log_words("status_fence", mes.status_fence_mem);
+    gmc_log_vm_faults(dev, gmc);
+}
 
 //------------------------------------------------------------------
 // Local allocation helper — replaces the reference's
@@ -531,69 +586,32 @@ mes_set_hw_resources_1(DeviceContext &dev, GMCContext &gmc, MESContext &mes)
         if (r != kIOReturnSuccess) return r;
     }
 
-    // mes_v12_0.c:713-726 — header, mes_kiq_unmap_timeout=0xa,
-    // cleaner_shader_fence_mc_addr, then submit. We mirror the
-    // upstream layout in mes_v12_api_def.h:312-335 verbatim. Natural
-    // C struct alignment on x86_64 / aarch64 introduces 4-byte
-    // padding before each uint64_t that follows a uint32_t — match
-    // that with explicit `_pad*` members so the offsets stay bit-
-    // compatible.
-    //
-    // Upstream layout (after natural alignment):
-    //   header                       u32  @  0 dw
-    //   api_status                   16B  @  1 dw  (4 dw)
-    //   timestamp                    u64  @  6 dw  (after 4 B pad)
-    //   flags (u32 union)            u32  @  8 dw
-    //   mes_debug_ctx_mc_addr        u64  @ 10 dw  (after 4 B pad)
-    //   mes_debug_ctx_size           u32  @ 12 dw
-    //   mes_kiq_unmap_timeout        u32  @ 13 dw
-    //   coop_sch_shared_mc_addr      u64  @ 14 dw
-    //   cleaner_shader_fence_mc_addr u64  @ 16 dw
-    //   ... padding to 64 dw total.
-    // Natural alignment matches upstream union layout: compiler
-    // inserts 4-byte pads after `header` (to align api_status's u64
-    // fence_addr) and after `flags` (to align mes_debug_ctx_mc_addr).
-    // We sum: header 4 + auto-pad 4 + api_status 16 + _pad_after_status 4
-    // + auto-pad 4 (timestamp align) + timestamp 8 + flags 4
-    // + _pad_after_flags 4 + mes_debug_ctx_mc_addr 8 + size 4 + timeout 4
-    // + coop 8 + cleaner 8 = 80 bytes (= 20 dwords). Round to 64 dw:
-    // pad[44] adds 176 bytes → 256 total.
-    struct MES_SetHwResources1 {
-        MES_Header_Wire header;                       // dw  0
-        MES_API_Status  api_status;                   // dw  2..5 (auto-pad at dw 1)
-        uint32_t        _pad_after_status;            // dw  6
-        uint64_t        timestamp;                    // dw  8..9 (auto-pad at dw 7)
-        uint32_t        flags;                        // dw 10
-        uint32_t        _pad_after_flags;             // dw 11
-        uint64_t        mes_debug_ctx_mc_addr;        // dw 12..13
-        uint32_t        mes_debug_ctx_size;           // dw 14
-        uint32_t        mes_kiq_unmap_timeout;        // dw 15
-        uint64_t        coop_sch_shared_mc_addr;      // dw 16..17
-        uint64_t        cleaner_shader_fence_mc_addr; // dw 18..19
-        uint32_t        pad[44];                      // round to 64 dw
-    };
-    static_assert(sizeof(MES_SetHwResources1) == 64 * 4,
-                  "SetHwResources1 must be 64 dw");
-
-    MES_SetHwResources1 pkt;
+    // Navi44 is GC12.0: Linux mes_v12_0_set_hw_resources_1 sets timeout=0xa
+    // (unit: 100 ms). Do not use the Navi48 mes_v12_1 value 100 here.
+    // Use the explicit dword wire type so host tests and compile-time
+    // assertions cover every post-status offset, independent of ABI padding.
+    MES_SetHwResources1_Wire pkt;
     memset(&pkt, 0, sizeof(pkt));
-    pkt.header.u32All = mes_api_header(kMES_API_TYPE_SCHEDULER,
-                                       MESSchOp::SET_HW_RSRC_1,
-                                       kMES_API_FRAME_DWORDS);
-    pkt.mes_kiq_unmap_timeout = 0xa;  // mes_v12_0.c:720
+    pkt.header = mes_api_header(kMES_API_TYPE_SCHEDULER,
+                                MESSchOp::SET_HW_RSRC_1,
+                                kMES_API_FRAME_DWORDS);
+    pkt.mes_kiq_unmap_timeout = 0x0a; // mes_v12_0.c:929; units of 100 ms
     pkt.cleaner_shader_fence_mc_addr = mes.resource_1_bus;
 
     const uint32_t api_status_dw =
-        offsetof(MES_SetHwResources1, api_status) / 4;
+        offsetof(MES_SetHwResources1_Wire, api_status) / 4;
     MES_LOG("set_hw_resources_1: header=%#x kiq_unmap_timeout=%#x "
             "cleaner_shader_fence_mc=%#llx (api_status @ dw %u)",
-            pkt.header.u32All, pkt.mes_kiq_unmap_timeout,
+            pkt.header, pkt.mes_kiq_unmap_timeout,
             (unsigned long long)pkt.cleaner_shader_fence_mc_addr,
             api_status_dw);
-    return mes_submit_pkt(dev, mes, MESPipe::Sched,
-                          reinterpret_cast<const uint32_t *>(&pkt),
-                          api_status_dw,
-                          /*timeout_us=*/2000000);
+    mes_log_hwresources_checkpoint(dev, gmc, mes, "before SET_HW_RSRC_1");
+    kern_return_t submit = mes_submit_pkt(dev, mes, MESPipe::Sched,
+                                          reinterpret_cast<const uint32_t *>(&pkt),
+                                          api_status_dw,
+                                          /*timeout_us=*/2000000);
+    mes_log_hwresources_checkpoint(dev, gmc, mes, "after SET_HW_RSRC_1");
+    return submit;
 }
 
 //------------------------------------------------------------------
@@ -1129,10 +1147,13 @@ mes_set_hw_resources(DeviceContext &dev, GMCContext &gmc, MESContext &mes,
     //    api_status); convert to dword offset for mes_submit_pkt.
     const uint32_t api_status_dw =
         offsetof(MES_SetHwResources, api_status) / 4;
-    return mes_submit_pkt(dev, mes, MESPipe::Sched,
-                          reinterpret_cast<const uint32_t *>(&pkt),
-                          api_status_dw,
-                          /*timeout_us=*/2000000);
+    mes_log_hwresources_checkpoint(dev, gmc, mes, "before SET_HW_RSRC");
+    kern_return_t submit = mes_submit_pkt(dev, mes, MESPipe::Sched,
+                                          reinterpret_cast<const uint32_t *>(&pkt),
+                                          api_status_dw,
+                                          /*timeout_us=*/2000000);
+    mes_log_hwresources_checkpoint(dev, gmc, mes, "after SET_HW_RSRC");
+    return submit;
 }
 
 //------------------------------------------------------------------

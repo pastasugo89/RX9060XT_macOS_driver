@@ -1,0 +1,1 @@
+guest_poweroff_qemu_exit_0

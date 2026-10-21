@@ -2483,6 +2483,19 @@ cp_kiq_smoke_test(DeviceContext &dev,
 //                  then cp_enable, then cp_compute_enable) had the
 //                  RB_ACTIVE/doorbell relationship right and the
 //                  compute/gfx relationship inverted.
+kern_return_t cp_prepare_rs64(DeviceContext &dev, CPContext &cp)
+{
+    if (cp.caches_configured && cp.rs64_configured) return kIOReturnSuccess;
+    if (!dev.ip.isResolved(IPBlock::GC)) return kIOReturnNotReady;
+    cp_enable(dev, false);
+    cp_compute_enable(dev, false);
+    kern_return_t r = cp_config_rs64_caches(dev, cp);
+    if (r != kIOReturnSuccess) return r;
+    r = cp_config_gfx_rs64(dev, cp);
+    if (r == kIOReturnSuccess) CP_LOG("RS64 prepared before GFXHUB setup; CP remains halted, no queue mapped");
+    return r;
+}
+
 kern_return_t
 cp_init_full(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
              bool legacy_rb)
@@ -2507,38 +2520,12 @@ cp_init_full(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
 
     cp_dump_state(dev, cp, "cp_init_full entry");
 
-    // (1) Halt both front-ends before touching their configuration.
-    // Upstream's PSP path arrives here already halted (RLC autoload left
-    // PFP/ME/MEC halted and gfx_v12_0_cp_gfx_load_microcode's explicit
-    // cp_gfx_enable(false) is on the DIRECT path only, gfx_v12_0.c:2682).
-    // Halting explicitly is a superset and makes the log unambiguous.
-    cp_enable(dev, false);
-    cp_compute_enable(dev, false);
-
-    // (2) RS64 instruction/data cache bases. Not in upstream's PSP path —
-    // upstream assumes the PSP set them. On this card it does not, and
-    // build 0.0.14 proved it: PFP/ME started at PC 0x3000 and faulted at
-    // VA page 0 (GCVM 0x0d33, client 6 CPG). MUST run before the pipe
-    // resets in cp_config_gfx_rs64 and before any unhalt, because
-    // programming an IC base invalidates that core's L1 I$.
-    r = cp_config_rs64_caches(dev, cp);
+    // The ladder prepares halted RS64 front-ends before the GFXHUB ACK.
+    // Standalone callers still get the same preparation here. Repeating
+    // it after that ACK would reset the pipes out of upstream's order.
+    r = cp_prepare_rs64(dev, cp);
     if (r != kIOReturnSuccess) {
-        CP_LOG("cp_config_rs64_caches failed: %#x — refusing to unhalt the "
-               "CP with a zero instruction-cache base", r);
-        return r;
-    }
-
-    // (3) gfx_v12_0_hw_init:3813-3814 —
-    //         if (adev->firmware.load_type == AMDGPU_FW_LOAD_PSP)
-    //                 gfx_v12_0_config_gfx_rs64(adev);
-    // THE missing step. Programs the RS64 PFP/ME/MEC program counters
-    // from the firmware headers and pulses every pipe reset. Without it
-    // the cores below start at PC 0.
-    r = cp_config_gfx_rs64(dev, cp);
-    if (r != kIOReturnSuccess) {
-        CP_LOG("cp_config_gfx_rs64 failed: %#x — refusing to unhalt the CP "
-               "with an unprogrammed program counter (that is what wedges "
-               "PFP/ME and faults the GFX hub at VA 0)", r);
+        CP_LOG("RS64 preparation failed: %#x — refusing to unhalt CP", r);
         return r;
     }
 

@@ -715,6 +715,9 @@ kern_return_t cp_config_rs64_caches(DeviceContext &dev, CPContext &cp);
 // the driver owns the ucode copy. Under PSP load the PSP has already
 // placed the images and told the CP where they are.
 kern_return_t cp_config_gfx_rs64(DeviceContext &dev, CPContext &cp);
+// PSP path: halt and configure RS64 before the initial GFXHUB invalidation,
+// matching gfx_v12_0_hw_init. Does not allocate/map a queue or unhalt CP.
+kern_return_t cp_prepare_rs64(DeviceContext &dev, CPContext &cp);
 
 // Port of gfx_v12_0_cp_gfx_start (gfx_v12_0.c:2699). On GFX12 this is
 // three steps and no packets: CP_MAX_CONTEXT = max_hw_contexts - 1,

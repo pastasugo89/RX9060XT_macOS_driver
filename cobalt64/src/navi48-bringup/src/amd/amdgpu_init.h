@@ -116,6 +116,7 @@ struct BringupContext {
     bool smuFullSetup { false };    // navi48-smu-full=1: run smc_hw_setup (clocks/features)
     bool smuOnline { false };
     bool gfxhubReady { false };     // GFXHUB GART enabled + gart_init done (needed before CP/MES/SDMA touch GART sysmem)
+    bool gfxOffHeld { false };      // Navi44: manual GFXHUB MMIO requires the core awake; release after teardown
     bool doorbellPathReady { false };
     bool mesNonFatal { false };      // navi48-mes-nonfatal=1: keep going past a failed MESInit (diagnostics)
     bool mesFailed { false };
@@ -138,6 +139,9 @@ struct BringupContext {
     // Off by default — the hand-written path is the proven stage-17 result and stays
     // the reference. See notes/B1-COMPILER-BRIDGE.md.
     bool hsaAbi { false };          // navi48-kcq=1: create the kernel compute queue (opt-in, see below)
+    bool vaddIr { false };          // navi48-vadd-ir=1: run bounded 32-element gfx1200 vadd after baseline compute
+    ComputeTestResult vaddResult {};
+    bool vaddPassed { false };
     bool kcqMapped { false };        // PM4Test: MES acked ADD_QUEUE(COMPUTE) for the kernel compute queue
     bool kcqTestPassed { false };    // PM4Test: a WRITE_DATA IB executed on the compute ring
     uint32_t smuVersion { 0 };

@@ -271,7 +271,7 @@ kern_return_t smu_set_soft_freq_range(const DeviceContext &dev,
 // reference's kMacAMDGPUPowerState* handler (MacAMDGPU.cpp:1608).
 namespace SMUPowerState {
     constexpr uint32_t Auto    = 0;   // min 0,    max PMFW-pick
-    constexpr uint32_t Low     = 1;   // min 0,    max 200 MHz
+    constexpr uint32_t Low     = 1;   // Navi44: PMFW-reported minimum; Navi48: max 200 MHz
     constexpr uint32_t Nominal = 2;   // same as Auto
     constexpr uint32_t High    = 3;   // min 1500 MHz, max untouched
     constexpr uint32_t Peak    = 4;   // min = max = 2400 MHz

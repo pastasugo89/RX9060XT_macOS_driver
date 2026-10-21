@@ -138,6 +138,10 @@ static const char *smu_msg_name(uint32_t msgId)
     case PPSMC::UseDefaultPPTable:          return "UseDefaultPPTable";
     case PPSMC::SetSoftMinByFreq:           return "SetSoftMinByFreq";
     case PPSMC::SetSoftMaxByFreq:           return "SetSoftMaxByFreq";
+    case PPSMC::GetMinDpmFreq:              return "GetMinDpmFreq";
+    case PPSMC::GetMaxDpmFreq:              return "GetMaxDpmFreq";
+    case PPSMC::AllowGfxOff:                return "AllowGfxOff";
+    case PPSMC::DisallowGfxOff:             return "DisallowGfxOff";
     case PPSMC::NotifyPowerSource:          return "NotifyPowerSource";
     case PPSMC::RunDcBtc:                   return "RunDcBtc";
     default:                                return "?";
@@ -768,6 +772,23 @@ smu_set_power_state(const DeviceContext &dev, uint32_t state)
     case SMUPowerState::Low:
         min_mhz = 0;
         max_mhz = 200;
+#ifndef N4X_ASIC_NAVI48
+        // Navi44 rejected the inherited 200 MHz limit. Ask PMFW for its
+        // supported GFXCLK range rather than guessing a board-specific cap.
+        {
+            uint32_t lo = 0, hi = 0;
+            kern_return_t r = smu_send_msg_with_param(dev, PPSMC::GetMinDpmFreq, PPCLK::GFXCLK << 16, &lo);
+            if (r != kIOReturnSuccess) return r;
+            r = smu_send_msg_with_param(dev, PPSMC::GetMaxDpmFreq, PPCLK::GFXCLK << 16, &hi);
+            if (r != kIOReturnSuccess) return r;
+            if (lo == 0 || lo > hi || hi > 10000u) {
+                SMU_LOG("set_power_state: invalid PMFW GFXCLK range %u..%u MHz; refusing", lo, hi);
+                return kIOReturnNotReady;
+            }
+            max_mhz = lo;
+            SMU_LOG("set_power_state: PMFW GFXCLK range %u..%u MHz; low cap %u MHz", lo, hi, max_mhz);
+        }
+#endif
         break;
     case SMUPowerState::Nominal:
         // Same as auto.

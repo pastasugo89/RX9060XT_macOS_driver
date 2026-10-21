@@ -90,6 +90,7 @@
 #include <IOKit/IOLib.h>
 
 #include "compute_test.h"
+#include "vadd_ir_abi.h"
 #include "amdgpu_cp.h"
 #include "amdgpu_gmc.h"
 #include "amdgpu_sysmem.h"
@@ -110,6 +111,9 @@ extern const size_t  fw_shader_store_magic_size;
 // tools/build-shader.sh store_magic_hsa. See notes/B1-COMPILER-BRIDGE.md.
 extern const uint8_t fw_shader_store_magic_hsa[];
 extern const size_t  fw_shader_store_magic_hsa_size;
+// Fixed gfx1200 HSA code object, extracted by tools/build-vadd-ir.sh.
+extern const uint8_t fw_shader_vadd_ir[];
+extern const size_t  fw_shader_vadd_ir_size;
 }
 
 namespace {
@@ -219,6 +223,8 @@ constexpr uint32_t COMPUTE_STATIC_THREAD_MGMT_SE3 = 0x1BBA; // offset.h:2302
 constexpr uint32_t COMPUTE_PGM_RSRC3            = 0x1BC8;  // offset.h:2330
 constexpr uint32_t COMPUTE_USER_DATA_0          = 0x1BE0;  // offset.h:2360
 constexpr uint32_t COMPUTE_USER_DATA_1          = 0x1BE1;  // offset.h:2362
+constexpr uint32_t COMPUTE_USER_DATA_2          = 0x1BE2;
+constexpr uint32_t COMPUTE_USER_DATA_3          = 0x1BE3;
 // Read-only witnesses for the failure dump.
 constexpr uint32_t GRBM_STATUS                  = 0x0DA4;  // offset.h:2002, BASE_IDX 0
 constexpr uint32_t CP_STAT                      = 0x0F40;  // offset.h:2130, BASE_IDX 0
@@ -241,6 +247,7 @@ static_assert(Reg::COMPUTE_STATIC_THREAD_MGMT_SE3 == Reg::COMPUTE_PGM_RSRC1 + 8,
 static_assert(Reg::COMPUTE_NUM_THREAD_Y == Reg::COMPUTE_NUM_THREAD_X + 1, "NUM_THREAD run");
 static_assert(Reg::COMPUTE_NUM_THREAD_Z == Reg::COMPUTE_NUM_THREAD_X + 2, "NUM_THREAD run");
 static_assert(Reg::COMPUTE_USER_DATA_1  == Reg::COMPUTE_USER_DATA_0 + 1,  "USER_DATA run");
+static_assert(Reg::COMPUTE_USER_DATA_3  == Reg::COMPUTE_USER_DATA_0 + 3,  "USER_DATA four-SGPR run");
 
 //====================================================================
 // Shader resource descriptors
@@ -304,6 +311,13 @@ constexpr uint32_t kComputePgmRsrc3 = 0x00000000u;
 constexpr uint32_t kHsaPgmRsrc1 = 0xe00f0000u;
 constexpr uint32_t kHsaPgmRsrc2 = 0x00000384u;
 constexpr uint32_t kHsaPgmRsrc3 = 0x00000010u;
+
+// vadd_ir.hsaco descriptor at .rodata+44/+48/+52. Values are taken from the
+// fixed gfx1200 code object, not the stale vadd_ir.s listing (which has a
+// different kernarg ABI). The shader uses 4 kernarg SGPRs and TGID_X.
+constexpr uint32_t kVaddPgmRsrc1 = 0xE00F0000u;
+constexpr uint32_t kVaddPgmRsrc2 = 0x00000088u;
+constexpr uint32_t kVaddPgmRsrc3 = 0x00000020u;
 
 // COMPUTE_DISPATCH_INITIATOR — gc_12_0_0_sh_mask.h:7351-7384. Same set Mesa's
 // si_emit_dispatch_packets uses:
@@ -481,7 +495,7 @@ void dump_sh_readback(const DeviceContext &dev, const char *when)
 //====================================================================
 kern_return_t
 compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
-                      ComputeTestResult *out, bool hsaAbi)
+                      ComputeTestResult *out, bool hsaAbi, bool vaddIr)
 {
     ComputeTestResult local {};
     ComputeTestResult &r = out ? *out : local;
@@ -489,26 +503,43 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
 
     // Which shader, and therefore which argument convention. Everything below
     // goes through these, so the default path is exactly what it was.
-    const uint8_t *sh_code  = hsaAbi ? fw_shader_store_magic_hsa      : fw_shader_store_magic;
-    const size_t   sh_size  = hsaAbi ? fw_shader_store_magic_hsa_size : fw_shader_store_magic_size;
-    const uint32_t sh_rsrc1 = hsaAbi ? kHsaPgmRsrc1 : kComputePgmRsrc1;
-    const uint32_t sh_rsrc2 = hsaAbi ? kHsaPgmRsrc2 : kComputePgmRsrc2;
-    const uint32_t sh_rsrc3 = hsaAbi ? kHsaPgmRsrc3 : kComputePgmRsrc3;
+    if (hsaAbi && vaddIr) {
+        CS_LOG("refused: HSA store-magic and vadd-ir selectors are mutually exclusive");
+        r.kr = kIOReturnBadArgument; return kIOReturnBadArgument;
+    }
+    const uint8_t *sh_code  = vaddIr ? fw_shader_vadd_ir :
+                              hsaAbi ? fw_shader_store_magic_hsa : fw_shader_store_magic;
+    const size_t   sh_size  = vaddIr ? fw_shader_vadd_ir_size :
+                              hsaAbi ? fw_shader_store_magic_hsa_size : fw_shader_store_magic_size;
+    const uint32_t sh_rsrc1 = vaddIr ? kVaddPgmRsrc1 : hsaAbi ? kHsaPgmRsrc1 : kComputePgmRsrc1;
+    const uint32_t sh_rsrc2 = vaddIr ? kVaddPgmRsrc2 : hsaAbi ? kHsaPgmRsrc2 : kComputePgmRsrc2;
+    const uint32_t sh_rsrc3 = vaddIr ? kVaddPgmRsrc3 : hsaAbi ? kHsaPgmRsrc3 : kComputePgmRsrc3;
     // The magic is part of the shader, so it switches with it.
     const uint32_t sh_magic = hsaAbi ? kComputeMagicHsa : kComputeMagic;
     CS_LOG("shader: %s (%llu bytes), RSRC1=%#010x RSRC2=%#010x RSRC3=%#010x, "
            "s[0:1] = %s",
-           hsaAbi ? "store_magic_hsa (LLVM-compiled)" : "store_magic (hand-written)",
+           vaddIr ? "vadd_ir (gfx1200 HSACO)" : hsaAbi ? "store_magic_hsa (LLVM-compiled)" : "store_magic (hand-written)",
            (unsigned long long)sh_size, sh_rsrc1, sh_rsrc2, sh_rsrc3,
+           vaddIr ? "dispatch packet in s[0:1], kernarg in s[2:3]" :
            hsaAbi ? "POINTER TO a kernarg buffer" : "the result buffer address");
     r.kr               = kIOReturnNotReady;
     r.lanes_checked    = kComputeThreadsX;
     r.dispatch_initiator = kDispatchInitiator;
     r.shader_bytes     = (uint32_t)sh_size;
-    for (uint32_t i = 0; i < 4; i++) {
-        r.expected[i] = sh_magic + i;
-        r.observed[i] = 0;
+    uint32_t expected_lanes[kComputeThreadsX];
+    uint32_t input_a[kComputeThreadsX] {}, input_b[kComputeThreadsX] {};
+    auto float_bits = [](float value) -> uint32_t { union { float f; uint32_t u; } v {}; v.f = value; return v.u; };
+    for (uint32_t i = 0; i < kComputeThreadsX; i++) {
+        if (vaddIr) {
+            // Binary-exact small integers/fractions make the expected sum
+            // independent of host/GPU rounding mode.
+            input_a[i] = float_bits((float)i + 1.0f);
+            input_b[i] = float_bits(0.5f);
+            expected_lanes[i] = float_bits((float)i + 1.5f);
+        } else expected_lanes[i] = sh_magic + i;
+        if (i < 4) { r.expected[i] = expected_lanes[i]; r.observed[i] = 0; }
     }
+    r.output_guard_passed = false;
 
     //----------------------------------------------------------------
     // 0. Preconditions — each failure names exactly what was missing.
@@ -626,23 +657,62 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     //----------------------------------------------------------------
     VRAMAllocation karg {};
     uint64_t karg_va = 0;
-    if (hsaAbi) {
+    VRAMAllocation inputA {}, inputB {}, dispatchPacket {};
+    uint64_t inputA_va = 0, inputB_va = 0;
+    if (vaddIr) {
+        if (!gmc.vram_alloc.alloc(4096, 4096, &inputA) || !gmc.vram_alloc.alloc(4096, 4096, &inputB)) {
+            CS_LOG("VRAM alloc for vadd input buffers failed");
+            r.kr = kIOReturnNoMemory; return kIOReturnNoMemory;
+        }
+        const uint64_t a_off = inputA.gpu_va - gmc.vram_start;
+        const uint64_t b_off = inputB.gpu_va - gmc.vram_start;
+        inputA_va = inputA.gpu_va; inputB_va = inputB.gpu_va;
+        bar0_memcpy_to_vram(dev, a_off, input_a, sizeof(input_a));
+        bar0_memcpy_to_vram(dev, b_off, input_b, sizeof(input_b));
+        (void)gmc_hdp_flush(dev);
+        CS_LOG("vadd inputs staged: a=%#llx b=%#llx bytes=%u, first=%08x+%08x",
+               (unsigned long long)inputA_va, (unsigned long long)inputB_va,
+               (unsigned)(sizeof(input_a)), input_a[0], input_b[0]);
+    }
+    if (hsaAbi || vaddIr) {
         if (!gmc.vram_alloc.alloc(4096, 4096, &karg)) {
             CS_LOG("VRAM alloc for the kernarg buffer failed");
             r.kr = kIOReturnNoMemory; return kIOReturnNoMemory;
         }
         const uint64_t karg_off = karg.gpu_va - gmc.vram_start;
         karg_va = karg.gpu_va;
-        const uint32_t a_lo = (uint32_t)(res.gpu_va & 0xFFFFFFFFu);
-        const uint32_t a_hi = (uint32_t)(res.gpu_va >> 32);
+        const uint64_t first_arg = vaddIr ? inputA_va : res.gpu_va;
+        const uint32_t a_lo = (uint32_t)(first_arg & 0xFFFFFFFFu);
+        const uint32_t a_hi = (uint32_t)(first_arg >> 32);
         bar0_memset_vram(dev, karg_off, 0, 4096);
-        bar0_memcpy_to_vram(dev, karg_off,     &a_lo, 4);
-        bar0_memcpy_to_vram(dev, karg_off + 4, &a_hi, 4);
+        if (vaddIr) {
+            const VaddKernarg args { inputA_va, inputB_va, res.gpu_va, kComputeThreadsX };
+            bar0_memcpy_to_vram(dev, karg_off, &args, sizeof(args));
+            if (!gmc.vram_alloc.alloc(4096, 4096, &dispatchPacket)) {
+                CS_LOG("VRAM alloc for vadd HSA dispatch packet failed");
+                r.kr = kIOReturnNoMemory; return kIOReturnNoMemory;
+            }
+            const uint64_t packet_off = dispatchPacket.gpu_va - gmc.vram_start;
+            // The kernel uses dispatch_ptr to read workgroup_size_x at +4 and
+            // kernarg_ptr to read the three pointers plus n at +24.
+            const VaddDispatchPacket packet = make_vadd_dispatch_packet(code.gpu_va, karg_va);
+            bar0_memset_vram(dev, packet_off, 0, 4096);
+            bar0_memcpy_to_vram(dev, packet_off, &packet, sizeof(packet));
+            (void)gmc_hdp_flush(dev);
+            CS_LOG("vadd dispatch packet at mc %#llx: workgroup=(%u,1,1), grid=(%u,1,1), "
+                   "GPU readback dword1=%#010x kernarg=%#llx",
+                   (unsigned long long)dispatchPacket.gpu_va, kComputeThreadsX,
+                   kComputeThreadsX, RVRAM32_via_mm(dev, packet_off + 4),
+                   (unsigned long long)karg_va);
+        } else {
+            bar0_memcpy_to_vram(dev, karg_off,     &a_lo, 4);
+            bar0_memcpy_to_vram(dev, karg_off + 4, &a_hi, 4);
+        }
         (void)gmc_hdp_flush(dev);
-        CS_LOG("kernarg buffer at vram+%#llx (mc %#llx): [0..7] = result mc %#llx, "
+        CS_LOG("kernarg buffer at vram+%#llx (mc %#llx): first pointer mc %#llx, "
                "GPU-side readback %#010x %#010x",
                (unsigned long long)karg_off, (unsigned long long)karg_va,
-               (unsigned long long)res.gpu_va,
+               (unsigned long long)first_arg,
                RVRAM32_via_mm(dev, karg_off), RVRAM32_via_mm(dev, karg_off + 4));
     }
 
@@ -873,9 +943,22 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     }
     // (i) The kernel argument: s[0:1] = the result buffer's MC address.
     {
-        const uint32_t v[2] = { usr_lo, usr_hi };
-        static const char *const names[2] = { "COMPUTE_USER_DATA_0", "COMPUTE_USER_DATA_1" };
-        n = emit_set_sh_reg(dev, pkt, n, Reg::COMPUTE_USER_DATA_0, v, 2, names);
+        if (vaddIr) {
+            const uint32_t v[4] = {
+                (uint32_t)(dispatchPacket.gpu_va & 0xFFFFFFFFu),
+                (uint32_t)(dispatchPacket.gpu_va >> 32),
+                (uint32_t)(karg_va & 0xFFFFFFFFu),
+                (uint32_t)(karg_va >> 32)
+            };
+            static const char *const names[4] = { "COMPUTE_USER_DATA_0 (dispatch lo)",
+                "COMPUTE_USER_DATA_1 (dispatch hi)", "COMPUTE_USER_DATA_2 (kernarg lo)",
+                "COMPUTE_USER_DATA_3 (kernarg hi)" };
+            n = emit_set_sh_reg(dev, pkt, n, Reg::COMPUTE_USER_DATA_0, v, 4, names);
+        } else {
+            const uint32_t v[2] = { usr_lo, usr_hi };
+            static const char *const names[2] = { "COMPUTE_USER_DATA_0", "COMPUTE_USER_DATA_1" };
+            n = emit_set_sh_reg(dev, pkt, n, Reg::COMPUTE_USER_DATA_0, v, 2, names);
+        }
     }
     // (j) DISPATCH_DIRECT, compute-typed (Mesa: PKT3(PKT3_DISPATCH_DIRECT, 3) |
     //     PKT3_SHADER_TYPE_S(1)): dim 1,1,1 + the initiator.
@@ -911,7 +994,7 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
 
     bool fence_landed = false, data_landed = false;
     uint64_t fence_us = 0, data_us = 0, fence_obs = 0;
-    const uint64_t elapsed = wait_for(fence, res_off, sh_magic, &fence_landed, &data_landed,
+    const uint64_t elapsed = wait_for(fence, res_off, expected_lanes[0], &fence_landed, &data_landed,
                                       &fence_us, &data_us, &fence_obs);
 
     r.fence_landed   = fence_landed;
@@ -933,7 +1016,7 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     uint32_t mismatched = 0;
     for (uint32_t i = 0; i < kComputeThreadsX; i++) {
         got[i] = RVRAM32_via_mm(dev, res_off + i * 4);
-        if (got[i] != sh_magic + i) mismatched++;
+        if (got[i] != expected_lanes[i]) mismatched++;
     }
     for (uint32_t i = 0; i < 4; i++) r.observed[i] = got[i];
     r.lanes_mismatched = mismatched;
@@ -941,27 +1024,35 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     for (uint32_t i = 0; i < kComputeThreadsX; i += 4) {
         CS_LOG("  result[%02u..%02u] = %08x %08x %08x %08x   (want %08x %08x %08x %08x)",
                i, i + 3, got[i], got[i + 1], got[i + 2], got[i + 3],
-               sh_magic + i, sh_magic + i + 1,
-               sh_magic + i + 2, sh_magic + i + 3);
+               expected_lanes[i], expected_lanes[i + 1],
+               expected_lanes[i + 2], expected_lanes[i + 3]);
     }
     // One dword past the wave must still be poison — proves we are not just
     // reading something that happens to look right.
-    CS_LOG("  result[32] = %08x (must still be the poison %#010x)",
-           RVRAM32_via_mm(dev, res_off + kComputeThreadsX * 4), kComputePoison);
+    const uint32_t guard = RVRAM32_via_mm(dev, res_off + kComputeThreadsX * 4);
+    r.output_guard_passed = guard == kComputePoison;
+    CS_LOG("  result[32] = %08x (must still be the poison %#010x): %s",
+           guard, kComputePoison, r.output_guard_passed ? "PASS" : "FAIL");
 
     dump_sh_readback(dev, "after submit");
 
     //----------------------------------------------------------------
     // 7. Verdict.
     //----------------------------------------------------------------
-    const bool passed = (mismatched == 0);
+    const bool passed = (mismatched == 0) && r.output_guard_passed;
     r.kr = passed ? kIOReturnSuccess : (fence_landed ? kIOReturnIOError : kIOReturnTimeout);
 
     if (passed && fence_landed) {
-        CS_LOG("=== PASSED — the GPU's shader cores executed our code. "
-               "32/32 lanes wrote %#010x+lane into VRAM at mc %#llx in %llu us ===",
-               sh_magic, (unsigned long long)res.gpu_va,
-               (unsigned long long)r.elapsed_us);
+        if (vaddIr) {
+            CS_LOG("=== PASSED — vadd_ir computed 32 float sums; output guard intact at mc %#llx "
+                   "in %llu us ===", (unsigned long long)res.gpu_va,
+                   (unsigned long long)r.elapsed_us);
+        } else {
+            CS_LOG("=== PASSED — the GPU's shader cores executed our code. "
+                   "32/32 lanes wrote %#010x+lane into VRAM at mc %#llx in %llu us ===",
+                   sh_magic, (unsigned long long)res.gpu_va,
+                   (unsigned long long)r.elapsed_us);
+        }
     } else if (passed) {
         CS_LOG("=== PASSED (data) but the EOP FENCE NEVER LANDED. The dispatch ran and "
                "all 32 lanes wrote correctly, so the fault is in RELEASE_MEM, not in the "

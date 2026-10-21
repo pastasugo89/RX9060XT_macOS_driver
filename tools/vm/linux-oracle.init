@@ -1,0 +1,102 @@
+#!/bin/busybox sh
+# Initramfs-only Linux oracle. Runs in QEMU guest, not on the host.
+PATH=/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+mkdir -p /proc /sys /dev /run /mnt/oracle /tmp/oracle
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
+echo /usr/bin/mdev > /proc/sys/kernel/hotplug 2>/dev/null || true
+mdev -s 2>/dev/null || true
+
+modprobe 9pnet_virtio 2>/dev/null || true
+modprobe 9p 2>/dev/null || true
+if ! mount -t 9p -o trans=virtio,version=9p2000.L linux_oracle /mnt/oracle; then
+    echo "ERROR: 9p result share unavailable; refusing to boot the GPU driver." >/dev/console
+    poweroff -f
+fi
+OUT=/mnt/oracle
+
+exec >"$OUT/guest-serial-capture.txt" 2>&1
+echo "linux-oracle guest begin"
+echo "kernel: $(uname -a)"
+echo "cmdline: $(cat /proc/cmdline)"
+echo "PCI device before driver load:"
+for d in /sys/bus/pci/devices/*; do
+    [ -r "$d/vendor" ] || continue
+    v=$(cat "$d/vendor"); x=$(cat "$d/device")
+    [ "$v:$x" = "0x1002:0x7590" ] && echo "$d $v:$x"
+done
+
+modprobe amdgpu || echo "ERROR: modprobe amdgpu failed ($?)"
+sleep 12
+mdev -s 2>/dev/null || true
+
+CARD=
+for d in /sys/class/drm/card[0-9]*; do
+    [ -e "$d/device/vendor" ] || continue
+    if [ "$(cat "$d/device/vendor" 2>/dev/null)" = "0x1002" ] &&
+       [ "$(cat "$d/device/device" 2>/dev/null)" = "0x7590" ]; then
+        CARD=${d##*/}
+        break
+    fi
+done
+echo "target_card=$CARD"
+cat /proc/cmdline >"$OUT/cmdline.txt"
+dmesg >"$OUT/dmesg.txt"
+grep -Ei 'amdgpu|drm|firmware|MES|GPU fault|VM fault' "$OUT/dmesg.txt" >"$OUT/dmesg-target.txt" || true
+cat /proc/modules >"$OUT/modules.txt"
+cat /proc/interrupts >"$OUT/interrupts.txt"
+cat /proc/iomem >"$OUT/iomem.txt"
+
+if [ -n "$CARD" ]; then
+    DEV="/sys/class/drm/$CARD/device"
+    cat "$DEV/vendor" "$DEV/device" "$DEV/subsystem_vendor" "$DEV/subsystem_device" \
+        >"$OUT/pci-ids.txt" 2>&1
+    for n in gpu_metrics gpu_busy_percent mem_info_vram_total mem_info_vram_used \
+             mem_info_gtt_total mem_info_gtt_used pp_dpm_sclk pp_dpm_mclk; do
+        [ -r "$DEV/$n" ] && { echo "[$n]"; cat "$DEV/$n"; } >>"$OUT/device-sysfs.txt" 2>&1
+    done
+    if [ -r "$DEV/gpu_metrics" ]; then
+        cat "$DEV/gpu_metrics" >"$OUT/gpu_metrics.bin"
+    fi
+    for hw in "$DEV"/hwmon/hwmon*; do
+        [ -d "$hw" ] || continue
+        for f in "$hw"/*_input "$hw"/*_label; do
+            [ -r "$f" ] || continue
+            echo "[$f]"; cat "$f"
+        done
+    done >"$OUT/hwmon.txt" 2>&1
+else
+    echo "Target GPU 1002:7590 did not create a DRM card." >"$OUT/target-missing.txt"
+fi
+
+mkdir -p /sys/kernel/debug
+mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null || true
+D="/sys/kernel/debug/dri"
+if [ -d "$D" ]; then
+    for card in "$D"/*; do
+        [ -d "$card" ] || continue
+        for name in amdgpu_firmware_info amdgpu_gpu_info amdgpu_pm_info \
+                    amdgpu_vm_info amdgpu_fence_info amdgpu_mes_event_log \
+                    amdgpu_gem_info; do
+            f="$card/$name"
+            [ -r "$f" ] && cat "$f" >"$OUT/${card##*/}-$name.txt" 2>&1
+        done
+        for f in "$card"/amdgpu_ring* "$card"/*/mqd_info; do
+            [ -f "$f" ] || continue
+            # These debugfs entries are read-only diagnostics in amdgpu.
+            cat "$f" >"$OUT/${card##*/}-$(basename "$f").txt" 2>&1
+        done
+    done
+fi
+if [ -r /sys/kernel/debug/kfd/mqds ]; then
+    cat /sys/kernel/debug/kfd/mqds >"$OUT/kfd-mqds.txt" 2>&1
+fi
+
+echo "linux-oracle guest end; poweroff"
+sync
+poweroff -f
+sleep 3
+exec /bin/busybox sh

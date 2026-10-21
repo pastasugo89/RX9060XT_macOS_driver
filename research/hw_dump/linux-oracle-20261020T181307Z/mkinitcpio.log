@@ -1,0 +1,7 @@
+==> Starting build: '7.2.10-1-cachyos'
+  -> Running build hook: [base]
+  -> Running build hook: [modconf]
+==> Generating module dependencies
+==> Creating zstd-compressed initcpio image: '/tmp/linux-oracle.Dhu5HC/initramfs.img'
+  -> Early uncompressed CPIO image generation successful
+==> Initcpio image generation successful

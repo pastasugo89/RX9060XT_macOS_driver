@@ -419,11 +419,10 @@ psp_is_sos_alive(const DeviceContext &dev)
 // psp_ring_create — port of psp_v14_0_ring_create (non-SR-IOV path).
 //============================================================
 // ----- psp_ring_destroy: psp_v14_0_ring_stop (non-SR-IOV) -----
-kern_return_t
-psp_ring_destroy(DeviceContext &dev, PSPContext &psp)
+static kern_return_t
+psp_stop_rings_hw(DeviceContext &dev)
 {
     if (!dev.ip.isResolved(IPBlock::MP0)) return kIOReturnNotReady;
-    if (!psp.ringCreated) return kIOReturnSuccess;
 
     const uint32_t reg64 = SOC15_REG_OFFSET(dev, IPBlock::MP0, MP0Regs::C2PMSG_64);
     PSP_LOG("ring_destroy: C2PMSG_64=%#010x -> GFX_CTRL_CMD_ID_DESTROY_RINGS",
@@ -440,10 +439,20 @@ psp_ring_destroy(DeviceContext &dev, PSPContext &psp)
                 r, v, v & 0xFFFFu);
         return r;
     }
-    psp.ringCreated = false;
-    psp.fenceCounter = 0;
     PSP_LOG("ring_destroy: rings destroyed (response=%#010x)", v);
     return kIOReturnSuccess;
+}
+
+kern_return_t
+psp_ring_destroy(DeviceContext &dev, PSPContext &psp)
+{
+    if (!psp.ringCreated) return kIOReturnSuccess;
+    const kern_return_t r = psp_stop_rings_hw(dev);
+    if (r == kIOReturnSuccess) {
+        psp.ringCreated = false;
+        psp.fenceCounter = 0;
+    }
+    return r;
 }
 
 kern_return_t
@@ -478,9 +487,6 @@ psp_ring_create(DeviceContext &dev, PSPContext &psp)
 
     psp.ringBusAddr = dev.vramMC(psp.ringVRAMOffset);
     psp.ringSize    = kPSPKMRingSize;
-    // Zero the full ring buffer in VRAM via BAR0.
-    bar0_memset_vram(dev, psp.ringVRAMOffset, 0, kPSPKMRingBufSize);
-
     const uint32_t reg64 = SOC15_REG_OFFSET(dev, IPBlock::MP0,
                                             MP0Regs::C2PMSG_64);
     const uint32_t reg69 = SOC15_REG_OFFSET(dev, IPBlock::MP0,
@@ -499,6 +505,21 @@ psp_ring_create(DeviceContext &dev, PSPContext &psp)
     PSP_LOG("ring_create entry: C2PMSG_64=%#010x C2PMSG_81=%#010x sosAlive=%d",
             pre64, pre81, (int)psp.sosAlive);
 
+    // A VFIO bus reset can preserve SOS and a previous KM ring even though
+    // this guest's PSPContext is new. Observed on Navi44 between VM boots:
+    // pre64=0x80c20000; another INIT returns 0x80c20115. Do not adopt its
+    // buffers or reinterpret the error as success. Stop the previous rings
+    // using the normal PSP command, require its independent successful ACK,
+    // then initialise our own ring. No other mailbox command is recovered.
+    // Include the firmware response bits (0x00c00000), not only INIT.
+    // Restrict recovery to the two completed responses observed on this ASIC.
+    if (pre81 != 0 && pre81 != 0xFFFFFFFFu &&
+        (pre64 == 0x80c20000u || pre64 == 0x80c20115u)) {
+        PSP_LOG("ring_create: previous KM INIT response survives reset; stopping old rings first");
+        const kern_return_t stopped = psp_stop_rings_hw(dev);
+        if (stopped != kIOReturnSuccess) return stopped;
+    }
+
     // 1. Wait for SOS ready to accept ring creation. Always do this (Linux
     //    does it unconditionally).
     if (!poll_reg(dev, reg64, kPSPMboxRespMask, kPSPMboxRespFlag,
@@ -509,6 +530,9 @@ psp_ring_create(DeviceContext &dev, PSPContext &psp)
         return kIOReturnTimeout;
     }
     PSP_LOG("ring_create: SOS ready, C2PMSG_64=%#010x", v);
+
+    // The previous ring is no longer active before its VRAM is reused.
+    bar0_memset_vram(dev, psp.ringVRAMOffset, 0, kPSPKMRingBufSize);
 
     // 2. Program ring address (low + high) + size, then kick.
     WREG32(dev, reg69, static_cast<uint32_t>(psp.ringBusAddr & 0xFFFFFFFFu));

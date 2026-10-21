@@ -1,0 +1,38 @@
+00000000-00000fff : Reserved
+00001000-0009fbff : System RAM
+0009fc00-0009ffff : Reserved
+000a0000-000bffff : PCI Bus 0000:00
+000c0000-000ce5ff : Video ROM
+000ce800-000cedff : Adapter ROM
+000cf000-000d13ff : Adapter ROM
+000f0000-000fffff : Reserved
+  000f0000-000fffff : System ROM
+00100000-7ffdffff : System RAM
+7ffe0000-7fffffff : Reserved
+80000000-afffffff : PCI Bus 0000:00
+b0000000-bfffffff : PCI ECAM 0000 [bus 00-ff]
+  b0000000-bfffffff : Reserved
+    b0000000-bfffffff : PNP0C01:00
+c0000000-febfffff : PCI Bus 0000:00
+  feb00000-feb7ffff : 0000:00:01.0
+  feba0000-feba0fff : 0000:00:02.0
+  feba1000-feba1fff : 0000:00:1f.2
+    feba1000-feba1fff : ahci
+fec00000-fec003ff : IOAPIC 0
+fed00000-fed003ff : HPET 0
+  fed00000-fed003ff : PNP0103:00
+fed1c000-fed1ffff : Reserved
+feffc000-feffffff : Reserved
+fffc0000-ffffffff : Reserved
+100000000-1ffffffff : System RAM
+  116800000-117e4bf3f : Kernel code
+  118000000-1190a8fff : Kernel rodata
+  119200000-1194e5d3f : Kernel data
+  119ffd000-11a3fffff : Kernel bss
+fd00000000-ffffffffff : Reserved
+e0000000000-e07ffffffff : PCI Bus 0000:00
+  e0000000000-e000fffffff : 0000:00:01.0
+  e0010000000-e001fffffff : 0000:00:01.0
+  e0020000000-e0020003fff : 0000:00:02.0
+    e0020000000-e0020003fff : virtio-pci-modern
+3ffc00000000-3fffffffffff : 0000:00:01.0
