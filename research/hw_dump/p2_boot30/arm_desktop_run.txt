@@ -1,0 +1,46 @@
+
+== Presupposti dal piano della VM di test (sola lettura: /mnt/vm/images/macos-gpu-test/test-plan.json)
+ok    stage 17
+ok    native S1b (navi48-native=1)
+ok    Metal nub (navi48-metal=1)
+ok    display route (navi48-metal-disp=1)
+ok    WindowServer client (navi48-metal-ws=1)
+ok    RX 9060 XT unico monitor (UEFI Output Max, N4X_GPU_PRIMARY=1 al lancio)
+ok    interrupts esplicito
+ok    navi48-fb2 assente
+ok    navi48-m6 assente (Navi 44 lo rifiuta)
+ok    EFI verificata
+log: /mnt/vm/images/macos-gpu-test/diagnostics/arm/arm-20261021-155427.log
+
+== Presupposti nel guest
+CHECK ok: macOS 26.6.2 / 25G83
+CHECK ok: nessun utente connesso
+CHECK ok: boot-arg P2 presenti (navi48bringup, navi48-stage=17, navi48-metal, navi48-metal-disp, navi48-metal-ws)
+CHECK ok: navi48-fb2 assente
+CHECK ok: kext di bring-up caricato (stage 17 dal boot-arg; lo stage raggiunto va letto dal log seriale)
+CHECK ok: RDNA4FB caricato (framebuffer della pipe, match 0x7590)
+CHECK ok: navi48test presente
+CHECK ok: nub Metal pubblicato
+CHECK ok: bundle installato, firma valida
+CHECK ok: pipe adottata (flags 0x3b)
+CHECK ok: pipe non ancora armata
+ARM_CHECK_PASS: presupposti verificati, nessuna azione eseguita
+
+== Armamento nel guest
+CHECK ok: macOS 26.6.2 / 25G83
+CHECK ok: nessun utente connesso
+CHECK ok: boot-arg P2 presenti (navi48bringup, navi48-stage=17, navi48-metal, navi48-metal-disp, navi48-metal-ws)
+CHECK ok: navi48-fb2 assente
+CHECK ok: kext di bring-up caricato (stage 17 dal boot-arg; lo stage raggiunto va letto dal log seriale)
+CHECK ok: RDNA4FB caricato (framebuffer della pipe, match 0x7590)
+CHECK ok: navi48test presente
+CHECK ok: nub Metal pubblicato
+CHECK ok: bundle installato, firma valida
+CHECK ok: pipe adottata (flags 0x3b)
+CHECK ok: pipe non ancora armata
+  agdc status             : 12 (already published)
+fbname 1 saltato (N48_ARM_FBNAME=0): la pipe accetta il nome RDNA4FB senza rinomina
+  accel+0xccf now         : 1 (255 = not readable)
+  pipe / GPU              : ARMED / ok
+ARM_OK: WindowServer ripartito, pipe armata (flags 0x3f). Verificare il monitor e raccogliere i log (metal_deploy_plan.md 8.4).
+exit guest: 0

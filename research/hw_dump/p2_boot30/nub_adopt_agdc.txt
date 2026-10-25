@@ -1,0 +1,9 @@
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000437, ops table ABI 3, 152 bytes
+--- pipeadopt:
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  adopted pipe            : 0xffffffa135147000  (accelerator 0xffffff9c654c3000)
+--- pipeagdc 1:
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1

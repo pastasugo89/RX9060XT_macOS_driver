@@ -1,0 +1,2 @@
+  114    0 0xffffff7f96638000 0xa324     0xa324     com.hackintosh.RDNA4FB (0.0.1) 220C73F4-AF8F-3638-ACF5-7E50A0C5EFEA <113 19 9 7 6 3>
+Connection to 127.0.0.1 closed by remote host.

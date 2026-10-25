@@ -1,0 +1,56 @@
+== pid WS: 1247
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+== pipestat 4
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+== log
+2026-10-21 16:54:45.570084+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:45.622417+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 16:54:45.624998+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1920x1080 to 1920x1080@60.0) for 0x100000318 with code 0xe0
+2026-10-21 16:54:45.625001+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1280x720 to 1280x720@60.0) for 0x100000318 with code 0xe000
+2026-10-21 16:54:45.625003+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (720x480 to 720x480@59.9) for 0x100000318 with code 0xe00002
+2026-10-21 16:54:45.625005+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (640x480 to 640x480@59.9) for 0x100000318 with code 0xe00002
+2026-10-21 16:54:45.625006+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1920x1080 to 1920x1080@50.0) for 0x100000318 with code 0xe0
+2026-10-21 16:54:45.625008+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1280x720 to 1280x720@50.0) for 0x100000318 with code 0xe000
+2026-10-21 16:54:45.625010+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (2560x1440 to 2560x1440@120.0) for 0x100000318 with code 0xe
+2026-10-21 16:54:45.625012+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (2560x1440 to 2560x1440@60.0) for 0x100000318 with code 0xe0
+2026-10-21 16:54:45.625013+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (2560x1440 to 2560x1440@99.9) for 0x100000318 with code 0xe0
+2026-10-21 16:54:45.627045+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 16:54:46.319299+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 pool: ON (/private/tmp/n48m-pool present at device creation): slabs 4096 KiB (<= 256 KiB), recycle 256 KiB..64 MiB cap 256 MiB, idle 2000 ms, dedicated query yes, granu
+2026-10-21 16:54:46.319327+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 drawopt: ON (/private/tmp/n48m-drawopt present at device creation; latched for the life of this process): descriptor-set reuse, pipeline-bind skip, variant cache, rende
+2026-10-21 16:54:46.319777+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 timing: summaries every 10 s (pid 1247 WindowServer)
+2026-10-21 16:54:46.331553+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.332855+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.334142+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.335435+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.336768+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.338055+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 16:54:46.950145+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - Display 0x1b572300: Unit 0: Startup Mode 2560 x 1440, CGSThirtytwoBitColor, Resolution 1, ioModeID 0x1, ioModeDepth 0x0, IOReturn 0x0
+2026-10-21 16:54:46.950542+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] -   Display 0x1b572300: Unit 0; Vendor 0x1e6d Model 0x5c87 S/N 707 Dimensions 23.50 x 13.23; online enabled, Bounds (0,0)[2560 x 1440], Rotation 
+2026-10-21 16:54:46.950834+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x6000007b48f0
+2026-10-21 16:54:46.957746+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600002b9ea00: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by 
+2026-10-21 16:54:46.968495+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600002b9ee00: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by 
+2026-10-21 16:54:46.973246+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer: can't set device gamma (0xe00002c7)
+2026-10-21 16:54:48.371625+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 16:54:56.421563+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 16:54:56.615263+0200 0x12dd     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 spvcache_read n=2 avg=1.534ms min=1.396ms max=1.672ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=0/0/1/1/0/0/0/0 [WindowServer pid 1247, 10 s window]
+2026-10-21 16:54:56.615277+0200 0x12dd     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 shader_module n=2 avg=0.017ms min=0.013ms max=0.022ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=2/0/0/0/0/0/0/0 [WindowServer pid 1247, 10 s window]
+2026-10-21 16:54:56.615280+0200 0x12dd     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 gfx_pipeline n=1 avg=2.752ms min=2.752ms max=2.752ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=0/0/0/1/0/0/0/0 [WindowServer pid 1247, 10 s window]
+2026-10-21 16:54:56.615282+0200 0x12dd     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 1247]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+2026-10-21 16:54:57.237961+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 16:54:58.238012+0200 0x12d8     Error       0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+== lines:     1572

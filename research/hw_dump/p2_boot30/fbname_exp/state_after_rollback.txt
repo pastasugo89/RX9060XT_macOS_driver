@@ -1,0 +1,20 @@
+WS pid now: 1323
+--- framebuffer class:
+<class RDNA4FB, id 0x10000031d, registered, matched, active, busy 0 (12 ms), retain 19>
+--- pipestat 0:
+  flags / factory mask    : 0x3b / 0xd
+--- n48m starts file:
+       5
+--- WS recent CoreDisplay/Navi48Metal (2m):
+2026-10-21 15:57:30.369 E  WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:57:30.370 E  WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:57:30.371 E  WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:57:30.372 E  WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:57:31.072 Df WindowServer[1323:14eb] [com.apple.SkyLight.processes:Focus] <BSCompoundAssertion:0x600001dad500> ([FocusManager:257]-deferringPolicyEvaluationSuppression) acquire for reason:process death - 0x0-0x12012 
+2026-10-21 15:57:31.076 Df WindowServer[1323:14eb] [com.apple.SkyLight.processes:Focus] <BSCompoundAssertion:0x600001dad500> ([FocusManager:257]-deferringPolicyEvaluationSuppression) invalidate acq:0x6000008ac0a0 count:1
+2026-10-21 15:57:31.076 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:deferringPolicyEvaluat
+2026-10-21 15:57:31.076 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000008b7e00 count:1
+2026-10-21 15:57:31.164 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost proc
+2026-10-21 15:57:31.164 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000008a82e0 count:1
+2026-10-21 15:57:33.657 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost proc
+2026-10-21 15:57:33.657 Df WindowServer[1323:14eb] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x600001dbe5c0> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x60000088d000 count:1

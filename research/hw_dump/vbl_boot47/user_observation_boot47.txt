@@ -1,0 +1,2 @@
+Osservazione utente boot47 dopo l'arm (23/10/2026, riferita dal coordinatore): nessuna differenza. Orologio assente, nessuna trasparenza, login window invariata.
+Coerente con frames=0, command_buffers=0 (pid 705) e pipestat submit 0.

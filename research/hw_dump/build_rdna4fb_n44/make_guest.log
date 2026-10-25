@@ -1,0 +1,12 @@
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -IMacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/framebuffer.cpp -o build/src/framebuffer.o
+In file included from src/framebuffer.cpp:6:
+src/framebuffer.hpp:22:10: fatal error: 'IOKit/graphics/IOFramebuffer.h' file not found
+   22 | #include <IOKit/graphics/IOFramebuffer.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+make: *** [build/src/framebuffer.o] Error 1
+MAKE_RC=
+total 0
+drwxr-xr-x   3 test  staff   96 Oct 21 15:21 .
+drwxr-xr-x  13 test  staff  416 Oct 21 15:21 ..
+drwxr-xr-x   2 test  staff   64 Oct 21 15:21 src

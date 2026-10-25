@@ -1,0 +1,63 @@
+== 15:55:19 dcnstate 1 (read-only)
+accel dcnstate: FAILED (0xe00002e2) — not armed, OR (0.0.236, `fire`) the EXPOSURE GATE is closed: LoadAccelerator is withheld so no accelerator nub and no Metal device appear. Read Navi48,AccelGate in ioreg and the accel-gate lines in `log`. Boot the live variant stage17-accel-pdb0-qn , never plain stage17-accel
+== pipestat 0
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+== pipestat 1
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  refused: no plane 0              : 0
+  refused: txn not kernel ptr      : 0
+  refused: plane array bad         : 0
+  refused: IOSurface/resource bad  : 0
+  refused: resource fields bad     : 0
+  refused: source memory bad       : 0
+  refused: source not admitted     : 0
+  refused: geometry disagrees      : 0
+  refused: console unknown         : 0
+  refused: geometry refused        : 0
+== pipestat 2
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  refused: stride refused          : 0
+  refused: dest rows past console  : 0
+  refused: source rows past source : 0
+  refused: a copy was running      : 0
+  refused: no scratch buffer       : 0
+  refused: short source read       : 0
+  refused: console write refused   : 0
+  refused: NOT PREPARED (cache miss): 0
+  copy time ns avg/max    : 0 / 0 (copied frames only; the minimum is in the driver log's `pipe stat` line)
+== pipestat 3
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  perform skipped, scanout plane owned by a native client: 0
+  submit not wired, scanout plane owned                  : 0
+  submit interval ns min/avg/max (n intervals)           : 0 / 0 / 0 (0)
+  scanout plane owned by a native client right now       : no
+== pipestat 4
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+== WindowServer T1 counts (last 3 min, user log)
+2026-10-21 15:54:06.645 Df WindowServer[194:8d8] (Navi48Metal) Navi48Metal: census: N48ComputePipelineState lacks 12 of 19 MTLComputePipelineState methods: !functionHandleWithBinaryFunction: !functionHandleWithFunction: !functionHandleWithName: !gpuResourceID 
+2026-10-21 15:54:29.407 Df WindowServer[724:ca5] (Navi48Metal) Navi48Metal: census: N48ComputePipelineState lacks 12 of 19 MTLComputePipelineState methods: !functionHandleWithBinaryFunction: !functionHandleWithFunction: !functionHandleWithName: !gpuResourceID 
+2026-10-21 15:54:29.424 Df WindowServer[724:ca5] (Navi48Metal) Navi48Metal: newRenderPipelineStateWithDescriptor:error:
+2026-10-21 15:54:29.696 Df WindowServer[724:ca5] (Navi48Metal) Navi48Metal: P4 impcache: ON (default since build 16; kill file /private/tmp/n48m-noimpcache absent at device creation; latched for the life of this process): one shared import per IOSurface, kept 
+2026-10-21 15:54:40.178 Df WindowServer[724:caa] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 724]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+2026-10-21 15:54:40.178 Df WindowServer[724:caa] (Navi48Metal) Navi48Metal: build 16: use-count policy IN-FLIGHT ONLY (a surface is use-counted while a command buffer that touched a texture of it is in flight) (kill file /private/tmp/n48m-nousecount absent); I
+== WindowServer pid: 724

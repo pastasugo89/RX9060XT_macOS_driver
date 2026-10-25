@@ -1,0 +1,12 @@
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x100000441
+  vendor calls            : 11 (vendor info 5, GPU capability 4, other 2, bad length 0)
+  command 0x1 x5
+  command 0x980 x4
+  command 0x3 x1
+  command 0x941 x1
+rc=

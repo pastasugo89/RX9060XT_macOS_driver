@@ -1,0 +1,28 @@
+== 15:56:59 WS pid: 724
+-- framebuffer class (ioreg):
+<class RDNA4FB, id 0x10000031d, registered, matched, active, busy 0 (6 ms), retain 19>
+-- pipestat 0 / 3 / 4:
+  flags / factory mask    : 0x3f / 0xd
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+  flags / factory mask    : 0x3f / 0xd
+  submit interval ns min/avg/max (n intervals)           : 0 / 0 / 0 (0)
+  flags / factory mask    : 0x3f / 0xd
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+-- CoreDisplay (last 3m):
+2026-10-21 15:54:29.151 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.202 Df WindowServer[724:ca5] [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 15:54:29.206 Df WindowServer[724:ca5] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x10000031d
+2026-10-21 15:54:29.207 Df WindowServer[724:ca5] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 15:54:29.398 Df WindowServer[724:ca5] [com.apple.CoreDisplay:default] [WARN] - Created FB 1 of 1
+2026-10-21 15:54:29.704 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Display id 0x00000000 -> 0x1b572300
+2026-10-21 15:54:29.707 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.708 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.709 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.710 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.711 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.712 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.724 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:54:30.325 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration finished
+2026-10-21 15:54:40.178 Df WindowServer[724:caa] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 724]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)

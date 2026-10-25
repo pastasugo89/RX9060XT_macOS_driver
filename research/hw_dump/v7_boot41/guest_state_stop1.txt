@@ -1,0 +1,13 @@
+   78    0 0xffffff8004249000 0x79f000   0x79f000   com.navi48.bringup (0.0.664) 5AB9CA08-C838-36C0-B061-F1F1CF4A66C5 <19 9 7 6 3 1>
+  117    0 0xffffff7f96638000 0xae84     0xae84     com.hackintosh.RDNA4FB (0.0.6) 47DF03F3-1B22-358B-B941-042AB7A1ADE9 <114 19 9 7 6 3>
+  157    1 0xffffff7f95267000 0x6964c    0x6964c    com.apple.iokit.IOAcceleratorFamily2 (487.4.3) B77A42EC-6B0C-3A8D-89A2-B8F4CDBAC8C9 <114 85 48 27 19 9 8 7 6 3 1>
+  158    0 0xffffff7f9662a000 0x624e     0x624e     com.navi48.accelprobe (0.0.7) 8081E748-A6B5-34E8-A666-74BAF8CC84C8 <157 114 9 7 6 3>
+---
+boot-args	keepsyms=1 -v debug=0x108 serial=3 msgbuf=1048576 navi48bringup=1 navi48-stage=17 navi48-interrupts=0 navi48-native=1 navi48-metal=1 navi48-aux=1
+csr-active-config	%03%00%00%00
+---
+drwxr-xr-x   3 root  wheel    96 Oct 21 12:50 Navi48Accel-0.0.7.kext
+drwxr-xr-x   3 root  wheel    96 Oct 21 18:56 RDNA4FB.kext
+---
+222eb96e9186e072caffd309b68817f32243fb2a91a9d77fedb028b3d159e3cb  /Library/Extensions/RDNA4FB.kext/Contents/MacOS/RDNA4FB
+578bc71aace7e5bd1f07af5d54f7a8182441269e2bb0313450c0707da9152750  /Users/test/rdna4fb-stage/backup-v6/RDNA4FB.kext/Contents/MacOS/RDNA4FB

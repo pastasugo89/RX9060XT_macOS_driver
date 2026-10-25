@@ -1,0 +1,48 @@
+## pipestat 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x31 / 0
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+## pipestat 4
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x31 / 0
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+## nub status
+Navi48MetalNub present, registry ID 0x10000044a
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+## pipeadopt (retry)
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffffa90c03a000  (accelerator 0xffffffadd98f7000)
+## ucprobe 1 (retry)
+accel ucprobe: FAILED (0xe00002e2) — not armed, OR (0.0.236, `fire`) the EXPOSURE GATE is closed: LoadAccelerator is withheld so no accelerator nub and no Metal device appear. Read Navi48,AccelGate in ioreg and the accel-gate lines in `log`. Boot the live variant stage17-accel-pdb0-qn , never plain stage17-accel
+## loaded navi/RDNA/accel kexts
+   78    0 0xffffff8004249000 0x79f000   0x79f000   com.navi48.bringup (0.0.664) 5AB9CA08-C838-36C0-B061-F1F1CF4A66C5 <19 9 7 6 3 1>
+  110    0 0xffffff7f96638000 0xc444     0xc444     com.hackintosh.RDNA4FB (0.0.8) 1166404A-2726-3161-A314-4DAF315B7CCC <109 19 9 7 6 3>
+  154    1 0xffffff7f95267000 0x6964c    0x6964c    com.apple.iokit.IOAcceleratorFamily2 (487.4.3) B77A42EC-6B0C-3A8D-89A2-B8F4CDBAC8C9 <109 85 48 27 19 9 8 7 6 3 1>
+  155    0 0xffffff7f9662a000 0x624e     0x624e     com.navi48.accelprobe (0.0.7) 8081E748-A6B5-34E8-A666-74BAF8CC84C8 <154 109 9 7 6 3>
+## who/uptime
+15:43  up 3 mins, 0 users, load averages: 1.00 0.57 0.24

@@ -1,0 +1,25 @@
+62a63,81
+> # N4X_GPU_ROOTPORT=1 (2026-10-21, opt-in): the RX 9060 XT (03:00.0) and its audio function (03:00.1) sit behind a
+> # pcie-root-port on q35 (bus != 0), as on bare metal. The window reserves (pref64/mem/io) are set so that the bridge window
+> # fits the 256 MiB BAR0: an earlier attempt without them left the child resources unassigned (research/reports/
+> # navi44_bringup_progress.md). Unset: the GPU stays on the root bus, unchanged.
+> case "${N4X_GPU_ROOTPORT:-0}" in 0|1) ;; *) echo 'N4X_GPU_ROOTPORT accetta solo 0 o 1.' >&2; exit 1 ;; esac
+> if [[ "${N4X_GPU_ROOTPORT:-0}" == 1 ]]; then
+>   echo 'Topologia: GPU dietro pcie-root-port (bus non 0), finestre pref64=512M mem=8M io=4K.'
+>   GPU_DEV=(
+>     -device pcie-root-port,id=gpuport,bus=pcie.0,addr=0x10,chassis=1,slot=1,hotplug=off,pref64-reserve=512M,mem-reserve=8M,io-reserve=4K
+>     -device "vfio-pci,host=0000:03:00.0,bus=gpuport,addr=0x0,multifunction=on,${GPU_ROM_OPT}"
+>     -device vfio-pci,host=0000:03:00.1,bus=gpuport,addr=0x0.0x1
+>   )
+> else
+>   GPU_DEV=(
+>     -device "vfio-pci,host=0000:03:00.0,${GPU_ROM_OPT}"
+>     -device vfio-pci,host=0000:03:00.1
+>   )
+> fi
+> 
+94,95c113
+<   -device "vfio-pci,host=0000:03:00.0,${GPU_ROM_OPT}"
+<   -device vfio-pci,host=0000:03:00.1
+---
+>   "${GPU_DEV[@]}"

@@ -1,0 +1,3 @@
+9e24b75634208b1b986d54b07796b39b3eefad0a0cfbcef9ef5d15032470d499  OpenCore/OpenCore.stage1.qcow2
+70c71a23a99566dc6f7a48751ba4a8e0ad538313a960de9a6010823a94412f08  test-plan.json
+a6579a55af6da05213ae576aa8e17ba5f9d0cdb2c06f53a81c26ff6694c104ac  staging/config.stage17.plist

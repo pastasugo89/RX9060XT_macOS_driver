@@ -1,0 +1,21 @@
+2026-10-21 15:37:00.133 E  WindowServer[193:2db] [com.apple.CoreDisplay:default] [ERROR] - Unable to find display pipe for IOFB service / regID: 0xfd73 / 0x100000323
+gpu 0x25ad       agdc 0x000000000 
+2026-10-21 15:38:26.954 E  WindowServer[192:2d3] (IOPresentment) Error: Unable to acquire map
+2026-10-21 15:38:27.725 Df WindowServer[192:850] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+gpu 0x25ad       agdc 0x100000441     /Navi48Bringup/Navi48AGDC
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+2026-10-21 15:47:49.144 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Unable to find display pipe for IOFB service / regID: 0xec03 / 0x100000319
+gpu 0x25ad       agdc 0x000000000 
+2026-10-21 15:50:03.409 E  WindowServer[195:2d8] (IOPresentment) Error: Unable to acquire map
+2026-10-21 15:50:04.201 Df WindowServer[195:81b] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001db
+2026-10-21 15:50:27.015 E  WindowServer[195:2d8] [com.apple.CoreDisplay:default] [ERROR] - Unable to find display pipe for IOFB service / regID: 0xae3b / 0x100000338
+gpu 0x25ad       agdc 0x000000000 
+2026-10-21 15:51:00.010 E  WindowServer[187:2d6] (IOPresentment) Error: Unable to acquire map
+gpu 0xf9ce       agdc 0x000000000 
+2026-10-21 15:51:00.066 Df WindowServer[187:7de] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001bc
+2026-10-21 15:52:46.452 E  WindowServer[187:2d6] [com.apple.CoreDisplay:default] [ERROR] - Unable to find display pipe for IOFB service / regID: 0x9473 / 0x100000320
+gpu 0x25ad       agdc 0x000000000 
+2026-10-21 15:53:44.830 E  WindowServer[194:2dc] (IOPresentment) Error: Unable to acquire map
+2026-10-21 15:53:45.608 Df WindowServer[194:851] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+gpu 0x25ad       agdc 0x10000043f     /Navi48Bringup/Navi48AGDC
+2026-10-21 15:54:29.721 Df WindowServer[724:cc1] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec

@@ -1,0 +1,3 @@
+Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+kmutil rc=
+RDNA4FB not in showloaded

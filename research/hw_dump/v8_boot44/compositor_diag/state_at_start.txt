@@ -1,0 +1,35 @@
+Wed Oct 21 19:35:44 CEST 2026
+{ sec = 1792603892, usec = 142960 } Wed Oct 21 19:31:32 2026
+19:35  up 4 mins, 0 users, load averages: 1.88 1.56 0.79
+deploy 20261021-134335
+273def324b50e35b1d2ef579cbe5c9855ff0792a134d566090357e5734835789  bundle/Navi48Metal.bundle.tar
+d64a430c2d3c706437986f8822d7f580502ecc2579dc2ffd869df11882052e52  tools/n48nub
+---
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+rc=0
+---
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+rc=0
+---
+828 WindowServer
+  828 Wed Oct 21 19:33:08 2026     /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer -daemon

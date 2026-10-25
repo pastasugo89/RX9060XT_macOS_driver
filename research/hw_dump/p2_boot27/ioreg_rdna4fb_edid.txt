@@ -1,0 +1,60 @@
+    | |   | +-o RDNA4FB  <class RDNA4FB, id 0x100000319, registered, matched, active, busy 0 (8 ms), retain 19>
+    | |   | | |   "EDID,AUX0-Vendor" = "GSM"
+    | |   | | |   "IOFBMemorySize" = 14745600
+    | |   | | |   "IOFBUIScale" = <00000000>
+    | |   | | |   "IOFBConfig" = {"dims"=<000a0000a00500000002000007000000>,"IOFBModes"=({"ID"=1,"DM"=<000a0000a005000000003c00000000000300100000000000000000000000000000000000>,"DF"=3}),"IOFBtv"=Yes}
+    | |   | | |   "IOFBWaitCursorFrames" = 29
+    | |   | | |   "IOFBIntegrated" = Yes
+    | |   | | |   "IOFBWaitCursorPeriod" = 33333333
+    | |   | | |   "EDID,AUX0" = <00ffffffffffff001e6d875cc302000007230104b53c2278fce965a65549a2270b5054210800d1c0614001010101010101010101010109ec00a0a0a0675030203a0055502100001a000000fd0830b41e0a48000a202020202020000000fc004c4720554c545241474541520a000000ff003
+    | |   | | |   "IOFBTransform" = 0
+    | |   | | |   "IOFBNeedsRefresh" = Yes
+    | |   | | +-o AppleMCCSControlModule  <class AppleMCCSControlModule, id 0x100000357, registered, matched, active, busy 0 (0 ms), retain 7>
+    | |   | | | +-o AppleMCCSParameterHandler  <class AppleMCCSParameterHandler, id 0x100000359, registered, matched, active, busy 0 (0 ms), retain 5>
+    | |   | | +-o AppleUpstreamUserClientDriver  <class AppleUpstreamUserClientDriver, id 0x100000358, registered, matched, active, busy 0 (0 ms), retain 5>
+    | |   | | +-o display0  <class IODisplayConnect, id 0x10000039d, registered, matched, active, busy 0 (0 ms), retain 6>
+    | |   | | | +-o AppleDisplay  <class AppleDisplay, id 0x10000039f, registered, matched, active, busy 0 (0 ms), retain 8>
+    | |   | | |       "DisplayProductID" = 23687
+    | |   | | |       "IODisplayEDID" = <00ffffffffffff001e6d875cc302000007230104b53c2278fce965a65549a2270b5054210800d1c0614001010101010101010101010109ec00a0a0a0675030203a0055502100001a000000fd0830b41e0a48000a202020202020000000fc004c4720554c545241474541520a000
+    | |   | | |       "IODisplayPrefsKeyOld" = "IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/RDNA4FB/display0/AppleDisplay-1e6d-5c87"
+    | |   | | |       "IODisplayPrefsKey" = "IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-1e6d-5c87-f9b3cb9c78545e88"
+    | |   | | |       "IODisplayConnectFlags" = <00000000>
+    | |   | | |       "DisplayVendorID" = 7789
+    | |   | | +-o IOFramebufferUserClient  <class IOFramebufferUserClient, id 0x100000468, !registered, !matched, active, busy 0, retain 5>
+    | |   | +-o AMDSupport  <class AMDSupport, id 0x10000031a, registered, matched, active, busy 0 (5 ms), retain 5>
+    | |   +-o S38@7  <class IOPCIDevice, id 0x100000193, registered, matched, active, busy 0 (7 ms), retain 9>
+    | |   +-o SF8@1F  <class IOPCIDevice, id 0x100000194, registered, matched, active, busy 0 (6 ms), retain 15>
+    | |   +-o SFA@1F,2  <class IOPCIDevice, id 0x100000195, registered, matched, active, busy 0 (6884 ms), retain 18>
+    | |   | +-o AppleAHCI  <class AppleAHCI, id 0x1000001a8, registered, matched, active, busy 0 (0 ms), retain 24>
+    | |   |   +-o PRT0@0  <class AppleAHCIPort, id 0x1000001b1, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   |   +-o PRT1@1  <class AppleAHCIPort, id 0x10000020f, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   |   +-o PRT2@2  <class AppleAHCIPort, id 0x100000213, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   |   +-o PRT3@3  <class AppleAHCIPort, id 0x10000022b, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   |   +-o PRT4@4  <class AppleAHCIPort, id 0x100000267, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   |   +-o PRT5@5  <class AppleAHCIPort, id 0x10000028d, registered, matched, active, busy 0 (0 ms), retain 9>
+    | |   +-o SFB@1F,3  <class IOPCIDevice, id 0x100000196, registered, matched, active, busy 0 (231 ms), retain 9>
+    | +-o PRES  <class IOACPIPlatformDevice, id 0x100000149, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o GPE0  <class IOACPIPlatformDevice, id 0x10000014a, registered, matched, active, busy 0 (1 ms), retain 7>
+    | +-o PHPR  <class IOACPIPlatformDevice, id 0x10000014b, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o FWCF  <class IOACPIPlatformDevice, id 0x10000014c, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o SMC  <class IOACPIPlatformDevice, id 0x100000156, registered, matched, active, busy 0 (8 ms), retain 8>
+    | | +-o AppleSMC  <class AppleSMC, id 0x100000180, registered, matched, active, busy 0 (3 ms), retain 11>
+    | |   +-o SMCWatchDogTimer  <class SMCWatchDogTimer, id 0x100000183, registered, matched, active, busy 0 (0 ms), retain 6>
+    | |   +-o KextAudit  <class KextAudit, id 0x10000018b, registered, matched, active, busy 0 (0 ms), retain 6>
+    | |   | +-o KextAuditUserClient  <class KextAuditUserClient, id 0x10000029d, !registered, !matched, active, busy 0, retain 5>
+    | |   +-o AppleSMCClient  <class AppleSMCClient, id 0x1000003d0, !registered, !matched, active, busy 0, retain 6>
+    | |   +-o AppleSMCClient  <class AppleSMCClient, id 0x1000003d2, !registered, !matched, active, busy 0, retain 6>
+    | +-o KBD  <class IOACPIPlatformDevice, id 0x100000157, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o MOU  <class IOACPIPlatformDevice, id 0x100000158, registered, matched, active, busy 0 (1 ms), retain 7>
+    | +-o LPT1  <class IOACPIPlatformDevice, id 0x100000159, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o COM1  <class IOACPIPlatformDevice, id 0x10000015a, registered, matched, active, busy 0 (54 ms), retain 7>
+    | +-o RTC  <class IOACPIPlatformDevice, id 0x10000015b, registered, matched, active, busy 0 (59 ms), retain 9>
+    | | +-o AppleRTC  <class AppleRTC, id 0x100000188, registered, matched, active, busy 0 (0 ms), retain 8>
+    | +-o EC  <class IOACPIPlatformDevice, id 0x10000015e, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o DRAC  <class IOACPIPlatformDevice, id 0x10000015f, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o HPET  <class IOACPIPlatformDevice, id 0x100000170, registered, matched, active, busy 0 (1 ms), retain 8>
+    | | +-o AppleHPET  <class AppleHPET, id 0x10000017f, !registered, !matched, active, busy 0, retain 4>
+    | +-o CPUS  <class IOACPIPlatformDevice, id 0x100000171, registered, matched, active, busy 0 (0 ms), retain 7>
+    | +-o power-button  <class IOACPIPlatformDevice, id 0x10000017e, registered, matched, active, busy 0 (4 ms), retain 8>
+    | | +-o AppleACPIButton  <class AppleACPIButton, id 0x100000181, registered, matched, active, busy 0 (3 ms), retain 7>
+    | |   +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000464, !registered, !matched, active, busy 0, retain 6>

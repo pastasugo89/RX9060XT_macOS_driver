@@ -1,0 +1,21 @@
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/framebuffer.cpp -o build/src/framebuffer.o
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/atombios.cpp -o build/src/atombios.o
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/ipdiscovery.cpp -o build/src/ipdiscovery.o
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/edid.cpp -o build/src/edid.o
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -std=c++17 -fno-exceptions -fno-rtti -fcheck-new -fno-c++-static-destructors -c src/otgtiming.cpp -o build/src/otgtiming.o
+clang -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -I/Users/test/rdna4fb-n44/MacKernelSDK/Headers -mmacosx-version-min=11.0 -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector -mkernel -fapple-kext -Wall -Os -g -c src/kmod_info.c -o build/src/kmod_info.o
+warning: ignoring -fapple-kext which is valid for C++ and Objective-C++ only
+1 warning generated.
+clang++ -arch x86_64 -target x86_64-apple-macos11.0 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -nostdlib -Xlinker -kext -L/Users/test/rdna4fb-n44/MacKernelSDK/Library/x86_64 -lkmodc++ -lkmod -Wl,-no_deduplicate build/src/framebuffer.o build/src/atombios.o build/src/ipdiscovery.o build/src/edid.o build/src/otgtiming.o build/src/kmod_info.o -o build/RDNA4FB.kext/Contents/MacOS/RDNA4FB
+ld: warning: search path '/Users/test/rdna4fb-n44/MacKernelSDK/Library/x86_64' not found
+ld: warning: object file (/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/lib/libkmod.a[x86_64][2](c_start.o)) was built for newer 'macOS' version (26.5) than being linked (11.0)
+ld: warning: object file (/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/lib/libkmod.a[x86_64][3](c_stop.o)) was built for newer 'macOS' version (26.5) than being linked (11.0)
+cp Info.plist build/RDNA4FB.kext/Contents/Info.plist
+codesign --force --sign - build/RDNA4FB.kext 2>/dev/null || true
+Built build/RDNA4FB.kext for x86_64 (min macOS 11.0)
+build/RDNA4FB.kext/Contents/MacOS/RDNA4FB: Mach-O 64-bit kext bundle x86_64
+MAKE_RC=
+total 216
+drwxr-xr-x  3 test  staff      96 Oct 21 15:21 .
+drwxr-xr-x  5 test  staff     160 Oct 21 15:21 ..
+-rwxr-xr-x  1 test  staff  109328 Oct 21 15:21 RDNA4FB

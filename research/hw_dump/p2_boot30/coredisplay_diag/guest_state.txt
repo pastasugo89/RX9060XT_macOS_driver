@@ -1,0 +1,7 @@
+Darwin tests-Mac-Pro.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:49 PDT 2026; root:xnu-12377.161.14~5/RELEASE_X86_64 x86_64
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+16:00  up 6 mins, 0 users, load averages: 1.26 1.15 0.64
+       0
+ 1323   02:33 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer

@@ -1,0 +1,381 @@
+--- a/src/framebuffer.hpp
++++ b/src/framebuffer.hpp
+@@ -286,6 +286,8 @@
+ 	IODisplayModeID aliasModes[kRDNA4MaxAliasModes] {};
+ 	uint32_t        aliasModeCount { 0 };
+ 	uint8_t            validateLogs { 0 };     // patch 0004: bounded log of validateDetailedTiming calls
++	uint8_t            validateAcceptLogs { 0 };   // patch 0006: bounded log of accepted GOP timings
++	uint8_t            validateRefuseLogs { 0 };   // patch 0006: bounded log of refused 2560x1440 candidates
+ 	bool ownsDisplayMode(IODisplayModeID displayMode) const;
+ 	void publishTimingRange();               // patch 0005: IOFBTimingRange (Navi 44 only)
+ 
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2483,8 +2483,9 @@
+ 	}
+ 
+ 	if (!rdna4_is_gop_timing(*timing)) {
+-		// Log the 2560x1440 candidates (the 120 Hz one is the open question): a few lines per boot.
+-		if (timing->horizontalActive == 2560 && timing->verticalActive == 1440)
++		// Log the 2560x1440 candidates (the 120 Hz one is the open question): bounded, patch 0006.
++		if (validateRefuseLogs < 16 && timing->horizontalActive == 2560 && timing->verticalActive == 1440) {
++			validateRefuseLogs++;
+ 			FBLOG("validate: 2560x1440 candidate refused: clock %llu Hz, H %u+%u sync %u/%u, V %u+%u sync %u/%u, polarity %u/%u",
+ 			      (unsigned long long)timing->pixelClock,
+ 			      timing->horizontalActive, timing->horizontalBlanking,
+@@ -2492,9 +2493,13 @@
+ 			      timing->verticalActive, timing->verticalBlanking,
+ 			      timing->verticalSyncOffset, timing->verticalSyncPulseWidth,
+ 			      timing->horizontalSyncConfig, timing->verticalSyncConfig);
++		}
+ 		return kIOReturnUnsupported;
+ 	}
+ 
++	// One link: CheckTimingWithRange rejects numLinks 2 against maxNumLinks (coredisplay_re.md section 7.2). The preflight
++	// output is copied back only after that check, so the descriptor's numLinks is set here for IOFBInstallMode as well.
++	timing->numLinks = 0;
+ 	timing->pixelClock = 497750000ull;   // canonical clock (the candidate was within 0.1 %)
+ 	if (desc) {
+ 		desc->info.nominalWidth  = 2560;
+@@ -2503,7 +2508,11 @@
+ 		desc->info.maxDepthIndex = 0;
+ 		desc->info.flags         = kDisplayModeValidFlag | kDisplayModeSafeFlag;
+ 	}
+-	FBLOG("validate: GOP timing 2560x1440@120 accepted");
++	if (validateAcceptLogs < 16) {   // patch 0006: accepted timings are logged too (bounded)
++		validateAcceptLogs++;
++		FBLOG("validate: GOP timing accepted (%u): clock %llu Hz, numLinks 0, %s", (unsigned)validateAcceptLogs,
++		      (unsigned long long)timing->pixelClock, desc ? "descriptor" : "timing");
++	}
+ 	return kIOReturnSuccess;
+ }
+ 
+@@ -2548,71 +2557,239 @@
+ 	return kIOReturnSuccess;
+ }
+ 
+-// Patch 0005 (Navi 44 only). CoreDisplay installs a timing only when the framebuffer publishes IOFBTimingRange
+-// (coredisplay_re.md section 1). IOGraphics' own publisher is IONDRVFramebuffer::setInfoProperties
+-// (IONDRVFramebuffer.cpp:1450-1470, cscGetTimingRanges). The property is IODisplayTimingRangeV2 (IOGraphicsTypes.h:796),
+-// 0x138 bytes; the first 0xF0 bytes are the same as IODisplayTimingRangeV1. The range covers only the GOP timing,
+-// 2560x1440 at 497.75 MHz, so the adoption is same-mode and no other mode is declared.
+-void RDNA4FB::publishTimingRange() {
+-	static_assert(sizeof(IODisplayTimingRangeV2) == 0x138, "IOFBTimingRange is the 0x138-byte V2 range");
+-	IODisplayTimingRangeV2 r;
+-	bzero(&r, sizeof(r));
+-	r.version = kIOTimingRangeV2;
++// Patch 0006 (Navi 44 only): IOFBTimingRange, configurable without a rebuild (coredisplay_re.md sections 1, 7).
++// IOGraphics' own publisher is IONDRVFramebuffer::setInfoProperties (IONDRVFramebuffer.cpp:1450-1470). The property is
++// IODisplayTimingRangeV2 (IOGraphicsTypes.h:796), 0x138 bytes; its first 0xF0 bytes are the same as IODisplayTimingRangeV1.
++// The default range covers only the GOP timing (2560x1440 at 497.75 MHz): the adoption is same-mode.
++//
++// Configuration: OpenCore DeviceProperties on the PCI device (read here, at start). A value is Data, little-endian, of
++// 1, 2, 4 or 8 bytes, or a Number. Keys (all optional):
++//   rdna4fb-tr-disable       flag, nonzero: do not publish the property
++//   rdna4fb-tr-blob          Data, exactly 0x138 bytes: the whole structure (excludes the scalar keys)
++//   rdna4fb-tr-version       u32, 0 or 2
++//   rdna4fb-tr-maxnumlinks   u32, 0 or 1
++//   rdna4fb-tr-maxbandwidth  u64, bit/s, at most 25 920 000 000 (HBR3 x4, 8b/10b)
++//   rdna4fb-tr-clock-min     u32, Hz (link 0 minimum in kHz follows)
++//   rdna4fb-tr-clock-max     u32, Hz, at most 600 MHz (link 0 maximum in kHz follows)
++//   rdna4fb-tr-encodings     u16, subset of 0x0001 (RGB444)
++//   rdna4fb-tr-bpc           u16, subset of 0x0002 (8 bpc)
++//   rdna4fb-tr-colorimetry   u16, subset of 0x0003 (native RGB, sRGB)
++//   rdna4fb-tr-dynrange      u16, subset of 0x0001 (SDR)
++// A value that breaks a limit is refused and logged; the default of that field stays. The limits are the scanout's own:
++// no configuration can declare a format or a clock that this driver does not drive.
++namespace {
++const uint64_t kRDNA4GopClockHz   = 497750000ull;    // the GOP timing: 2720 x 1525 at 120.0 Hz
++const uint64_t kRDNA4ClockCapHz   = 600000000ull;    // no configuration declares a clock above this
++const uint64_t kRDNA4BandwidthCap = 25920000000ull;  // HBR3 x4 payload with 8b/10b: no topology above this
++}
+ 
+-	// Pixel clock: 497.75 MHz +/- 0.1 %, in Hz; the link-0 band in kHz. One link.
+-	r.minPixelClock = 497250000ull;
+-	r.maxPixelClock = 498250000ull;
+-	r.maxPixelError = 500000;                                     // Hz, the same 0.1 % tolerance
+-	r.minLink0PixelClock = 497250;
+-	r.maxLink0PixelClock = 498250;
+-	r.maxNumLinks = 1;
++// The defaults: the GOP timing only. maxNumLinks 0 = one link (IODisplayTimingRangeV2 header comment), which
++// CheckTimingWithRange reads as "no dual-link limit" (coredisplay_re.md section 7.2).
++static void rdna4_default_timing_range(IODisplayTimingRangeV2 *r) {
++	bzero(r, sizeof(*r));
++	r->version = kIOTimingRangeV2;
++
++	// Pixel clock: 497.75 MHz +/- 0.1 %, in Hz; link 0 in kHz.
++	r->minPixelClock = 497250000ull;
++	r->maxPixelClock = 498250000ull;
++	r->maxPixelError = 500000;                                   // Hz, the same 0.1 % tolerance
++	r->minLink0PixelClock = 497250;
++	r->maxLink0PixelClock = 498250;
++	r->maxNumLinks = 0;
+ 
+ 	// Sync and signal: digital separate syncs only (H positive, V negative in the GOP timing).
+-	r.supportedSyncFlags = kIORangeSupportsSeparateSyncs;
+-	r.supportedSignalLevels = 0;                                  // analogue only
+-	r.supportedSignalConfigs = 0;                                 // no interlaced CEA timing
++	r->supportedSyncFlags = kIORangeSupportsSeparateSyncs;
++	r->supportedSignalLevels = 0;
++	r->supportedSignalConfigs = 0;
+ 
+ 	// Rates and totals of the GOP timing: 2720 x 1525 at 497.75 MHz = 120.0 Hz, line rate 183.0 kHz.
+-	r.minFrameRate = 119;      r.maxFrameRate = 121;              // Hz
+-	r.minLineRate = 182800;    r.maxLineRate = 183200;            // Hz
+-	r.maxHorizontalTotal = 2720;
+-	r.maxVerticalTotal = 1525;
++	r->minFrameRate = 119;      r->maxFrameRate = 121;
++	r->minLineRate = 182800;    r->maxLineRate = 183200;
++	r->maxHorizontalTotal = 2720;
++	r->maxVerticalTotal = 1525;
+ 
+ 	// Granularity: every count is a multiple of 1 (a 0 divisor would fail the range check).
+-	r.charSizeHorizontalActive = 1;     r.charSizeHorizontalBlanking = 1;
+-	r.charSizeHorizontalSyncOffset = 1; r.charSizeHorizontalSyncPulse = 1;
+-	r.charSizeVerticalActive = 1;       r.charSizeVerticalBlanking = 1;
+-	r.charSizeVerticalSyncOffset = 1;   r.charSizeVerticalSyncPulse = 1;
+-	r.charSizeHorizontalBorderLeft = 1; r.charSizeHorizontalBorderRight = 1;
+-	r.charSizeVerticalBorderTop = 1;    r.charSizeVerticalBorderBottom = 1;
+-	r.charSizeHorizontalTotal = 1;      r.charSizeVerticalTotal = 1;
++	r->charSizeHorizontalActive = 1;     r->charSizeHorizontalBlanking = 1;
++	r->charSizeHorizontalSyncOffset = 1; r->charSizeHorizontalSyncPulse = 1;
++	r->charSizeVerticalActive = 1;       r->charSizeVerticalBlanking = 1;
++	r->charSizeVerticalSyncOffset = 1;   r->charSizeVerticalSyncPulse = 1;
++	r->charSizeHorizontalBorderLeft = 1; r->charSizeHorizontalBorderRight = 1;
++	r->charSizeVerticalBorderTop = 1;    r->charSizeVerticalBorderBottom = 1;
++	r->charSizeHorizontalTotal = 1;      r->charSizeVerticalTotal = 1;
+ 
+ 	// Min = max: only the GOP timing (H 2560 + 160, sync 48/32; V 1440 + 85, sync 3/10). No borders.
+-	r.minHorizontalActiveClocks = 2560;      r.maxHorizontalActiveClocks = 2560;
+-	r.minHorizontalBlankingClocks = 160;     r.maxHorizontalBlankingClocks = 160;
+-	r.minHorizontalSyncOffsetClocks = 48;    r.maxHorizontalSyncOffsetClocks = 48;
+-	r.minHorizontalPulseWidthClocks = 32;    r.maxHorizontalPulseWidthClocks = 32;
+-	r.minVerticalActiveClocks = 1440;        r.maxVerticalActiveClocks = 1440;
+-	r.minVerticalBlankingClocks = 85;        r.maxVerticalBlankingClocks = 85;
+-	r.minVerticalSyncOffsetClocks = 3;       r.maxVerticalSyncOffsetClocks = 3;
+-	r.minVerticalPulseWidthClocks = 10;      r.maxVerticalPulseWidthClocks = 10;
+-
+-	// What the scanout carries: 8-bit RGB, sRGB / native RGB, SDR. Not YCbCr, not 10-bit, not HDR.
+-	r.supportedPixelEncoding = kIOPixelEncodingRGB444;
+-	r.supportedBitsPerColorComponent = kIOBitsPerColorComponent8;
+-	r.supportedColorimetryModes = kIOColorimetryNativeRGB | kIOColorimetrysRGB;
+-	r.supportedDynamicRangeModes = kIODynamicRangeSDR;
+-
+-	// Maximum bits per second of the topology (documented in IODisplayTimingRangeV2). Set to what the GOP timing
+-	// needs on the wire: 497.75 MHz x 24 bpp x 10/8 (8b/10b) = 14.93 Gbit/s. It is not a link trait: the link
+-	// is the one the GOP trained, and this value stays below HBR2 x4 (17.28 Gbit/s payload).
+-	r.maxBandwidth = 14932500000ull;
+-
++	r->minHorizontalActiveClocks = 2560;      r->maxHorizontalActiveClocks = 2560;
++	r->minHorizontalBlankingClocks = 160;     r->maxHorizontalBlankingClocks = 160;
++	r->minHorizontalSyncOffsetClocks = 48;    r->maxHorizontalSyncOffsetClocks = 48;
++	r->minHorizontalPulseWidthClocks = 32;    r->maxHorizontalPulseWidthClocks = 32;
++	r->minVerticalActiveClocks = 1440;        r->maxVerticalActiveClocks = 1440;
++	r->minVerticalBlankingClocks = 85;        r->maxVerticalBlankingClocks = 85;
++	r->minVerticalSyncOffsetClocks = 3;       r->maxVerticalSyncOffsetClocks = 3;
++	r->minVerticalPulseWidthClocks = 10;      r->maxVerticalPulseWidthClocks = 10;
++
++	// What the scanout carries: 8-bit RGB, native RGB / sRGB, SDR. Masks 0x1 / 0x2 / 0x3 / 0x1 (RE report section 7.4).
++	r->supportedPixelEncoding = kIOPixelEncodingRGB444;
++	r->supportedBitsPerColorComponent = kIOBitsPerColorComponent8;
++	r->supportedColorimetryModes = kIOColorimetryNativeRGB | kIOColorimetrysRGB;
++	r->supportedDynamicRangeModes = kIODynamicRangeSDR;
++
++	// Bandwidth of the topology, bit/s (IODisplayTimingRangeV2): the DP link of this card, HBR3 x4 with 8b/10b:
++	// 4 lanes x 8.1 Gbit/s x 0.8 = 25.92 Gbit/s. Assumed, not read: see the report, section 0006.
++	r->maxBandwidth = 25920000000ull;
+ 	// No DSC.
++}
++
++// Returns nullptr if the range is acceptable, otherwise why it is refused. Every candidate passes through here.
++static const char *rdna4_range_refusal(const IODisplayTimingRangeV2 &r) {
++	if (r.version != 0 && r.version != kIOTimingRangeV2)
++		return "version is neither 0 nor 2";
++	if (r.minPixelClock == 0 || r.minPixelClock > r.maxPixelClock)
++		return "empty clock band";
++	if (r.maxPixelClock > kRDNA4ClockCapHz)
++		return "clock above 600 MHz";
++	if (r.minPixelClock > kRDNA4GopClockHz || r.maxPixelClock < kRDNA4GopClockHz)
++		return "the GOP clock (497.75 MHz) is outside the band";
++	if (r.minLink0PixelClock > r.maxLink0PixelClock)
++		return "empty link-0 band";
++	if (r.maxNumLinks > 1)
++		return "more than one link";
++	if (r.maxBandwidth > kRDNA4BandwidthCap)
++		return "bandwidth above HBR3 x4";
++	if (r.supportedPixelEncoding == 0 || (r.supportedPixelEncoding & ~kIOPixelEncodingRGB444))
++		return "encoding other than RGB444";
++	if (r.supportedBitsPerColorComponent == 0 || (r.supportedBitsPerColorComponent & ~kIOBitsPerColorComponent8))
++		return "bits per component other than 8";
++	if (r.supportedColorimetryModes == 0 ||
++	    (r.supportedColorimetryModes & ~(kIOColorimetryNativeRGB | kIOColorimetrysRGB)))
++		return "colorimetry other than native RGB or sRGB";
++	if (r.supportedDynamicRangeModes == 0 || (r.supportedDynamicRangeModes & ~kIODynamicRangeSDR))
++		return "dynamic range other than SDR";
++	return nullptr;
++}
++
++// An OpenCore DeviceProperties value as an unsigned integer: Data (little-endian, 1, 2, 4 or 8 bytes) or a Number.
++static bool rdna4_prop_uint(IORegistryEntry *dev, const char *key, uint64_t *out) {
++	OSObject *o = dev->getProperty(key);
++	if (!o)
++		return false;
++	if (OSNumber *n = OSDynamicCast(OSNumber, o)) {
++		*out = n->unsigned64BitValue();
++		return true;
++	}
++	OSData *d = OSDynamicCast(OSData, o);
++	if (!d)
++		return false;
++	const unsigned len = d->getLength();
++	if (len != 1 && len != 2 && len != 4 && len != 8)
++		return false;
++	const uint8_t *p = static_cast<const uint8_t *>(d->getBytesNoCopy());
++	uint64_t v = 0;
++	for (unsigned i = 0; i < len; i++)
++		v |= static_cast<uint64_t>(p[i]) << (8 * i);
++	*out = v;
++	return true;
++}
++
++static bool rdna4_prop_flag(IORegistryEntry *dev, const char *key) {
++	if (OSBoolean *b = OSDynamicCast(OSBoolean, dev->getProperty(key)))
++		return b->isTrue();
++	uint64_t v = 0;
++	return rdna4_prop_uint(dev, key, &v) && v != 0;
++}
++
++// The whole structure, if rdna4fb-tr-blob is present with exactly 0x138 bytes and passes the same limits.
++static bool rdna4_tr_blob(IORegistryEntry *dev, IODisplayTimingRangeV2 *r) {
++	OSData *blob = OSDynamicCast(OSData, dev->getProperty("rdna4fb-tr-blob"));
++	if (!blob)
++		return false;
++	if (blob->getLength() != sizeof(IODisplayTimingRangeV2)) {
++		FBLOG("rdna4fb-tr-blob refused: %u bytes, need %lu (default kept)", blob->getLength(),
++		      (unsigned long)sizeof(IODisplayTimingRangeV2));
++		return false;
++	}
++	IODisplayTimingRangeV2 b;
++	bcopy(blob->getBytesNoCopy(), &b, sizeof(b));
++	if (const char *why = rdna4_range_refusal(b)) {
++		FBLOG("rdna4fb-tr-blob refused: %s (default kept)", why);
++		return false;
++	}
++	*r = b;
++	FBLOG("rdna4fb-tr-blob applied: the whole structure");
++	return true;
++}
++
++typedef void (*RDNA4TRSetter)(IODisplayTimingRangeV2 &, uint64_t);
++
++// One scalar key. Applied only if it fits its type and the result passes rdna4_range_refusal; otherwise logged and skipped.
++static bool rdna4_tr_apply(IORegistryEntry *dev, IODisplayTimingRangeV2 *r, const char *key, uint64_t typeMax,
++                           RDNA4TRSetter set) {
++	uint64_t v = 0;
++	if (!rdna4_prop_uint(dev, key, &v))
++		return false;
++	if (v > typeMax) {
++		FBLOG("%s = %llu refused: does not fit its type (default kept)", key, (unsigned long long)v);
++		return false;
++	}
++	IODisplayTimingRangeV2 cand = *r;
++	set(cand, v);
++	if (const char *why = rdna4_range_refusal(cand)) {
++		FBLOG("%s = %llu refused: %s (default kept)", key, (unsigned long long)v, why);
++		return false;
++	}
++	*r = cand;
++	FBLOG("%s = %llu applied", key, (unsigned long long)v);
++	return true;
++}
++
++void RDNA4FB::publishTimingRange() {
++	static_assert(sizeof(IODisplayTimingRangeV2) == 0x138, "IOFBTimingRange is the 0x138-byte V2 range");
++
++	if (rdna4_prop_flag(pciDevice, "rdna4fb-tr-disable")) {
++		FBLOG("IOFBTimingRange not published: rdna4fb-tr-disable is set");
++		return;
++	}
+ 
++	IODisplayTimingRangeV2 r;
++	rdna4_default_timing_range(&r);
++	const char *source = "default";
++	if (rdna4_tr_blob(pciDevice, &r)) {
++		source = "blob";
++	} else {
++		bool any = false;
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-version", 0xffffffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.version = (UInt32)v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-maxnumlinks", 0xffffffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.maxNumLinks = (UInt32)v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-maxbandwidth", ~0ull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.maxBandwidth = v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-clock-min", 0xffffffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.minPixelClock = v; t.minLink0PixelClock = (UInt32)(v / 1000); });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-clock-max", 0xffffffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.maxPixelClock = v; t.maxLink0PixelClock = (UInt32)(v / 1000); });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-encodings", 0xffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.supportedPixelEncoding = (UInt16)v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-bpc", 0xffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.supportedBitsPerColorComponent = (UInt16)v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-colorimetry", 0xffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.supportedColorimetryModes = (UInt16)v; });
++		any |= rdna4_tr_apply(pciDevice, &r, "rdna4fb-tr-dynrange", 0xffffull,
++		    [](IODisplayTimingRangeV2 &t, uint64_t v) { t.supportedDynamicRangeModes = (UInt16)v; });
++		if (any)
++			source = "overrides";
++	}
++
++	if (const char *why = rdna4_range_refusal(r)) {
++		FBLOG("IOFBTimingRange not published: %s", why);
++		return;
++	}
+ 	setProperty(kIOFBTimingRangeKey, &r, sizeof(r));
+-	FBLOG("published IOFBTimingRange (%lu bytes): clock %llu..%llu Hz, GOP 2560x1440@120",
+-	      (unsigned long)sizeof(r), (unsigned long long)r.minPixelClock, (unsigned long long)r.maxPixelClock);
++	FBLOG("published IOFBTimingRange (%s, %lu bytes): version %u, clock %llu..%llu Hz, links %u, bandwidth %llu bit/s, "
++	      "encodings 0x%x, bpc 0x%x, colorimetry 0x%x, dynrange 0x%x",
++	      source, (unsigned long)sizeof(r), (unsigned)r.version,
++	      (unsigned long long)r.minPixelClock, (unsigned long long)r.maxPixelClock, (unsigned)r.maxNumLinks,
++	      (unsigned long long)r.maxBandwidth, (unsigned)r.supportedPixelEncoding,
++	      (unsigned)r.supportedBitsPerColorComponent, (unsigned)r.supportedColorimetryModes,
++	      (unsigned)r.supportedDynamicRangeModes);
+ }
+ 
+ // ---------------------------------------------------------------------------
+--- a/src/kmod_info.c
++++ b/src/kmod_info.c
+@@ -33,7 +33,7 @@
+ 	return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.6", _start, _stop)
++KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.7", _start, _stop)
+ 
+ __private_extern__ kmod_start_func_t *_realmain = rdna4_kmod_start;
+ __private_extern__ kmod_stop_func_t  *_antimain = rdna4_kmod_stop;
+--- a/Info.plist
++++ b/Info.plist
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>0.0.6</string>
++	<string>0.0.7</string>
+ 	<key>CFBundleVersion</key>
+-	<string>0.0.6</string>
++	<string>0.0.7</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>OSBundleRequired</key>
+--- a/Makefile
++++ b/Makefile
+@@ -9,7 +9,7 @@
+ 
+ PRODUCT      := RDNA4FB
+ BUNDLE_ID    := com.hackintosh.RDNA4FB
+-VERSION      := 0.0.6
++VERSION      := 0.0.7
+ 
+ ARCH         := x86_64
+ DEPLOY       := 11.0

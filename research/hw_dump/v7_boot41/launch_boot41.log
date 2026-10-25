@@ -1,0 +1,11 @@
+0000:03:00.0: driver=vfio-pci gruppo=15
+0000:03:00.1: driver=vfio-pci gruppo=16
+0000:0a:00.0: driver=amdgpu gruppo=20
+Questo inventario non valida reset, policy kext, snapshot o driver.
+Overlay, EFI e piano stage17 verificati.
+ROM fisica: rombar=1 (QEMU la legge dalla scheda via VFIO).
+Avvio dello stage preparato, con lo stato IRQ fissato dal piano e senza stack Metal. Log in diagnostics/serial.log.
+cat: /mnt/vm/images/macos-gpu-test/diagnostics/gpu-safety-watchdog.pid: No such file or directory
+Watchdog di sicurezza attivo (PID ). Log: /mnt/vm/images/macos-gpu-test/diagnostics/gpu-safety-watchdog.log. Stop solo esplicito: --stop-watchdog.
+QEMU 11.1.2 monitor - type 'help' for more information
+(qemu) 

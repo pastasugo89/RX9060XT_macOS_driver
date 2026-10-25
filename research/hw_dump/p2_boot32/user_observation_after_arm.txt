@@ -1,0 +1,7 @@
+Osservazione dell'utente dopo l'arm (boot32, P2), riportata dal coordinatore con foto del DP:
+- lo schermo si e' ridisegnato;
+- la data e' visibile;
+- l'OROLOGIO e' SCOMPARSO;
+- il campo password non ha trasparenza.
+Prima dell'arm (CPU, boot31 e precedenti): l'orologio c'era e anche la data aveva gia' il bagliore.
+Nessun riscontro di frame nei contatori: pipestat 0 frames copied 0, Navi48Metal frames=0 (T1 counts 16:54:56).

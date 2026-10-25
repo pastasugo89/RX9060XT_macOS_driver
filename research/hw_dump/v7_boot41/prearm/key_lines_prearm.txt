@@ -1,0 +1,31 @@
+2026-10-21 18:54:38.622 Df WindowServer[742:ccd] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600002c485c0
+2026-10-21 18:54:38.622 Df WindowServer[742:ccd] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600002c485c0 close
+2026-10-21 18:54:38.622 Df WindowServer[742:ccd] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600002c485c0 dealloc
+2026-10-21 18:58:56.721 Df kernel[0:69f] (RDNA4FB) RDNA4FB: published IOFBTimingRange (312 bytes): clock 497250000..498250000 Hz, GOP 2560x1440@120
+2026-10-21 18:58:57.446 E  WindowServer[191:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x41dc9d00 main in CGXMainDisplayDevice 	
+2026-10-21 18:58:57.705 Df WindowServer[191:2de] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600001c44960
+2026-10-21 19:01:02.224 Df WindowServer[191:2de] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600001c44960
+2026-10-21 19:01:02.224 Df WindowServer[191:2de] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600001c44960 close
+2026-10-21 19:01:02.224 Df WindowServer[191:2de] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600001c44960 dealloc
+2026-10-21 19:03:51.860 Df kernel[0:680] (RDNA4FB) RDNA4FB: published IOFBTimingRange (default, 312 bytes): version 2, clock 497250000..498250000 Hz, links 0, bandwidth 25920000000 bit/s, encodings 0x1, bpc 0x2, colorimetry 0x3, dynrange 0x1
+2026-10-21 19:03:52.567 E  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x41dc9d00 main in CGXMainDisplayDevice 	
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (2560x1440 to 2560x1440@144.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1024x768 to 1024x768@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (800x600 to 800x600@60.3) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (640x480 to 640x480@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1920x1080 to 1920x1080@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1024x768 to 1024x768@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1920x1080 to 1920x1080@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1280x720 to 1280x720@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (720x480 to 720x480@59.9) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (640x480 to 640x480@59.9) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1920x1080 to 1920x1080@50.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (1280x720 to 1280x720@50.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.707 Df kernel[0:2d6] (RDNA4FB) RDNA4FB: validate: call 1, descripSize 204, description set
+2026-10-21 19:03:52.708 Df kernel[0:2d6] (RDNA4FB) RDNA4FB: validate: GOP timing accepted (1): clock 497750000 Hz, numLinks 0, descriptor
+2026-10-21 19:03:52.710 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_RGB__8_Native succeeded for mode 0x80001000 (2560x1440 to 2560x1440@120.0) for 0x100000319 as 0x0001, 0x0002, 0x0001, 0x0001
+2026-10-21 19:03:52.710 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (2560x1440 to 2560x1440@60.0) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:52.710 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - InstallTimingWithWireFormats - SDR_420__8_Native FAILED for mode 0x00000000 (2560x1440 to 2560x1440@99.9) for 0x100000319 with code 0xe00002c7 ()
+2026-10-21 19:03:53.615 I  WindowServer[196:2d6] [com.apple.CoreDisplay:default] [INFO] - Display 0x1b572300: Unit 0: Startup Mode 2560 x 1440, CGSThirtytwoBitColor, Resolution 1, ioModeID 0x1, ioModeDepth 0x0, IOReturn 0x0
+2026-10-21 19:03:53.616 Df WindowServer[196:2d6] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600000a8cab0
+2026-10-21 19:03:54.279 Df SecurityAgent[418:8ce] [com.apple.loginUI:Windows] main display 0x1b572300 frame={{0, 0}, {2560, 1440}}

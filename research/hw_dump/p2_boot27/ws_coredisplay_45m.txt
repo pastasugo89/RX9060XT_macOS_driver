@@ -1,0 +1,120 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-21 15:08:18.124 Df WindowServer[199:2de] [com.apple.SkyLight:default] watchdog monitoring not yet enabled, skipping watchdog early initialization
+2026-10-21 15:08:22.426 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a671650	CGXConstructVirtualFramebuffer + 2080
+	2  	    0x7ff81a670d4f	CGXConstructVirtualFramebufferSet + 411
+	3  	    0x7ff81a717547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff81a71d37a	displayDidCreateSessionProc + 9
+	5  	    0x7ff81e670bf1	(anonymous namespace)::ServerNotifier::invoke_callbacks(unsigned int, void*, unsigned long) const + 265
+	6  	    0x7ff81e67048e	WSPostLocalNotification + 46
+	7  	    0x7ff81e7392f6	createSessionWithOwner(__CFDictionary const*, CGXCredentials, void*, unsigned int, bool, unsigned int, unsigned int*) + 938
+	8  	    0x7ff81e8c1aba	WSInitialize + 3561
+	9  	    0x7ff81e5d77c1	SLXServer + 1016
+	10 	       0x10c5a56d1	11  WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	11 	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:22.426 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a6714d1	CGXConstructVirtualFramebuffer + 1697
+	2  	    0x7ff81a670d4f	CGXConstructVirtualFramebufferSet + 411
+	3  	    0x7ff81a717547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff81a71d37a	displayDidCreateSessionProc + 9
+	5  	    0x7ff81e670bf1	(anonymous namespace)::ServerNotifier::invoke_callbacks(unsigned int, void*, unsigned long) const + 265
+	6  	    0x7ff81e67048e	WSPostLocalNotification + 46
+	7  	    0x7ff81e7392f6	createSessionWithOwner(__CFDictionary const*, CGXCredentials, void*, unsigned int, bool, unsigned int, unsigned int*) + 938
+	8  	    0x7ff81e8c1aba	WSInitialize + 3561
+	9  	    0x7ff81e5d77c1	SLXServer + 1016
+	10 	       0x10c5a56d1	11  WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	11 	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:22.430 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x41dc9d00 main in CGXMainDisplayDevice 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a71a0bd	CGXMainDisplayDevice + 577
+	2  	    0x7ff81a6f5d34	CGXFullScreenAppIsRunning + 9
+	3  	    0x7ff81e6ecd25	eventDidCreateSessionProc(CGSNotificationType, void*, unsigned int, void*) + 83
+	4  	    0x7ff81e670bf1	(anonymous namespace)::ServerNotifier::invoke_callbacks(unsigned int, void*, unsigned long) const + 265
+	5  	    0x7ff81e67048e	WSPostLocalNotification + 46
+	6  	    0x7ff81e7392f6	createSessionWithOwner(__CFDictionary const*, CGXCredentials, void*, unsigned int, bool, unsigned int, unsigned int*) + 938
+	7  	    0x7ff81e8c1aba	WSInitialize + 3561
+	8  	    0x7ff81e5d77c1	SLXServer + 1016
+	9  	       0x10c5a56d1	10  WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	10 	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:22.439 Df WindowServer[199:76a] [com.apple.xpc:connection] [0x7f8d38806070] activating connection: mach=false listener=false peer=false name=com.apple.AmbientDisplayAgent
+2026-10-21 15:08:22.494 Df WindowServer[199:2de] [com.apple.accessories:AppleUSBCLightningAdapterAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.494 Df WindowServer[199:2de] [com.apple.accessories:ApplePCIeAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:USBAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:CIOAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:DPAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:AUVDMAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:USBPDAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:766] [com.apple.accessories:PowerInAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.496 Df WindowServer[199:2de] [com.apple.accessories:AppleFireWireAnalytics] Starting event monitoring...
+2026-10-21 15:08:22.508 Df WindowServer[199:76a] [com.apple.CoreRCPlugin:default] CoreRCDisplayPowerNotification registering notification
+2026-10-21 15:08:22.550 E  WindowServer[199:79d] [com.apple.iohid:default] Unable to register display dim notification: 1001
+2026-10-21 15:08:22.554 Df WindowServer[199:79d] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:A8675D02-571B-4EB3-B827-B9F38A153A78 pid:163 process:corebrightnessd type:Monitor entitlements:0x2 caller:CoreBrigh
+2026-10-21 15:08:22.554 Df WindowServer[199:79d] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:21C406FF-87BC-4B31-825D-BC4A9CA7B77F pid:107 process:powerd type:Monitor entitlements:0x2 caller:powerd: powerd + 2
+2026-10-21 15:08:22.554 Df WindowServer[199:79d] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:773C41F3-2CB2-4350-8183-FD42E89ABD5F pid:92 process:logd type:Monitor entitlements:0x0 caller:logd: logd + 82347 at
+2026-10-21 15:08:22.568 Df WindowServer[199:2de] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x10 (IG) vid.did=1002.7590 b:d:f=0:6:0 
+gpu 0x25ad        pci 0x10000018d IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x10000032d     /IONDRVFramebuffer
+2026-10-21 15:08:22.577 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x10000032d
+2026-10-21 15:08:22.577 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-756e6b6e-717-0
+2026-10-21 15:08:22.577 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 15:08:22.583 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - 	
+	0  	    0x7ff81a64d383	std::__1::pair<std::__1::__hash_iterator<std::__1::__hash_node<std::__1::__hash_value_type<unsigned long long, CoreDisplay::DisplayPipe>, void*>*>, bool> std::__1::__hash_table<std::__1::__hash_value_type<unsigned lo
+	1  	    0x7ff81a728ac0	CoreDisplay::Framebuffer::Framebuffer(unsigned int, unsigned long long, unsigned int, unsigned long long) + 3658
+	2  	    0x7ff81a6b3a70	CoreDisplay::GPU::GPU(__GPUWranglerGPU*, dispatch_queue_s*) + 766
+	3  	    0x7ff81a6c8564	invocation function for block in CoreDisplay::GPUController::GPUController() + 2621
+	4  	    0x7ff82ac8e531	GPUWranglerRegisterEventBlock + 1077
+	5  	    0x7ff81a6ebf51	CGXMappedDisplayStart + 4408
+	6  	    0x7ff81a7169e4	CGXDisplayDriverInitialize + 972
+	7  	    0x7ff81e7f6dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+	8  	    0x7ff81e8c1c45	WSInitialize + 3956
+	9  	    0x7ff81e5d77c1	SLXServer + 1016
+	10 	       0x10c5a56d1	11  WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	11 	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:22.587 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - GPU: FB: 1 of 1 opened
+Can't get value for key 'AppleIntelFramebuffer'
+Can't get value for key 'AMDFramebuffer'
+Can't get value for key 'AppleParavirtFramebuffer'
+IOFramebufferUserClient = 1
+No property 'FB_Triage', or property isn't a string
+LER:IORegistryEntryCreateCFProperty(...,AAPL,IOGraphics_LER,...) => NULL
+IORegistryEntryCreateCFProperty(...,AAPL,IOGraphics_LER_Busy_2,...) => NULL
+IORegistryEntryCreateCFProperty(...,AAPL,IOGraphics_LER_RegTag_0,...) => NULL
+IORegistryEntryCreateCFProperty(...,AAPL,IOGraphics_LER_RegTag_1,...) => NULL
+
+Can't get value for key 'Triage'
+2026-10-21 15:08:22.587 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in AddCGXDisplayDeviceToDeviceList 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a715189	AddCGXDisplayDeviceToDeviceList + 209
+	2  	    0x7ff81a716cc6	CGXDisplayDriverInitialize + 1710
+	3  	    0x7ff81e7f6dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+	4  	    0x7ff81e8c1c45	WSInitialize + 3956
+	5  	    0x7ff81e5d77c1	SLXServer + 1016
+	6  	       0x10c5a56d1	7   WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	7  	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:22.594 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - get_display_device_info: force8BPC = YES
+2026-10-21 15:08:22.594 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Display id 0x00000000 -> 0x5b81c5c0
+2026-10-21 15:08:22.594 Df WindowServer[199:2de] [com.apple.CoreDisplay:default] [WARN] - get_display_device_info: Display 0x5b81c5c0 force8BPC=YES isBDW=YES isSKL=NO isCNL=NO isAcc=NO isMUX=NO isBuiltIn=NO isMobile=YES isSkylakeMacBook=NO
+2026-10-21 15:08:22.594 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - device_preserves_framebuffer: IOFBNeedsRefresh key not found in IORegistry
+2026-10-21 15:08:22.594 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - device_preserves_framebuffer: needs_refresh = NO
+2026-10-21 15:08:23.356 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a671650	CGXConstructVirtualFramebuffer + 2080
+	2  	    0x7ff81a670cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff81a717547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff81a716d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff81e7f6dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+	6  	    0x7ff81e8c1c45	WSInitialize + 3956
+	7  	    0x7ff81e5d77c1	SLXServer + 1016
+	8  	       0x10c5a56d1	9   WindowServer                        0x000000010c5a56d1 WindowServer + 1745
+	9  	    0x7ff817da41c8	start + 3240
+2026-10-21 15:08:23.356 E  WindowServer[199:2de] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+	0  	    0x7ff81a6527f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff81a6714d1	CGXConstructVirtualFramebuffer + 1697
+	2  	    0x7ff81a670cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff81a717547	setup_virtual_framebuffers() + 11

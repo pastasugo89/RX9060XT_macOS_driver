@@ -1,0 +1,13 @@
+   76    0 0xffffff8004249000 0x79e000   0x79e000   com.navi48.bringup (0.0.664) 8E6F15CB-63CB-34C6-A112-77A4630B5DA2 <19 9 7 6 3 1>
+  117    0 0xffffff7f96638000 0xa324     0xa324     com.hackintosh.RDNA4FB (0.0.1) 220C73F4-AF8F-3638-ACF5-7E50A0C5EFEA <114 19 9 7 6 3>
+--- ioreg RDNA4FB:
+  |   "IOKitDiagnostics" = {"Instance allocation"=1757200,"Container allocation"=3294091,"Pageable allocation"=2187408,"Classes"={"IONDRVFramebuffer"=0,"IOHIDAccelElementProcessor"=0,"IOHIDEventServic
+    | |   | |   "attached-gpu-control-path" = "IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/RDNA4FB/AGPM"
+    | |   | +-o RDNA4FB  <class RDNA4FB, id 0x100000319, registered, matched, active, busy 0 (6 ms), retain 18>
+    | |   | | |   "IOPersonalityPublisher" = "com.hackintosh.RDNA4FB"
+    | |   | | |   "CFBundleIdentifier" = "com.hackintosh.RDNA4FB"
+    | |   | | |   "IOClass" = "RDNA4FB"
+    | |   | | |   "CFBundleIdentifierKernel" = "com.hackintosh.RDNA4FB"
+    | |   | | |       "IODisplayPrefsKeyOld" = "IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/RDNA4FB/display0/AppleDisplay-1e6d-5c87"
+--- who:
+       0

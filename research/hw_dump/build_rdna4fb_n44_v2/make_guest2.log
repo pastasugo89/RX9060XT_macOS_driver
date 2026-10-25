@@ -1,0 +1,7 @@
+cp Info.plist build/RDNA4FB.kext/Contents/Info.plist
+codesign --force --sign - build/RDNA4FB.kext 2>/dev/null || true
+Built build/RDNA4FB.kext for x86_64 (min macOS 11.0)
+build/RDNA4FB.kext/Contents/MacOS/RDNA4FB: Mach-O 64-bit kext bundle x86_64
+MAKE_RC=
+-rwxr-xr-x  1 test  staff  109328 Oct 21 15:48 build/RDNA4FB.kext/Contents/MacOS/RDNA4FB
+a5ba00d724f2897f190cce15f6aa1d2bf29008288393039ec4fd3e7aa0b9da1c  build/RDNA4FB.kext/Contents/MacOS/RDNA4FB

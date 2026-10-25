@@ -1,0 +1,2 @@
+Loading extension(s): com.hackintosh.RDNA4FB requires a reboot
+rc=28

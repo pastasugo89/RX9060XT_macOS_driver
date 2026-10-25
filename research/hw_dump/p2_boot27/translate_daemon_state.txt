@@ -1,0 +1,68 @@
+--- launchctl print:
+system/com.navi48.translate = {
+	active count = 1
+	path = /Library/LaunchDaemons/com.navi48.translate.plist
+	type = LaunchDaemon
+	state = running
+
+	program = /bin/bash
+	arguments = {
+		/bin/bash
+		/usr/local/navi48/pc-translate.sh
+	}
+
+	stdout path = /private/var/tmp/n48m-translate-state/stdout
+	stderr path = /private/var/tmp/n48m-translate-state/stdout
+	default environment = {
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+	}
+
+	environment = {
+		OSLogRateLimit => 64
+		XPC_SERVICE_NAME => com.navi48.translate
+	}
+
+	domain = system
+	username = nobody
+--- plist present:
+-rw-r--r--  1 root  wheel  929 Oct 21 13:43 /Library/LaunchDaemons/com.navi48.translate.plist
+--- /usr/local/navi48:
+total 29848
+drwxr-xr-x  10 root  wheel       320 Oct 21 12:55 .
+drwxr-xr-x   3 root  wheel        96 Oct 21 12:55 ..
+-rwxr-xr-x   1 root  wheel  12848472 Oct 21 13:43 metal2vulkan
+-rwxr-xr-x   1 root  wheel      1124 Oct 21 13:43 n48-llvm-dis
+-rwxr-xr-x   1 root  wheel       367 Oct 21 13:43 n48-spirv-val-stub
+-rw-r--r--   1 root  wheel      1452 Oct 21 13:43 n48-translate.sb
+-rw-r--r--   1 root  wheel       186 Oct 21 13:43 overrides.txt
+-rwxr-xr-x   1 root  wheel      7692 Oct 21 13:43 pc-translate.py
+-rwxr-xr-x   1 root  wheel      8501 Oct 21 13:43 pc-translate.sh
+-rwxr-xr-x   1 root  wheel   2394360 Oct 21 13:43 spirv-val
+--- state dir:
+ls: /private/var/tmp/n48m-translate-state: Permission denied
+total 0
+--- spv dir:
+total 288
+drwxr-xr-x  28 nobody  wheel   896 Oct 21 15:41 .
+drwxrwxrwt   5 root    wheel   160 Oct 21 15:43 ..
+-rw-r--r--   1 nobody  wheel  1862 Oct 21 13:17 1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.meta.json
+-rw-r--r--   1 nobody  wheel  5904 Oct 21 13:17 1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv
+-rw-r--r--   1 nobody  wheel  3350 Oct 21 15:41 29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.meta.json
+-rw-r--r--   1 nobody  wheel  8968 Oct 21 15:41 29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.spv
+-rw-r--r--   1 nobody  wheel  1656 Oct 21 13:17 2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.meta.json
+-rw-r--r--   1 nobody  wheel  4524 Oct 21 13:17 2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv
+-rw-r--r--   1 nobody  wheel   638 Oct 21 13:17 327e381ab2b0358b05b97b4e0159df4adfc92e5e9dd7c002295cf8143f8ac7ca.meta.json
+--- n48m tmp:
+ls: /private/tmp/n48m/88: Permission denied
+total 0
+drwxrwxrwt  3 _windowserver  wheel   96 Oct 21 15:41 .
+drwxrwxrwt  6 root           wheel  192 Oct 21 15:41 ..
+drwx------+ 6 _windowserver  wheel  192 Oct 21 15:41 88
+
+/private/tmp/n48m/88:
+total 0
+--- bundle spvcache:
+13703fd14f1af2c5e972092468a3e90d6855a2bfd0f00084e241613067bd44df.meta.json
+13703fd14f1af2c5e972092468a3e90d6855a2bfd0f00084e241613067bd44df.spv
+1493852ac3ac9e2baaf8a74271cf975dbd9dc5c137c22b23e78687939d5a7ce3.meta.json
+1493852ac3ac9e2baaf8a74271cf975dbd9dc5c137c22b23e78687939d5a7ce3.spv

@@ -1,0 +1,160 @@
+--- a/src/framebuffer.hpp
++++ b/src/framebuffer.hpp
+@@ -290,6 +290,7 @@
+ 	uint8_t            validateRefuseLogs { 0 };   // patch 0006: bounded log of refused 2560x1440 candidates
+ 	bool ownsDisplayMode(IODisplayModeID displayMode) const;
+ 	void publishTimingRange();               // patch 0005: IOFBTimingRange (Navi 44 only)
++	void pruneSessionConfig(const char *where, bool clearAliases);   // patch 0007: drop what this driver installed from IOFBConfig
+ 
+ public:
+ 	// IOService
+@@ -301,6 +302,9 @@
+ 	IOReturn enableController() override;
+ 	// Patch 0004: removes the IOFBIntegrated property the base publishes on bus 0 (Navi 44 only).
+ 	IOReturn open(void) override;
++	// Patch 0007 (Navi 44 only): session state. close() ends a session, newUserClient() starts one.
++	void close(void) override;
++	IOReturn newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **clientH) override;
+ 
+ 	// IOFramebuffer — memory
+ 	IODeviceMemory *getApertureRange(IOPixelAperture aperture) override;
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2792,6 +2792,101 @@
+ 	      (unsigned)r.supportedDynamicRangeModes);
+ }
+ 
++// Patch 0007 (Navi 44 only): session state. CoreDisplay sends IOFBConfig (IOFBModes and the top-level IOFBDetailedTimings)
++// at the end of IOFBBuildModeList; IOGraphics stores it as a registry property (extSetProperties, IOFramebuffer.cpp:11670-11680)
++// and never removes it (its only other reader is getConfigMode, :10579-10611). A new session rebuilds its mode list from
++// that property: the GOP timing is already in it, so installing the GOP timing again returns the duplicate code
++// 0xE00002DD and no mode is selected (research/reports/coredisplay_re.md section 8).
++// Two hooks, both in IOGraphics' own session path:
++//   close()          ends a session: IOFramebuffer::closeWork (IOFramebuffer.cpp:10264) calls close() after the last
++//                    server client is gone (IOFramebufferUserClient::stop, extClose at :10243).
++//   newUserClient()  starts one: a successful server connection (kIOFBServerConnectType, IOFramebuffer.cpp:4013-4020)
++//                    is the next WindowServer session.
++// Only what this driver installed is removed: IOFBModes entries whose id is in the reserved range (0x80000000..0xFFFFFEFF:
++// the CoreDisplay-generated and alias ids), and IOFBDetailedTimings entries that are the GOP timing. The mode-1 entries
++// (getConfigMode(1, DM) feeds uiScale, IOFramebuffer.cpp:10709) and every other key stay: the user's settings survive.
++// The driver's alias list is emptied at session end (close) only: a newUserClient is not a session boundary for live state, since
++// matchFramebuffer may have installed an alias between two sessions. Every pruning is logged.
++void RDNA4FB::pruneSessionConfig(const char *where, bool clearAliases) {
++	const uint32_t aliases = aliasModeCount;
++	if (clearAliases)
++		aliasModeCount = 0;
++	OSDictionary *cfg = OSDynamicCast(OSDictionary, getProperty(kIOFBConfigKey));
++	if (!cfg) {
++		FBLOG("%s: no IOFBConfig; %u alias mode(s) %s", where, aliases, clearAliases ? "cleared" : "kept");
++		return;
++	}
++	OSDictionary *out = OSDictionary::withDictionary(cfg);
++	if (!out) {
++		FBLOG("%s: IOFBConfig copy failed; %u alias mode(s) %s", where, aliases, clearAliases ? "cleared" : "kept");
++		return;
++	}
++
++	unsigned modesRemoved = 0, timingsRemoved = 0;
++	if (OSArray *modes = OSDynamicCast(OSArray, cfg->getObject(kIOFBModesKey))) {
++		OSArray *kept = OSArray::withCapacity(modes->getCount());
++		if (kept) {
++			for (unsigned i = 0; i < modes->getCount(); i++) {
++				OSObject *entry = modes->getObject(i);
++				OSDictionary *mode = OSDynamicCast(OSDictionary, entry);
++				OSNumber *id = mode ? OSDynamicCast(OSNumber, mode->getObject(kIOFBModeIDKey)) : nullptr;
++				const UInt32 modeID = id ? id->unsigned32BitValue() : 0;
++				if (id && modeID >= 0x80000000u && modeID < 0xFFFFFF00u) {
++					modesRemoved++;
++					continue;
++				}
++				kept->setObject(entry);
++			}
++			out->setObject(kIOFBModesKey, kept);
++			kept->release();
++		}
++	}
++	if (OSArray *timings = OSDynamicCast(OSArray, cfg->getObject(kIOFBDetailedTimingsKey))) {
++		OSArray *kept = OSArray::withCapacity(timings->getCount());
++		if (kept) {
++			for (unsigned i = 0; i < timings->getCount(); i++) {
++				OSObject *entry = timings->getObject(i);
++				OSData *data = OSDynamicCast(OSData, entry);
++				if (data && data->getLength() == sizeof(IODetailedTimingInformationV2) &&
++				    rdna4_is_gop_timing(*static_cast<const IODetailedTimingInformationV2 *>(data->getBytesNoCopy()))) {
++					timingsRemoved++;
++					continue;
++				}
++				kept->setObject(entry);
++			}
++			out->setObject(kIOFBDetailedTimingsKey, kept);
++			kept->release();
++		}
++	}
++
++	if (modesRemoved || timingsRemoved) {
++		if (out->getCount() == 0)
++			removeProperty(kIOFBConfigKey);
++		else
++			setProperty(kIOFBConfigKey, out);
++	}
++	FBLOG("%s: IOFBConfig pruned: %u IOFBModes entrie(s) of the reserved range, %u GOP detailed timing(s); %u alias mode(s) %s",
++	      where, modesRemoved, timingsRemoved, aliases, clearAliases ? "cleared" : "kept");
++	out->release();
++}
++
++// Session end. The base closes the framebuffer for WindowServer; the pruning runs after it, once the server connection is
++// gone and before the next session can connect.
++void RDNA4FB::close(void) {
++	super::close();
++	if (rdna4_is_navi44(pciDevice))
++		pruneSessionConfig("close", true);
++}
++
++// Session start (config only). Only a successful server connection starts a session: an exclusive-access error means the previous
++// one is still live. Other connection types (shared cursor) do not touch IOFBConfig.
++IOReturn RDNA4FB::newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **clientH) {
++	const IOReturn ret = super::newUserClient(owningTask, securityID, type, clientH);
++	if (ret == kIOReturnSuccess && type == kIOFBServerConnectType && rdna4_is_navi44(pciDevice))
++		pruneSessionConfig("newUserClient", false);
++	return ret;
++}
++
+ // ---------------------------------------------------------------------------
+ // IOFramebuffer — attributes / connection
+ // ---------------------------------------------------------------------------
+--- a/src/kmod_info.c
++++ b/src/kmod_info.c
+@@ -33,7 +33,7 @@
+ 	return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.7", _start, _stop)
++KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.8", _start, _stop)
+ 
+ __private_extern__ kmod_start_func_t *_realmain = rdna4_kmod_start;
+ __private_extern__ kmod_stop_func_t  *_antimain = rdna4_kmod_stop;
+--- a/Info.plist
++++ b/Info.plist
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>0.0.7</string>
++	<string>0.0.8</string>
+ 	<key>CFBundleVersion</key>
+-	<string>0.0.7</string>
++	<string>0.0.8</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>OSBundleRequired</key>
+--- a/Makefile
++++ b/Makefile
+@@ -9,7 +9,7 @@
+ 
+ PRODUCT      := RDNA4FB
+ BUNDLE_ID    := com.hackintosh.RDNA4FB
+-VERSION      := 0.0.7
++VERSION      := 0.0.8
+ 
+ ARCH         := x86_64
+ DEPLOY       := 11.0

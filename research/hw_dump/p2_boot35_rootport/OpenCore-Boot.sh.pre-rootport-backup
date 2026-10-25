@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+# Special thanks to:
+# https://github.com/Leoyzen/KVM-Opencore
+# https://github.com/thenickdude/KVM-Opencore/
+# https://github.com/qemu/qemu/blob/master/docs/usb2.txt
+#
+# qemu-img create -f qcow2 mac_hdd_ng.img 128G
+#
+# echo 1 > /sys/module/kvm/parameters/ignore_msrs (this is required)
+
+###############################################################################
+# NOTE: Tweak the "MY_OPTIONS" line in case you are having booting problems!
+###############################################################################
+#
+# Change `Penryn` to `Haswell-noTSX` in OpenCore-Boot.sh file for macOS Sonoma!
+#
+###############################################################################
+
+
+MY_OPTIONS="+ssse3,+sse4.2,+popcnt,+avx,+aes,+xsave,+xsaveopt,check"
+
+# This script works for Big Sur, Catalina, Mojave, and High Sierra. Tested with
+# macOS 10.15.6, macOS 10.14.6, and macOS 10.13.6.
+
+ALLOCATED_RAM="12288" # MiB
+CPU_SOCKETS="1"
+CPU_CORES="4"
+CPU_THREADS="8"
+
+REPO_PATH="."
+OVMF_DIR="."
+
+# GPU option ROM (2026-10-20). Unset: rombar=0, the bring-up behaviour unchanged. See the options below.
+# N4X_GPU_ROMBAR=1 exposes the PHYSICAL ROM BAR (QEMU reads the card's ROM through VFIO, no root). vbios.rom in the repo is a
+# truncated dump (legacy image only, no UEFI GOP): do not use it for the GOP boot. N4X_GPU_ROMFILE and N4X_GPU_ROMBAR are exclusive.
+if [[ -n "${N4X_GPU_ROMFILE:-}" && "${N4X_GPU_ROMBAR:-0}" == 1 ]]; then
+  echo "N4X_GPU_ROMFILE e N4X_GPU_ROMBAR=1 non possono essere impostate insieme." >&2; exit 1
+fi
+if [[ -n "${N4X_GPU_ROMFILE:-}" ]]; then
+  [[ -r "$N4X_GPU_ROMFILE" ]] || { echo "N4X_GPU_ROMFILE non leggibile: $N4X_GPU_ROMFILE" >&2; exit 1; }
+  GPU_ROM_OPT="romfile=$N4X_GPU_ROMFILE"
+elif [[ "${N4X_GPU_ROMBAR:-0}" == 1 ]]; then
+  GPU_ROM_OPT="rombar=1"
+else
+  GPU_ROM_OPT="rombar=0"
+fi
+
+# shellcheck disable=SC2054
+# N4X_GPU_PRIMARY=1 (2026-10-20): the RX 9060 XT is the only display. No emulated VGA (-vga none), no vmware-svga, no GTK window;
+# serial and SSH unchanged. Requires N4X_GPU_ROMBAR=1 (the physical ROM, with the GOP). Unset: the bring-up layout, unchanged.
+if [[ "${N4X_GPU_PRIMARY:-0}" == 1 ]]; then
+  if [[ "${N4X_GPU_ROMBAR:-0}" != 1 || -n "${N4X_GPU_ROMFILE:-}" ]]; then
+    echo "N4X_GPU_PRIMARY=1 richiede N4X_GPU_ROMBAR=1 e non N4X_GPU_ROMFILE." >&2; exit 1
+  fi
+  DISPLAY_OPTS=(-display none -vga none)
+  DISPLAY_DEV=()
+else
+  DISPLAY_OPTS=(-display gtk)
+  DISPLAY_DEV=(-device vmware-svga)
+fi
+
+args=(
+  # -enable-kvm -m "$ALLOCATED_RAM" -cpu Penryn,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,"$MY_OPTIONS"
+  -enable-kvm -m "$ALLOCATED_RAM" -cpu Skylake-Client,-pcid,-hle,-rtm,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,"$MY_OPTIONS"  # ATTENTION: Enable this line for macOS Sequoia and Tahoe
+  -machine q35
+  "${DISPLAY_OPTS[@]}"
+  -device qemu-xhci,id=xhci
+  -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0
+  -smp "$CPU_THREADS",cores="$CPU_CORES",sockets="$CPU_SOCKETS"
+  -device usb-ehci,id=ehci
+  # -device usb-kbd,bus=ehci.0
+  # -device usb-mouse,bus=ehci.0
+  # -device nec-usb-xhci,id=xhci
+  # -global nec-usb-xhci.msi=off
+  # -global ICH9-LPC.acpi-pci-hotplug-with-bridge-support=off
+  # -device usb-host,vendorid=0x8086,productid=0x0808  # 2 USD USB Sound Card
+  # -device usb-host,vendorid=0x1b3f,productid=0x2008  # Another 2 USD USB Sound Card
+  -device isa-applesmc,osk="ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+  -drive if=pflash,format=raw,readonly=on,file="$REPO_PATH/$OVMF_DIR/OVMF_CODE_4M.fd"
+  -drive if=pflash,format=raw,file="$REPO_PATH/$OVMF_DIR/OVMF_VARS-1920x1080.fd"
+  -smbios type=2
+  -device ich9-intel-hda -device hda-duplex
+  -device ich9-ahci,id=sata
+  -drive id=OpenCoreBoot,if=none,format=qcow2,file="$REPO_PATH/OpenCore/OpenCore.stage1.qcow2"
+  -device ide-hd,bus=sata.2,drive=OpenCoreBoot
+  -drive id=MacHDD,if=none,file="$REPO_PATH/mac_hdd_ng.img",format=qcow2
+  -device ide-hd,bus=sata.4,drive=MacHDD
+  # -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device virtio-net-pci,netdev=net0,id=net0,mac=52:54:00:c9:18:27
+  -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2223-:22 -device virtio-net-pci,netdev=net0,id=net0,mac=52:54:00:c9:18:27
+  # -netdev user,id=net0 -device vmxnet3,netdev=net0,id=net0,mac=52:54:00:c9:18:27  # Note: Use this line for High Sierra
+  -serial file:/mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+  -qmp unix:/mnt/vm/images/macos-gpu-test/qmp.sock,server=on,wait=off
+  -device "vfio-pci,host=0000:03:00.0,${GPU_ROM_OPT}"
+  -device vfio-pci,host=0000:03:00.1
+  -gdb tcp:127.0.0.1:1234
+  -monitor stdio
+  "${DISPLAY_DEV[@]}"
+  # -spice port=5900,addr=127.0.0.1,disable-ticketing=on
+)
+
+if [[ "${N48_START_PAUSED:-0}" == 1 ]]; then args+=(-S); fi
+qemu-system-x86_64 "${args[@]}"

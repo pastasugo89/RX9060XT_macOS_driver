@@ -1,0 +1,12 @@
+0.0.0 Host bridge 0x8086:0x29c0 qdev=
+0.1.0 USB controller 0x1b36:0x000d qdev=xhci
+0.2.0 USB controller 0x8086:0x24cd qdev=ehci
+0.3.0 Audio controller 0x8086:0x293e qdev=
+0.4.0 SATA controller 0x8086:0x2922 qdev=sata
+0.5.0 Ethernet controller 0x1af4:0x1000 qdev=net0
+0.16.0 PCI bridge 0x1b36:0x000c qdev=gpuport
+  1.0.0 VGA controller 0x1002:0x7590 qdev=
+  1.0.1 Audio controller 0x1002:0xab40 qdev=
+0.31.0 ISA bridge 0x8086:0x2918 qdev=
+0.31.2 SATA controller 0x8086:0x2922 qdev=
+0.31.3 SMBus 0x8086:0x2930 qdev=

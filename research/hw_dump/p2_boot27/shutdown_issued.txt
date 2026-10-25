@@ -1,0 +1,4 @@
+Shutdown NOW!
+
+System shutdown time has arrived
+Connection to 127.0.0.1 closed by remote host.

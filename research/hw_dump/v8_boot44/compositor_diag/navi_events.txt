@@ -1,0 +1,76 @@
+19:33:00.239 Df WindowServer[202:8ea] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+19:33:00.239 Df loginwindow[206:8a5] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+19:33:00.241 Df WindowServer[202:8ea] (Navi48Metal) Navi48Metal: counter: 1 abnormal start(s) in the last 300 s including this one (0 earlier instance(s) reached clean and are not counted)
+19:33:08.784 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+19:33:08.784 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: counter: 2 abnormal start(s) in the last 300 s including this one (0 earlier instance(s) reached clean and are not counted)
+19:33:08.803 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newRenderPipelineStateWithDescriptor:error:
+19:33:08.804 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv open: attempt 1
+19:33:08.804 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv open: dlopen /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib
+19:33:09.046 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv open: P5a /private/tmp/n48m-nosam present: RADV_PERFTEST=nosam (command buffers in GTT)
+19:33:09.063 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: physical device AMD Radeon RX 9060 XT (RADV GFX1200)
+19:33:09.063 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: apiVersion 1.4 shaderInt64 supported 1, storage image read/write without format 1/1
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: depth/stencil format 124 optimal features 0x1de01 (sampled 1, depth/stencil attachment 1)
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: depth/stencil format 126 optimal features 0x1de01 (sampled 1, depth/stencil attachment 1)
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: depth/stencil format 127 optimal features 0x1ce01 (sampled 1, depth/stencil attachment 1)
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: depth/stencil format 130 optimal features 0x1d601 (sampled 1, depth/stencil attachment 1)
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: framebuffer sample counts color 0xf depth 0xf stencil 0xf; depthBiasClamp 1
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: 221 device extensions (listed in chunks):
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[0]: VK_KHR_8bit_storage VK_KHR_16bit_storage VK_KHR_acceleration_structure VK_KHR_bind_memory2 VK_KHR_buffer_device_address VK_KHR_calibrated_timestamps VK_KHR_compute_shader_derivatives VK_KHR_cooperative_matrix VK_KHR_copy_commands2 VK_KHR_copy_memory_i
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[600]: endering_local_read VK_KHR_extended_flags VK_KHR_external_fence VK_KHR_external_fence_fd VK_KHR_external_memory VK_KHR_external_memory_fd VK_KHR_external_semaphore VK_KHR_external_semaphore_fd VK_KHR_format_feature_flags2 VK_KHR_fragment_shader_bary
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[1200]: tenance5 VK_KHR_maintenance6 VK_KHR_maintenance7 VK_KHR_maintenance8 VK_KHR_maintenance9 VK_KHR_maintenance10 VK_KHR_maintenance11 VK_KHR_map_memory2 VK_KHR_multiview VK_KHR_performance_query VK_KHR_pipeline_binary VK_KHR_pipeline_executable_proper
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[1800]: omic_int64 VK_KHR_shader_bfloat16 VK_KHR_shader_clock VK_KHR_shader_constant_data VK_KHR_shader_draw_parameters VK_KHR_shader_expect_assume VK_KHR_shader_float16_int8 VK_KHR_shader_float_controls VK_KHR_shader_float_controls2 VK_KHR_shader_fma VK_K
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[2400]: _spirv_1_4 VK_KHR_storage_buffer_storage_class VK_KHR_synchronization2 VK_KHR_timeline_semaphore VK_KHR_unified_image_layouts VK_KHR_uniform_buffer_standard_layout VK_KHR_variable_pointers VK_KHR_vertex_attribute_divisor VK_KHR_vulkan_memory_model 
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[3000]: ization VK_EXT_cooperative_matrix_maintenance1 VK_EXT_custom_border_color VK_EXT_custom_resolve VK_EXT_depth_bias_control VK_EXT_depth_clamp_control VK_EXT_depth_clamp_zero_one VK_EXT_depth_clip_control VK_EXT_depth_clip_enable VK_EXT_depth_range_u
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[3600]: dynamic_state3 VK_EXT_external_memory_acquire_unmodified VK_EXT_external_memory_dma_buf VK_EXT_external_memory_host VK_EXT_fragment_shader_interlock VK_EXT_global_priority VK_EXT_global_priority_query VK_EXT_graphics_pipeline_library VK_EXT_hdr_met
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[4200]: ed VK_EXT_memory_budget VK_EXT_memory_priority VK_EXT_mesh_shader VK_EXT_multi_draw VK_EXT_mutable_descriptor_type VK_EXT_nested_command_buffer VK_EXT_non_seamless_cube_map VK_EXT_pci_bus_info VK_EXT_physical_device_drm VK_EXT_pipeline_creation_cac
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[4800]: ons VK_EXT_sampler_filter_minmax VK_EXT_scalar_block_layout VK_EXT_separate_stencil_usage VK_EXT_shader_atomic_float VK_EXT_shader_atomic_float2 VK_EXT_shader_demote_to_helper_invocation VK_EXT_shader_float8 VK_EXT_shader_image_atomic_int64 VK_EXT_
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[5400]: o VK_EXT_transform_feedback VK_EXT_vertex_attribute_divisor VK_EXT_vertex_input_dynamic_state VK_EXT_ycbcr_2plane_444_formats VK_EXT_ycbcr_image_arrays VK_EXT_zero_initialize_device_memory VK_AMD_buffer_marker VK_AMD_draw_indirect_count VK_AMD_gcn_
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: ext[6000]: _minmax VK_GOOGLE_decorate_string VK_GOOGLE_hlsl_functionality1 VK_GOOGLE_user_type VK_INTEL_shader_integer_functions2 VK_MESA_image_alignment_control VK_NV_compute_shader_derivatives VK_VALVE_mutable_descriptor_type VK_VALVE_shader_mixed_float_dot
+19:33:09.064 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: framebuffer-fetch support: rasterization_order_attachment_access ext 0 (color feature 0, depth 0, stencil 0); dynamic_rendering_local_read ext 1 (feature 1); attachment_feedback_loop_layout ext 1; dynamic_rendering ext 1; classic render-pass input attachments
+19:33:09.081 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: VK_EXT_external_memory_host enabled, vkGetMemoryHostPointerPropertiesEXT present, minImportedHostPointerAlignment 4096
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T2 pipeline cache: 0x600001b98340 created from /private/var/tmp/n48m-pipecache.bin in 0.03 ms (initialData 5404 B, ACCEPTED); key f143837d uuid 7df0dbd8
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T1 pool: ON (/private/tmp/n48m-pool present at device creation): slabs 4096 KiB (<= 256 KiB), recycle 256 KiB..64 MiB cap 256 MiB, idle 2000 ms, dedicated query yes, granularity 1
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: P4 impcache: ON (default since build 16; kill file /private/tmp/n48m-noimpcache absent at device creation; latched for the life of this process): one shared import per IOSurface, kept 2000 ms after its last texture, <= 128 MiB unused, frees fence-gated (P1 fence)
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T1 drawopt: ON (/private/tmp/n48m-drawopt present at device creation; latched for the life of this process): descriptor-set reuse, pipeline-bind skip, variant cache, render-pass cache (<= 64)
+19:33:09.088 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T1 timing: summaries every 10 s (pid 828 WindowServer)
+19:33:09.088 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv open: OK (queue family 0)
+19:33:09.089 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: spvcache hit vertex: /private/var/tmp/n48m-spv/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587.spv (1708 bytes, meta)
+19:33:09.090 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: spvcache hit fragment: /private/var/tmp/n48m-spv/29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.spv (8968 bytes, meta)
+19:33:09.091 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: pipeline: colour attachment 0 pixel format 94 (vk 58)
+19:33:09.091 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: static sampler at binding 161: min 1 mag 1 mip 0 addr 0/0/0 normalized
+19:33:09.094 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48RenderPipelineState 0x7ff492813600: pipeline 0x7ff491842800 (1 colour attachment(s), set0 3 / set1 10 bindings, 0 vertex input(s), 0 vertex binding(s))
+19:33:09.119 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newHeapWithDescriptor: size 4096 storage 2 cache 0 hazard 2 type 0
+19:33:09.119 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48Heap 0x6000011850e0: 16384 bytes storage 2 cache 0 hazard 2 (budget object, no memory)
+19:33:09.119 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: heap setPurgeableState: tracked as a flag only (no memory is ever reclaimed)
+19:33:09.120 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newCommandQueue
+19:33:09.120 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48CommandQueue 0x7ff491711870: pool 0x600001584600
+19:33:09.120 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: queue setCompletionQueue: recorded only (completion handlers run on the bundle's completion thread)
+19:33:09.120 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: queue setGPUPriority: recorded only
+19:33:09.121 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newDepthStencilStateWithDescriptor:
+19:33:09.121 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600000e9a080: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by pipelines with a depth/stencil attachment)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000020b4880: vk 0x60000128d710 (min 0 mag 0 mip 0 addr 0/0/0 cmp 0 normalized)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000020b48a0: vk 0x60000128d830 (min 0 mag 0 mip 0 addr 0/0/0 cmp 0 unnormalized)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000020b48c0: vk 0x60000128e760 (min 1 mag 1 mip 0 addr 0/0/0 cmp 0 unnormalized)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000020b48e0: vk 0x60000128e7f0 (min 1 mag 1 mip 0 addr 0/0/0 cmp 0 normalized)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: sampler: maxAnisotropy 8 ignored (samplerAnisotropy not enabled)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000020b4900: vk 0x60000128e880 (min 1 mag 1 mip 2 addr 0/0/0 cmp 0 normalized)
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: newDepthStencilStateWithDescriptor:
+19:33:09.125 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600000ea4200: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by pipelines with a depth/stencil attachment)
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 spvcache_read n=2 avg=1.163ms min=0.914ms max=1.413ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=0/0/2/0/0/0/0/0 [WindowServer pid 828, 10 s window]
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 shader_module n=2 avg=0.017ms min=0.012ms max=0.021ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=2/0/0/0/0/0/0/0 [WindowServer pid 828, 10 s window]
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 gfx_pipeline n=1 avg=2.576ms min=2.576ms max=2.576ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=0/0/0/1/0/0/0/0 [WindowServer pid 828, 10 s window]
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 828]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+19:33:19.512 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: build 16: use-count policy IN-FLIGHT ONLY (a surface is use-counted while a command buffer that touched a texture of it is in flight) (kill file /private/tmp/n48m-nousecount absent); IOSurface wrapper aliasing (P1) OFF (WindowServer: counted only)
+19:34:09.478 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 828]
+19:34:09.478 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence submitted/completed=0/0 [WindowServer pid 828, cumulative]
+19:34:09.478 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 drawopt: draws 0, descriptor sets reused 0 / allocated 0, pipeline binds skipped 0 / done 0, pipelineForTopology cache hits 0, render passes cached(hit) 0 / created 0 / uncached(cap) 0 [WindowServer pid 828, cumulative]
+19:34:09.478 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/miss/mismatch=0/0/0 [WindowServer pid 828, cumulative]
+19:35:09.478 Df WindowServer[828:e4d] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 828]
+19:35:09.478 Df WindowServer[828:e4d] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence submitted/completed=0/0 [WindowServer pid 828, cumulative]
+19:35:09.478 Df WindowServer[828:e4d] (Navi48Metal) Navi48Metal: T1 drawopt: draws 0, descriptor sets reused 0 / allocated 0, pipeline binds skipped 0 / done 0, pipelineForTopology cache hits 0, render passes cached(hit) 0 / created 0 / uncached(cap) 0 [WindowServer pid 828, cumulative]
+19:35:09.478 Df WindowServer[828:e4d] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/miss/mismatch=0/0/0 [WindowServer pid 828, cumulative]

@@ -1,0 +1,6 @@
+    | |   | | +-o display0  <class IODisplayConnect, id 0x10000039d, registered, matched, active, busy 0 (0 ms), retain 6>
+    | |   | | | +-o AppleDisplay  <class AppleDisplay, id 0x10000039f, registered, matched, active, busy 0 (0 ms), retain 8>
+    | |   | | +-o IOFramebufferUserClient  <class IOFramebufferUserClient, id 0x100000468, !registered, !matched, active, busy 0, retain 5>
+---
+    | |   | | |   "IOFBConfig" = {"dims"=<000a0000a00500000002000007000000>,"IOFBModes"=({"ID"=1,"DM"=<000a0000a005000000003c00000000000300100000000000000000000000000000000000>,"DF"=3}),"IOFBtv"=Yes}
+    | |   | | |   "IOFBNeedsRefresh" = Yes

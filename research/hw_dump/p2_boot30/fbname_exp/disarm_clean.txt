@@ -1,0 +1,7 @@
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  flags / factory mask    : 0x3b / 0xd

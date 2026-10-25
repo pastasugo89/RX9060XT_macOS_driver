@@ -1,0 +1,40 @@
+gpu 0x25ad       agdc 0x10000043f     /Navi48Bringup/Navi48AGDC
+gpu 0x25ad      accel 0x100000438     /Navi48Bringup/Navi48MetalNub/Navi48Accelerator
+gpu 0x25ad      fb0:0 0x10000031d     /AMDRDNA4FB
+2026-10-21 15:57:20.181 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 15:57:20.185 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x10000031d
+2026-10-21 15:57:20.185 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-1e6d-5c87-f9b3cb9c78545e88
+2026-10-21 15:57:20.185 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 15:57:20.204 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - Created FB 1 of 1
+2026-10-21 15:57:20.207 E  WindowServer[1280:145e] [com.apple.CoreDisplay:default] [ERROR] - Error: No property 'FB_Triage', or property isn't a string.
+2026-10-21 15:57:20.207 E  WindowServer[1280:145e] [com.apple.CoreDisplay:default] [ERROR] - Error: Can't get value for key 'Triage'.
+2026-10-21 15:57:20.207 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - GPU: FB: 1 of 1 opened
+Can't get value for key 'AMDFramebuffer'
+IOResources: IOAFTriage-Navi48MetalNub = 0102030405060708090a0b0c0d0e0f101112131415161718191a
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load protocol MTLDeviceSPI found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load protocol MTLDevice found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLBuffer found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLResource found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLTexture found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLResource found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48RenderPipelineState protocol MTLRenderPipelineState found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48CommandQueue protocol MTLCommandQueue found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48CommandBuffer protocol MTLCommandBuffer found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLRenderCommandEncoder found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLBlitCommandEncoder found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLComputeCommandEncoder found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48ComputePipelineState protocol MTLComputePipelineState found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48SamplerState protocol MTLSamplerState found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48DepthStencilState protocol MTLDepthStencilState found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Fence protocol MTLFence found 1 added 1
+2026-10-21 15:57:20.210 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: +load N48Heap protocol MTLHeap found 1 added 1
+2026-10-21 15:57:20.211 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+2026-10-21 15:57:20.211 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xc127
+2026-10-21 15:57:20.211 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xc127
+2026-10-21 15:57:20.211 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: counter: 4 abnormal start(s) in the last 300 s including this one (0 earlier instance(s) reached clean and are not counted)
+2026-10-21 15:57:20.213 Df WindowServer[1280:145e] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xc127 DECLINED in WindowServer (pid 1280): crash counter: >= 3 starts within 300 s
+2026-10-21 15:57:20.213 Df WindowServer[1280:145e] [com.apple.CoreDisplay:default] [WARN] - Setting kIOWSAA to 0x80000013 on 0xe903
+2026-10-21 15:57:20.217 E  WindowServer[1280:145e] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in AddCGXDisplayDeviceToDeviceList 	

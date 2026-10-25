@@ -1,0 +1,19 @@
+Timestamp               Ty Process[PID:TID]
+gpu 0x25ad        pci 0x100000192 IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x100000321     /RDNA4FB
+gpu 0x25ad        pci 0x100000192 IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x100000321     /RDNA4FB
+gpu 0x25ad        pci 0x100000192 IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6
+gpu 0x25ad       agdc 0x100000464     /Navi48Bringup/Navi48AGDC
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x10000044b     /Navi48Bringup/Navi48MetalNub/Navi48Accelerator
+gpu 0x25ad      fb0:0 0x100000321     /RDNA4FB

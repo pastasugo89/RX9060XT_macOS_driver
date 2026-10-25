@@ -1,0 +1,2 @@
+Osservazione utente dopo l'arm del boot46 (23/10/2026, riferita dal coordinatore): nessuna differenza. Orologio assente, nessuna trasparenza.
+Coerente con frames=0, submit=0, command_buffers=0 (vedi guest_postarm_counters_boot46.txt).

@@ -1,0 +1,2 @@
+a5ba00d724f2897f190cce15f6aa1d2bf29008288393039ec4fd3e7aa0b9da1c  /Library/Extensions/RDNA4FB.kext/Contents/MacOS/RDNA4FB
+Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.

@@ -1,0 +1,60 @@
+	2  	    0x7ff80ddc0cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff80de67547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff80de66d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff811f46dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+2026-10-21 15:41:23.618 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+	0  	    0x7ff80dda27f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff80ddc14d1	CGXConstructVirtualFramebuffer + 1697
+	2  	    0x7ff80ddc0cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff80de67547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff80de66d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff811f46dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+2026-10-21 15:41:23.619 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+	0  	    0x7ff80dda27f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff80ddc1650	CGXConstructVirtualFramebuffer + 2080
+	2  	    0x7ff80ddc0cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff80de67547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff80de66d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff811f46dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+2026-10-21 15:41:23.619 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+	0  	    0x7ff80dda27f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff80ddc14d1	CGXConstructVirtualFramebuffer + 1697
+	2  	    0x7ff80ddc0cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff80de67547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff80de66d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff811f46dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Bootstrap Port: 7683
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Local Port: 55203 (com.apple.CoreDisplay.Notification)
+2026-10-21 15:41:23.620 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:ECFCCA8F-9D43-4F05-B2AF-E2235CAEAFF7 pid:1038 process:WindowServer type:Rate Controlled entitlements:0x3 caller:SkyLight: _ZN2WS8Disp
+2026-10-21 15:41:23.630 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:41:23.631 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysWillReconfigure: Posting kCGSDisplayWillReconfigure
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysDidReconfigure: Posting kCGSDisplayDidReconfigure
+2026-10-21 15:41:24.234 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration finished
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x6000013f4f80
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 15:41:24.235 Df WindowServer[1038:1077] [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 15:41:24.236 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc916d30] activating connection: mach=true listener=false peer=false name=com.apple.colorsync.displayservices
+2026-10-21 15:41:24.268 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:deferringPolicyEvaluationSuppression <2> acq:0x60000
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011cc200 count:1
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+2026-10-21 15:41:24.319 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [<token: <frontmost>; pid: 1038>]
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost process <3> acq:0x6000011c7ca0 cou
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011c7ca0 count:1
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+2026-10-21 15:41:25.650 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost process <4> acq:0x6000011ec520 cou
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011ec520 count:1
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+2026-10-21 15:41:27.024 Df WindowServer[1038:1080] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+2026-10-21 15:41:33.700 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 1038]: pipelines gfx=2 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: build 16: use-count policy IN-FLIGHT ONLY (a surface is use-counted while a command buffer that touched a texture of it is in flight) (kill file /private/tmp/n48m-nousecount absent);
+2026-10-21 15:41:34.516 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:35.517 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/
+2026-10-21 15:44:23.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/
+2026-10-21 15:45:23.976 Df WindowServer[1038:1080] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/

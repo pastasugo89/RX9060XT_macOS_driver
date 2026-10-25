@@ -1,0 +1,7 @@
+--- load now:
+Loading extension(s): com.hackintosh.RDNA4FB requires a reboot
+kmutil rc=
+--- showloaded:
+RDNA4FB not loaded
+--- who:
+       2

@@ -1,0 +1,4 @@
+Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+rc=27
+---
+  119    0 0xffffff7f96638000 0xbe74     0xbe74     com.hackintosh.RDNA4FB (0.0.7) 95C708F0-64A5-3A77-9734-BB84FE152D24 <116 19 9 7 6 3>

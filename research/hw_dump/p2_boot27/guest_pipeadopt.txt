@@ -1,0 +1,15 @@
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000436, ops table ABI 3, 152 bytes
+--- pipeadopt:
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9c34352000  (accelerator 0xffffff929ad7a000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffffa5cdaeac40)
+rc=
+--- pipestat 0:
+  flags / factory mask    : 0x3b / 0xd

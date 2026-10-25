@@ -1,0 +1,7 @@
+Riga GPU generata con N4X_GPU_ROOTPORT=1 (verificata con una copia del launcher che stampa args[]):
+-device pcie-root-port,id=gpuport,bus=pcie.0,addr=0x10,chassis=1,slot=1,hotplug=off,pref64-reserve=512M,mem-reserve=8M,io-reserve=4K
+-device vfio-pci,host=0000:03:00.0,bus=gpuport,addr=0x0,multifunction=on,rombar=1
+-device vfio-pci,host=0000:03:00.1,bus=gpuport,addr=0x0.0x1
+Con N4X_GPU_ROOTPORT non impostata (default): -device vfio-pci,host=0000:03:00.0,rombar=1 ; -device vfio-pci,host=0000:03:00.1
+Seriale: -serial file:/mnt/vm/images/macos-gpu-test/diagnostics/serial.log (invariato)
+Watchdog: START 17:20:00 (READY pid 130383); nessun heartbeat in questo boot; uscito 17:28:27 rc=0.

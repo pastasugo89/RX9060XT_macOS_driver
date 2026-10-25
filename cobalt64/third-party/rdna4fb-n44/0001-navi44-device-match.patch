@@ -1,0 +1,70 @@
+diff --git a/Info.plist b/Info.plist
+index 5beed7d..e939787 100644
+--- a/Info.plist
++++ b/Info.plist
+@@ -24,8 +24,8 @@
+ 	<string>Root</string>
+ 	<key>IOKitPersonalities</key>
+ 	<dict>
+-		<!-- Framebuffer personality: matches the RX 9070 XT (Navi 48) PCI
+-		     device. IOPCIPrimaryMatch is 0xDEVICEVENDOR = 0x7550 / 0x1002. -->
++		<!-- Framebuffer personality: Navi 48 (0x7550, 0x7551) and Navi 44 (0x7590, RX 9060 XT, DCN 4.1.0).
++		     IOPCIPrimaryMatch is 0xDEVICEVENDOR / 0x1002. Navi 44 added for the cobalt64 P2 test. -->
+ 		<key>RDNA4FB</key>
+ 		<dict>
+ 			<key>CFBundleIdentifier</key>
+@@ -35,7 +35,7 @@
+ 			<key>IOProviderClass</key>
+ 			<string>IOPCIDevice</string>
+ 			<key>IOPCIPrimaryMatch</key>
+-			<string>0x75501002 0x75511002</string>
++			<string>0x75501002 0x75511002 0x75901002</string>
+ 			<key>IOProbeScore</key>
+ 			<integer>200000</integer>
+ 			<key>IOMatchCategory</key>
+diff --git a/src/framebuffer.cpp b/src/framebuffer.cpp
+index 03e04fd..2707389 100644
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2038,13 +2038,14 @@ IOService *RDNA4FB::probe(IOService *provider, SInt32 *score) {
+ 	// Vendor 0x1002 (AMD), Navi 48 family: 0x7550 (RX 9070 / 9070 XT),
+ 	// 0x7551 (Radeon AI PRO R9700 — same die, compute bring-up proven on
+ 	// macOS by lemonade-sdk/mac-amdgpu). Same DCN 4.1.0 display core.
++	// Navi 44 (0x7590, RX 9060 XT) is the same DCN 4.1.0 display core (cobalt64 patch 0001).
+ 	if ((vendorDevice & 0xffff) != 0x1002 ||
+-	    (device != 0x7550 && device != 0x7551)) {
++	    (device != 0x7550 && device != 0x7551 && device != 0x7590)) {
+ 		FBLOG("device id mismatch, not matching");
+ 		return nullptr;
+ 	}
+-	FBLOG("Navi 48 variant: %s",
+-	      device == 0x7550 ? "RX 9070 / 9070 XT" : "R9700");
++	FBLOG("%s variant: %s", device == 0x7590 ? "Navi 44" : "Navi 48",
++	      device == 0x7550 ? "RX 9070 / 9070 XT" : device == 0x7551 ? "R9700" : "RX 9060 XT");
+ 
+ 	if (score) *score += 20000;
+ 	return this;
+@@ -2239,6 +2240,14 @@ IOReturn RDNA4FB::getDisplayModes(IODisplayModeID *allDisplayModes) {
+ 	return kIOReturnSuccess;
+ }
+ 
++// Refresh of the one exposed mode. Navi 44 (0x7590): the GOP leaves the scanout at 2560x1440 @ 120 Hz (the SINK-A CTA
++// timing of research/display/gop_vm_readout_plan.md section 9), so the mode declares 120 Hz there. Navi 48 keeps 60 Hz.
++static uint32_t rdna4_refresh_hz(IOPCIDevice *pci) {
++	if (pci && (pci->configRead32(kIOPCIConfigVendorID) >> 16) == 0x7590)
++		return 120;
++	return 60;
++}
++
+ IOReturn RDNA4FB::getInformationForDisplayMode(IODisplayModeID displayMode,
+                                                   IODisplayModeInformation *info) {
+ 	if (displayMode != kRDNA4DisplayModeID || !info)
+@@ -2247,7 +2256,7 @@ IOReturn RDNA4FB::getInformationForDisplayMode(IODisplayModeID displayMode,
+ 	bzero(info, sizeof(*info));
+ 	info->nominalWidth  = fbWidth;
+ 	info->nominalHeight = fbHeight;
+-	info->refreshRate   = 60 << 16;   // 60.0 Hz in 16.16 fixed point
++	info->refreshRate   = rdna4_refresh_hz(pciDevice) << 16;   // Hz in 16.16 fixed point (60 Navi 48, 120 Navi 44)
+ 	info->maxDepthIndex = 0;
+ 	info->flags = kDisplayModeValidFlag | kDisplayModeSafeFlag | kDisplayModeDefaultFlag;
+ 	return kIOReturnSuccess;

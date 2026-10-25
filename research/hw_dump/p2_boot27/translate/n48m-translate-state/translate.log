@@ -1,0 +1,19 @@
+2026-10-21 13:17:15 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 13:17:16 1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e uid=0 OK 1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e compute_apl 5904 bytes
+2026-10-21 13:17:16 2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d uid=0 OK 2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d compute_average_luma 4524 bytes
+2026-10-21 13:17:17 327e381ab2b0358b05b97b4e0159df4adfc92e5e9dd7c002295cf8143f8ac7ca uid=0 OK 327e381ab2b0358b05b97b4e0159df4adfc92e5e9dd7c002295cf8143f8ac7ca fs 320 bytes
+2026-10-21 13:17:17 452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe uid=0 OK 452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe tile_average_luma_quad 9528 bytes [storage formats patched: 1]
+2026-10-21 13:17:17 4e87c592dccede0c02604774bab4356b1f2d0356613df081fa3ae890e73ef6ea uid=0 OK 4e87c592dccede0c02604774bab4356b1f2d0356613df081fa3ae890e73ef6ea vs 880 bytes
+2026-10-21 13:17:17 53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887 uid=0 OK 53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887 compute_apl_fast 9908 bytes
+2026-10-21 13:17:18 8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be uid=0 OK 8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be compute_sum_luma 3080 bytes
+2026-10-21 13:17:18 8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078 uid=0 OK 8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078 quad_vs 1316 bytes
+2026-10-21 13:17:18 c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358 uid=0 OK c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358 sum_apl_and_compute_dimming_factor 6148 bytes
+2026-10-21 13:17:18 c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f uid=0 OK c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f quad_fs 1276 bytes
+2026-10-21 13:17:18 ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521 uid=0 OK ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521 tile_average_luma 4680 bytes [storage formats patched: 1]
+2026-10-21 13:35:41 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 15:08:23 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 15:27:51 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 15:35:52 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 15:38:26 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-21 15:41:25 29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625 uid=88 OK 29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625 GPUPass 8968 bytes
+2026-10-21 15:41:27 c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587 uid=88 OK c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587 ViewportToNDC 1708 bytes

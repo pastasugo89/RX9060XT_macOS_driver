@@ -1,0 +1,27 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-21 15:42:32.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:42.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:52.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:02.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:14.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 1038]
+2026-10-21 15:43:24.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:27.784 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf13f10] activating connection: mach=false listener=true peer=false name=(anonymous)
+2026-10-21 15:43:27.784 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf13f10] Connection returned listener port: 0x3b0f
+2026-10-21 15:43:27.784 Df WindowServer[1038:1080] [com.apple.xpc:connection] [0x7fb0bc816310] activating connection: mach=false listener=false peer=true name=com.apple.xpc.anonymous.0x7fb0bbf13f10.peer[152].0x7fb0bc816310
+2026-10-21 15:43:36.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:46.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:58.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:44:10.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:44:22.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:44:23.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 1038]
+2026-10-21 15:44:34.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:44:46.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:44:58.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:45:04.269 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] destinations for Keyboard event: (<keyboardFocus; SecurityAgent.1063; token: viewbridge-key-window>)
+2026-10-21 15:45:04.269 Df WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] delivery manager destinations for kCGSEventFlagsChanged event: <keyboardFocus; pid: 1063; token: viewbridge-key-window>
+2026-10-21 15:45:04.596 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] destinations for Keyboard event: (<keyboardFocus; SecurityAgent.1063; token: viewbridge-key-window>)
+2026-10-21 15:45:04.596 Df WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] delivery manager destinations for kCGSEventFlagsChanged event: <keyboardFocus; pid: 1063; token: viewbridge-key-window>
+2026-10-21 15:45:08.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:45:20.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:45:23.976 Df WindowServer[1038:1080] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 1038]

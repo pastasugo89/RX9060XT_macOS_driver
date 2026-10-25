@@ -1,0 +1,85 @@
+
+== Presupposti dal piano della VM di test (sola lettura: /mnt/vm/images/macos-gpu-test/test-plan.json)
+ok    stage 17
+ok    native S1b (navi48-native=1)
+ok    Metal nub (navi48-metal=1)
+ok    display route (navi48-metal-disp=1)
+ok    WindowServer client (navi48-metal-ws=1)
+ok    RX 9060 XT unico monitor (UEFI Output Max, N4X_GPU_PRIMARY=1 al lancio)
+ok    interrupts esplicito
+ok    navi48-fb2 assente
+ok    navi48-m6 assente (Navi 44 lo rifiuta)
+ok    EFI verificata
+
+== Piano di --arm-desktop (P2, un monitor). Nessun comando eseguito in --dry-run.
+1) host, sola lettura: presupposti del piano della VM di test (sotto).
+2) guest, sola lettura (ARM_MODE=check): macOS, 0 utenti, boot-arg, navi48-fb2 assente, kext, nub, bundle, pipe adottata.
+3) conferma digitata ARM; poi guest (ARM_MODE=arm): accel pipeagdc 1, [fbname 1 solo con N48_ARM_FBNAME=1], pipearm 1, pipereload, killall -9 WindowServer,
+   verifica pipe armata. Rollback se un passo fallisce dopo i presupposti (pipearm 0, fbname 0, flag rimosso).
+   Script guest:
+   | ARM_MODE=arm
+   | ARM_FBNAME=0
+   | set -u
+   | NT="$HOME/navi48-staging/navi48test"
+   | NM="$HOME/n48-metal/n48nub"
+   | fail() { echo "ARM_STOP: $*"; exit 1; }
+   | ok()   { echo "CHECK ok: $*"; }
+   | PV=$(sw_vers -productVersion); BV=$(sw_vers -buildVersion)
+   | [ "$PV" = "26.6.2" ] && [ "$BV" = "25G83" ] || fail "macOS $PV ($BV): atteso 26.6.2 / 25G83"
+   | ok "macOS 26.6.2 / 25G83"
+   | who | grep -q . && fail "utenti connessi: l'armamento riavvia WindowServer (serve 0 utenti)"
+   | ok "nessun utente connesso"
+   | BA=$(nvram boot-args 2>/dev/null | sed 's/^boot-args[[:space:]]*//')
+   | TOK=$(printf '%s\n' $BA)
+   | for need in navi48bringup=1 navi48-stage=17 navi48-metal=1 navi48-metal-disp=1 navi48-metal-ws=1; do
+   |   printf '%s\n' "$TOK" | grep -qx "$need" || fail "boot-arg $need assente (boot-args: $BA)"
+   | done
+   | ok "boot-arg P2 presenti (navi48bringup, navi48-stage=17, navi48-metal, navi48-metal-disp, navi48-metal-ws)"
+   | printf '%s\n' "$TOK" | grep -q '^navi48-fb2' && fail "navi48-fb2 presente: la rotta framebuffer Apple deve essere assente"
+   | ok "navi48-fb2 assente"
+   | kmutil showloaded --list-only 2>/dev/null | grep -qi 'com.navi48.bringup' || fail "kext di bring-up com.navi48.bringup non caricato"
+   | ok "kext di bring-up caricato (stage 17 dal boot-arg; lo stage raggiunto va letto dal log seriale)"
+   | kmutil showloaded --list-only 2>/dev/null | grep -qi 'com.hackintosh.RDNA4FB' || fail "RDNA4FB non caricato: il framebuffer della pipe (Navi 44) non c'e'; caricare il kext patchato prima dell'armamento"
+   | ok "RDNA4FB caricato (framebuffer della pipe, match 0x7590)"
+   | [ -x "$NT" ] || fail "navi48test assente: $NT"
+   | ok "navi48test presente"
+   | [ -x "$NM" ] || fail "n48nub assente: $NM"
+   | sudo -n "$NM" status 2>&1 | grep -q 'Navi48MetalNub present' || fail "nub Metal non pubblicato: pubblicarlo prima (fase P0)"
+   | ok "nub Metal pubblicato"
+   | [ -d /Library/GPUBundles/Navi48Metal.bundle ] && codesign --verify --strict /Library/GPUBundles/Navi48Metal.bundle >/dev/null 2>&1 \
+   |   || fail "bundle Navi48Metal assente o firma non valida (deploy-metal-stack.sh --deploy)"
+   | ok "bundle installato, firma valida"
+   | FL=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags[^:]*: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
+   | [ -n "$FL" ] || fail "pipestat 0 non riporta 'flags': formato diverso, nessuna azione eseguita"
+   | FLV=$((FL))
+   | (( FLV & 2 )) || fail "pipe non adottata (flags $FL): eseguire prima la fase P1 (adozione)"
+   | ok "pipe adottata (flags $FL)"
+   | (( FLV & 4 )) && { echo "pipe gia' armata (flags $FL): nulla da fare"; exit 0; }
+   | ok "pipe non ancora armata"
+   | [ "$ARM_MODE" = check ] && { echo "ARM_CHECK_PASS: presupposti verificati, nessuna azione eseguita"; exit 0; }
+   | 
+   | # ---- azioni: solo dopo tutti i presupposti. Il rollback riporta la pipe disarmata e il desktop su CPU al riavvio.
+   | rollback() {
+   |   echo "ROLLBACK: $*"
+   |   sudo -n "$NT" accel pipearm 0 >/dev/null 2>&1 || true
+   |   sudo -n "$NT" accel fbname 0 >/dev/null 2>&1 || true
+   |   sudo -n rm -f /private/tmp/n48m-headless-no || true
+   | }
+   | sudo -n touch /private/tmp/n48m-headless-no && sudo -n chmod 644 /private/tmp/n48m-headless-no || fail "flag headless-no non creato"
+   | AG=$(sudo -n "$NT" accel pipeagdc 1 2>&1); echo "$AG" | grep -E 'agdc status'
+   | echo "$AG" | grep -Eq 'agdc status +: 0 ' || { rollback "pipeagdc 1"; fail "pipeagdc 1 non pubblicato (serve boot-arg navi48-agdc=1; status 1 = assente): desktop lasciato su CPU"; }
+   | if [ "$ARM_FBNAME" = 1 ]; then
+   |   sudo -n "$NT" accel fbname 1 2>&1 | grep -E 'class name NOW' || { rollback "fbname 1"; fail "fbname 1 senza nome di classe"; }
+   | else
+   |   echo "fbname 1 saltato (N48_ARM_FBNAME=0): la pipe accetta il nome RDNA4FB senza rinomina"
+   | fi
+   | sudo -n "$NT" accel pipearm 1 2>&1 | grep 0xccf || { rollback "pipearm 1"; fail "pipearm 1 rifiutata"; }
+   | sudo -n "$NT" accel pipereload 2>&1 | tail -1
+   | sudo -n launchctl asuser 501 launchctl setenv CI_USE_MTL_DAG_FOR_CIKL_SRC 0 || echo "AVVISO: backstop CIKL non impostato (nessun dominio utente): non fatale"
+   | sudo -n killall -9 WindowServer; sleep 15
+   | pgrep -x WindowServer >/dev/null || { rollback "WindowServer non ripartito"; fail "WindowServer non in esecuzione dopo il riavvio"; }
+   | FL2=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags[^:]*: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
+   | (( ${FL2:-0} & 4 )) || { rollback "pipe non armata dopo il riavvio"; fail "pipe non armata dopo il riavvio (flags ${FL2:-?})"; }
+   | echo "ARM_OK: WindowServer ripartito, pipe armata (flags $FL2). Verificare il monitor e raccogliere i log (metal_deploy_plan.md 8.4)."
+
+DRY-RUN ARM OK: nessun SSH, nessuna scrittura.

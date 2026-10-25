@@ -1,0 +1,7 @@
+== nub status (sudo -n)
+NO Navi48MetalNub in the registry
+== nub publish
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000441, ops table ABI 3, 152 bytes
+rc=0

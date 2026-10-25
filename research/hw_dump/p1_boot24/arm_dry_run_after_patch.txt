@@ -1,0 +1,13 @@
+
+== Presupposti dal piano della VM di test (sola lettura: /mnt/vm/images/macos-gpu-test/test-plan.json)
+ok    stage 17
+ok    native S1b (navi48-native=1)
+ok    Metal nub (navi48-metal=1)
+ok    display route (navi48-metal-disp=1)
+FAIL  WindowServer client (navi48-metal-ws=1)
+ok    RX 9060 XT unico monitor (UEFI Output Max, N4X_GPU_PRIMARY=1 al lancio)
+ok    interrupts esplicito
+ok    navi48-fb2 assente
+ok    navi48-m6 assente (Navi 44 lo rifiuta)
+FAIL  EFI verificata
+ERRORE: presupposti del piano non soddisfatti: nessuna azione

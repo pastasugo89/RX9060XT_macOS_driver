@@ -1,0 +1,33 @@
+== pre (sola lettura, sudo -n)
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x31 / 0
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+--- dcnstate 1
+accel dcnstate: FAILED (0xe00002e2) — not armed, OR (0.0.236, `fire`) the EXPOSURE GATE is closed: LoadAccelerator is withheld so no accelerator nub and no Metal device appear. Read Navi48,AccelGate in ioreg and the accel-gate lines in `log`. Boot the live variant stage17-accel-pdb0-qn , never plain stage17-accel
+== pipeadopt
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 3 (no Navi48Accelerator under our nub (publish the nub first))
+  flags                   : 0x31 (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0 (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0  (accelerator 0)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 0 / 0, 0 / 0 (last walk provider 0)
+rc=3
+== post pipestat 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x31 / 0
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0

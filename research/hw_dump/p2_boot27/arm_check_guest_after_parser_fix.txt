@@ -1,0 +1,12 @@
+CHECK ok: macOS 26.6.2 / 25G83
+CHECK ok: nessun utente connesso
+CHECK ok: boot-arg P2 presenti (navi48bringup, navi48-stage=17, navi48-metal, navi48-metal-disp, navi48-metal-ws)
+CHECK ok: navi48-fb2 assente
+CHECK ok: kext di bring-up caricato (stage 17 dal boot-arg; lo stage raggiunto va letto dal log seriale)
+CHECK ok: RDNA4FB caricato (framebuffer della pipe, match 0x7590)
+CHECK ok: navi48test presente
+CHECK ok: nub Metal pubblicato
+CHECK ok: bundle installato, firma valida
+CHECK ok: pipe adottata (flags 0x3b)
+CHECK ok: pipe non ancora armata
+ARM_CHECK_PASS: presupposti verificati, nessuna azione eseguita

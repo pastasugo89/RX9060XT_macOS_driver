@@ -1,0 +1,31 @@
+WS pid: 
+--- launchd WS state:
+system/com.apple.WindowServer = {
+	active count = 0
+	path = /System/Library/LaunchDaemons/com.apple.WindowServer.plist
+--- last WS log:
+	5  	    0x7ff816ce4dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+	6  	    0x7ff816dafc45	WSInitialize + 3956
+	7  	    0x7ff816ac57c1	SLXServer + 1016
+	8  	       0x1029c46d1	9   WindowServer                        0x00000001029c46d1 WindowServer + 1745
+	9  	    0x7ff8102921c8	start + 3240
+2026-10-21 15:57:30.373 Df WindowServer[1323:14eb] (CoreDisplay) CDN - Bootstrap Port: 2563
+2026-10-21 15:57:30.373 Df WindowServer[1323:14eb] (CoreDisplay) CDN - Local Port: 51907 (com.apple.CoreDisplay.Notification)
+2026-10-21 15:57:30.373 Df WindowServer[1323:14ed] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:495274DB-2500-42A2-937F-BED050872EFF pid:1323 process:WindowServer type:Rate Controlled entit
+2026-10-21 15:57:30.374 Df WindowServer[1323:14f3] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:2CCC0642-256F-44B9-B316-DE7A9DFFE754 pid:1323 process:WindowServer type:Rate Controlled entit
+2026-10-21 15:57:30.375 Df WindowServer[1323:14eb] [com.apple.touchbarserver:plugin] TouchBarEventPlugin callback version 2, API version 4
+2026-10-21 15:57:30.375 Df WindowServer[1323:14ef] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:C4484AE0-F8F4-4355-824A-81A40D49AB0B pid:1323 process:WindowServer type:Monitor entitlements:
+2026-10-21 15:57:30.381 Df WindowServer[1323:1509] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:1D5DB8BB-E4EC-4973-8AB1-A83FB0241206 pid:1323 process:WindowServer type:Administrative entitl
+    HighFrequency = 1;
+} state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:57:30.381 Df WindowServer[1323:150c] [com.apple.SkyLight:default] [Event] Setup EventSource
+2026-10-21 15:57:30.381 Df WindowServer[1323:150c] [com.apple.SkyLight:default] [Event] Service add callback
+2026-10-21 15:57:30.381 Df WindowServer[1323:150c] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+2026-10-21 15:57:30.382 E  WindowServer[1323:14eb] [com.apple.coreanimation:Render] unable to register bootstrap port com.apple.CARenderServer: 44f
+2026-10-21 15:57:30.382 Df WindowServer[1323:150c] [com.apple.SkyLight:default] [Event] -Register ServiceID:0x10000034f type:(1,1,0,0,0,0)
+2026-10-21 15:57:30.383 Df WindowServer[1323:14eb] [com.apple.FuseBoard:SkyBridge] Hey look ma I made it!
+2026-10-21 15:57:30.383 Df WindowServer[1323:1509] [com.apple.xpc:connection] [0x7fcfd17061a0] activating connection: mach=true listener=false peer=false name=com.apple.backlightd
+2026-10-21 15:57:30.384 Df WindowServer[1323:14eb] [com.apple.SkyLight:default] initialization complete, enrolling watchdog endpoints in monitoring
+2026-10-21 15:57:30.384 E  WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:57:30.384 Df WindowServer[1323:14eb] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysWillReconfigure: Posting kCGSDisplayWillReconfigure
+2026-10-21 15:57:30.386 Df WindowServer[1323:14eb] [com.apple.BoardServices:Bootstrap] automatic bootstrapping is complete : domains=<private>

@@ -1,0 +1,80 @@
+2026-10-21 15:41:22.919 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf06240] activating connection: mach=true listener=false peer=false name=com.apple.systemstatus
+2026-10-21 15:41:22.920 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc806810] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.921 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc806700] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-21 15:41:22.923 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf06f00] readying connection: mach=true listener=true peer=false name=com.apple.backboard.hid-services.xpc
+2026-10-21 15:41:22.923 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf06f00] activating connection: mach=true listener=true peer=false name=com.apple.backboard.hid-services.xpc
+2026-10-21 15:41:22.923 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bce04080] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[414].0x7fb0bce04080
+2026-10-21 15:41:22.923 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc904fd0] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[433].0x7fb0bc904fd0
+2026-10-21 15:41:22.923 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDispatchingRoots) <keyboardFocus; display: null> containsEndOfChain: YES; []
+2026-10-21 15:41:22.923 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc806920] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[433].0x7fb0bc806920
+2026-10-21 15:41:22.930 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:22.930 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:22.931 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [<token: <frontmost>; pid: 1038>]
+2026-10-21 15:41:22.931 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x41dc9d00 main in CGXMainDisplayDevice 	
+2026-10-21 15:41:22.932 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc9064b0] activating connection: mach=true listener=false peer=false name=com.apple.analyticsd
+2026-10-21 15:41:22.932 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc907930] activating connection: mach=true listener=false peer=false name=com.apple.coreservices.launchservicesd
+2026-10-21 15:41:22.935 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf05b70] activating connection: mach=true listener=false peer=false name=com.apple.hidpreferenceshelper
+2026-10-21 15:41:22.937 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf05b70] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.937 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bce04c80] activating connection: mach=false listener=false peer=false name=com.apple.AmbientDisplayAgent
+2026-10-21 15:41:22.946 Df WindowServer[1038:107b] [com.apple.CoreRCPlugin:default] CoreRCDisplayPowerNotification registering notification
+2026-10-21 15:41:22.948 E  WindowServer[1038:1077] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0x6000011dbce0> 13AA9C44-6F1B-11D4-907C-0005028F18D5
+2026-10-21 15:41:22.962 Df WindowServer[1038:107b] [com.apple.xpc:connection] [0x7fb0bce04c80] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+2026-10-21 15:41:22.963 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0ab10] activating connection: mach=true listener=false peer=false name=com.apple.hidpreferenceshelper
+2026-10-21 15:41:22.965 Df WindowServer[1038:107c] [com.apple.xpc:connection] [0x7fb0bbf0b6f0] activating connection: mach=true listener=false peer=false name=com.apple.server.bluetooth.general.xpc
+2026-10-21 15:41:22.965 E  WindowServer[1038:107a] [com.apple.iohid:default] Unable to register display dim notification: 1001
+2026-10-21 15:41:22.967 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc9049b0] activating connection: mach=true listener=false peer=false name=com.apple.hidpreferenceshelper
+2026-10-21 15:41:22.968 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc9049b0] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.969 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc9049b0] activating connection: mach=true listener=false peer=false name=com.apple.hidpreferenceshelper
+2026-10-21 15:41:22.969 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc9049b0] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.972 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:BE392957-D4C1-472A-AD54-E65E06F0A4C6 pid:152 process:PerfPowerServices type:Rate Controlled entitlements:0x2 call
+2026-10-21 15:41:22.977 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc806810] invalidated after the last release of the connection object
+2026-10-21 15:41:22.977 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0ba30] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.978 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0ba30] invalidated after the last release of the connection object
+2026-10-21 15:41:22.978 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bce08280] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.980 Df WindowServer[1038:1077] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x10 (IG) vid.did=1002.7590 b:d:f=0:6:0 
+2026-10-21 15:41:22.981 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 15:41:22.985 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x100000319
+2026-10-21 15:41:22.985 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-1e6d-5c87-f9b3cb9c78545e88
+2026-10-21 15:41:22.985 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 15:41:23.177 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - Created FB 1 of 1
+2026-10-21 15:41:23.180 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Error: No property 'FB_Triage', or property isn't a string.
+2026-10-21 15:41:23.181 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Error: Can't get value for key 'Triage'.
+2026-10-21 15:41:23.181 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - GPU: FB: 1 of 1 opened
+2026-10-21 15:41:23.186 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: census: N48ComputeEncoder lacks 12 of 47 MTLComputeCommandEncoder methods: !dispatchThreadgroupsWithIndirectBuffer:indirectBufferOffset:threadsPerThreadgroup: !ex
+2026-10-21 15:41:23.186 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: census: N48BlitEncoder lacks 8 of 34 MTLBlitCommandEncoder methods: !copyFromTexture:sourceSlice:sourceLevel:toTexture:destinationSlice:destinationLevel:sliceCoun
+2026-10-21 15:41:23.191 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in AddCGXDisplayDeviceToDeviceList 	
+2026-10-21 15:41:23.202 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc90c760] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-21 15:41:23.202 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc806810] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-21 15:41:23.577 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: radv: framebuffer sample counts color 0xf depth 0xf stencil 0xf; depthBiasClamp 1
+2026-10-21 15:41:23.578 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: radv: ext[600]: endering_local_read VK_KHR_extended_flags VK_KHR_external_fence VK_KHR_external_fence_fd VK_KHR_external_memory VK_KHR_external_memory_fd VK_KHR_e
+2026-10-21 15:41:23.578 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: radv: framebuffer-fetch support: rasterization_order_attachment_access ext 0 (color feature 0, depth 0, stencil 0); dynamic_rendering_local_read ext 1 (feature 1)
+2026-10-21 15:41:23.609 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48RenderPipelineState 0x7fb0bd019200: pipeline 0x7fb0bd01ac00 (1 colour attachment(s), set0 0 / set1 0 bindings, 0 vertex input(s), 0 vertex binding(s), FALLBACK
+2026-10-21 15:41:23.609 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: registered (2 key(s))
+2026-10-21 15:41:23.609 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - GetThermalCompensationAttributes: can't get framebuffer red gamma scaling factor on port 60163 (e00002ce)
+2026-10-21 15:41:23.609 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - GetThermalCompensationAttributes: can't get framebuffer green gamma scaling factor on port 60163 (e00002ce)
+2026-10-21 15:41:23.609 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - GetThermalCompensationAttributes: can't get framebuffer blue gamma scaling factor on port 60163 (e00002ce)
+2026-10-21 15:41:23.610 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - isBroadwellOrLater_block_invoke: sysctlbyname fail with error status 0x00000000
+2026-10-21 15:41:23.610 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - isSkylakeOrLater_block_invoke: sysctlbyname fail with error status 0x00000000
+2026-10-21 15:41:23.610 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - isCannonLakeOrLater_block_invoke: sysctlbyname fail with error status 0x00000000
+2026-10-21 15:41:23.610 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - get_display_device_info: force8BPC = NO
+2026-10-21 15:41:23.611 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Display id 0x00000000 -> 0x1b572300
+2026-10-21 15:41:23.611 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - get_display_device_info: Display 0x1b572300 force8BPC=NO isBDW=YES isSKL=NO isCNL=NO isAcc=YES isMUX=NO isBuiltIn=NO isMobile=YES isSkylakeMacBook=N
+2026-10-21 15:41:23.611 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - device_preserves_framebuffer: needs_refresh = YES
+2026-10-21 15:41:23.613 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.613 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.614 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.614 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.615 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.615 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.616 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.617 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.618 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.618 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.619 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:41:23.619 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Bootstrap Port: 7683
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Local Port: 55203 (com.apple.CoreDisplay.Notification)
+2026-10-21 15:41:23.620 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:ECFCCA8F-9D43-4F05-B2AF-E2235CAEAFF7 pid:1038 process:WindowServer type:Rate Controlled entitlements:0x3 caller:S
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+2026-10-21 15:41:23.628 E  WindowServer[1038:1077] [com.apple.coreanimation:Render] unable to register bootstrap port com.apple.CARenderServer: 44f
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] -Register ServiceID:0x10000035e type:(1,1,0,0,0,0)

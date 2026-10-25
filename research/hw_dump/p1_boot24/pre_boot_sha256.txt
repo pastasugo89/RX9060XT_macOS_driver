@@ -1,0 +1,4 @@
+a412c4dcf24e5e15bbece45d73d73f11906c409d3f2933fe90bcbfe8706bd620  OpenCore/OpenCore.stage1.qcow2
+c436df13e590e4c6d9749210828d576e33f38abdd8db669e3cf4f5b943372e1f  test-plan.json
+8537ad371bf4a6389f2d61c61f9da10eab4c0a6d3cc5d937ce4f5afb350895db  staging/config.stage17.plist
+2f7ed8d0778ddd058cc34a69f40433fd5af3f4c7d506f70ca31386b18a6a491b  OpenCore-Boot.sh

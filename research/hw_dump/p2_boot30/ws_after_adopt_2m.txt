@@ -1,0 +1,25 @@
+2026-10-21 15:53:44.858 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Display id 0x00000000 -> 0x1b572300
+2026-10-21 15:53:44.858 Df WindowServer[194:2dc] [com.apple.CoreDisplay:default] [WARN] - get_display_device_info: Display 0x1b572300 force8BPC=YES isBDW=YES isSKL=NO isCNL=NO isAcc=NO isMUX=NO isBuiltIn=NO isMobile=YES isSkylakeMacBook=NO
+2026-10-21 15:53:44.858 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - device_preserves_framebuffer: IOFBNeedsRefresh key not found in IORegistry
+2026-10-21 15:53:44.858 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - device_preserves_framebuffer: needs_refresh = NO
+2026-10-21 15:53:45.591 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:53:45.591 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:53:45.592 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:53:45.592 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:53:45.592 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:53:45.593 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:53:45.593 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:53:45.593 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:53:45.594 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer 	
+2026-10-21 15:53:45.594 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:53:45.595 Df WindowServer[194:2dc] (CoreDisplay) CDN - Bootstrap Port: 2563
+2026-10-21 15:53:45.595 Df WindowServer[194:2dc] (CoreDisplay) CDN - Local Port: 62915 (com.apple.CoreDisplay.Notification)
+2026-10-21 15:53:45.596 Df WindowServer[194:78b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:6F61EE79-1704-4B30-90A4-94C9C297EC1E pid:194 process:WindowServer type:Rate Controlled entitlements:0x3 caller:SkyL
+2026-10-21 15:53:45.630 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:53:45.631 Df WindowServer[194:2dc] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysWillReconfigure: Posting kCGSDisplayWillReconfigure
+2026-10-21 15:53:45.641 Df WindowServer[194:2dc] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysDidReconfigure: Posting kCGSDisplayDidReconfigure
+2026-10-21 15:53:45.642 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration finished
+2026-10-21 15:53:47.961 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:53:54.728 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:53:55.544 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:53:56.544 E  WindowServer[194:2dc] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)

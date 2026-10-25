@@ -1,0 +1,9 @@
+{
+  "sha256" : "29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625",
+  "function" : "GPUPass",
+  "stageName" : "fragment",
+  "role" : "fragment",
+  "air" : "\/tmp\/n48m\/88\/29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.air",
+  "bytes" : 7088,
+  "stage" : 2
+}

@@ -1,0 +1,22 @@
+Boot35, N4X_GPU_ROOTPORT=1, P2 EFI v4 (21/10 17:20-17:28). Non riavviato.
+
+Evidenze
+- Seriale catturato: sì. Cresce (161 KB a 17:27:14, 166 KB allo spegnimento). Nessun cambio di device: -serial invariato.
+- Il seriale mostra macOS in userland: AppleKeyStore, disk trim, sshd. SSH risponde (uptime 2 min a 17:27).
+- Kext di sicurezza Navi48Bringup: NON caricato. Nessuna riga navi48/RDNA nel seriale oltre alla riga boot-args.
+  kmutil: solo Lilu, WhateverGreen, VirtualSMC (caricati da OpenCore). Nessun heartbeat N4X-SAFETY (0 righe).
+- RDNA4FB: non caricato, nessun IORegistry RDNA4FB.
+- GPU in macOS: il bridge esiste (pcidebug 0:16:0(1:1), secondary bus 1), ma nessun device sul bus 1. Nessun device 0x7590 in IORegistry.
+- GPU in QEMU (QMP query-pci): 0.16.0 PCI bridge (gpuport) -> 1.0.0 1002:7590 e 1.0.1 1002:ab40. Il lato QEMU è corretto.
+- Watchdog: armato ma mai ricevuto un heartbeat (il kext non è partito), quindi non ha mai avuto nulla da controllare. Nessun carico GPU generato da questo boot.
+
+Diagnosi
+- Il boot di macOS è arrivato in userland. Il blocco "sul DP" è di visualizzazione: nessun driver grafico ha preso la GPU, quindi il testo di avvio resta fermo.
+- Causa diretta: macOS (PCI configurator) non enumera il device 1:0:0 dietro il root port. Senza device, il kext non fa match (IOPCIPrimaryMatch 0x75901002) e non parte.
+- Causa probabile (non verificata): finestre del bridge non assegnate, oppure non rispettate da OVMF/IOPCIFamily. È lo stesso sintomo del 20/10 ("bridge visibile ma risorse figli non assegnate", navi44_bringup_progress.md r.32-35), con la variante pcie-noreserve. Questa volta le finestre erano impostate (pref64 512M, mem 8M, io 4K) e il sintomo è rimasto. Quindi le finestre non sono bastate, oppure la 64-bit MMIO di OVMF non le copre. Non l'ho dimostrato: servono i log OVMF o di IOPCIFamily.
+- Confronto con le varianti: rootbus-before-pcie.sh e OpenCore-Boot.sh (root bus) sono quelle con cui sono arrivati stage 1–17 e il kext è partito. Il root port non è mai stato provato con BAR0 da 256 MiB e kext partito.
+
+Proposta (decisione tua)
+A) Abbandonare il root port per questo test. Tornare alla topologia root bus (default, invariata) e tenere il problema di display sul percorso IOGraphics/CoreDisplay, dove la v4 non risulta chiamata. Raccomandato: il boot34 mostra che validateDetailedTiming non compare nemmeno in topologia root bus, quindi il root port non risolve il blocco già noto.
+B) Correggere il root port: provare a fissare le finestre di OVMF (per esempio il root port con x-pref32/pref64 più grandi, o un bus di root port con hotplug diverso) e guardare i log OVMF/IOPCIFamily. Costo: più boot, senza un obiettivo chiaro sul display.
+Non riavvio. Il launcher ha ora N4X_GPU_ROOTPORT opt-in (default invariato), che puoi lasciare o rimuovere.

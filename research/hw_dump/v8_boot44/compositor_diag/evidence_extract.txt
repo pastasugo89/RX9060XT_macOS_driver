@@ -1,0 +1,63 @@
+# Estratto evidenze (sola lettura), boot44, 21/10/2026
+
+## Seriale: RDNA4FB start, VBL e pipe
+RDNA4FB: probe on PCI device 0x75901002
+RDNA4FB: dcn:   OTG0_OTG_CONTROL = 0x00011201
+RDNA4FB: started
+RDNA4FB: enableController: adopting firmware scanout 2560x1440
+Navi48Bringup: disp: boot-arg navi48-m6: REFUSED on Navi 44 (multi-display is Navi 48 only): nothing is latched
+Navi48Bringup: disp: boot-arg navi48-metal-disp =1: the display pipe is ENABLED for this boot
+Navi48Bringup: disp: pipe adopt: recorded pipe 0xffffff8b5c803000 (Navi48DisplayPipe on RDNA4FB), capabilities published, scratch ready
+Navi48Bringup: disp: pipe adopt: OK (0)
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3b (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+DisplayPipeGuard: agdc-declared-id: reply+0x3c framebuffer (pipe+0x98) = 0xffffff868fc00e00 class RDNA4FB regID 0x100000326; that ID resolves to 0xffffff868fc00e00 (RDNA4FB) -> SAME OBJECT - IOPresentment would keep this entry
+DisplayPipeGuard: agdc-declared-id: reply+0x3c framebuffer (pipe+0x98) by class name 'RDNA4FB' -> 0xffffff868fc00e00 regID 0x100000326 (SAME OBJECT)
+DisplayPipeGuard: agdc: native publish -> status 0 (PUBLISHED)
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3b (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3b (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3b (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+DisplayPipeGuard: agdc: native publish -> status 12 (already published)
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3f (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3f (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 4 (vblank timestamps): switch ON; written 0, off 0, disarmed 0, bad-txn 0, not-txn 0, hung 0, no-timing 0, bad-math 0, write-fail 0; last t_vbl 0 next 0 (abs), period 0 ns (0 abs), to-next-vblank 0 ns
+Navi48Bringup: disp: pipe stat page 4: auto-disarmed: none (count 0); flags 0x3f (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 0: auto-disarmed: none (count 0); flags 0x3f (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+Navi48Bringup: disp: pipe stat page 4 (vblank timestamps): switch ON; written 0, off 0, disarmed 0, bad-txn 0, not-txn 0, hung 0, no-timing 0, bad-math 0, write-fail 0; last t_vbl 0 next 0 (abs), period 0 ns (0 abs), to-next-vblank 0 ns
+Navi48Bringup: disp: pipe stat page 4: auto-disarmed: none (count 0); flags 0x3f (BAR0 WC) facts 0xd, copied 0 disarmed 0, bytes 0, perform ns min/avg/max 0/0/0 (0 frames), submit 0 will-perform 0 pass-through, slot 62 0 calls 0 handled; scan-owned: perfoNavi48Bringup: accel-experiment: pipe verb 85
+
+## Log WindowServer pid 828 (post arm)
+19:31:45.337 Df WindowServer[202:2e4] [com.apple.SkyLight:default] Software compositor activated.
+19:31:45.338 Df WindowServer[202:2e4] [com.apple.SkyLight:default] Software compositor activated.
+19:31:47.604 Df loginwindow[206:316] (Metal) apply_selection_policy_once: avoid use of removable GPUs (via com.apple.loginwindow:GPUSelectionPolicy-><private>)
+19:33:00.242 Df loginwindow[206:8a5] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb213 DECLINED in loginwindow (pid 206): process is not WindowServer and N48M_ALLOW=1 (as root) is not set
+19:33:08.786 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xe96f -> ok
+19:33:09.133 Df WindowServer[828:e49] [com.apple.SkyLight:default] Metal compositor activated.
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 828]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+19:34:09.478 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 828]
+19:35:09.478 Df WindowServer[828:e4d] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 828]
+
+## IOKitDiagnostics (conteggi istanze, ioreg_full.txt)
+"IOAccelDisplayMachine"=1
+"IOAccelDisplayPipeUserClient2"=1
+"IOFramebuffer"=1
+"Navi48DisplayMachine"=1
+"Navi48DisplayNub"=0
+"Navi48DisplayPipe"=1
+"Navi48Framebuffer"=0
+
+## Nodi ioreg (RDNA4FB, Navi48Accelerator, AGDC)
+2917:    | |   | | | +-o Navi48Accelerator  <class Navi48Accelerator, id 0x100000441, registered, matched, active, busy 0 (2 ms), retain 9>
+2943:    | |   | | |   +-o IOAccelDisplayPipeUserClient2  <class IOAccelDisplayPipeUserClient2, id 0x100000473, !registered, !matched, active, busy 0, retain 6>
+2948:    | |   | | |   +-o IOAccelDevice2  <class IOAccelDevice2, id 0x100000475, !registered, !matched, active, busy 0, retain 6>
+2954:    | |   | | +-o Navi48AGDC  <class AppleGraphicsDeviceControl, id 0x10000044b, registered, matched, active, busy 0 (0 ms), retain 8>
+2972:    | |   | +-o RDNA4FB  <class RDNA4FB, id 0x100000326, registered, matched, active, busy 0 (47 ms), retain 19>
+2989:    | |   | | |   "IOAccelTypes" = "IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6/Navi48Bringup/Navi48MetalNub/Navi48Accelerator"
+3008:    | |   | | |   "IOFBNeedsRefresh" = Yes
+3010:    | |   | | |   "IOAccelIndex" = 0
+3095:    | |   | | +-o IOFramebufferUserClient  <class IOFramebufferUserClient, id 0x10000046c, !registered, !matched, active, busy 0, retain 5>
+
+## AGPM Machine table: device IDs AMD presenti (7590 assente)
+Vendor1002Device66a3 Vendor1002Device66a7 Vendor1002Device67df Vendor1002Device6867 Vendor1002Device686d Vendor1002Device686e Vendor1002Device7310 Vendor1002Device7340 Vendor1002Device73a2 Vendor1002Device73ab Vendor1002Device73e0 
+
+## boot-args (sysctl kern.bootargs, VM)
+keepsyms=1 -v debug=0x108 serial=3 msgbuf=1048576 navi48bringup=1 navi48-stage=17 navi48-interrupts=0 navi48-native=1 navi48-metal=1 navi48-aux=1 navi48-metal-ws=1 navi48-metal-disp=1 navi48-agdc=1 amfi_get_out_of_my_way=1

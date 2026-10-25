@@ -1,0 +1,35 @@
+0000000000006af6 (__TEXT,__text) external __ZN7RDNA4FB13setGammaTableEjjjPv
+0000000000006b6e (__TEXT,__text) external __ZN7RDNA4FB13setGammaTableEjjjPvb
+00000000000069aa (__TEXT,__text) external __ZN7RDNA4FB18setDetailedTimingsEP7OSArray
+0000000000006804 (__TEXT,__text) external __ZN7RDNA4FB22validateDetailedTimingEPvy
+Identifier=com.hackintosh.RDNA4FB
+Signature=adhoc
+TeamIdentifier=not set
+(RDNA4FB) RDNA4FB: connector 0: DisplayPort objid=0x3113 encoder=0x211e ddc-line=0 hpd-pin=1
+(RDNA4FB) RDNA4FB: connector 1: HDMI-A objid=0x320c encoder=0x221e ddc-line=1 hpd-pin=2
+(RDNA4FB) RDNA4FB: connector 2: HDMI-A objid=0x330c encoder=0x2120 ddc-line=2 hpd-pin=3
+(RDNA4FB) RDNA4FB: cmd: setpixelclock absent
+(RDNA4FB) RDNA4FB: cmd: dig1transmittercontrol absent
+(RDNA4FB) RDNA4FB: cmd: digxencodercontrol absent
+(RDNA4FB) RDNA4FB: cmd: enablecrtc absent
+(RDNA4FB) RDNA4FB: cmd: setcrtc_usingdtdtiming absent
+(RDNA4FB) RDNA4FB: cmd: enabledisppowergating absent
+(RDNA4FB) RDNA4FB: enableController: adopting firmware scanout 2560x1440
+(RDNA4FB) RDNA4FB: enableController: adopting firmware scanout 1280x800
+(RDNA4FB) RDNA4FB: connector 0: DisplayPort objid=0x3113 encoder=0x211e ddc-line=0 hpd-pin=1
+(RDNA4FB) RDNA4FB: connector 1: HDMI-A objid=0x320c encoder=0x221e ddc-line=1 hpd-pin=2
+(RDNA4FB) RDNA4FB: connector 2: HDMI-A objid=0x330c encoder=0x2120 ddc-line=2 hpd-pin=3
+(RDNA4FB) RDNA4FB: cmd: setpixelclock absent
+(RDNA4FB) RDNA4FB: cmd: dig1transmittercontrol absent
+(RDNA4FB) RDNA4FB: cmd: digxencodercontrol absent
+(RDNA4FB) RDNA4FB: cmd: enablecrtc absent
+(RDNA4FB) RDNA4FB: cmd: setcrtc_usingdtdtiming absent
+(RDNA4FB) RDNA4FB: cmd: enabledisppowergating absent
+(RDNA4FB) RDNA4FB: enableController: adopting firmware scanout 2560x1440
+2026-10-21 17:18:33.835749+0200 0x1578     Default     0x0                  1388   0    log: [com.apple.log:] log run noninteractively, parent: 1387 (zsh), args: '/usr/bin/log' 'show' '--last' '30m' '
+2026-10-21 17:18:47.791479+0200 0x15f7     Default     0x0                  1434   0    log: [com.apple.log:] log run noninteractively, parent: 1429 (zsh), args: '/usr/bin/log' 'show' '--last' '30m' '
+== Posizione PCI della GPU nel guest (ioreg -l, nodo IOPCIDevice S30@6, sotto PCI0):
+  pcidebug = "0:6:0" (bus 0, device 6, function 0), acpi-path = IOACPIPlane:/_SB/PCI0/S30@60000
+  IOPCIExpressLinkCapabilities = 0 (nessuna capability PCIe di link)
+  vendor-id 0x1002, device-id 0x7590, class-code 0x030000
+  RDNA4FB: IOFBIntegrated = Yes (ioreg -r -c RDNA4FB)

@@ -1,0 +1,8 @@
+drwxr-xr-x  3 root  wheel  96 Oct 21 15:29 /Library/Extensions/RDNA4FB.kext
+--- load:
+Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+kmutil rc=
+--- loaded?
+RDNA4FB not loaded
+--- boot-args
+boot-args	keepsyms=1 -v debug=0x108 serial=3 msgbuf=1048576 navi48bringup=1 navi48-stage=17 navi48-interrupts=0 navi48-native=1 navi48-metal=1 navi48-aux=1 amfi_get_out_of_my_way=1

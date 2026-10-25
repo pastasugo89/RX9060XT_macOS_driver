@@ -1,0 +1,120 @@
+2026-10-21 15:41:22.058 Df kernel[0:fb4] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.063 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c406450] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[971].0x7fc42c406450
+2026-10-21 15:41:22.078 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c406450] invalidated because the client process (pid 971) either cancelled the connection or exited
+2026-10-21 15:41:22.081 Df sshd-session[935:f62] [com.apple.xpc:connection] [0x7f7afa904810] activating connection: mach=true listener=false peer=false name=com.apple.GSSCred
+2026-10-21 15:41:22.081 Df GSSCred[562:b36] [com.apple.xpc:connection] [0x7fc1bdf0c2a0] activating connection: mach=false listener=false peer=true name=com.apple.GSSCred.peer[935].0x7fc1bdf0c2a0
+2026-10-21 15:41:22.083 Df kernel[0:31a] [com.apple.xnu.net.tcp:] tcp connect incoming: [<IPv4-redacted>:22<-><IPv4-redacted>:34368] interface: en0 (skipped: 0)
+2026-10-21 15:41:22.083 Df kernel[0:31a] [com.apple.xnu:skywalk] SK[2]: flow_entry_alloc               fe "0 proc kernel_task(0)launchd nx_port 1 flow_uuid FC66E822-B67F-4CE9-A020-4CE65B55D2E7 flags 0x14120<CONNECTED,QOS_MARKING,EXT_PORT,EX
+2026-10-21 15:41:22.083 Df kernel[0:31a] [com.apple.xnu.net.tcp:] tcp connected: [<IPv4-redacted>:22<-><IPv4-redacted>:34368] interface: en0 (skipped: 0)
+2026-10-21 15:41:22.084 Df GSSCred[562:b36] [com.apple.xpc:connection] [0x7fc1bdf0c2a0] invalidated because the client process (pid 935) either cancelled the connection or exited
+2026-10-21 15:41:22.084 Df trustd[215:f56] [com.apple.xpc:connection] [0x7fee63c1b680] invalidated because the client process (pid 935) either cancelled the connection or exited
+2026-10-21 15:41:22.084 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c112ab0] invalidated because the client process (pid 935) either cancelled the connection or exited
+2026-10-21 15:41:22.084 Df kernel[0:f48] [com.apple.xnu.net.tcp:] tcp_connection_summary (tcp_usrclosed:3259)[<IPv4-redacted>:22<-><IPv4-redacted>:34358] interface: en0 (skipped: 0)
+2026-10-21 15:41:22.084 Df kernel[0:f48] [com.apple.xnu.net.tcp:] tcp_connection_summary [<IPv4-redacted>:22<-><IPv4-redacted>:34358] interface: en0 (skipped: 0)
+2026-10-21 15:41:22.092 Df kernel[0:fbf] process_is_plugin_host: running binary "sshd" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.099 Df kernel[0:fc1] process_is_plugin_host: running binary "sshd-session" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.100 Df AirPlayXPCHelper[164:34d] [com.apple.xpc:connection] [0x7fc22cb0b5b0] activating connection: mach=true listener=false peer=false name=com.apple.PairingManager
+2026-10-21 15:41:22.100 Df AirPlayXPCHelper[164:34d] [com.apple.xpc:connection] [0x7fc22cb0b5b0] failed to do a bootstrap look-up: xpc_error=[3: No such process]
+2026-10-21 15:41:22.100 Df AirPlayXPCHelper[164:34d] [com.apple.xpc:connection] [0x7fc22cb0b5b0] invalidated after a failed init
+2026-10-21 15:41:22.100 E  AirPlayXPCHelper[164:34d] [com.apple.airplay:APBonjourCache] ### Get paired peers failed: NSXPCConnectionInvalid
+2026-10-21 15:41:22.105 Df kernel[0:fc4] process_is_plugin_host: running binary "sshd-auth" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.212 Df sshd-session[975:fc3] [com.apple.xpc:connection] [0x7fc0a8806d40] activating connection: mach=true listener=false peer=false name=com.apple.system.opendirectoryd.api
+2026-10-21 15:41:22.222 Df sshd-session[975:fc3] [com.apple.xpc:connection] [0x7fc0a8905770] activating connection: mach=true listener=false peer=false name=com.apple.analyticsd
+2026-10-21 15:41:22.222 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30a640] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.peer[975].0x7fc42c30a640
+2026-10-21 15:41:22.223 Df sshd-session[975:fc3] [com.apple.xpc:connection] [0x7fc0a8806570] activating connection: mach=true listener=false peer=false name=com.apple.trustd
+2026-10-21 15:41:22.223 Df trustd[215:e87] [com.apple.xpc:connection] [0x7fee6394ad10] activating connection: mach=false listener=false peer=true name=com.apple.trustd.peer[975].0x7fee6394ad10
+2026-10-21 15:41:22.249 Df kernel[0:fcb] process_is_plugin_host: running binary "zsh" in keys-off mode due to identity: com.apple.zsh
+2026-10-21 15:41:22.252 Df kernel[0:fcc] process_is_plugin_host: running binary "bash" in keys-off mode due to identity: com.apple.bash
+2026-10-21 15:41:22.261 Df sw_vers[980:fcf] [com.apple.xpc:connection] [0x7fee83004ab0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.261 Df sw_vers[980:fd0] [com.apple.xpc:connection] [0x7fee83004bc0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.agent
+2026-10-21 15:41:22.261 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e107900] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.daemon.peer[980].0x7f9a5e107900
+2026-10-21 15:41:22.261 Df cfprefsd[540:f70] [com.apple.xpc:connection] [0x7fd9e220acc0] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.agent.peer[980].0x7fd9e220acc0
+2026-10-21 15:41:22.263 Df cfprefsd[540:f70] [com.apple.xpc:connection] [0x7fd9e220acc0] invalidated because the client process (pid 980) either cancelled the connection or exited
+2026-10-21 15:41:22.263 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e107900] invalidated because the client process (pid 980) either cancelled the connection or exited
+2026-10-21 15:41:22.270 Df sw_vers[981:fd3] [com.apple.xpc:connection] [0x7f888e804940] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.270 Df sw_vers[981:fd4] [com.apple.xpc:connection] [0x7f888e804a50] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.agent
+2026-10-21 15:41:22.270 Df cfprefsd[200:dc8] [com.apple.xpc:connection] [0x7f9a5e309be0] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.daemon.peer[981].0x7f9a5e309be0
+2026-10-21 15:41:22.270 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e220acc0] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.agent.peer[981].0x7fd9e220acc0
+2026-10-21 15:41:22.272 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e309be0] invalidated because the client process (pid 981) either cancelled the connection or exited
+2026-10-21 15:41:22.272 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e220acc0] invalidated because the client process (pid 981) either cancelled the connection or exited
+2026-10-21 15:41:22.302 Df kmutil[1000:ff4] [com.apple.xpc:connection] [0x7f8d28804620] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.302 Df kmutil[1000:ff6] [com.apple.xpc:connection] [0x7f8d28804730] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.agent
+2026-10-21 15:41:22.302 Df cfprefsd[200:dc8] [com.apple.xpc:connection] [0x7f9a5e1070b0] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.daemon.peer[1000].0x7f9a5e1070b0
+2026-10-21 15:41:22.302 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e2105070] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.agent.peer[1000].0x7fd9e2105070
+2026-10-21 15:41:22.340 Df kmutil[1000:ff4] [com.apple.xpc:connection] [0x7f8d27f09270] activating connection: mach=true listener=false peer=false name=com.apple.analyticsd
+2026-10-21 15:41:22.340 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.peer[1000].0x7fc42e91e1a0
+2026-10-21 15:41:22.340 Df kmutil[1000:ff4] [com.apple.xpc:connection] [0x7f8d28804840] activating connection: mach=true listener=false peer=false name=com.apple.trustd.agent
+2026-10-21 15:41:22.340 Df trustd[574:f9e] [com.apple.xpc:connection] [0x7fb331706ab0] activating connection: mach=false listener=false peer=true name=com.apple.trustd.agent.peer[1000].0x7fb331706ab0
+2026-10-21 15:41:22.450 Df kmutil[1000:ff6] [com.apple.CoreAnalytics:client] Cancelling XPC connection. Any further reply handler invocations will not retry messages
+2026-10-21 15:41:22.450 Df kmutil[1000:ff6] [com.apple.xpc:connection] [0x7f8d27f09270] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.450 Df kmutil[1000:ff7] [com.apple.CoreAnalytics:client] XPC connection invalidated (daemon unloaded/disabled)
+2026-10-21 15:41:22.450 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] invalidated because the client process (pid 1000) either cancelled the connection or exited
+2026-10-21 15:41:22.450 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e1070b0] invalidated because the client process (pid 1000) either cancelled the connection or exited
+2026-10-21 15:41:22.450 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e2105070] invalidated because the client process (pid 1000) either cancelled the connection or exited
+2026-10-21 15:41:22.450 Df trustd[574:f97] [com.apple.xpc:connection] [0x7fb331706ab0] invalidated because the client process (pid 1000) either cancelled the connection or exited
+2026-10-21 15:41:22.460 Df kmutil[1002:ffb] [com.apple.xpc:connection] [0x7fe88d9042a0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-21 15:41:22.460 Df kmutil[1002:ffd] [com.apple.xpc:connection] [0x7fe88d9043b0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.agent
+2026-10-21 15:41:22.461 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e013350] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.daemon.peer[1002].0x7f9a5e013350
+2026-10-21 15:41:22.461 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e2504680] activating connection: mach=false listener=false peer=true name=com.apple.cfprefsd.agent.peer[1002].0x7fd9e2504680
+2026-10-21 15:41:22.498 Df kmutil[1002:ffb] [com.apple.xpc:connection] [0x7fe88d905e10] activating connection: mach=true listener=false peer=false name=com.apple.analyticsd
+2026-10-21 15:41:22.498 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.peer[1002].0x7fc42e91e1a0
+2026-10-21 15:41:22.498 Df kmutil[1002:ffb] [com.apple.xpc:connection] [0x7fe88d806870] activating connection: mach=true listener=false peer=false name=com.apple.trustd.agent
+2026-10-21 15:41:22.498 Df trustd[574:f9e] [com.apple.xpc:connection] [0x7fb331706ab0] activating connection: mach=false listener=false peer=true name=com.apple.trustd.agent.peer[1002].0x7fb331706ab0
+2026-10-21 15:41:22.608 Df kmutil[1002:1001] [com.apple.CoreAnalytics:client] Cancelling XPC connection. Any further reply handler invocations will not retry messages
+2026-10-21 15:41:22.608 Df kmutil[1002:1001] [com.apple.xpc:connection] [0x7fe88d905e10] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.608 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] invalidated because the client process (pid 1002) either cancelled the connection or exited
+2026-10-21 15:41:22.608 Df kmutil[1002:ffd] [com.apple.CoreAnalytics:client] XPC connection invalidated (daemon unloaded/disabled)
+2026-10-21 15:41:22.609 Df cfprefsd[200:f6f] [com.apple.xpc:connection] [0x7f9a5e013350] invalidated because the client process (pid 1002) either cancelled the connection or exited
+2026-10-21 15:41:22.609 Df trustd[574:f97] [com.apple.xpc:connection] [0x7fb331706ab0] invalidated because the client process (pid 1002) either cancelled the connection or exited
+2026-10-21 15:41:22.609 Df cfprefsd[540:ea2] [com.apple.xpc:connection] [0x7fd9e2504680] invalidated because the client process (pid 1002) either cancelled the connection or exited
+2026-10-21 15:41:22.610 Df kernel[0:1002] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.615 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1005].0x7fc42c40cab0
+2026-10-21 15:41:22.625 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] invalidated because the client process (pid 1005) either cancelled the connection or exited
+2026-10-21 15:41:22.714 Df kernel[0:100c] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.719 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1010].0x7fc42c40cab0
+2026-10-21 15:41:22.734 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] invalidated because the client process (pid 1010) either cancelled the connection or exited
+2026-10-21 15:41:22.736 Df kernel[0:1015] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.741 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1014].0x7fc42c40cab0
+2026-10-21 15:41:22.747 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] invalidated because the client process (pid 1014) either cancelled the connection or exited
+2026-10-21 15:41:22.748 Df kernel[0:101a] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.752 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1016].0x7fc42c30d850
+2026-10-21 15:41:22.758 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] invalidated because the client process (pid 1016) either cancelled the connection or exited
+2026-10-21 15:41:22.759 Df kernel[0:1020] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.763 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1019].0x7fc42c30d850
+2026-10-21 15:41:22.778 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] invalidated because the client process (pid 1019) either cancelled the connection or exited
+2026-10-21 15:41:22.784 Df kernel[0:102b] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.788 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1025].0x7fc42c30d850
+2026-10-21 15:41:22.801 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c30d850] invalidated because the client process (pid 1025) either cancelled the connection or exited
+2026-10-21 15:41:22.802 Df kernel[0:1032] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.806 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1028].0x7fc42c40cab0
+2026-10-21 15:41:22.824 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] invalidated because the client process (pid 1028) either cancelled the connection or exited
+2026-10-21 15:41:22.825 Df kernel[0:1039] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.830 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1031].0x7fc42e91e1a0
+2026-10-21 15:41:22.842 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91e1a0] invalidated because the client process (pid 1031) either cancelled the connection or exited
+2026-10-21 15:41:22.843 Df kernel[0:1040] process_is_plugin_host: running binary "sudo" in keys-off mode due to entitlement: com.apple.private.security.clear-library-validation
+2026-10-21 15:41:22.847 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42c40cab0] activating connection: mach=false listener=false peer=true name=com.apple.analyticsd.messagetracer.peer[1033].0x7fc42c40cab0
+2026-10-21 15:41:22.855 E  SecurityAgent[414:8d0] [com.apple.BoardServices:XPCErrors] [C:1] Error received: Connection interrupted.
+2026-10-21 15:41:22.855 Df corebrightnessd[163:1047] [com.apple.xpc:connection] [0x7f9d839090f0] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+2026-10-21 15:41:22.855 E  CursorUIViewService[433:1046] [com.apple.BoardServices:XPCErrors] [C:1] Error received: Connection interrupted.
+2026-10-21 15:41:22.855 Df CursorUIViewService[433:937] [com.apple.xpc:connection] [0x7f9446a04380] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-21 15:41:22.855 Df SecurityAgent[414:eee] [com.apple.xpc:connection] [0x7fc34fa39600] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-21 15:41:22.855 Df UVCAssistant[313:1048] [com.apple.UVCExtension:provider] UVCExtensionProvider: [0x7f8c4e304ed0] WS Died , attempt reconnect
+2026-10-21 15:41:22.855 Df PerfPowerServices[152:e6c] [com.apple.xpc:connection] [0x7fc5ebf19e70] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+2026-10-21 15:41:22.855 Df PerfPowerServices[152:e6c] [com.apple.xpc:connection] [0x7fc5ebf19e70] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+2026-10-21 15:41:22.855 E  CursorUIViewService[433:104a] [com.apple.BoardServices:XPCErrors] [C:2] Error received: Connection interrupted.
+2026-10-21 15:41:22.855 E  PerfPowerServices[152:e6c] [com.apple.powerlog:WindowServer] Connection closed to Window Server. Retry.
+2026-10-21 15:41:22.855 Df systemstatusd[276:54f] [com.apple.xpc:connection] [0x7fe64c704620] invalidated because the client process (pid 192) either cancelled the connection or exited
+2026-10-21 15:41:22.855 Df CursorUIViewService[433:104a] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection interruption
+2026-10-21 15:41:22.855 Df CursorUIViewService[433:104a] [com.apple.xpc:connection] [0x7f9445f2da20] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-21 15:41:22.855 E  PerfPowerServices[152:e6c] [com.apple.powerlog:WindowServer] Error establishing connection with Window Server: Error Domain=NSMachErrorDomain Code=268435459 Will retry after 120 seconds
+2026-10-21 15:41:22.855 Df PerfPowerServices[152:e6c] [com.apple.SkyLight:default] client requested CGSShutdownServerConnections
+2026-10-21 15:41:22.855 Df analyticsd[205:52f] [com.apple.xpc:connection] [0x7fc42e91ca10] invalidated because the client process (pid 192) either cancelled the connection or exited
+2026-10-21 15:41:22.855 Df UVCAssistant[313:1048] [com.apple.SkyLight:default] client requested CGSShutdownServerConnections
+2026-10-21 15:41:22.855 Df com.apple.AmbientDisplayAgent[442:104d] [com.apple.xpc:connection] [0x7f9278015710] invalidated because the client process (pid 192) either cancelled the connection or exited
+2026-10-21 15:41:22.855 Df bluetoothd[160:f3c] [com.apple.xpc:connection] [0x7f8dc982ac30] invalidated because the client process (pid 192) either cancelled the connection or exited
+2026-10-21 15:41:22.855 Df bluetoothd[160:f3c] [com.apple.bluetooth:Server.XPC] Closed XPC connection to session "com.apple.WindowServer-MBF-192-14"
+2026-10-21 15:41:22.855 Df bluetoothd[160:f3c] [com.apple.bluetooth:Server.XPC] XpcMBFrameworkConnection::handleDisconnection name:<private>
+2026-10-21 15:41:22.855 Df bluetoothd[160:f3c] [com.apple.bluetooth:Server.XPC] BTSessionMsgHandler::handleDisconnection name:<private>
+2026-10-21 15:41:22.856 Df corebrightnessd[163:104b] [com.apple.xpc:connection] [0x7f9d83807900] invalidated because the client process (pid 192) either cancelled the connection or exited
+2026-10-21 15:41:22.856 Df distnoted[150:ab3] [com.apple.xpc:connection] [0x7f932673c380] invalidated because the client process (pid 442) either cancelled the connection or exited
+2026-10-21 15:41:22.856 Df corebrightnessd[163:104b] [com.apple.xpc:connection] [0x7f9d83c0e7a0] invalidated because the client process (pid 442) either cancelled the connection or exited

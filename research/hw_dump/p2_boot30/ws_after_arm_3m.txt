@@ -1,0 +1,12 @@
+2026-10-21 15:54:29.671 Df WindowServer[724:ca5] (Navi48Metal) Navi48Metal: radv: ext[600]: endering_local_read VK_KHR_extended_flags VK_KHR_external_fence VK_KHR_external_fence_fd VK_KHR_external_memory VK_KHR_external_memory_fd 
+2026-10-21 15:54:29.671 Df WindowServer[724:ca5] (Navi48Metal) Navi48Metal: radv: framebuffer-fetch support: rasterization_order_attachment_access ext 0 (color feature 0, depth 0, stencil 0); dynamic_rendering_local_read ext 1 (fe
+2026-10-21 15:54:29.704 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Display id 0x00000000 -> 0x1b572300
+2026-10-21 15:54:29.707 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.708 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.709 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.710 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.711 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.712 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Setting main display 0x00000000 offline 	
+2026-10-21 15:54:29.724 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:54:30.325 E  WindowServer[724:ca5] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration finished
+2026-10-21 15:54:40.178 Df WindowServer[724:caa] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 724]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)

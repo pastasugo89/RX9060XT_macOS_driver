@@ -1,0 +1,23 @@
+2026-10-21 15:14:16.345 Df WindowServer[199:89d] (Navi48Metal) Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+2026-10-21 15:29:40.138 Df WindowServer[193:8ae] (Navi48Metal) Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+2026-10-21 15:39:35.920 Df WindowServer[192:920] (Navi48Metal) Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+2026-10-21 15:41:23.186 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+2026-10-21 15:41:23.596 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: T2 pipeline cache: no file /private/var/tmp/n48m-pipecache.bin yet (cold start; saving ON)
+2026-10-21 15:41:23.596 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: T2 pipeline cache: 0x600002ad9380 created from /private/var/tmp/n48m-pipecache.bin in 0.00 ms (initialData 0 B, none); key f143837d uuid 7df0dbd8
+2026-10-21 15:41:23.597 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: dump vertex function 'ViewportToNDC' class _MTLFunctionInternal stage 1 bitcodeData 3952 bytes
+2026-10-21 15:41:23.598 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: dump: per-user directory /tmp/n48m/88 ready (daemon list grant: added)
+2026-10-21 15:41:23.599 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: dump fragment function 'GPUPass' class _MTLFunctionInternal stage 2 bitcodeData 7088 bytes
+2026-10-21 15:41:23.599 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: Navi48Metal: pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/88/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587.air (vertex 'ViewportToNDC' s
+2026-10-21 15:41:23.599 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: FALLBACK ViewportToNDC / GPUPass (spvcache miss for vertex: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec2178
+2026-10-21 15:41:23.609 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48RenderPipelineState 0x7fb0bd019200: pipeline 0x7fb0bd01ac00 (1 colour attachment(s), set0 0 / set1 0 bindings, 0 vertex input(s), 0 vertex binding(s), FALLBACK magenta)
+2026-10-21 15:41:23.609 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: registered (2 key(s))
+2026-10-21 15:41:27.675 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: spvcache complete and stable (attempt 1), building the real pipeline off the render thread
+2026-10-21 15:41:27.675 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: spvcache hit vertex: /private/var/tmp/n48m-spv/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587.spv (1708 bytes, meta)
+2026-10-21 15:41:27.676 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: spvcache hit fragment: /private/var/tmp/n48m-spv/29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.spv (8968 bytes, meta)
+2026-10-21 15:41:27.686 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: fallback -> real (built in 10.553 ms)
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 spvcache_read n=4 avg=0.287ms min=0.057ms max=0.514ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=1/2/1/0/0/0/0/0 [WindowServer pid 1038, 10 s window]
+2026-10-21 15:41:53.977 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T2 pipeline cache: SAVED 5492 B to /private/var/tmp/n48m-pipecache.bin (periodic; 2 pipelines created so far) in 0.61 ms
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence subm
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence subm
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/

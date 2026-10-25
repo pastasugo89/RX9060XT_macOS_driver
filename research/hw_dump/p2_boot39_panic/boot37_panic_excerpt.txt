@@ -1,0 +1,24 @@
+AppleUSB20XHCIPort@01600000: AppleUSBHostPort::terminateDevice: destroying 0x0627/0001/0000 (QEMU USB Tablet): port is powering off
+AppleUSB20XHCIPort@01500000: AppleUSBHostPort::terminateDevice: destroying 0x0627/0001/0000 (QEMU USB Keyboard): port is powering off
+AXS86P:P AlSPa: tshfutotirngm dPowlnug
+in::systemWillShutdown!
+X86PlatformPlugin::systemWillShutdown!
+IOPlatformHaltRestartAction -> AppleSMC
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+IOPlatformHaltRestartAction -> AppleSMC
+PMRD: PowerOff all drivers took 549 ms
+PMRD: PowerOff total 1157 ms
+Debugger called: <panic>
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+Nested panic detected - entry count: 2 panic_caller: 0xffffff8015ba466e
+Attempting to commit panic log to NVRAM
+Nested panic string:
+Ticket lock 0xffffff8016168580 is unexpectedly owned by thread 0xffffff95104dba90 @lock_ticket.c:155
+<end nested panic string>
+
+
+RECURSIVE DEBUGGER ENTRY DETECTED
+
+Debugger called: <panic>

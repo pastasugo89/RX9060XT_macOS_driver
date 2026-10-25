@@ -1,0 +1,18 @@
++zsh:1> sudo -n mv /Library/Extensions/RDNA4FB.kext /private/tmp/RDNA4FB.kext.v1
++zsh:1> sudo -n cp -R /Users/test/rdna4fb-stage2/RDNA4FB.kext /Library/Extensions/
++zsh:1> sudo -n chown -R root:wheel /Library/Extensions/RDNA4FB.kext
++zsh:1> sudo -n chmod -R go-w /Library/Extensions/RDNA4FB.kext
++zsh:1> shasum -a 256 /Library/Extensions/RDNA4FB.kext/Contents/MacOS/RDNA4FB
+a5ba00d724f2897f190cce15f6aa1d2bf29008288393039ec4fd3e7aa0b9da1c  /Library/Extensions/RDNA4FB.kext/Contents/MacOS/RDNA4FB
++zsh:1> echo '--- kmutil load -p:'
+--- kmutil load -p:
++zsh:1> sudo -n kmutil load -p /Library/Extensions/RDNA4FB.kext
++zsh:1> tail -5
+Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+rc=
+--- showloaded:
++zsh:1> echo 'rc='
++zsh:1> echo '--- showloaded:'
++zsh:1> kmutil showloaded --list-only
++zsh:1> grep -i rdna4fb
+  113    0 0xffffff7f96638000 0xa324     0xa324     com.hackintosh.RDNA4FB (0.0.1) 220C73F4-AF8F-3638-ACF5-7E50A0C5EFEA <112 19 9 7 6 3>

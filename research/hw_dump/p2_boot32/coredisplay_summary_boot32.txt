@@ -1,0 +1,55 @@
+== InstallTiming FAILED, codes and modes (count by code):
+     23 code 0xe00002c7
+      1 code 0xe00002dd
+      2 (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1280x720
+      2 (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (1920x1080
+      3 (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - InstallTiming - legacyRng_legacyEnc_legacyBit_legacyClr FAILED for mode 0x80000000 (2560x1440
+for mode 0x80000000 (1280x720 to 1280x720@50.0)
+for mode 0x80000000 (1280x720 to 1280x720@60.0)
+for mode 0x80000000 (1920x1080 to 1920x1080@50.0)
+for mode 0x80000000 (1920x1080 to 1920x1080@60.0)
+for mode 0x80000000 (2560x1440 to 2560x1440@120.0)
+for mode 0x80000000 (2560x1440 to 2560x1440@60.0)
+for mode 0x80000000 (2560x1440 to 2560x1440@99.9)
+for mode 0x80000000 (640x480 to 640x480@59.9)
+for mode 0x80000000 (720x480 to 720x480@59.9)
+for mode 0x80001000 (1024x768 to 1024x768@60.0)
+for mode 0x80001000 (1280x720 to 1280x720@50.0)
+for mode 0x80001000 (1280x720 to 1280x720@60.0)
+for mode 0x80001000 (1920x1080 to 1920x1080@50.0)
+for mode 0x80001000 (1920x1080 to 1920x1080@60.0)
+for mode 0x80001000 (2560x1440 to 2560x1440@120.0)
+for mode 0x80001000 (2560x1440 to 2560x1440@144.0)
+for mode 0x80001000 (2560x1440 to 2560x1440@60.0)
+for mode 0x80001000 (2560x1440 to 2560x1440@99.9)
+for mode 0x80001000 (640x480 to 640x480@59.9)
+for mode 0x80001000 (640x480 to 640x480@60.0)
+for mode 0x80001000 (720x480 to 720x480@59.9)
+for mode 0x80001000 (800x600 to 800x600@60.3)
+== gamma:
+17
+     17 0xe00002c7
+== main display:
+     19 Setting main display 0x00000000 offline 	
+      2 Setting main display 0x5b81c5c0 offline 	
+== startup/online/VirtualDisplay:
+2026-10-21 16:49:23.237267+0200 0x2d3      Default     0x0                  183    0    WindowServer: (CoreDisplay) [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600003f74050 close
+2026-10-21 16:49:23.237274+0200 0x2d3      Default     0x0                  183    0    WindowServer: (CoreDisplay) [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x600003f74050 dealloc
+2026-10-21 16:49:23.239100+0200 0x2d3      Error       0x0                  183    7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [ERROR] - Unable to find display pipe for IOFB service / regID: 0xb057 / 0x100000331
+2026-10-21 16:50:24.838813+0200 0x2d7      Default     0x0                  194    7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 16:50:24.851540+0200 0x2d7      Default     0x0                  194    7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x100000318
+2026-10-21 16:50:24.851541+0200 0x2d7      Default     0x0                  194    7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-1e6d-5c87-f9b3cb
+2026-10-21 16:50:24.851542+0200 0x2d7      Default     0x0                  194    7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 16:50:25.732135+0200 0x2d7      Info        0x0                  194    0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - Display 0x1b572300: Unit 0: Startup Mode 2560 x 1440, CGSThirtytwoBitColor, Resolution 1, ioModeID 0x1,
+2026-10-21 16:50:25.732638+0200 0x2d7      Info        0x0                  194    0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] -   Display 0x1b572300: Unit 0; Vendor 0x1e6d Model 0x5c87 S/N 707 Dimensions 23.50 x 13.23; online enabl
+2026-10-21 16:50:25.732875+0200 0x2d7      Default     0x0                  194    0    WindowServer: (CoreDisplay) [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x6000016244c0
+2026-10-21 16:54:45.622417+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - Creating FB 1 of 1
+2026-10-21 16:54:45.627035+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Setting mode 0x0 with depth 0x0 on displayID: 0x0 fbRegID: 0x100000318
+2026-10-21 16:54:45.627036+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: IOService:/AppleACPIPlatformExpert/PCI0/AppleACPIPCI/S30@6-1e6d-5c87-f9b3cb
+2026-10-21 16:54:45.627045+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [WARN] - IOFBSetDisplayModeAndDepth: Failed to obtain mode info from IOFBGetDisplayModeInformation()
+2026-10-21 16:54:46.950145+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] - Display 0x1b572300: Unit 0: Startup Mode 2560 x 1440, CGSThirtytwoBitColor, Resolution 1, ioModeID 0x1,
+2026-10-21 16:54:46.950542+0200 0x12d8     Info        0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.CoreDisplay:default] [INFO] -   Display 0x1b572300: Unit 0; Vendor 0x1e6d Model 0x5c87 S/N 707 Dimensions 23.50 x 13.23; online enabl
+2026-10-21 16:54:46.950834+0200 0x12d8     Default     0x0                  1247   0    WindowServer: (CoreDisplay) [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x6000007b48f0
+2026-10-21 16:54:46.950836+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (SkyLight) [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 16:54:46.950914+0200 0x12d8     Default     0x0                  1247   7    WindowServer: (SkyLight) [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 16:54:56.615282+0200 0x12dd     Default     0x0                  1247   0    WindowServer: (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 1247]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wro

@@ -1,0 +1,1 @@
+QMP quit issued at about 18:23:5x (operator request), VM in OpenCore firmware, no guest kernel output captured

@@ -1,0 +1,228 @@
+--- a/src/framebuffer.hpp
++++ b/src/framebuffer.hpp
+@@ -280,6 +280,13 @@
+ 	bool               vblEnabled { false };
+ 	void fireVBL(IOTimerEventSource *sender);
+ 
++	// Patch 0003 (Navi 44): detailed timings that IOGraphics installed (validateDetailedTiming, then setDetailedTimings).
++	// They are aliases of kRDNA4DisplayModeID: the one exposed mode is not extended, and nothing is programmed.
++	enum { kRDNA4MaxAliasModes = 8 };
++	IODisplayModeID aliasModes[kRDNA4MaxAliasModes] {};
++	uint32_t        aliasModeCount { 0 };
++	bool ownsDisplayMode(IODisplayModeID displayMode) const;
++
+ public:
+ 	// IOService
+ 	IOService *probe(IOService *provider, SInt32 *score) override;
+@@ -315,6 +322,10 @@
+ 	IOReturn getTimingInfoForDisplayMode(IODisplayModeID displayMode,
+ 	                                     IOTimingInformation *info) override;
+ 
++	// IOFramebuffer — programmable timing (patch 0003, Navi 44 only: accepts the GOP timing, see framebuffer.cpp)
++	IOReturn validateDetailedTiming(void *description, IOByteCount descripSize) override;
++	IOReturn setDetailedTimings(OSArray *array) override;
++
+ 	// IOFramebuffer — attributes / connection
+ 	IOReturn    getAttribute(IOSelect attribute, uintptr_t *value) override;
+ 	// Receives kIOPowerAttribute — IOFramebuffer's mechanism for asking the
+@@ -326,6 +337,12 @@
+ 	IOReturn    setAttributeForConnection(IOIndex connectIndex, IOSelect attribute,
+ 	                                      uintptr_t value) override;
+ 
++	// IOFramebuffer — gamma (patch 0003, Navi 44 only: accepted, not programmed)
++	IOReturn setGammaTable(UInt32 channelCount, UInt32 dataCount,
++	                       UInt32 dataWidth, void *data) override;
++	IOReturn setGammaTable(UInt32 channelCount, UInt32 dataCount,
++	                       UInt32 dataWidth, void *data, bool syncToVBL) override;
++
+ 	// IOFramebuffer — DDC/EDID (serves the block cached by probeEDID so the
+ 	// OS sees the real display identity instead of a generic panel)
+ 	bool     hasDDCConnect(IOIndex connectIndex) override;
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2100,6 +2100,15 @@
+ 	pciDevice->setProperty("model", model);
+ 	setProperty("GPU,Variant", model);
+ 
++	// Navi 44 (patch 0003): CoreDisplay reads the gamma scale factors through extGetAttribute ('gslr' 'gslg' 'gslb'), which
++	// returns kIOReturnNotReadable (0xE00002CE, IOFramebuffer.cpp:11369-11405) while the IOFBRed/Green/BlueGammaScale
++	// property is absent. Unity (1 << 16, IOFramebuffer.cpp:3292) is the value of a new framebuffer. Properties only.
++	if ((vd >> 16) == 0x7590) {
++		setProperty("IOFBRedGammaScale",   static_cast<uint64_t>(1u << 16), 32);
++		setProperty("IOFBGreenGammaScale", static_cast<uint64_t>(1u << 16), 32);
++		setProperty("IOFBBlueGammaScale",  static_cast<uint64_t>(1u << 16), 32);
++	}
++
+ 	// Registers first: the on-die discovery fallback needs MMIO.
+ 	bool haveMmio = mapRegisters();
+ 
+@@ -2250,7 +2259,7 @@
+ 
+ IOReturn RDNA4FB::getInformationForDisplayMode(IODisplayModeID displayMode,
+                                                   IODisplayModeInformation *info) {
+-	if (displayMode != kRDNA4DisplayModeID || !info)
++	if (!ownsDisplayMode(displayMode) || !info)
+ 		return kIOReturnBadArgument;
+ 
+ 	bzero(info, sizeof(*info));
+@@ -2270,7 +2279,7 @@
+ IOReturn RDNA4FB::getPixelInformation(IODisplayModeID displayMode, IOIndex depth,
+                                          IOPixelAperture aperture,
+                                          IOPixelInformation *pixelInfo) {
+-	if (displayMode != kRDNA4DisplayModeID || depth != 0 ||
++	if (!ownsDisplayMode(displayMode) || depth != 0 ||
+ 	    aperture != kIOFBSystemAperture || !pixelInfo)
+ 		return kIOReturnBadArgument;
+ 
+@@ -2327,8 +2336,8 @@
+ }
+ 
+ IOReturn RDNA4FB::setDisplayMode(IODisplayModeID displayMode, IOIndex depth) {
+-	// Only one mode/depth exists; accept it, reject anything else.
+-	if (displayMode != kRDNA4DisplayModeID || depth != 0)
++	// Only one mode/depth exists (plus the aliases of the timings installed on Navi 44); accept it, reject anything else.
++	if (!ownsDisplayMode(displayMode) || depth != 0)
+ 		return kIOReturnUnsupported;
+ 	return kIOReturnSuccess;
+ }
+@@ -2363,7 +2372,7 @@
+ }
+ 
+ IOReturn RDNA4FB::getTimingInfoForDisplayMode(IODisplayModeID displayMode, IOTimingInformation *info) {
+-	if (!rdna4_is_navi44(pciDevice) || displayMode != kRDNA4DisplayModeID || !info)
++	if (!rdna4_is_navi44(pciDevice) || !ownsDisplayMode(displayMode) || !info)
+ 		return super::getTimingInfoForDisplayMode(displayMode, info);
+ 	info->appleTimingID = 0;                       // no Apple timing ID for this mode
+ 	if (!(info->flags & kIODetailedTimingValid))   // the caller did not ask for the detailed timing
+@@ -2386,6 +2395,131 @@
+ 	return kIOReturnSuccess;
+ }
+ 
++// ---------------------------------------------------------------------------
++// IOFramebuffer — programmable timing and gamma (patch 0003, Navi 44 only)
++// ---------------------------------------------------------------------------
++// CoreDisplay's "InstallTiming ... FAILED ... 0xe00002c7" is the user-client method 17, extValidateDetailedTiming
++// (IOFramebuffer.cpp:4320), which returns the result of validateDetailedTiming; the base returns kIOReturnUnsupported
++// (IOFramebuffer.cpp:12910). matchFramebuffer (IOFramebuffer.cpp:7922) uses the same validate with an
++// IOFBDisplayModeDescription, then setDetailedTimings (base: IOFramebuffer.cpp:12918, unsupported), then
++// setDisplayMode(0xC0000000). Gamma: updateGammaTable (IOFramebuffer.cpp:3483-3521) ends in the base setGammaTable
++// (IOFramebuffer.cpp:12881 and :12890, unsupported): the "can't set device gamma (0xe00002c7)" line.
++// Only the GOP timing is accepted. Nothing is programmed: the scanout stays the GOP's.
++
++// The timing the GOP leaves on the SINK-A panel (the numbers of getTimingInfoForDisplayMode above): 2560x1440 with
++// clock 497.75 MHz, which is 120.0 Hz. The clock is compared with a 0.1 % tolerance, the rest exactly.
++static bool rdna4_is_gop_timing(const IODetailedTimingInformationV2 &v) {
++	const uint64_t want = 497750000ull;
++	const uint64_t tol  = want / 1000ull;
++	const uint64_t clk  = v.pixelClock;
++	const bool clockOk  = (clk + tol >= want) && (clk <= want + tol);
++	return clockOk
++	    && v.horizontalActive == 2560 && v.horizontalBlanking == 160
++	    && v.horizontalSyncOffset == 48 && v.horizontalSyncPulseWidth == 32
++	    && v.verticalActive == 1440 && v.verticalBlanking == 85
++	    && v.verticalSyncOffset == 3 && v.verticalSyncPulseWidth == 10
++	    && v.horizontalSyncConfig == kIOSyncPositivePolarity && v.verticalSyncConfig == 0;
++}
++
++// The framebuffer answers for its one mode and, on Navi 44, for the alias ids of the timings it accepted.
++bool RDNA4FB::ownsDisplayMode(IODisplayModeID displayMode) const {
++	if (displayMode == kRDNA4DisplayModeID)
++		return true;
++	if (!rdna4_is_navi44(pciDevice))
++		return false;
++	for (uint32_t i = 0; i < aliasModeCount; i++)
++		if (aliasModes[i] == displayMode)
++			return true;
++	return false;
++}
++
++// The description is an IOFBDisplayModeDescription (matchFramebuffer, and CoreDisplay's IOFBDisplayModeDescription) or a
++// bare IODetailedTimingInformationV2. Only the GOP timing is accepted, and the answer is that timing in canonical form
++// (IOFramebuffer.h: change the fields the driver cannot implement to the closest implementation). Anything else gets
++// kIOReturnUnsupported, the answer IOGraphics expects for a timing the driver cannot install.
++IOReturn RDNA4FB::validateDetailedTiming(void *description, IOByteCount descripSize) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::validateDetailedTiming(description, descripSize);
++	if (!description)
++		return kIOReturnBadArgument;
++
++	IOFBDisplayModeDescription *desc = nullptr;
++	IODetailedTimingInformationV2 *timing = nullptr;
++	if (descripSize == sizeof(IOFBDisplayModeDescription)) {
++		desc = static_cast<IOFBDisplayModeDescription *>(description);
++		timing = &desc->timingInfo.detailedInfo.v2;
++	} else if (descripSize == sizeof(IODetailedTimingInformationV2)) {
++		timing = static_cast<IODetailedTimingInformationV2 *>(description);
++	} else {
++		return kIOReturnBadArgument;
++	}
++
++	if (!rdna4_is_gop_timing(*timing)) {
++		// Log the 2560x1440 candidates (the 120 Hz one is the open question): a few lines per boot.
++		if (timing->horizontalActive == 2560 && timing->verticalActive == 1440)
++			FBLOG("validate: 2560x1440 candidate refused: clock %llu Hz, H %u+%u sync %u/%u, V %u+%u sync %u/%u, polarity %u/%u",
++			      (unsigned long long)timing->pixelClock,
++			      timing->horizontalActive, timing->horizontalBlanking,
++			      timing->horizontalSyncOffset, timing->horizontalSyncPulseWidth,
++			      timing->verticalActive, timing->verticalBlanking,
++			      timing->verticalSyncOffset, timing->verticalSyncPulseWidth,
++			      timing->horizontalSyncConfig, timing->verticalSyncConfig);
++		return kIOReturnUnsupported;
++	}
++
++	timing->pixelClock = 497750000ull;   // canonical clock (the candidate was within 0.1 %)
++	if (desc) {
++		desc->info.nominalWidth  = 2560;
++		desc->info.nominalHeight = 1440;
++		desc->info.refreshRate   = 120 << 16;   // 16.16 fixed point, as getInformationForDisplayMode
++		desc->info.maxDepthIndex = 0;
++		desc->info.flags         = kDisplayModeValidFlag | kDisplayModeSafeFlag;
++	}
++	FBLOG("validate: GOP timing 2560x1440@120 accepted");
++	return kIOReturnSuccess;
++}
++
++// The list of the detailed timings is replaced on each call (IOFramebuffer.h). Only the GOP timings are kept, as aliases
++// of the one mode. Nothing is reprogrammed.
++IOReturn RDNA4FB::setDetailedTimings(OSArray *array) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::setDetailedTimings(array);
++	aliasModeCount = 0;
++	if (!array)
++		return kIOReturnSuccess;
++	const unsigned count = array->getCount();
++	for (unsigned i = 0; i < count; i++) {
++		OSData *data = OSDynamicCast(OSData, array->getObject(i));
++		if (!data || data->getLength() != sizeof(IODetailedTimingInformationV2))
++			continue;
++		const IODetailedTimingInformationV2 *t =
++		    static_cast<const IODetailedTimingInformationV2 *>(data->getBytesNoCopy());
++		const IODisplayModeID id = (IODisplayModeID)t->__reservedA[0];   // detailedTimingModeID
++		if (!rdna4_is_gop_timing(*t) || id == 0 || id == kRDNA4DisplayModeID ||
++		    aliasModeCount >= kRDNA4MaxAliasModes)
++			continue;
++		aliasModes[aliasModeCount++] = id;
++	}
++	FBLOG("setDetailedTimings: %u alias mode(s) of the GOP timing", aliasModeCount);
++	return kIOReturnSuccess;
++}
++
++// Gamma: the table is accepted and not programmed. This framebuffer drives no gamma LUT, and the GOP scanout keeps its
++// own. Nothing is written to hardware.
++IOReturn RDNA4FB::setGammaTable(UInt32 channelCount, UInt32 dataCount,
++                                UInt32 dataWidth, void *data) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::setGammaTable(channelCount, dataCount, dataWidth, data);
++	return kIOReturnSuccess;
++}
++
++IOReturn RDNA4FB::setGammaTable(UInt32 channelCount, UInt32 dataCount,
++                                UInt32 dataWidth, void *data, bool syncToVBL) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::setGammaTable(channelCount, dataCount, dataWidth, data, syncToVBL);
++	return kIOReturnSuccess;
++}
++
+ // ---------------------------------------------------------------------------
+ // IOFramebuffer — attributes / connection
+ // ---------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+Boot40 (P2 root bus, RDNA4FB v6 0.0.6), lettura in sola lettura dei log WindowServer/kernel (ultimi 12 min).
+
+RDNA4FB: published IOFBTimingRange (312 bytes): clock 497250000..498250000 Hz, GOP 2560x1440@120  (18:27:34)
+InstallTimingWithWireFormats: 33 righe, formati tentati: SDR_420__8_Native e HDR10_420_10_Native.
+  Modi: 2560x1440 a 144/120/99.9/60 Hz, 1920x1080, 1280x720, 1024x768, 800x600, 720x480, 640x480 (60/59.9/50 Hz).
+  Tutti FAILED con mode 0x00000000 e codice 0xe00002c7 (kIOReturnUnsupported). Nessun 0xe00002dd.
+  Nessuna riga "range", "bandwidth", "bpc", "encoding", "colorimetry" con esito diverso.
+get_display_device_info (display 0x1b572300): prima force8BPC=YES; dopo l'arm force8BPC=NO, isAcc=YES.
+IOFBTimingRange (ioreg -x, nodo RDNA4FB): 312 byte, header 0x00... (campi di range non decodificati qui; valore completo in wf40_rdna_x.txt).
+AppleDisplay: IODisplayEDID presente (EDID Vendor GSM, ProductID 0x5c87, serial 707), IOFBTimingRange presente anche qui.
+Nessuna proprietà di colore esplicita (ColorMode/Colorimetry) nel nodo AppleDisplay oltre a IOGraphicsIgnoreParameters (bpc=Yes).

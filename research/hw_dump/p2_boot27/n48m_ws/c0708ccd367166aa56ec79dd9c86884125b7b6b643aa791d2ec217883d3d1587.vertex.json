@@ -1,0 +1,9 @@
+{
+  "sha256" : "c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587",
+  "function" : "ViewportToNDC",
+  "stageName" : "vertex",
+  "role" : "vertex",
+  "air" : "\/tmp\/n48m\/88\/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587.air",
+  "bytes" : 3952,
+  "stage" : 1
+}

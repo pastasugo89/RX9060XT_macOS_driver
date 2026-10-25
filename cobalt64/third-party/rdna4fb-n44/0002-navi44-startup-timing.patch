@@ -1,0 +1,77 @@
+--- a/src/framebuffer.hpp
++++ b/src/framebuffer.hpp
+@@ -309,6 +309,12 @@
+ 	IOReturn getCurrentDisplayMode(IODisplayModeID *displayMode, IOIndex *depth) override;
+ 	IOReturn setDisplayMode(IODisplayModeID displayMode, IOIndex depth) override;
+ 
++	// IOFramebuffer — startup mode and timing (answered on Navi 44 only, see framebuffer.cpp)
++	IOReturn getStartupDisplayMode(IODisplayModeID *displayMode, IOIndex *depth) override;
++	IOReturn setStartupDisplayMode(IODisplayModeID displayMode, IOIndex depth) override;
++	IOReturn getTimingInfoForDisplayMode(IODisplayModeID displayMode,
++	                                     IOTimingInformation *info) override;
++
+ 	// IOFramebuffer — attributes / connection
+ 	IOReturn    getAttribute(IOSelect attribute, uintptr_t *value) override;
+ 	// Receives kIOPowerAttribute — IOFramebuffer's mechanism for asking the
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2334,6 +2334,59 @@
+ }
+ 
+ // ---------------------------------------------------------------------------
++// IOFramebuffer — startup mode and timing (Navi 44 only, 0x7590)
++// ---------------------------------------------------------------------------
++// The IOFramebuffer base versions of these return kIOReturnUnsupported (0xE00002C7). CoreDisplay logs
++// "Startup Mode 2560 x 1440 ... ioModeID 0x1, ioModeDepth 0x0, IOReturn 0xe00002c7" (the set arrives through
++// user-client method 3 into setStartupDisplayMode) and "InstallTiming ... FAILED ... 0xe00002c7" for every mode.
++// The physical display is then online but never main, and WindowServer composes on VirtualDisplay (boot30).
++// The answers are the NDRV contract for one fixed mode: the only mode (kRDNA4DisplayModeID, depth 0), and the
++// same-mode timing the GOP lights (SINK-A CTA 2560x1440@120, the numbers the AGDC 0x921 reply carries).
++// Nothing here programs hardware. Navi 48 keeps the base behaviour.
++static bool rdna4_is_navi44(IOPCIDevice *pci) {
++	return pci && (pci->configRead32(kIOPCIConfigVendorID) >> 16) == 0x7590;
++}
++
++IOReturn RDNA4FB::getStartupDisplayMode(IODisplayModeID *displayMode, IOIndex *depth) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::getStartupDisplayMode(displayMode, depth);
++	if (displayMode) *displayMode = kRDNA4DisplayModeID;
++	if (depth)       *depth       = 0;
++	return kIOReturnSuccess;
++}
++
++IOReturn RDNA4FB::setStartupDisplayMode(IODisplayModeID displayMode, IOIndex depth) {
++	if (!rdna4_is_navi44(pciDevice))
++		return super::setStartupDisplayMode(displayMode, depth);
++	// One mode, and the scanout stays the firmware's: accept it, store nothing.
++	return (displayMode == kRDNA4DisplayModeID && depth == 0) ? kIOReturnSuccess : kIOReturnUnsupported;
++}
++
++IOReturn RDNA4FB::getTimingInfoForDisplayMode(IODisplayModeID displayMode, IOTimingInformation *info) {
++	if (!rdna4_is_navi44(pciDevice) || displayMode != kRDNA4DisplayModeID || !info)
++		return super::getTimingInfoForDisplayMode(displayMode, info);
++	info->appleTimingID = 0;                       // no Apple timing ID for this mode
++	if (!(info->flags & kIODetailedTimingValid))   // the caller did not ask for the detailed timing
++		return kIOReturnSuccess;
++	IODetailedTimingInformationV2 &v = info->detailedInfo.v2;
++	bzero(&v, sizeof(v));
++	// SINK-A 2560x1440@120 (cobalt64/src/dcn41/dcn41_modes_navi44.h): H 2560 + 160 blanking (front 48, sync 32),
++	// V 1440 + 85 (front 3, sync 10), +H -V. minPixelClock = maxPixelClock = 0 keeps IOFramebuffer's VBL throttle off.
++	v.pixelClock               = 497750000ull;     // Hz
++	v.horizontalActive         = 2560;
++	v.horizontalBlanking       = 160;
++	v.horizontalSyncOffset     = 48;
++	v.horizontalSyncPulseWidth = 32;
++	v.verticalActive           = 1440;
++	v.verticalBlanking         = 85;
++	v.verticalSyncOffset       = 3;
++	v.verticalSyncPulseWidth   = 10;
++	v.horizontalSyncConfig     = kIOSyncPositivePolarity;
++	v.verticalSyncConfig       = 0;                // negative polarity
++	return kIOReturnSuccess;
++}
++
++// ---------------------------------------------------------------------------
+ // IOFramebuffer — attributes / connection
+ // ---------------------------------------------------------------------------
+ 

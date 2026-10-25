@@ -1,0 +1,6 @@
+src/framebuffer.hpp:22:10: fatal error: 'IOKit/graphics/IOFramebuffer.h' file not found
+   22 | #include <IOKit/graphics/IOFramebuffer.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+make: *** [build/src/framebuffer.o] Error 1
+MAKE_RC=

@@ -1,0 +1,18 @@
+== pre (sola lettura)
+sudo: a password is required
+--- dcnstate 1
+sudo: a password is required
+== pipeadopt
+sudo: a password is required
+rc=1
+== post pipestat 0
+sudo: a password is required
+
+== nota (sessione del 21/10, dopo il primo tentativo)
+Il guest era raggiungibile con la chiave /mnt/vm/builds/build-vm-ed25519 (utente test, porta 2223). Nessuna password
+inserita. `sudo -n -l` mostra NOPASSWD solo per: /sbin/shutdown, mkdir, mv, cp, chmod, chown, tar, xattr, kmutil,
+launchctl, /Users/test/n48-metal/n48nub. Non include navi48test, touch, rm, killall: P1 non eseguito (pipeadopt non lanciato).
+navi48test non era presente nel guest: compilato dal sorgente cobalt64/tools/pc/navi48test.c (clang, 0 warning, nessun sudo).
+Sha256 del binario guest: 15df385d40eb7450011ed3a67bd3c34fd3dba937fd77c0a3b58b81bf6556d7ec.
+Lettura senza sudo: "navi48test: IOServiceOpen failed (0xe00002e2) - run with sudo".
+Stato guest: WindowServer in esecuzione (pid 199), `who` vuoto (0 utenti), boot-args P1 presenti.

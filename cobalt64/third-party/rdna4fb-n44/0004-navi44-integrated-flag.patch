@@ -1,0 +1,91 @@
+--- a/src/framebuffer.hpp
++++ b/src/framebuffer.hpp
+@@ -285,6 +285,7 @@
+ 	enum { kRDNA4MaxAliasModes = 8 };
+ 	IODisplayModeID aliasModes[kRDNA4MaxAliasModes] {};
+ 	uint32_t        aliasModeCount { 0 };
++	uint8_t            validateLogs { 0 };     // patch 0004: bounded log of validateDetailedTiming calls
+ 	bool ownsDisplayMode(IODisplayModeID displayMode) const;
+ 
+ public:
+@@ -295,6 +296,8 @@
+ 
+ 	// IOFramebuffer — hardware bring-up
+ 	IOReturn enableController() override;
++	// Patch 0004: removes the IOFBIntegrated property the base publishes on bus 0 (Navi 44 only).
++	IOReturn open(void) override;
+ 
+ 	// IOFramebuffer — memory
+ 	IODeviceMemory *getApertureRange(IOPixelAperture aperture) override;
+--- a/src/framebuffer.cpp
++++ b/src/framebuffer.cpp
+@@ -2421,6 +2421,20 @@
+ 	    && v.horizontalSyncConfig == kIOSyncPositivePolarity && v.verticalSyncConfig == 0;
+ }
+ 
++// Patch 0004 (Navi 44 only). IOFramebuffer::open() publishes IOFBIntegrated = Yes when the PCI device of the controller
++// is on bus 0 (IOFramebuffer.cpp:1379 computes fIntegrated = getBusNumber() == 0; :9031 sets the property in open()). In
++// this VM the GPU is on the root bus 0, so the flag is set; a discrete card on a real bus is not integrated. Nothing in
++// the open-source IOGraphics reads the property (the only other use, :10301, is the NVIDIA shutdown guard), so the flag
++// acts on CoreDisplay and WindowServer, which are closed. Removing it after the base open gives the property set a
++// discrete card publishes. The built-in panel path (kConnectionFlags kIOConnectionBuiltIn, fBuiltInPanel) is not touched:
++// getAttributeForConnection(kConnectionFlags) still answers 0.
++IOReturn RDNA4FB::open(void) {
++	const IOReturn ret = super::open();
++	if (rdna4_is_navi44(pciDevice))
++		removeProperty("IOFBIntegrated");
++	return ret;
++}
++
+ // The framebuffer answers for its one mode and, on Navi 44, for the alias ids of the timings it accepted.
+ bool RDNA4FB::ownsDisplayMode(IODisplayModeID displayMode) const {
+ 	if (displayMode == kRDNA4DisplayModeID)
+@@ -2440,6 +2454,12 @@
+ IOReturn RDNA4FB::validateDetailedTiming(void *description, IOByteCount descripSize) {
+ 	if (!rdna4_is_navi44(pciDevice))
+ 		return super::validateDetailedTiming(description, descripSize);
++	// Patch 0004: the first calls are logged, so the log shows whether CoreDisplay reaches this method at all.
++	if (validateLogs < 8) {
++		validateLogs++;
++		FBLOG("validate: call %u, descripSize %lu, description %s", (unsigned)validateLogs,
++		      (unsigned long)descripSize, description ? "set" : "NULL");
++	}
+ 	if (!description)
+ 		return kIOReturnBadArgument;
+ 
+--- a/src/kmod_info.c
++++ b/src/kmod_info.c
+@@ -33,7 +33,7 @@
+ 	return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.1", _start, _stop)
++KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.5", _start, _stop)
+ 
+ __private_extern__ kmod_start_func_t *_realmain = rdna4_kmod_start;
+ __private_extern__ kmod_stop_func_t  *_antimain = rdna4_kmod_stop;
+--- a/Info.plist
++++ b/Info.plist
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>0.0.1</string>
++	<string>0.0.5</string>
+ 	<key>CFBundleVersion</key>
+-	<string>0.0.1</string>
++	<string>0.0.5</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>OSBundleRequired</key>
+--- a/Makefile
++++ b/Makefile
+@@ -9,7 +9,7 @@
+ 
+ PRODUCT      := RDNA4FB
+ BUNDLE_ID    := com.hackintosh.RDNA4FB
+-VERSION      := 0.0.1
++VERSION      := 0.0.5
+ 
+ ARCH         := x86_64
+ DEPLOY       := 11.0

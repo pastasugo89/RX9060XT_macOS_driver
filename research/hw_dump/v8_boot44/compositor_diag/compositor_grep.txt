@@ -1,0 +1,42 @@
+19:31:44.497 Df WindowServer[202:2e4] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x10 (IG) vid.did=1002.7590 b:d:f=0:6:0 
+19:31:44.533 E  WindowServer[202:2e4] (IOPresentment) Error: Unable to acquire map
+19:31:45.337 Df WindowServer[202:2e4] [com.apple.SkyLight:default] Software compositor activated.
+19:31:45.338 Df WindowServer[202:2e4] [com.apple.SkyLight:default] Software compositor activated.
+19:31:45.512 Df loginwindow[206:8aa] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x6000034788c0: Unix to Unix Copy Protocol (4)>
+19:31:45.512 A  loginwindow[206:8aa] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:31:45.513 A  loginwindow[206:8a4] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:31:45.513 Df loginwindow[206:8a0] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600003479540: System Administrator (0)>
+19:31:45.514 Df loginwindow[206:380] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600003479540: System Administrator (0)>
+19:31:45.514 Df loginwindow[206:380] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x6000034788c0: Unix to Unix Copy Protocol (4)>
+19:31:45.648 Df loginwindow[206:316] [com.apple.loginwindow.logging:Standard] CleanupPlatformSSOTemporaryUserHomeDirectories |     This is the first session after boot, iterating through the user list and removing any temporary user home di
+19:31:45.690 Df loginwindow[206:380] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x60000347a760: Unix to Unix Copy Protocol (4)>
+19:31:45.690 A  loginwindow[206:380] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:31:45.690 A  loginwindow[206:8a9] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:31:45.691 Df loginwindow[206:8a0] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600003475c70: System Administrator (0)>
+19:31:47.604 Df loginwindow[206:316] (Metal) apply_selection_policy_once: avoid use of removable GPUs (via com.apple.loginwindow:GPUSelectionPolicy-><private>)
+19:31:50.588 E  WindowServer[202:2e4] [com.apple.SkyLight:processes] 1eb03[SetFrontProcessWithInfo]: CPS: Application SecurityAgent/0x0-0x8008 tried to make itself frontmost, and the front process is NULL, so allowing it to be in front.
+19:33:00.240 Df WindowServer[202:8ea] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x1699b
+19:33:00.240 Df loginwindow[206:8a5] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb213
+19:33:00.240 Df WindowServer[202:8ea] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x1699b
+19:33:00.240 Df loginwindow[206:8a5] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb213
+19:33:00.242 Df WindowServer[202:8ea] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x1699b -> ok
+19:33:00.242 Df loginwindow[206:8a5] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb213 DECLINED in loginwindow (pid 206): process is not WindowServer and N48M_ALLOW=1 (as root) is not set
+19:33:08.571 Df WindowServer[828:e49] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x10 (IG) vid.did=1002.7590 b:d:f=0:6:0 
+19:33:08.784 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xe96f
+19:33:08.784 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xe96f
+19:33:08.786 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xe96f -> ok
+19:33:09.046 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv open: P5a /private/tmp/n48m-nosam present: RADV_PERFTEST=nosam (command buffers in GTT)
+19:33:09.081 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: radv: VK_EXT_external_memory_host enabled, vkGetMemoryHostPointerPropertiesEXT present, minImportedHostPointerAlignment 4096
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T1 pool: ON (/private/tmp/n48m-pool present at device creation): slabs 4096 KiB (<= 256 KiB), recycle 256 KiB..64 MiB cap 256 MiB, idle 2000 ms, dedicated query yes, granulari
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: P4 impcache: ON (default since build 16; kill file /private/tmp/n48m-noimpcache absent at device creation; latched for the life of this process): one shared import per IOSurfa
+19:33:09.087 Df WindowServer[828:e49] (Navi48Metal) Navi48Metal: T1 drawopt: ON (/private/tmp/n48m-drawopt present at device creation; latched for the life of this process): descriptor-set reuse, pipeline-bind skip, variant cache, render-pa
+19:33:09.133 Df WindowServer[828:e49] [com.apple.SkyLight:default] Metal compositor activated.
+19:33:09.133 Df WindowServer[828:e49] [com.apple.SkyLight:default] Metal compositor activated.
+19:33:09.328 Df loginwindow[833:e9f] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600002b0e350: Unix to Unix Copy Protocol (4)>
+19:33:09.328 A  loginwindow[833:ec3] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:33:09.328 A  loginwindow[833:e9e] (CFOpenDirectory) Validate if password changes are allowed for a given record
+19:33:09.328 Df loginwindow[833:e9f] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600002b068a0: System Administrator (0)>
+19:33:09.329 Df loginwindow[833:ebf] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600002b068a0: System Administrator (0)>
+19:33:09.329 Df loginwindow[833:ebf] [com.apple.loginUI:Users] user can't login because the password is not allowed: <LUIUser: 0x600002b0e350: Unix to Unix Copy Protocol (4)>
+19:33:19.511 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 828]: pipelines gfx=1 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+19:33:19.512 Df WindowServer[828:e5a] (Navi48Metal) Navi48Metal: build 16: use-count policy IN-FLIGHT ONLY (a surface is use-counted while a command buffer that touched a texture of it is in flight) (kill file /private/tmp/n48m-nousecount a

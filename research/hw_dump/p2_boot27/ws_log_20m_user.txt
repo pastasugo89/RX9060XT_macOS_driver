@@ -1,0 +1,400 @@
+	0  	    0x7ff80dda27f5	CoreDisplay::AddMainOfflineBreadcrumb(bool, char const*, ...) + 316
+	1  	    0x7ff80ddc14d1	CGXConstructVirtualFramebuffer + 1697
+	2  	    0x7ff80ddc0cb8	CGXConstructVirtualFramebufferSet + 260
+	3  	    0x7ff80de67547	setup_virtual_framebuffers() + 11
+	4  	    0x7ff80de66d09	CGXDisplayDriverInitialize + 1777
+	5  	    0x7ff811f46dbd	WS::Displays::CoreDisplayManager::initialize() + 43
+	6  	    0x7ff812011c45	WSInitialize + 3956
+	7  	    0x7ff811d277c1	SLXServer + 1016
+	8  	       0x1087b96d1	9   WindowServer                        0x00000001087b96d1 WindowServer + 1745
+	9  	    0x7ff80b4f41c8	start + 3240
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Bootstrap Port: 7683
+2026-10-21 15:41:23.619 Df WindowServer[1038:1077] (CoreDisplay) CDN - Local Port: 55203 (com.apple.CoreDisplay.Notification)
+2026-10-21 15:41:23.620 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:ECFCCA8F-9D43-4F05-B2AF-E2235CAEAFF7 pid:1038 process:WindowServer type:Rate Controlled entitlements:0x3 caller:SkyLight: _ZN2WS8Displays18CoreDisplayManager10initializeEv + 43 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:23.620 Df WindowServer[1038:107c] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:D53A7AA3-A928-44A0-86A8-9E01B23726DB pid:1038 process:WindowServer type:Rate Controlled entitlements:0x3 caller:libdispatch.dylib: _dispatch_call_block_and_release + 12 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:23.622 Df WindowServer[1038:1077] [com.apple.touchbarserver:plugin] TouchBarEventPlugin callback version 2, API version 4
+2026-10-21 15:41:23.622 Df WindowServer[1038:107c] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:D5050F12-01E5-4B22-94BA-30226CEAA5FE pid:1038 process:WindowServer type:Monitor entitlements:0x3 caller:TouchBarEvent.bundle: __swift_project_value_buffer + 16144 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:23.627 Df WindowServer[1038:107c] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:16DC9F57-D61C-4266-825E-D396F1F41C0B pid:1038 process:WindowServer type:Administrative entitlements:0x3 caller:SkyLight: ___ZL19setup_event_sourcesj_block_invoke + 246 attributes:{
+    HighFrequency = 1;
+} state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] Setup EventSource
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] Service add callback
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] -Register AppleVendorNXEvent ServiceID:0x1000001ec
+2026-10-21 15:41:23.628 E  WindowServer[1038:1077] [com.apple.coreanimation:Render] unable to register bootstrap port com.apple.CARenderServer: 44f
+2026-10-21 15:41:23.628 Df WindowServer[1038:1096] [com.apple.SkyLight:default] [Event] -Register ServiceID:0x10000035e type:(1,1,0,0,0,0)
+2026-10-21 15:41:23.629 Df WindowServer[1038:1077] [com.apple.FuseBoard:SkyBridge] Hey look ma I made it!
+2026-10-21 15:41:23.629 Df WindowServer[1038:107c] [com.apple.xpc:connection] [0x7fb0bc80f950] activating connection: mach=true listener=false peer=false name=com.apple.backlightd
+2026-10-21 15:41:23.630 Df WindowServer[1038:1077] [com.apple.SkyLight:default] initialization complete, enrolling watchdog endpoints in monitoring
+2026-10-21 15:41:23.630 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration started
+2026-10-21 15:41:23.631 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysWillReconfigure: Posting kCGSDisplayWillReconfigure
+2026-10-21 15:41:23.631 Df WindowServer[1038:1077] [com.apple.BoardServices:Bootstrap] automatic bootstrapping is complete : domains=<private>
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.CoreDisplay:default] [WARN] - CGXDisplaysDidReconfigure: Posting kCGSDisplayDidReconfigure
+2026-10-21 15:41:24.234 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - Reconfiguration finished
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.VirtualDisplay:server] com.apple.VirtualDisplay:0x6000013f4f80
+2026-10-21 15:41:24.234 Df WindowServer[1038:1077] [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 15:41:24.235 Df WindowServer[1038:1077] [com.apple.SkyLight:default] Metal compositor activated.
+2026-10-21 15:41:24.235 Df WindowServer[1038:1077] [com.apple.SkyLight:default] BootSet=M
+2026-10-21 15:41:24.236 E  WindowServer[1038:1077] [com.apple.SkyLight:default] WSGVAInitialize_block_invoke: -1 0
+2026-10-21 15:41:24.236 Df WindowServer[1038:1088] [com.apple.xpc:connection] [0x7fb0bc916d30] activating connection: mach=true listener=false peer=false name=com.apple.iokit.powerdxpc
+2026-10-21 15:41:24.236 Df WindowServer[1038:1088] [com.apple.xpc:connection] [0x7fb0bc916d30] invalidated after the last release of the connection object
+2026-10-21 15:41:24.236 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc916d30] activating connection: mach=true listener=false peer=false name=com.apple.colorsync.displayservices
+2026-10-21 15:41:24.237 Df WindowServer[1038:1077] [com.apple.SpatialConnect:Server] SpatialConnect host (com.apple.SpatialConnect.host:1) reporting for duty!
+2026-10-21 15:41:24.237 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc814690] activating connection: mach=true listener=true peer=false name=com.apple.SpatialConnect.host
+2026-10-21 15:41:24.237 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc8125f0] activating connection: mach=false listener=true peer=false name=(anonymous)
+2026-10-21 15:41:24.237 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc8125f0] Connection returned listener port: 0x11603
+2026-10-21 15:41:24.237 Df WindowServer[1038:1088] [com.apple.xpc:connection] [0x7fb0bc914f50] activating connection: mach=false listener=false peer=true name=com.apple.xpc.anonymous.0x7fb0bc8125f0.peer[163].0x7fb0bc914f50
+2026-10-21 15:41:24.237 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.237 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc9150b0] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.238 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc9150b0] invalidated after the last release of the connection object
+2026-10-21 15:41:24.239 Df WindowServer[1038:1077] [com.apple.runningboard:monitor] Updating configuration of monitor M1038-1
+2026-10-21 15:41:24.239 A  WindowServer[1038:107a] (RunningBoardServices) observedProcessStatesDidChange
+2026-10-21 15:41:24.239 Df WindowServer[1038:107a] [com.apple.runningboard:connection] Creating side-channel connection to com.apple.runningboard
+2026-10-21 15:41:24.239 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bce043e0] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-21 15:41:24.239 Df WindowServer[1038:107a] [com.apple.runningboard:process] Hit the server for a process handle 70b193000000fa that resolved to: [xpcservice<com.apple.fskit.msdos([osservice<com.apple.filesystems.fskitd>:208])>{vt hash: 55280364}[uuid:00000000-0000-0000-0000-000000000001]{definition:com.apple.fskit.msdos[extension][client]}:250]
+2026-10-21 15:41:24.239 Df WindowServer[1038:107a] [com.apple.runningboard:monitor] Received state update for 250 (xpcservice<com.apple.fskit.msdos([osservice<com.apple.filesystems.fskitd>:208])>{vt hash: 55280364}[uuid:00000000-0000-0000-0000-000000000001]{definition:com.apple.fskit.msdos[extension][client]}, running-active-NotVisible
+2026-10-21 15:41:24.240 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x13603, PID 1036 in session 257 on console
+2026-10-21 15:41:24.241 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 13603[CreateApplication]: Process creation: 0x0-0xa00a (ViewBridgeAuxiliary) connectionID: 13603 pid: 1036 in session 0x101
+2026-10-21 15:41:24.246 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:3C34AB23-9B12-4167-B304-1A6A3468A112 pid:201 process:loginwindow type:Passive entitlements:0x0 caller:loginwindow: loginwindow + 44957 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:24.252 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newHeapWithDescriptor: size 4096 storage 2 cache 0 hazard 2 type 0
+2026-10-21 15:41:24.252 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48Heap 0x6000020d1400: 16384 bytes storage 2 cache 0 hazard 2 (budget object, no memory)
+2026-10-21 15:41:24.252 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: heap setPurgeableState: tracked as a flag only (no memory is ever reclaimed)
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newCommandQueue
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48CommandQueue 0x7fb0bbf0e760: pool 0x6000024d0480
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: queue setCompletionQueue: recorded only (completion handlers run on the bundle's completion thread)
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: queue setGPUPriority: recorded only
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newDepthStencilStateWithDescriptor:
+2026-10-21 15:41:24.253 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600003fd6400: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by pipelines with a depth/stencil attachment)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000011eb560: vk 0x6000023d9b90 (min 0 mag 0 mip 0 addr 0/0/0 cmp 0 normalized)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000011eb580: vk 0x6000023d9b00 (min 0 mag 0 mip 0 addr 0/0/0 cmp 0 unnormalized)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000011eb5a0: vk 0x6000023d9c20 (min 1 mag 1 mip 0 addr 0/0/0 cmp 0 unnormalized)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000011eb5c0: vk 0x6000023d9d40 (min 1 mag 1 mip 0 addr 0/0/0 cmp 0 normalized)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newSamplerStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: sampler: maxAnisotropy 8 ignored (samplerAnisotropy not enabled)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48SamplerState 0x6000011eb5e0: vk 0x6000023d9dd0 (min 1 mag 1 mip 2 addr 0/0/0 cmp 0 normalized)
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: newDepthStencilStateWithDescriptor:
+2026-10-21 15:41:24.258 Df WindowServer[1038:1077] (Navi48Metal) Navi48Metal: N48DepthStencilState 0x600003ffb700: depth compare 7 write 0; stencil front cmp 7 ops 0/0/0 masks ffffffff/ffffffff, back cmp 7 ops 0/0/0 masks ffffffff/ffffffff (used by pipelines with a depth/stencil attachment)
+2026-10-21 15:41:24.268 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:24.312 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:3C34AB23-9B12-4167-B304-1A6A3468A112 pid:201 process:loginwindow type:Passive entitlements:0x0 caller:loginwindow: loginwindow + 44957 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:24.313 Df WindowServer[1038:107b] (HIDAnalytics) HIDAnalytics Unregister Send event com.apple.hid.queueUsage
+2026-10-21 15:41:24.314 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 0[outside of RPC]: Process death: 0x0-0xa00a (ViewBridgeAuxiliary) connectionID: 13603 pid: 1036 in session 0x101
+2026-10-21 15:41:24.314 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] <BSCompoundAssertion:0x6000004daa80> ([FocusManager:257]-deferringPolicyEvaluationSuppression) acquire for reason:process death - 0x0-0xa00a (ViewBridgeAuxiliary) acq:0x6000011f45e0 count:1
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [DataSource] removeFromPermittedFront 0x0-0xa00a (<private>) in session 0x186a1 - current list is (  )
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [FocusManager:257] update to deferring policy requested for reason: permitted list updated - 0x0-0xa00a removed - but we are suppressing evaluation for reasons: {(
+    "process death - 0x0-0xa00a (ViewBridgeAuxiliary)"
+)}
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [DataSource] removeFromPermittedFront 0x1-0x40c (<private>) in session 0x186a1 - current list is (  )
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [FocusManager:257] update to deferring policy requested for reason: permitted list updated - 0x1-0x40c removed - but we are suppressing evaluation for reasons: {(
+    "process death - 0x0-0xa00a (ViewBridgeAuxiliary)"
+)}
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] <BSCompoundAssertion:0x6000004daa80> ([FocusManager:257]-deferringPolicyEvaluationSuppression) invalidate acq:0x6000011f45e0 count:1
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [FocusManager:257] finished suppressing deferring policy evaluation, time to re-evaluate
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [DeferringManager] Updating policy {
+    advicePolicy: .frontmost;
+} for reason: deferringPolicyEvaluationSuppression
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:deferringPolicyEvaluationSuppression <2> acq:0x6000011cc200 count:1
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 0[outside of RPC]: [DeferringManager] Front process is nil, removing frontmost deferring rules
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011cc200 count:1
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+    contentsMask: 0x2; deferringRules: [[1038-2]];
+}
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] new deferring rules for pid:1038: [[1038-2]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>]
+2026-10-21 15:41:24.318 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] [keyboardFocus 0x6000032d8c80] setRules:forPID(1038): [[1038-2]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>]
+2026-10-21 15:41:24.319 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [<token: <frontmost>; pid: 1038>]
+2026-10-21 15:41:24.319 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] Closing conn 0x13603, PID 1036 in session 257 on console
+2026-10-21 15:41:24.320 Df WindowServer[1038:107b] [com.apple.xpc:connection] [0x7fb0bc904fd0] invalidated because the client process (pid 433) either cancelled the connection or exited
+2026-10-21 15:41:24.320 Df WindowServer[1038:107a] [com.apple.xpc:connection] [0x7fb0bc806920] invalidated because the client process (pid 433) either cancelled the connection or exited
+2026-10-21 15:41:24.320 E  WindowServer[1038:107b] [com.apple.BoardServices:XPCErrors] [S:2] Error received: Connection invalidated.
+2026-10-21 15:41:24.320 E  WindowServer[1038:107a] [com.apple.BoardServices:XPCErrors] [S:3] Error received: Connection invalidated.
+2026-10-21 15:41:24.320 Df WindowServer[1038:107b] [com.apple.SkyLight:RemoteViewEvent] removing pending connection 0x600001fd9ef0. 1 total
+2026-10-21 15:41:24.320 Df WindowServer[1038:107a] [com.apple.BackBoard:EventDelivery] Incoming connection revoked: <BKHIDDomainIncomingServiceConnection: 0x6000004d7cc0; connection: <BSXPC(com.apple.backboard.hid-services.xpc[S:3-1r])-from(433:[C:2-1])-as(BKHIDEventDeliveryObserver):0x6000032d02d0 name=(null)>>  - notifying delegate 0x6000004d7e40
+2026-10-21 15:41:24.320 Df WindowServer[1038:107a] [com.apple.BackBoard:EventDelivery] Incoming connection revoked: <BKHIDIncomingServiceConnection: 0x6000004d7e40; connection: <BSXPC(com.apple.backboard.hid-services.xpc[S:3-1r])-from(433:[C:2-1])-as(BKHIDEventDeliveryObserver):0x6000032d02d0 name=(null)>>  - notifying delegate 0x6000011d8b20
+2026-10-21 15:41:24.331 Df WindowServer[1038:107b] [com.apple.BoardServices:XPCErrors] [S:4] Alloc <private>
+2026-10-21 15:41:24.331 Df WindowServer[1038:107b] [com.apple.xpc:connection] [0x7fb0bce0a720] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[414].0x7fb0bce0a720
+2026-10-21 15:41:24.366 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.367 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc812d30] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.367 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc812d30] invalidated after the last release of the connection object
+2026-10-21 15:41:24.372 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x11a0f, PID 1047 in session 257 on console
+2026-10-21 15:41:24.373 Df WindowServer[1038:1077] [com.apple.SkyLight:default] Conn 0x11a0f, PID 1047 set as loginwindow for session 257 on console
+2026-10-21 15:41:24.377 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x12007, PID 313 in session 257 on console
+2026-10-21 15:41:24.379 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.379 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0c990] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.379 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0c990] invalidated after the last release of the connection object
+2026-10-21 15:41:24.381 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x12603, PID 1054 in session 257 on console
+2026-10-21 15:41:24.383 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.383 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0c0004080] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.384 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0c0004080] invalidated after the last release of the connection object
+2026-10-21 15:41:24.384 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.384 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0c990] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.389 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0c990] invalidated after the last release of the connection object
+2026-10-21 15:41:24.390 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x125b3, PID 1052 in session 257 on console
+2026-10-21 15:41:24.391 E  WindowServer[1038:1077] [com.apple.SkyLight:processes] 11a0f[CreateApplication]: [checkin] loginwindow is checking in, but something else already checked in with session ID 0x186a1, so changing session to 0x186c5 attrs=0x30 and setting definitiveSessionLeaderHasCheckedIn=true, pid=1047
+2026-10-21 15:41:24.391 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[CreateApplication]: .processToBringForwardAtNextCheckin=0x0-0
+2026-10-21 15:41:24.391 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[CreateApplication]: Setting processToBringForwardAtNextCheckin 0x0-0x0 in session 0x186a1
+2026-10-21 15:41:24.391 E  WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[CreateApplication]: FAILED to set processToBringForwardAtNextCheckin 0x0-0x0 in session 0x186a1 - it isn't in the list of running applications
+2026-10-21 15:41:24.391 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0c0204590] activating connection: mach=false listener=true peer=false name=(anonymous)
+2026-10-21 15:41:24.391 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0c0204590] Connection returned listener port: 0x15513
+2026-10-21 15:41:24.391 Df WindowServer[1038:107b] [com.apple.xpc:connection] [0x7fb0bc806920] activating connection: mach=false listener=false peer=true name=com.apple.xpc.anonymous.0x7fb0c0204590.peer[137].0x7fb0bc806920
+2026-10-21 15:41:24.391 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 11a0f[CreateApplication]: Process creation: 0x0-0xc00c (loginwindow) connectionID: 11A0F pid: 1047 in session 0x101
+2026-10-21 15:41:24.395 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 12603[CreateApplication]: Process creation: 0x0-0xd00d (universalaccessd) connectionID: 12603 pid: 1054 in session 0x101
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[SetFrontProcessWithInfo]: [DataSource] Making <private> 0x0-0xc00c the front process in session 0x186c5
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[SetFrontProcessWithInfo]: [DeferringManager] Updating policy {
+    advicePolicy: .frontmost;
+    frontmostProcess: 0x0-0xc00c (loginwindow) mainConnectionID: 11A0F;
+} for reason: updated frontmost process
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost process <3> acq:0x6000011c7ca0 count:1
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 11a0f[SetFrontProcessWithInfo]: [DeferringManager] Deferring events from frontmost process PSN 0x0-0xc00c (loginwindow) -> <pid: 1047>
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011c7ca0 count:1
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+    contentsMask: 0x2; deferringRules: [[1038-3], [1038-4], [1038-5]];
+}
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] new deferring rules for pid:1038: [
+    [1038-5]; <keyboardFocus; loginwindow:0x0-0xc00c>; () -> <pid: 1047>; reason: frontmost PSN --> outbound target,
+    [1038-4]; <keyboardFocus; <frontmost>>; () -> <token: loginwindow:0x0-0xc00c; pid: 1038>; reason: frontmost PSN,
+    [1038-3]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>
+]
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] [keyboardFocus 0x6000032d8c80] setRules:forPID(1038): [
+    [1038-5]; <keyboardFocus; loginwindow:0x0-0xc00c>; () -> <pid: 1047>; reason: frontmost PSN --> outbound target,
+    [1038-4]; <keyboardFocus; <frontmost>>; () -> <token: loginwindow:0x0-0xc00c; pid: 1038>; reason: frontmost PSN,
+    [1038-3]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>
+]
+2026-10-21 15:41:24.402 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+    <token: <frontmost>; pid: 1038>,
+    <token: loginwindow:0x0-0xc00c; pid: 1038>,
+    <pid: 1047>
+]
+2026-10-21 15:41:24.431 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x15b03, PID 1055 in session 257 on console
+2026-10-21 15:41:24.432 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 15b03[CreateApplication]: Process creation: 0x0-0xe00e (ARDAgent) connectionID: 15B03 pid: 1055 in session 0x101
+2026-10-21 15:41:24.451 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.451 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0f5b0] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.452 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0f5b0] invalidated after the last release of the connection object
+2026-10-21 15:41:24.453 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x1f803, PID 1061 in session 257 on console
+2026-10-21 15:41:24.454 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 1f803[CreateApplication]: Process creation: 0x0-0xf00f (ViewBridgeAuxiliary) connectionID: 1F803 pid: 1061 in session 0x101
+2026-10-21 15:41:24.478 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x1f203, PID 1047 in session 257 on console
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load protocol MTLDeviceSPI found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load protocol MTLDevice found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLBuffer found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLResource found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLTexture found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLResource found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48RenderPipelineState protocol MTLRenderPipelineState found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48CommandQueue protocol MTLCommandQueue found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48CommandBuffer protocol MTLCommandBuffer found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLRenderCommandEncoder found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLBlitCommandEncoder found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLComputeCommandEncoder found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48ComputePipelineState protocol MTLComputePipelineState found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48SamplerState protocol MTLSamplerState found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48DepthStencilState protocol MTLDepthStencilState found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Fence protocol MTLFence found 1 added 1
+2026-10-21 15:41:24.515 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: +load N48Heap protocol MTLHeap found 1 added 1
+2026-10-21 15:41:24.516 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+2026-10-21 15:41:24.516 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x3503
+2026-10-21 15:41:24.516 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x3503
+2026-10-21 15:41:24.518 Df iconservicesagent[434:1136] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0x3503 DECLINED in iconservicesagent (pid 434): process is not WindowServer and N48M_ALLOW=1 (as root) is not set
+2026-10-21 15:41:24.523 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.523 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bce0a4b0] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.528 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bce0a4b0] invalidated after the last release of the connection object
+2026-10-21 15:41:24.530 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x1ee03, PID 1063 in session 257 on console
+2026-10-21 15:41:24.535 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 1ee03[CreateApplication]: Process creation: 0x0-0x10010 (SecurityAgent) connectionID: 1EE03 pid: 1063 in session 0x101
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load protocol MTLDeviceSPI found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load protocol MTLDevice found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLBuffer found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Buffer protocol MTLResource found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLTexture found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Texture protocol MTLResource found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48RenderPipelineState protocol MTLRenderPipelineState found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48CommandQueue protocol MTLCommandQueue found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48CommandBuffer protocol MTLCommandBuffer found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLRenderCommandEncoder found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48RenderEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLBlitCommandEncoder found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48BlitEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLComputeCommandEncoder found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48ComputeEncoder protocol MTLCommandEncoder found 1 added 0
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48ComputePipelineState protocol MTLComputePipelineState found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48SamplerState protocol MTLSamplerState found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48DepthStencilState protocol MTLDepthStencilState found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Fence protocol MTLFence found 1 added 1
+2026-10-21 15:41:24.583 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: +load N48Heap protocol MTLHeap found 1 added 1
+2026-10-21 15:41:24.584 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+2026-10-21 15:41:24.584 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb303
+2026-10-21 15:41:24.584 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb303
+2026-10-21 15:41:24.589 Df SecurityAgent[1063:113b] (Navi48Metal) Navi48Metal: initWithAcceleratorPort 0xb303 DECLINED in SecurityAgent (pid 1063): process is not WindowServer and N48M_ALLOW=1 (as root) is not set
+2026-10-21 15:41:24.649 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:24.649 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0f5b0] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:24.654 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf0f5b0] invalidated after the last release of the connection object
+2026-10-21 15:41:24.656 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x1eb8b, PID 1062 in session 257 on console
+2026-10-21 15:41:24.665 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Lifecycle] 1eb8b[CreateApplication]: Process creation: 0x0-0x11011 (SSMenuAgent) connectionID: 1EB8B pid: 1062 in session 0x101
+2026-10-21 15:41:24.767 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:552FDDA9-6F91-44D8-B7DC-A1116FFC918B pid:1064 process:com.apple.hiservices-xpcservice type:Monitor entitlements:0x2 caller:com.apple.hiservices-xpcservice: com.apple.hiservices-xpcservice + 7992 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.078 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:7C90B85A-4B8C-481F-A523-0A5CD5DB8A3E pid:1047 process:loginwindow type:Passive entitlements:0x0 caller:loginwindow: loginwindow + 44957 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.081 E  WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] [specialkey] - registerSpecialKey: process loginwindow tried to register special key processKill but currently that is handled by the foreground app directly: 143720264
+2026-10-21 15:41:25.081 Df WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] [specialkey] - loginwindow is registering special key processInterrupt
+2026-10-21 15:41:25.081 Df WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] [specialkey] - loginwindow is registering special key sessionInterrupt
+2026-10-21 15:41:25.081 Df WindowServer[1038:1077] [com.apple.SkyLight:KeyboardEvent] [specialkey] - loginwindow is registering special key forceLogout
+2026-10-21 15:41:25.092 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:9D97F2AF-093A-4E99-85AA-58CEE2E58E9B pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.093 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:9D97F2AF-093A-4E99-85AA-58CEE2E58E9B pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.093 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:25.093 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc918380] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:25.093 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:CAFDAE06-D3C8-4E14-B2C2-C557D2788DB9 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.094 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:CAFDAE06-D3C8-4E14-B2C2-C557D2788DB9 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.094 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:38269B67-E06F-4DD3-B163-DBAF2F5C87CC pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.095 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:38269B67-E06F-4DD3-B163-DBAF2F5C87CC pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.095 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:8FAD0656-CDF4-4AAF-9C2E-E300EC0F6412 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.096 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:8FAD0656-CDF4-4AAF-9C2E-E300EC0F6412 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:IOKit: IOHIDSetHIDParameterToEventSystem + 48 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.098 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:0FF6C3D0-3C3C-4FC9-A715-2470D76B4111 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:activateSettings: activateSettings + 3778 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.099 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:0FF6C3D0-3C3C-4FC9-A715-2470D76B4111 pid:1069 process:activateSettings type:Passive entitlements:0x0 caller:activateSettings: activateSettings + 3778 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.100 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc918380] invalidated after the last release of the connection object
+2026-10-21 15:41:25.103 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:29A39E16-5EA1-4D5F-AEF8-A66E541267EC pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.105 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:29A39E16-5EA1-4D5F-AEF8-A66E541267EC pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.105 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:2AB63749-F245-4CBC-9E92-37478F8A4602 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.106 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:2AB63749-F245-4CBC-9E92-37478F8A4602 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.106 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:D5778371-70B5-43A6-8693-1B15C795049F pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.107 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:D5778371-70B5-43A6-8693-1B15C795049F pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.110 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:15138598-01F3-4D11-90A8-AF25ADE75EF4 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.111 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:15138598-01F3-4D11-90A8-AF25ADE75EF4 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.112 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:5347390B-D6EA-4A13-92BA-3CC920CAC102 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.114 Df WindowServer[1038:1080] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:5347390B-D6EA-4A13-92BA-3CC920CAC102 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.114 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:B480405D-540A-4BE2-929F-164AED317F40 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.115 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:B480405D-540A-4BE2-929F-164AED317F40 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.115 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:D099CD6F-3D0C-449C-B24E-597EB51FBA96 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.116 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:D099CD6F-3D0C-449C-B24E-597EB51FBA96 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:25.192 E  WindowServer[1038:1077] [com.apple.defaults:User Defaults] Could not issue sandbox extension for plist at <private>
+2026-10-21 15:41:25.192 E  WindowServer[1038:1077] [com.apple.defaults:User Defaults] Couldn't write values for keys (
+    PhotosensitiveMitigation
+) in CFPrefsPlistSource<0x600003fc2480> (Domain: com.apple.Accessibility, User: kCFPreferencesCurrentUser, ByHost: No, Container: (null), Contents Need Refresh: Yes): Path not accessible
+2026-10-21 15:41:25.194 Df WindowServer[1038:1077] [com.apple.Accessibility:AXSupportCommon] AXS AccessibilityEnabled: (app ax: 0), ax settings: 0, cached: 0
+2026-10-21 15:41:25.195 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x17a03, PID 1054 in session 257 on console
+2026-10-21 15:41:25.650 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:25.726 Df WindowServer[1038:1077] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 1ee03[SetFrontProcessWithInfo]: [DataSource] Making <private> 0x0-0x10010 the front process in session 0x186c5
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 1ee03[SetFrontProcessWithInfo]: [DeferringManager] Updating policy {
+    advicePolicy: .frontmost;
+    frontmostProcess: 0x0-0x10010 (SecurityAgent) mainConnectionID: 1EE03;
+} for reason: updated frontmost process
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) acquire for reason:updated frontmost process <4> acq:0x6000011ec520 count:1
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.SkyLight.processes:Focus] 1ee03[SetFrontProcessWithInfo]: [DeferringManager] Deferring events from frontmost process PSN 0x0-0x10010 (SecurityAgent) -> <pid: 1063>
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] <BSCompoundAssertion:0x6000004c0740> (com.apple.backboard.hid.delivery.localDelivery.preventFlushing) invalidate acq:0x6000011ec520 count:1
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] flushing changes: {
+    contentsMask: 0x2; deferringRules: [[1038-6], [1038-7], [1038-8]];
+}
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] new deferring rules for pid:1038: [
+    [1038-8]; <keyboardFocus; SecurityAgent:0x0-0x10010>; () -> <pid: 1063>; reason: frontmost PSN --> outbound target,
+    [1038-7]; <keyboardFocus; <frontmost>>; () -> <token: SecurityAgent:0x0-0x10010; pid: 1038>; reason: frontmost PSN,
+    [1038-6]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>
+]
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] [keyboardFocus 0x6000032d8c80] setRules:forPID(1038): [
+    [1038-8]; <keyboardFocus; SecurityAgent:0x0-0x10010>; () -> <pid: 1063>; reason: frontmost PSN --> outbound target,
+    [1038-7]; <keyboardFocus; <frontmost>>; () -> <token: SecurityAgent:0x0-0x10010; pid: 1038>; reason: frontmost PSN,
+    [1038-6]; <keyboardFocus>; () -> <token: <frontmost>; pid: 1038>; reason: Deferring to <frontmost>
+]
+2026-10-21 15:41:26.950 Df WindowServer[1038:1077] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+    <token: <frontmost>; pid: 1038>,
+    <token: SecurityAgent:0x0-0x10010; pid: 1038>,
+    <pid: 1063>
+]
+2026-10-21 15:41:26.966 E  WindowServer[1038:114e] [com.apple.BaseBoard:Common] Unable to obtain a task name port right for pid 1063: (os/kern) failure (0x5)
+2026-10-21 15:41:26.966 Df WindowServer[1038:114e] [com.apple.BoardServices:XPCErrors] [S:5] Alloc <private>
+2026-10-21 15:41:26.966 Df WindowServer[1038:114e] [com.apple.xpc:connection] [0x7fb0bce0a290] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[1063].0x7fb0bce0a290
+2026-10-21 15:41:26.966 Df WindowServer[1038:107b] [com.apple.SkyLight:RemoteViewEvent] CPXRemoteViewEventServer 0x600001fd97d0: manager 0x600001fc22b0 for connection 0x6000032d7840
+2026-10-21 15:41:26.966 Df WindowServer[1038:107b] [com.apple.SkyLight:RemoteViewEvent] CPXRemoteViewEventManager 0x600001fc22b0: didReceiveConnection
+2026-10-21 15:41:27.023 Df WindowServer[1038:1088] [com.apple.BoardServices:XPCErrors] [S:6] Alloc <private>
+2026-10-21 15:41:27.023 Df WindowServer[1038:1088] [com.apple.xpc:connection] [0x7fb0bce09e90] activating connection: mach=false listener=false peer=true name=com.apple.backboard.hid-services.xpc.peer[1063].0x7fb0bce09e90
+2026-10-21 15:41:27.024 Df WindowServer[1038:1080] [com.apple.BackBoard:EventDelivery] new deferring rules for pid:1063: [[1063-2]; <keyboardFocus>; () -> <token: viewbridge-key-window; pid: 1063>; reason: …RemoteView deferKeyboardEventsToParticularWindow:forReason:]]
+2026-10-21 15:41:27.024 Df WindowServer[1038:1080] [com.apple.BackBoard:EventDelivery] [keyboardFocus 0x6000032d8c80] setRules:forPID(1063): [[1063-2]; <keyboardFocus>; () -> <token: viewbridge-key-window; pid: 1063>; reason: -[NSRemoteView deferKeyboardEventsToParticularWindow:forReason:]]
+2026-10-21 15:41:27.024 Df WindowServer[1038:1080] [com.apple.BackBoard:EventDelivery] chain did update (setDeferringRules) <keyboardFocus; display: null> containsEndOfChain: YES; [
+    <token: <frontmost>; pid: 1038>,
+    <token: SecurityAgent:0x0-0x10010; pid: 1038>,
+    <pid: 1063>,
+    <token: viewbridge-key-window; pid: 1063>
+]
+2026-10-21 15:41:27.675 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: spvcache complete and stable (attempt 1), building the real pipeline off the render thread
+2026-10-21 15:41:27.675 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: spvcache hit vertex: /private/var/tmp/n48m-spv/c0708ccd367166aa56ec79dd9c86884125b7b6b643aa791d2ec217883d3d1587.spv (1708 bytes, meta)
+2026-10-21 15:41:27.676 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: spvcache hit fragment: /private/var/tmp/n48m-spv/29164ba4e5fa2715f95e39fe96f34383e9d20695f981016ef6fb70b7056ae625.spv (8968 bytes, meta)
+2026-10-21 15:41:27.676 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: pipeline: colour attachment 0 pixel format 94 (vk 58)
+2026-10-21 15:41:27.676 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: static sampler at binding 161: min 1 mag 1 mip 0 addr 0/0/0 normalized
+2026-10-21 15:41:27.686 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: N48RenderPipelineState 0x7fb0bc01cc00: pipeline 0x7fb0bf014800 (1 colour attachment(s), set0 3 / set1 10 bindings, 0 vertex input(s), 0 vertex binding(s))
+2026-10-21 15:41:27.686 Df WindowServer[1038:107b] (Navi48Metal) Navi48Metal: HOT-SWAP ViewportToNDC / GPUPass: fallback -> real (built in 10.553 ms)
+2026-10-21 15:41:33.665 A  WindowServer[1038:1077] (TCC) TCCAccessRequest() IPC
+2026-10-21 15:41:33.665 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc918380] activating connection: mach=true listener=false peer=false name=com.apple.tccd.system
+2026-10-21 15:41:33.671 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bc918380] invalidated after the last release of the connection object
+2026-10-21 15:41:33.678 Df WindowServer[1038:1077] [com.apple.SkyLight:default] [ ConnectionDebug ] New conn 0x1c403, PID 1187 in session 257 on console
+2026-10-21 15:41:33.700 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 spvcache_read n=4 avg=0.287ms min=0.057ms max=0.514ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=1/2/1/0/0/0/0/0 [WindowServer pid 1038, 10 s window]
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 shader_module n=4 avg=0.012ms min=0.001ms max=0.031ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=4/0/0/0/0/0/0/0 [WindowServer pid 1038, 10 s window]
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 gfx_pipeline n=2 avg=9.156ms min=8.991ms max=9.321ms hist(<0.1,<0.4,<1.6,<6.4,<25.6,<102,<410,>=410ms)=0/0/0/0/2/0/0/0 [WindowServer pid 1038, 10 s window]
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T1 counts/10s [WindowServer pid 1038]: pipelines gfx=2 comp=0 imports=0 command_buffers=0 frames=0 (frame = command buffer that wrote a display surface)
+2026-10-21 15:41:33.976 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: build 16: use-count policy IN-FLIGHT ONLY (a surface is use-counted while a command buffer that touched a texture of it is in flight) (kill file /private/tmp/n48m-nousecount absent); IOSurface wrapper aliasing (P1) OFF (WindowServer: counted only)
+2026-10-21 15:41:34.421 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:DFCA16D7-6053-4DE6-A4C9-B98BFEFDD046 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.422 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:DFCA16D7-6053-4DE6-A4C9-B98BFEFDD046 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.422 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:2164432B-DA5A-4515-B3C1-A9B068E0F8A8 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.423 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:2164432B-DA5A-4515-B3C1-A9B068E0F8A8 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.423 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:BE117A43-BE5D-4C56-AAFD-8F5EF87EE7C3 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.423 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:BE117A43-BE5D-4C56-AAFD-8F5EF87EE7C3 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.425 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:447E2E98-AC6A-489E-AE2C-00AD69DA22EA pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.426 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:447E2E98-AC6A-489E-AE2C-00AD69DA22EA pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.426 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:465859AD-DAB7-4057-944A-236F804595A2 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.427 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:465859AD-DAB7-4057-944A-236F804595A2 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.427 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:FBB1F5D0-5C6D-4DC5-821B-D2AD7073DA90 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.427 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:FBB1F5D0-5C6D-4DC5-821B-D2AD7073DA90 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.428 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:7095433F-0CEC-45EB-975B-B3D47BE381A5 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.428 Df WindowServer[1038:107a] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:7095433F-0CEC-45EB-975B-B3D47BE381A5 pid:1054 process:universalaccessd type:Rate Controlled entitlements:0x0 caller:libUniversalAccess.dylib: +[UAIOHIDUtilities _setIOHIDEventSystemClientValue:forProperty:error:] + 82 attributes:(null) state:0x1 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:34.516 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:35.334 Df WindowServer[1038:11fa] [com.apple.xpc:connection] [0x7fb0bce0a720] invalidated because the client process (pid 414) either cancelled the connection or exited
+2026-10-21 15:41:35.334 E  WindowServer[1038:11fa] [com.apple.BoardServices:XPCErrors] [S:4] Error received: Connection invalidated.
+2026-10-21 15:41:35.334 Df WindowServer[1038:11fa] [com.apple.BackBoard:EventDelivery] Incoming connection revoked: <BKHIDDomainIncomingServiceConnection: 0x6000004fe040; connection: <BSXPC(com.apple.backboard.hid-services.xpc[S:4-1r])-from(414:[C:2-1])-as(BKHIDEventDeliveryManager):0x6000032f0d20 name=(null)>>  - notifying delegate 0x6000004fe080
+2026-10-21 15:41:35.334 Df WindowServer[1038:11fa] [com.apple.BackBoard:EventDelivery] Incoming connection revoked: <BKHIDIncomingServiceConnection: 0x6000004fe080; connection: <BSXPC(com.apple.backboard.hid-services.xpc[S:4-1r])-from(414:[C:2-1])-as(BKHIDEventDeliveryManager):0x6000032f0d20 name=(null)>>  - notifying delegate 0x6000011d8b20
+2026-10-21 15:41:35.334 Df WindowServer[1038:11fa] [com.apple.xpc:connection] [0x7fb0bce04080] invalidated because the client process (pid 414) either cancelled the connection or exited
+2026-10-21 15:41:35.334 E  WindowServer[1038:11fa] [com.apple.BoardServices:XPCErrors] [S:1] Error received: Connection invalidated.
+2026-10-21 15:41:35.334 Df WindowServer[1038:11fa] [com.apple.SkyLight:RemoteViewEvent] removing pending connection 0x600001fd9da0. 0 total
+2026-10-21 15:41:35.508 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:41:35.517 E  WindowServer[1038:1077] [com.apple.CoreDisplay:default] [ERROR] - set_device_transfer_callback: can't set device gamma (0xe00002c7)
+2026-10-21 15:41:37.894 Df kernel[0:1329] map_with_linking_np: [1243(navi48test)]: region 0, not code signed
+2026-10-21 15:41:42.562 Df kernel[0:13d1] map_with_linking_np: [1327(navi48test)]: region 0, not code signed
+2026-10-21 15:41:42.582 Df kernel[0:13d8] map_with_linking_np: [1330(navi48test)]: region 0, not code signed
+2026-10-21 15:41:46.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:41:53.977 Df WindowServer[1038:1189] (Navi48Metal) Navi48Metal: T2 pipeline cache: SAVED 5492 B to /private/var/tmp/n48m-pipecache.bin (periodic; 2 pipelines created so far) in 0.61 ms
+2026-10-21 15:41:57.386 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:EEB54226-4030-4159-92FB-65B1101B24A3 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.387 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:EEB54226-4030-4159-92FB-65B1101B24A3 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x3 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.387 Df WindowServer[1038:1089] (HIDAnalytics) HIDAnalytics Unregister Send event com.apple.hid.queueUsage
+2026-10-21 15:41:57.387 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:1A542089-01B7-43E1-AB6E-1F1900BBB10F pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.388 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:1A542089-01B7-43E1-AB6E-1F1900BBB10F pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x3 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.388 Df WindowServer[1038:1089] (HIDAnalytics) HIDAnalytics Unregister Send event com.apple.hid.queueUsage
+2026-10-21 15:41:57.388 Df WindowServer[1038:1089] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:B8AA94B8-E689-4C95-9E2D-D50415120221 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.388 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:B8AA94B8-E689-4C95-9E2D-D50415120221 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x3 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.388 Df WindowServer[1038:1189] (HIDAnalytics) HIDAnalytics Unregister Send event com.apple.hid.queueUsage
+2026-10-21 15:41:57.388 Df WindowServer[1038:1189] [com.apple.iohid:default] Connection added: IOHIDEventSystemConnection uuid:A2B1B992-8053-497A-8ACD-5DCBD28450E9 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.389 Df WindowServer[1038:107b] [com.apple.iohid:default] Connection removed: IOHIDEventSystemConnection uuid:A2B1B992-8053-497A-8ACD-5DCBD28450E9 pid:1052 process:UserEventAgent type:Passive entitlements:0x0 caller:IOBluetooth: IOBluetoothFindNumberOfRegistryEntriesOfClassName + 262 attributes:(null) state:0x3 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+2026-10-21 15:41:57.389 Df WindowServer[1038:107b] (HIDAnalytics) HIDAnalytics Unregister Send event com.apple.hid.queueUsage
+2026-10-21 15:41:58.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:10.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:20.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 1038]
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence submitted/completed=0/0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 drawopt: draws 0, descriptor sets reused 0 / allocated 0, pipeline binds skipped 0 / done 0, pipelineForTopology cache hits 0, render passes cached(hit) 0 / created 0 / uncached(cap) 0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:42:23.977 Df WindowServer[1038:11fa] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/miss/mismatch=0/0/0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:42:32.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:42.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:42:52.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:02.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:14.949 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 idle: no pipeline/import/command buffer in the last 60 s [WindowServer pid 1038]
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 pool ON slabs(key:n)=[] new=0 released=0 live_sub=0 recycle hit/miss=0/0 (cached 0, 0 KiB) descpool reuse/create=0/0 (free 0) deferred_waiting=0 kernel_allocs_avoided=0 fence submitted/completed=0/0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 drawopt: draws 0, descriptor sets reused 0 / allocated 0, pipeline binds skipped 0 / done 0, pipelineForTopology cache hits 0, render passes cached(hit) 0 / created 0 / uncached(cap) 0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:43:23.976 Df WindowServer[1038:11f9] (Navi48Metal) Navi48Metal: T1 impcache ON: imports created=0 reused=0 live=0 KiB (0 entries) cached_unused=0 KiB (0) evicted idle/cap/stale/flush=0/0/0/0 id_mismatch=0; baseless_textures=0; classify cache hit/miss/mismatch=0/0/0 [WindowServer pid 1038, cumulative]
+2026-10-21 15:43:24.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:27.784 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf13f10] activating connection: mach=false listener=true peer=false name=(anonymous)
+2026-10-21 15:43:27.784 Df WindowServer[1038:1077] [com.apple.xpc:connection] [0x7fb0bbf13f10] Connection returned listener port: 0x3b0f
+2026-10-21 15:43:27.784 Df WindowServer[1038:1080] [com.apple.xpc:connection] [0x7fb0bc816310] activating connection: mach=false listener=false peer=true name=com.apple.xpc.anonymous.0x7fb0bbf13f10.peer[152].0x7fb0bc816310
+2026-10-21 15:43:36.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:39.698 Df sudo[2890:2093]     test : a password is required ; PWD=/Users/test ; USER=root ; COMMAND=/usr/bin/log show --last 20m --style compact --predicate 'eventMessage CONTAINS[c] "Navi48" OR eventMessage CONTAINS[c] "n48m" OR eventMessage CONTAINS[c] "HOT-SWAP"'
+2026-10-21 15:43:43.440 Df sudo[2946:2109]     test : a password is required ; PWD=/Users/test ; USER=root ; COMMAND=/usr/bin/log show --last 20m --style compact --predicate 'eventMessage CONTAINS[c] "Navi48" OR eventMessage CONTAINS[c] "n48m" OR eventMessage CONTAINS[c] "HOT-SWAP" OR eventMessage CONTAINS[c] "FALLBACK" OR process == "WindowServer"'
+2026-10-21 15:43:46.950 Df WindowServer[1038:1077] [com.apple.SkyLight:default] pid 1054 failed to act on a ping it dequeued before timing out.
+2026-10-21 15:43:49.197 Df sudo[3025:21d3]     test : a password is required ; PWD=/Users/test ; USER=root ; COMMAND=/usr/bin/log show --last 20m --style compact --predicate 'eventMessage CONTAINS[c] "Navi48" OR eventMessage CONTAINS[c] "n48m" OR eventMessage CONTAINS[c] "HOT-SWAP" OR eventMessage CONTAINS[c] "FALLBACK" OR process == "WindowServer"'
+2026-10-21 15:43:49.391 Df log[3034:21eb] [com.apple.log:] log run noninteractively, parent: 3033 (bash), args: '/usr/bin/log' 'show' '--last' '20m' '--style' 'compact' '--predicate' 'process == "WindowServer" OR eventMessage CONTAINS[c] "Navi48" OR eventMessage CONTAINS[c] "n48m"'

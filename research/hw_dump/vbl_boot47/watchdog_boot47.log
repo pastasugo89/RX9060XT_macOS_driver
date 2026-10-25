@@ -1,0 +1,105 @@
+2026-10-21T16:45:50 gpu-safety-watchdog: READY pid=122064 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T16:45:51 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T16:46:29 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T16:46:29 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T16:49:31 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T16:49:31 gpu-safety-watchdog: exit rc=0
+2026-10-21T16:49:38 gpu-safety-watchdog: READY pid=122889 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T16:49:38 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T16:50:16 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T16:50:16 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T16:57:45 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T16:57:45 gpu-safety-watchdog: exit rc=0
+2026-10-21T17:11:21 gpu-safety-watchdog: READY pid=128585 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T17:11:21 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T17:11:57 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T17:11:57 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T17:13:15 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T17:13:15 gpu-safety-watchdog: exit rc=0
+2026-10-21T17:13:27 gpu-safety-watchdog: READY pid=129101 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T17:13:28 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T17:14:07 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T17:14:07 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T17:19:21 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T17:19:21 gpu-safety-watchdog: exit rc=0
+2026-10-21T17:20:00 gpu-safety-watchdog: READY pid=130383 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T17:20:00 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T17:28:27 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T17:28:27 gpu-safety-watchdog: exit rc=0
+2026-10-21T17:35:05 gpu-safety-watchdog: READY pid=133431 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T17:35:05 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T17:35:19 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T17:35:19 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T17:37:00 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T17:37:00 gpu-safety-watchdog: exit rc=0
+2026-10-21T17:37:08 gpu-safety-watchdog: READY pid=133803 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T17:37:08 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T17:37:48 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T17:37:48 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T18:14:54 gpu-safety-watchdog: STOP REQUEST: heartbeat-lost:10.2s
+2026-10-21T18:14:54 gpu-safety-watchdog: QMP quit sent; reply {"return": {}}
+2026-10-21T18:14:54 gpu-safety-watchdog: QEMU has exited; the GPU is released (vfio-pci reset on close)
+2026-10-21T18:14:54 gpu-safety-watchdog: event report: /home/pastasugo89/Documenti/rx9060xt_metal_driver/research/hw_dump/gpu_safety_events/20261021T181454-heartbeat-lost_10.2s
+2026-10-21T18:14:54 gpu-safety-watchdog: exit rc=2
+2026-10-21T18:19:21 gpu-safety-watchdog: READY pid=147923 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T18:19:21 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T18:19:32 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T18:19:32 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T18:20:38 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T18:20:38 gpu-safety-watchdog: exit rc=0
+2026-10-21T18:20:45 gpu-safety-watchdog: READY pid=148321 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T18:20:45 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T18:23:59 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T18:23:59 gpu-safety-watchdog: exit rc=0
+2026-10-21T18:26:47 gpu-safety-watchdog: READY pid=149244 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T18:26:48 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T18:27:25 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T18:27:25 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T18:54:46 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T18:54:46 gpu-safety-watchdog: exit rc=0
+2026-10-21T18:58:36 gpu-safety-watchdog: READY pid=156862 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T18:58:36 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T18:58:46 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T18:58:46 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T19:01:10 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T19:01:10 gpu-safety-watchdog: exit rc=0
+2026-10-21T19:03:05 gpu-safety-watchdog: READY pid=157770 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T19:03:06 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T19:03:43 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T19:03:43 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T19:19:01 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T19:19:01 gpu-safety-watchdog: exit rc=0
+2026-10-21T19:24:15 gpu-safety-watchdog: READY pid=162274 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T19:24:15 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T19:24:52 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T19:24:52 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T19:28:28 gpu-safety-watchdog: STOP REQUEST: heartbeat-lost:10.2s
+2026-10-21T19:28:28 gpu-safety-watchdog: QMP quit sent; reply {"return": {}}
+2026-10-21T19:28:28 gpu-safety-watchdog: QEMU has exited; the GPU is released (vfio-pci reset on close)
+2026-10-21T19:28:28 gpu-safety-watchdog: event report: /home/pastasugo89/Documenti/rx9060xt_metal_driver/research/hw_dump/gpu_safety_events/20261021T192828-heartbeat-lost_10.2s
+2026-10-21T19:28:28 gpu-safety-watchdog: exit rc=2
+2026-10-21T19:30:58 gpu-safety-watchdog: READY pid=163166 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T19:30:58 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T19:31:35 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T19:31:35 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T19:45:20 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-21T19:45:20 gpu-safety-watchdog: exit rc=0
+2026-10-21T19:48:06 gpu-safety-watchdog: READY pid=166476 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T19:48:07 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T19:48:43 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T19:48:43 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-21T20:48:43 gpu-safety-watchdog: STOP REQUEST: max-runtime:3600s
+2026-10-21T20:48:43 gpu-safety-watchdog: QMP quit sent; reply {"return": {}}
+2026-10-21T20:48:43 gpu-safety-watchdog: QEMU has exited; the GPU is released (vfio-pci reset on close)
+2026-10-21T20:48:43 gpu-safety-watchdog: event report: /home/pastasugo89/Documenti/rx9060xt_metal_driver/research/hw_dump/gpu_safety_events/20261021T204843-max-runtime_3600s
+2026-10-21T20:48:43 gpu-safety-watchdog: exit rc=2
+2026-10-23T15:39:36 gpu-safety-watchdog: READY pid=2972 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-23T15:39:36 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-23T15:40:13 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-23T15:40:13 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
+2026-10-23T15:46:11 gpu-safety-watchdog: QEMU is gone and the serial log is quiet: the VM ended by itself, watchdog done
+2026-10-23T15:46:11 gpu-safety-watchdog: exit rc=0
+2026-10-23T15:55:50 gpu-safety-watchdog: READY pid=6238 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-23T15:55:51 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-23T15:56:27 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-23T15:56:27 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat
