@@ -1,0 +1,19 @@
+/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/10p, 480M
+    |__ Port 001: Dev 006, If 0, Class=Mass Storage, Driver=usb-storage, 480M
+    |__ Port 005: Dev 004, If 0, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 006: Dev 005, If 0, Class=Wireless, Driver=btusb, 12M
+    |__ Port 006: Dev 005, If 1, Class=Wireless, Driver=btusb, 12M
+/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/4p, 10000M
+    |__ Port 002: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
+/:  Bus 003.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 480M
+    |__ Port 002: Dev 002, If 0, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 002: Dev 002, If 1, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 002: Dev 002, If 2, Class=Human Interface Device, Driver=usbhid, 12M
+/:  Bus 004.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 10000M
+/:  Bus 005.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 480M
+    |__ Port 001: Dev 002, If 0, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 001: Dev 002, If 1, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 001: Dev 002, If 2, Class=Human Interface Device, Driver=usbhid, 12M
+/:  Bus 006.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 10000M
+/:  Bus 007.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/1p, 480M
+    |__ Port 001: Dev 002, If 0, Class=Hub, Driver=hub/4p, 480M

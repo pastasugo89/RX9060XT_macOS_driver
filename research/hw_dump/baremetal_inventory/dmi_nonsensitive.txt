@@ -1,0 +1,10 @@
+board_name: B840 GAMING PLUS WIFI (MS-7E57)
+board_vendor: Micro-Star International Co., Ltd.
+board_version: 2.0
+bios_vendor: American Megatrends International, LLC.
+bios_version: 2.A53
+bios_date: 09/10/2025
+product_name: MS-7E57
+product_family: To be filled by O.E.M.
+sys_vendor: Micro-Star International Co., Ltd.
+chassis_type: 3

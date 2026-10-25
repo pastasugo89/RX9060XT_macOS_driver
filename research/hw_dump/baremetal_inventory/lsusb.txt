@@ -1,0 +1,14 @@
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 004: ID 0db0:0076 Micro Star International MYSTIC LIGHT
+Bus 001 Device 005: ID 0489:e10a Foxconn / Hon Hai 
+Bus 001 Device 006: ID 0781:5571 SanDisk Corp. Cruzer Fit
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 002: ID 0781:5583 SanDisk Corp. Ultra Fit
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 002: ID 19f5:3247 Nordic Semiconductor NuPhy Halo75 V2 Dongle
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 005 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 005 Device 002: ID 3554:f575 Compx 2.4G Wireless Receiver
+Bus 006 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 007 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 007 Device 002: ID 05e3:0608 Genesys Logic, Inc. Hub

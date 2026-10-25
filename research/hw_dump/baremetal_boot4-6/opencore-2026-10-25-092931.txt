@@ -1,0 +1,617 @@
+00:000 00:000 BS: Starting OpenCore application...
+00:000 00:000 BS: Booter path - \EFI\BOOT\BOOTX64.EFI
+00:000 00:000 OCFS: Trying to locate filesystem on 7EAF7E18 7AEBBC98
+00:000 00:000 OCFS: Filesystem DP - \EFI\BOOT\BOOTX64.EFI
+00:000 00:000 BS: Trying to load OpenCore image...
+00:000 00:000 BS: Relative path - EFI
+00:000 00:000 BS: Startup path - EFI\OpenCore.efi (0)
+00:000 00:000 BS: Fallback to absolute path - EFI\OC\OpenCore.efi
+00:000 00:000 BS: Read OpenCore image of 868352 bytes
+00:000 00:000 OCM: Loaded image at 80569B98 handle
+00:000 00:000 OCM: Loaded image has DeviceHandle 7EAF7E18 FilePath 7E637118 ours DevicePath 7BE1E118
+00:000 00:000 OCCPU: Failed to get FSBFrequency data using Apple Platform Info - Not Found
+00:000 00:000 OC: Starting OpenCore...
+00:000 00:000 OC: Booter path - EFI\OC\OpenCore.efi
+00:000 00:000 OCFS: Trying to locate filesystem on 7EAF7E18 7E637118
+00:000 00:000 OCFS: Filesystem DP - EFI\OC\OpenCore.efi
+00:000 00:000 OC: Absolute booter path - EFI\OC\OpenCore.efi
+00:000 00:000 OC: Storage root EFI\OC\OpenCore.efi
+00:000 00:000 OCST: Missing vault data, ignoring...
+00:000 00:000 OC: OcMiscEarlyInit...
+00:000 00:000 OC: Loaded configuration of 35049 bytes
+00:000 00:000 OC: Got 3 drivers
+00:000 00:000 OC: Watchdog status is 0
+00:039 00:039 OC: OpenCore DBG-108-2026-09-27 is loading in Optional mode (0/0)...
+00:065 00:025 OC: Boot timestamp - 2026.10.25 09:29:31
+00:091 00:025 OCCPU: MP services threads 16 (enabled 16) - Success
+00:116 00:025 OCCPU: MP services Pkg 1 Cores 8 Threads 2 - Success
+00:142 00:025 OCCPU: Found AMD Ryzen 7 7700 8-Core Processor              
+00:168 00:025 OCCPU: Signature A60F12 Stepping 2 Model 61 Family F Type 0 ExtModel 6 ExtFamily A uCode 0 CPUID MAX (10/80000028)
+00:294 00:126 OCCPU: FID 152 DID 8 Divisor 0 MaxBR 38
+00:320 00:025 OCCPU: CPUFrequencyFromTSC  3800005332Hz  3800MHz
+00:352 00:031 OCCPU: CPUFrequency  3800005332Hz  3800MHz
+00:377 00:025 OCCPU: FSBFrequency   100000140Hz   100MHz
+00:403 00:025 OCCPU: Pkg 1 Cores 8 Threads 16
+00:428 00:025 OC: OcLoadNvramSupport...
+00:454 00:025 OCVAR: Locate emulated NVRAM protocol - Not Found
+00:480 00:025 OC: Deleting NVRAM 4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14:DefaultBackgroundColor - Not Found
+00:505 00:025 OC: Deleting NVRAM 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:rtc-blacklist - Not Found
+00:531 00:025 OC: Deleting NVRAM 7C436110-AB2A-4BBB-A880-FE41995C9F82:boot-args - Not Found
+01:002 00:470 OC: Deleting NVRAM 7C436110-AB2A-4BBB-A880-FE41995C9F82:ForceDisplayRotationInEFI - Not Found
+01:029 00:026 OCVAR: Setting NVRAM 7C436110-AB2A-4BBB-A880-FE41995C9F82:boot-args - Success
+01:054 00:025 OC: Current version is DBG-108-2026-09-27
+01:080 00:026 OC: OcMiscMiddleInit...
+01:105 00:025 OC: StorageHandle 7EAF7E18 with Disabled LauncherOption pointing to Default
+01:132 00:026 OC: OcLoadUefiSupport...
+01:157 00:025 OCAU: OcAudioInstallProtocols (0, 0)
+01:183 00:025 OCAU: 4B228577-6274-4A48-82AE-0713A1171987 protocol - Not Found
+01:208 00:025 OCAU: C32332DF-FC56-4FE1-9358-BA0D529B24CD protocol - Not Found
+01:234 00:025 OCAU: F4CB0B78-243B-11E7-A524-B8E8562CBAFA protocol - Not Found
+01:260 00:025 OCAU: 3224B169-EC34-46D2-B779-E1B1687F525F protocol - Not Found
+01:286 00:025 OCAE: Builtin installed
+01:323 00:037 OCRTC: Wake log is 0x00 0x00   0 0x00
+01:350 00:026 OC: Loading Apple Secure Boot with Disabled (level 0)
+01:376 00:026 OCII: AIFTimerBoostInit Current timer is 10000
+01:401 00:025 OC: Installing KeySupport...
+01:427 00:025 OCII: gST->ConIn 840FAFB0 vs found 840FAFB0
+01:452 00:025 AIK: Using 5 (50ms)
+01:477 00:025 OCABC: ALRBL 0 RTDFRG 1 DEVMMIO 1 NOSU 0 NOVRWR 0 NOSB 0 FBSIG 0 NOHBMAP 0 SMSLIDE 1 WRUNPROT 0 CLRTS 0
+01:943 00:465 OCABC: FEXITBS 0 PRMRG 0 CSLIDE 1 MSLIDE 0 PRSRV 0 RBMAP 1 VMAP 1 APPLOS 0 RTPERMS 1 ARBAR -1 RBIO 0
+01:968 00:025 OCABC: Firmware has 8220399 free pages (495599 in lower 4 GB)
+01:993 00:025 OCABC: Awaiting rendezvous with OpenRuntime r12
+02:018 00:025 OC: RequestBootVarRouting 1
+02:045 00:026 OCDM: Found 0x2005A/0x20046 UEFI version (376 bytes, 0 rebuilding to 376) gST 9867E018 gBS 98F8DF20 gBS->CreateEventEx 98F7FF44 &gBS 79797308
+02:070 00:025 OC: AVX enabled - 1
+02:096 00:026 OC: Got 3 drivers
+02:122 00:025 OC: Driver OpenRuntime.efi at 0 () is being loaded...
+02:151 00:029 OCABC: EfiBootRt candidate - <nil>
+02:177 00:025 OCABC: IsEfiBootRt 0 (BP 1, Apple 0)
+02:202 00:025 OCPE: PeCoff has no SecDir - Invalid Parameter
+02:228 00:025 OCPE: PeCoff no cert info - Not Found
+02:254 00:025 OCB: Not Apple signed binary, fixup efi ignored
+02:292 00:038 OCB: Arch filtering 0(36864)->7AC97018(36864) caps 0 - Success
+02:319 00:027 OCABC: Got rendezvous with OpenRuntime r12
+02:345 00:025 OCABC: MAT support is 1
+02:370 00:025 OC: Driver OpenRuntime.efi at 0 is successfully loaded!
+02:405 00:034 OC: Driver OpenHfsPlus.efi at 1 (HFS+ Driver) is being loaded...
+02:882 00:477 OCABC: EfiBootRt candidate - <nil>
+02:960 00:077 OCABC: IsEfiBootRt 0 (BP 1, Apple 0)
+02:995 00:034 OCPE: PeCoff has no SecDir - Invalid Parameter
+03:029 00:033 OCPE: PeCoff no cert info - Not Found
+03:063 00:034 OCB: Not Apple signed binary, fixup efi ignored
+03:097 00:034 OCB: Arch filtering 0(53248)->7AC93018(53248) caps 0 - Success
+03:144 00:046 OC: Driver OpenHfsPlus.efi at 1 is successfully loaded!
+03:178 00:034 OC: Driver OpenHfsPlus.efi at 1 needs connection.
+03:212 00:034 OC: Driver OpenPartitionDxe.efi at 2 () is being loaded...
+03:252 00:039 OCABC: EfiBootRt candidate - <nil>
+03:286 00:034 OCABC: IsEfiBootRt 0 (BP 1, Apple 0)
+03:320 00:034 OCPE: PeCoff has no SecDir - Invalid Parameter
+03:355 00:034 OCPE: PeCoff no cert info - Not Found
+03:389 00:034 OCB: Not Apple signed binary, fixup efi ignored
+03:424 00:034 OCB: Arch filtering 0(53248)->7AC93018(53248) caps 0 - Success
+03:459 00:035 OC: Driver OpenPartitionDxe.efi at 2 is successfully loaded!
+03:494 00:034 OC: Driver OpenPartitionDxe.efi at 2 needs connection.
+03:528 00:033 OC: Connecting drivers...
+03:571 00:042  BlockSize : 512 
+04:058 00:487  LastBlock : 7FFF 
+04:095 00:037  BlockSize : 512 
+04:129 00:033  LastBlock : 18FFFFFF 
+04:227 00:097  BlockSize : 512 
+04:261 00:034  LastBlock : 1DBF2267 
+04:301 00:040  BlockSize : 512 
+04:336 00:034  LastBlock : 1DBF2267 
+04:391 00:055 OC: Connecting drivers done...
+04:425 00:034 OC: Found 3 pointer devices - Success
+04:460 00:034 OCJS: PartitionInfo is Success
+04:494 00:034 OCC: Installing GOP (Unsupported) on ConsoleOutHandle...
+04:529 00:034 OC: Requested resolution is 0x0@0 (max: 1, force: 0) from Max
+04:564 00:034 OCC: Requesting 0x0@0 (max: 1) resolution, curr 0, total 13
+04:598 00:034 OCC: Current FB at 0xF800000000 (0xE10000), format 1, res 2560x1440 scan 2560
+04:633 00:034 OCC: Mode 0 - 2560x1440:1
+04:667 00:034 OCC: Mode 1 - 800x600:1
+04:701 00:034 OCC: Mode 2 - 1024x768:1
+04:735 00:033 OCC: Mode 3 - 1280x720:1
+04:769 00:034 OCC: Mode 4 - 1280x960:1
+05:243 00:474 OCC: Mode 5 - 1280x1024:1
+05:287 00:043 OCC: Mode 6 - 1366x768:1
+05:324 00:037 OCC: Mode 7 - 1400x1050:1
+05:358 00:034 OCC: Mode 8 - 1600x1200:1
+05:392 00:034 OCC: Mode 9 - 1920x1080:1
+05:427 00:034 OCC: Mode 10 - 1920x1200:1
+05:461 00:034 OCC: Mode 11 - 1920x1440:1
+05:496 00:034 OCC: Mode 12 - 640x480:1
+05:530 00:034 OCC: Current mode matches desired mode 0
+05:564 00:034 OC: Changed resolution to 0x0@0 (max: 1, force: 0) from Max - Already started
+05:599 00:034 OC: Selected UIScale 1 based on 2560x1440 resolution
+05:634 00:035 OC: Setting UIScale to 1 - Success
+05:669 00:034 OCC: Using builtin text renderer with 1 scale
+05:703 00:034 OCC: Install console control (79784E38/98F75300/0), current - Success
+05:740 00:036 OCC: Setup ASCII Output - Success
+05:766 00:025 OC: Requested console mode is 0x0 (max: 0) from 
+05:791 00:025 OC: Requested not to use audio
+05:816 00:025 OC: OcMiscLoadSystemReport...
+06:281 00:465 OC: OcLoadAcpiSupport...
+06:306 00:024 OCA: Found ACPI RSDT table 8C665394 from RSDP 8C666014
+06:331 00:024 OCA: Found ACPI XSDT table 8C665728
+06:357 00:025 OCA: Found 26 ACPI tables
+06:394 00:037 OCA: Detected table FACP (50434146) (OEM 00002049204D2041) at 8A674000 of 276 bytes at index 0
+06:420 00:025 OCA: Detected DSDT at 8A5FA000 of 450765 bytes at index 0
+06:446 00:025 OCA: Detected table SSDT (54445353) (OEM 7265746E696C7053) at 8A676000 of 33132 bytes at index 1
+06:471 00:025 OCA: Detected table SSDT (54445353) (OEM 0054445353555043) at 8A675000 of 545 bytes at index 2
+06:497 00:025 OCA: Detected table FIDT (54444946) (OEM 00000049204D2041) at 8A66D000 of 156 bytes at index 3
+06:523 00:025 OCA: Detected table MCFG (4746434D) (OEM 00000049204D2041) at 8A66C000 of 60 bytes at index 4
+06:548 00:025 OCA: Detected table HPET (54455048) (OEM 00000049204D2041) at 8A66B000 of 56 bytes at index 5
+06:574 00:025 OCA: Detected table WDRT (54524457) (OEM 00000049204D2041) at 8A66A000 of 71 bytes at index 6
+06:600 00:025 OCA: Detected table UEFI (49464555) (OEM 00002049204D2041) at 8C020000 of 72 bytes at index 7
+06:625 00:025 OCA: Detected table FPDT (54445046) (OEM 00002049204D2041) at 8A669000 of 68 bytes at index 8
+06:651 00:025 OCA: Detected table VFCT (54434656) (OEM 00002049204D2041) at 8A5EB000 of 59012 bytes at index 9
+06:676 00:025 OCA: Detected table SSDT (54445353) (OEM 0055504320444D41) at 8A66F000 of 19950 bytes at index 10
+06:702 00:025 OCA: Detected table SSDT (54445353) (OEM 44706D6F43707041) at 8A66E000 of 65 bytes at index 11
+06:727 00:025 OCA: Detected table BGRT (54524742) (OEM 00002049204D2041) at 8A5EA000 of 56 bytes at index 12
+06:753 00:025 OCA: Detected table TPM2 (324D5054) (OEM 00002049204D2041) at 8A5E9000 of 76 bytes at index 13
+07:218 00:465 OCA: Detected table SSDT (54445353) (OEM 0043524C574D5043) at 8A5E8000 of 1748 bytes at index 14
+07:243 00:025 OCA: Detected table SSDT (54445353) (OEM 32474446444D5043) at 8A5E7000 of 2234 bytes at index 15
+07:268 00:025 OCA: Detected table SSDT (54445353) (OEM 35474946444D5043) at 8A5E6000 of 1928 bytes at index 16
+07:294 00:025 OCA: Detected table SSDT (54445353) (OEM 00004E4D434D5043) at 8A5DC000 of 39582 bytes at index 17
+07:319 00:025 OCA: Detected table SSDT (54445353) (OEM 2020202020444F41) at 8A5D9000 of 10178 bytes at index 18
+07:357 00:037 OCA: Detected table WSMT (544D5357) (OEM 00002049204D2041) at 8A5D8000 of 40 bytes at index 19
+07:383 00:026 OCA: Detected table APIC (43495041) (OEM 00002049204D2041) at 8A5D7000 of 350 bytes at index 20
+07:409 00:025 OCA: Detected table IVRS (53525649) (OEM 656C626154646D41) at 8A5D6000 of 200 bytes at index 21
+07:434 00:025 OCA: Detected table SSDT (54445353) (OEM 304C4F4F544D454D) at 8A5D5000 of 1280 bytes at index 22
+07:460 00:025 OCA: Detected table SSDT (54445353) (OEM 43534F534D4D5043) at 8A5D4000 of 2512 bytes at index 23
+07:486 00:025 OCA: Detected table SSDT (54445353) (OEM 0000564F57444D41) at 8A5D3000 of 1148 bytes at index 24
+07:511 00:025 OCA: Detected table SSDT (54445353) (OEM 34565043414D5043) at 8A5D1000 of 4166 bytes at index 25
+07:537 00:025 OCA: FACS signature is 0 (0)
+07:563 00:025 OC: Applying 20 byte ACPI patch (MSI B840 DSDT: rende incondizionato If((G002!=3)&amp;&amp;(G000==2)) -&gt; crea GPP7.XH00/EP01/UP02 (chipset) come Linux; metodo etorix AM5 CPVS) at 0, skip 0, count 1
+07:588 00:025 OCA: Patching DSDT of 450765 bytes with 0000000000000000 ID replaced 1 of 1
+07:614 00:025 OCA: Refreshed DSDT checksum to 87
+07:639 00:025 OC: Applying 19 byte ACPI patch (MSI B840 DSDT: rende incondizionato If((G002!=3)&amp;&amp;(G000!=0)) a livello modulo (metodi GPP7)) at 1, skip 0, count 1
+07:664 00:025 OCA: Patching DSDT of 450765 bytes with 0000000000000000 ID replaced 1 of 1
+07:690 00:025 OCA: Refreshed DSDT checksum to BF
+08:626 00:935 OCA: Allocated new table SSDT at 8C019000
+08:652 00:025 OCA: Inserted table SSDT (54445353) (OEM 0000434574647353) of 7341 bytes into ACPI at index 26
+08:677 00:025 OCA: Exposing XSDT table table FACP (50434146) (OEM 00002049204D2041) at 8A674000 of 276 bytes at index 0
+08:702 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 7265746E696C7053) at 8A676000 of 33132 bytes at index 1
+08:728 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 0054445353555043) at 8A675000 of 545 bytes at index 2
+08:753 00:025 OCA: Exposing XSDT table table FIDT (54444946) (OEM 00000049204D2041) at 8A66D000 of 156 bytes at index 3
+08:779 00:025 OCA: Exposing XSDT table table MCFG (4746434D) (OEM 00000049204D2041) at 8A66C000 of 60 bytes at index 4
+08:805 00:025 OCA: Exposing XSDT table table HPET (54455048) (OEM 00000049204D2041) at 8A66B000 of 56 bytes at index 5
+08:831 00:025 OCA: Exposing XSDT table table WDRT (54524457) (OEM 00000049204D2041) at 8A66A000 of 71 bytes at index 6
+08:856 00:025 OCA: Exposing XSDT table table UEFI (49464555) (OEM 00002049204D2041) at 8C020000 of 72 bytes at index 7
+08:882 00:025 OCA: Exposing XSDT table table FPDT (54445046) (OEM 00002049204D2041) at 8A669000 of 68 bytes at index 8
+08:908 00:025 OCA: Exposing XSDT table table VFCT (54434656) (OEM 00002049204D2041) at 8A5EB000 of 59012 bytes at index 9
+08:933 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 0055504320444D41) at 8A66F000 of 19950 bytes at index 10
+08:959 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 44706D6F43707041) at 8A66E000 of 65 bytes at index 11
+08:984 00:025 OCA: Exposing XSDT table table BGRT (54524742) (OEM 00002049204D2041) at 8A5EA000 of 56 bytes at index 12
+09:010 00:025 OCA: Exposing XSDT table table TPM2 (324D5054) (OEM 00002049204D2041) at 8A5E9000 of 76 bytes at index 13
+09:035 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 0043524C574D5043) at 8A5E8000 of 1748 bytes at index 14
+09:061 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 32474446444D5043) at 8A5E7000 of 2234 bytes at index 15
+09:527 00:465 OCA: Exposing XSDT table table SSDT (54445353) (OEM 35474946444D5043) at 8A5E6000 of 1928 bytes at index 16
+09:552 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 00004E4D434D5043) at 8A5DC000 of 39582 bytes at index 17
+09:577 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 2020202020444F41) at 8A5D9000 of 10178 bytes at index 18
+09:614 00:037 OCA: Exposing XSDT table table WSMT (544D5357) (OEM 00002049204D2041) at 8A5D8000 of 40 bytes at index 19
+09:640 00:026 OCA: Exposing XSDT table table APIC (43495041) (OEM 00002049204D2041) at 8A5D7000 of 350 bytes at index 20
+09:666 00:025 OCA: Exposing XSDT table table IVRS (53525649) (OEM 656C626154646D41) at 8A5D6000 of 200 bytes at index 21
+09:692 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 304C4F4F544D454D) at 8A5D5000 of 1280 bytes at index 22
+09:717 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 43534F534D4D5043) at 8A5D4000 of 2512 bytes at index 23
+09:743 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 0000564F57444D41) at 8A5D3000 of 1148 bytes at index 24
+09:768 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 34565043414D5043) at 8A5D1000 of 4166 bytes at index 25
+09:794 00:025 OCA: Exposing XSDT table table SSDT (54445353) (OEM 0000434574647353) at 8C019000 of 7341 bytes at index 26
+09:820 00:025 OCA: Exposing RSDT table table FACP (50434146) (OEM 00002049204D2041) at 8A674000 of 276 bytes at index 0
+09:846 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 7265746E696C7053) at 8A676000 of 33132 bytes at index 1
+09:871 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 0054445353555043) at 8A675000 of 545 bytes at index 2
+09:897 00:025 OCA: Exposing RSDT table table FIDT (54444946) (OEM 00000049204D2041) at 8A66D000 of 156 bytes at index 3
+09:922 00:025 OCA: Exposing RSDT table table MCFG (4746434D) (OEM 00000049204D2041) at 8A66C000 of 60 bytes at index 4
+09:948 00:025 OCA: Exposing RSDT table table HPET (54455048) (OEM 00000049204D2041) at 8A66B000 of 56 bytes at index 5
+09:973 00:025 OCA: Exposing RSDT table table WDRT (54524457) (OEM 00000049204D2041) at 8A66A000 of 71 bytes at index 6
+09:999 00:025 OCA: Exposing RSDT table table UEFI (49464555) (OEM 00002049204D2041) at 8C020000 of 72 bytes at index 7
+10:464 00:465 OCA: Exposing RSDT table table FPDT (54445046) (OEM 00002049204D2041) at 8A669000 of 68 bytes at index 8
+10:489 00:025 OCA: Exposing RSDT table table VFCT (54434656) (OEM 00002049204D2041) at 8A5EB000 of 59012 bytes at index 9
+10:515 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 0055504320444D41) at 8A66F000 of 19950 bytes at index 10
+10:540 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 44706D6F43707041) at 8A66E000 of 65 bytes at index 11
+10:578 00:038 OCA: Exposing RSDT table table BGRT (54524742) (OEM 00002049204D2041) at 8A5EA000 of 56 bytes at index 12
+10:604 00:026 OCA: Exposing RSDT table table TPM2 (324D5054) (OEM 00002049204D2041) at 8A5E9000 of 76 bytes at index 13
+10:630 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 0043524C574D5043) at 8A5E8000 of 1748 bytes at index 14
+10:656 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 32474446444D5043) at 8A5E7000 of 2234 bytes at index 15
+10:681 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 35474946444D5043) at 8A5E6000 of 1928 bytes at index 16
+10:707 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 00004E4D434D5043) at 8A5DC000 of 39582 bytes at index 17
+10:733 00:025 OCA: Exposing RSDT table table SSDT (54445353) (OEM 2020202020444F41) at 8A5D9000 of 10178 bytes at index 18
+10:767 00:033 OCA: Exposing RSDT table table WSMT (544D5357) (OEM 00002049204D2041) at 8A5D8000 of 40 bytes at index 19
+10:801 00:033 OCA: Exposing RSDT table table APIC (43495041) (OEM 00002049204D2041) at 8A5D7000 of 350 bytes at index 20
+10:834 00:033 OCA: Exposing RSDT table table IVRS (53525649) (OEM 656C626154646D41) at 8A5D6000 of 200 bytes at index 21
+10:868 00:033 OCA: Exposing RSDT table table SSDT (54445353) (OEM 304C4F4F544D454D) at 8A5D5000 of 1280 bytes at index 22
+10:901 00:033 OCA: Exposing RSDT table table SSDT (54445353) (OEM 43534F534D4D5043) at 8A5D4000 of 2512 bytes at index 23
+10:935 00:033 OCA: Exposing RSDT table table SSDT (54445353) (OEM 0000564F57444D41) at 8A5D3000 of 1148 bytes at index 24
+10:968 00:033 OCA: Exposing RSDT table table SSDT (54445353) (OEM 34565043414D5043) at 8A5D1000 of 4166 bytes at index 25
+11:002 00:033 OCA: Exposing RSDT table table SSDT (54445353) (OEM 0000434574647353) at 8C019000 of 7341 bytes at index 26
+11:475 00:473 OC: OcLoadPlatformSupport...
+11:508 00:032 OCSMB: Found DMI Anchor 93CDB000 v3.7 Table Address 93CD8000 Length 095C
+11:541 00:033 OCSMB: Found DMI Anchor 93CDA000 v3.7 Table Address 93CD8000 Length 095C
+11:575 00:033 OCSMB: Current SMBIOS MS-7E57 (B840 GAMING PLUS WIFI (MS-7E57) made by Micro-Star International Co., Ltd.)
+11:608 00:033 OC: PlatformInfo auto 1 OEM SN 0 OEM UUID 0 OEM MLB 0 OEM ROM 0 - Success
+11:654 00:046 OC: New SMBIOS: Acidanthera model MacPro7,1
+11:689 00:034 OCSMB: Post-override BIOS vendor Acidanthera 0
+11:722 00:033 OCSMB: Number of CPU cache entries is 3
+11:756 00:033 OCSMB: Number of CPU cache entries is 3
+11:790 00:033 OCSMB: Number of CPU cache entries is 3
+11:823 00:033 OCSMB: CPU1 display frequency is 3800MHz
+11:857 00:033 OCSMB: Applying 1740 (1) prev 93CDB000 (2396/31), 93CDA000 (2396/24)
+11:891 00:033 OCSMB: Patched 8A55D000 v3.2 Table Address 8A55E000 Length 06CC 1A 83
+11:925 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:name (9) - Success
+11:958 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:Model (20) - Success
+11:992 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:SystemSerialNumber (26) - Success
+12:025 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:system-id (16) - Success
+12:058 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:board-id (21) - Success
+12:532 00:473 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:board-rev (1) - Success
+12:565 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:StartupPowerEvents (8) - Success
+12:598 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:InitialTSC (8) - Success
+12:632 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:FSBFrequency (8) - Success
+12:665 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:DevicePathsSupported (4) - Success
+12:699 00:033 OCDH: Setting DataHub 64517CC8-6561-4051-B03C-5964B60F4C7A:RPlt (8) - Success
+12:733 00:034 OC: Setting HW_BID Mac-27AD2F918AE68F61 - Success
+12:780 00:046 OC: Setting HW_ROM <REDACTED> - Success
+12:815 00:035 OC: Setting ROM <REDACTED> - Success
+12:849 00:034 OC: Setting HW_MLB <REDACTED> - Success
+12:884 00:034 OC: Setting MLB <REDACTED> - Success
+12:918 00:034 OC: Setting HW_SSN <REDACTED> - Success
+12:953 00:034 OC: Setting SSN <REDACTED> - Success
+12:987 00:034 OC: Setting system-id 81FA82F5-5F6C-A646-9A7E-2812BBF213AE - Success
+13:021 00:034 OC: Setting FirmwareFeatures FDAFF066 - Success
+13:056 00:034 OC: Setting ExtendedFirmwareFeatures 00000008FDAFF066 - Success
+13:090 00:034 OC: Setting FirmwareFeaturesMask FFFFFF7F - Success
+13:124 00:033 OC: Setting ExtendedFirmwareFeaturesMask 00000008FFFFFF7F - Success
+13:157 00:033 OC: OcLoadDevPropsSupport...
+13:630 00:473 OC: OcMiscLateInit...
+13:663 00:032 OC: Translated HibernateMode None to 0
+13:696 00:033 OC: Hibernation activation - Invalid Parameter, hibernation wake - no
+13:730 00:033 OC: Panic log does not exist
+13:763 00:033 OC: OcLoadKernelSupport...
+13:796 00:033 OC: All green, starting boot management...
+13:830 00:033 OC: Ready for takeoff in 0 us
+13:864 00:033 OCB: Adding fs 7EAF7E18 (E:1|L:1|P:Success) - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)
+13:910 00:046 OCB: Adding fs 805ADF98 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(1,GPT,FBF94877-4662-493E-8C92-BCD10BDCE76C,0x800,0x32000)
+13:945 00:034 OCB: Adding fs 805AC898 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(3,GPT,B2561891-3F13-4FA7-90FE-0D5ED6CA2C62,0x3A800,0x5B046BD1)
+13:979 00:033 OCB: Adding fs 805AC498 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(4,GPT,DBA4E46D-4FAA-43CF-BB70-5FAA20407517,0x74081800,0x19B800)
+14:013 00:033 OCB: Adding fs 805ABB98 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(5,GPT,36F69DD4-ED25-4EB4-A247-9EFC7A272F4A,0x7421D000,0x200000)
+14:046 00:033 OCB: Adding fs 805AB918 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(6,GPT,49BDB186-3AF2-4739-94A8-B26CC147727D,0x74593000,0x173000)
+14:080 00:033 OCB: Adding fs 7B406618 (E:0|L:0|P:Success) - PciRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)/NVMe(0x1,2E-A7-02-11-D8-38-25-00)/HD(1,GPT,CA42FCAB-D077-43EE-B98D-F1BAFC0F6F90,0x1000,0x100000)
+14:114 00:033 OCB: Found 7 potentially bootable filesystems
+14:148 00:033 OCB: BootOrder/BootNext are not present or unsupported 0 0
+14:181 00:033 OCB: Adding fs 2007C5F5 for 1 custom entries and BEP (aux shown)
+14:214 00:033 OCB: Processing blessed list
+14:250 00:035 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)
+14:751 00:500 OCBP: Blessed file is missing
+14:784 00:033 OCBP: Blessed folder is missing
+14:817 00:032 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+14:851 00:033 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+14:884 00:033 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI was found
+14:918 00:033 OCB: Adding entry type (T:1|F:0|G:1) - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)/\EFI\BOOT\BOOTX64.EFI
+14:952 00:033 OCB: Get visibility for boot entry <null string> - Not Found
+14:985 00:033 OCB: Trying to detect Microsoft BCD
+15:019 00:033 OCB: Registering entry OCBOOT [Auto] (T:1|F:0|G:1|E:1|B:0) - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)/\EFI\BOOT\BOOTX64.EFI
+15:053 00:034 OCBP: APFS recovery volume handle missing - \EFI\BOOT\
+15:086 00:033 OCB: APFS recovery is not present - Not Found
+15:120 00:033 OCB: Got recovery dp PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)/\com.apple.recovery.boot\
+15:154 00:034 OCB: Adding entry type (T:4|F:1|G:0) - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)/\com.apple.recovery.boot\
+15:188 00:034 OCB: Get visibility for boot entry <null string> - Not Found
+15:221 00:033 OCB: Registering entry OCBOOT [AppleRecv:Apple] (T:4|F:1|G:0|E:1|B:0) - PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)/USB(0x0,0x0)/USB(0x0,0x0)/HD(1,GPT,0F6BA2EF-6AC4-49AB-9794-1EF4319F0B80,0x800,0x1CA3000)/\com.apple.recovery.boot\
+15:261 00:040 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(1,GPT,FBF94877-4662-493E-8C92-BCD10BDCE76C,0x800,0x32000)
+15:296 00:034 OCBP: Blessed file is missing
+15:329 00:033 OCBP: Blessed folder is missing
+15:804 00:474 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+15:854 00:050 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi was found
+15:888 00:034 OCB: Adding entry type (T:32|F:0|G:0) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(1,GPT,FBF94877-4662-493E-8C92-BCD10BDCE76C,0x800,0x32000)/\EFI\Microsoft\Boot\bootmgfw.efi
+15:926 00:038 OCB: Get visibility for boot entry <null string> - Not Found
+15:964 00:037 OCB: Registering entry Windows [Windows] (T:32|F:0|G:0|E:0|B:0) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(1,GPT,FBF94877-4662-493E-8C92-BCD10BDCE76C,0x800,0x32000)/\EFI\Microsoft\Boot\bootmgfw.efi
+15:998 00:034 OCBP: APFS recovery volume handle missing - \EFI\Microsoft\Boot\
+16:032 00:033 OCB: APFS recovery is not present - Not Found
+16:067 00:035 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(3,GPT,B2561891-3F13-4FA7-90FE-0D5ED6CA2C62,0x3A800,0x5B046BD1)
+16:102 00:034 OCBP: Blessed file is missing
+16:136 00:033 OCBP: Blessed folder is missing
+16:170 00:033 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+16:203 00:033 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+16:238 00:034 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI is missing - Not Found
+16:272 00:034 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(4,GPT,DBA4E46D-4FAA-43CF-BB70-5FAA20407517,0x74081800,0x19B800)
+16:306 00:034 OCBP: Blessed file is missing
+16:339 00:033 OCBP: Blessed folder is missing
+16:373 00:033 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+16:407 00:033 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+16:441 00:033 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI is missing - Not Found
+16:914 00:473 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(5,GPT,36F69DD4-ED25-4EB4-A247-9EFC7A272F4A,0x7421D000,0x200000)
+16:949 00:034 OCBP: Blessed file is missing
+16:994 00:045 OCBP: Blessed folder is missing
+17:029 00:035 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+17:063 00:034 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+17:099 00:035 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI was found
+17:133 00:034 OCB: Adding entry type (T:1|F:0|G:1) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(5,GPT,36F69DD4-ED25-4EB4-A247-9EFC7A272F4A,0x7421D000,0x200000)/\EFI\BOOT\BOOTX64.EFI
+17:171 00:037 OCB: Get visibility for boot entry <null string> - Not Found
+17:208 00:037 OCB: Trying to detect Microsoft BCD
+17:246 00:037 OCB: Registering entry CachyBoot [Auto] (T:1|F:0|G:1|E:0|B:0) - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(5,GPT,36F69DD4-ED25-4EB4-A247-9EFC7A272F4A,0x7421D000,0x200000)/\EFI\BOOT\BOOTX64.EFI
+17:280 00:034 OCBP: APFS recovery volume handle missing - \EFI\BOOT\
+17:314 00:034 OCB: APFS recovery is not present - Not Found
+17:350 00:035 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)/NVMe(0x1,81-00-00-40-03-5B-F2-CA)/HD(6,GPT,49BDB186-3AF2-4739-94A8-B26CC147727D,0x74593000,0x173000)
+17:384 00:034 OCBP: Blessed file is missing
+17:418 00:033 OCBP: Blessed folder is missing
+17:452 00:033 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+17:486 00:033 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+17:519 00:033 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI is missing - Not Found
+17:554 00:034 OCB: Adding bless entry on disk - PciRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)/NVMe(0x1,2E-A7-02-11-D8-38-25-00)/HD(1,GPT,CA42FCAB-D077-43EE-B98D-F1BAFC0F6F90,0x1000,0x100000)
+18:028 00:474 OCBP: Blessed file is missing
+18:061 00:033 OCBP: Blessed folder is missing
+18:095 00:034 OCBP: Predefined <nil> \System\Library\CoreServices\boot.efi is missing - Not Found
+18:142 00:046 OCBP: Predefined <nil> \EFI\Microsoft\Boot\bootmgfw.efi is missing - Not Found
+18:177 00:034 OCBP: Predefined <nil> \EFI\BOOT\BOOTX64.EFI was found
+18:210 00:033 OCB: Adding entry type (T:1|F:0|G:1) - PciRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)/NVMe(0x1,2E-A7-02-11-D8-38-25-00)/HD(1,GPT,CA42FCAB-D077-43EE-B98D-F1BAFC0F6F90,0x1000,0x100000)/\EFI\BOOT\BOOTX64.EFI
+18:245 00:034 OCB: Get visibility for boot entry <null string> - Not Found
+18:280 00:034 OCB: Trying to detect Microsoft BCD
+18:314 00:034 OCB: Registering entry NO NAME [Auto] (T:1|F:0|G:1|E:0|B:0) - PciRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)/NVMe(0x1,2E-A7-02-11-D8-38-25-00)/HD(1,GPT,CA42FCAB-D077-43EE-B98D-F1BAFC0F6F90,0x1000,0x100000)/\EFI\BOOT\BOOTX64.EFI
+18:349 00:034 OCBP: APFS recovery volume handle missing - \EFI\BOOT\
+18:383 00:034 OCB: APFS recovery is not present - Not Found
+18:417 00:034 OCB: Adding custom entry UEFI Shell (tool|B:0) -> OpenShell.efi
+18:452 00:034 OCB: Registering entry UEFI Shell [OpenShell:UEFIShell:Shell] (T:128|F:0|G:0|E:0|B:0) - <nil>
+18:486 00:034 OCB: Showing menu... 
+18:520 00:034 OCHK: InitHotKeys
+18:554 00:033 OCKM: Allocated key repeat context 7ADCE518 7AE17298 7AEB0D98
+18:587 00:033 OCAE: Set screen resolution to 2560x1440 - Success
+18:621 00:033 OCTY: Registered handler
+22:030 03:409 OCHK: FreeHotKeys
+22:055 00:024 OCTY: Unregistered handler
+22:080 00:024 OCKM: Freeing key repeat context 7ADCE518 7AE17298 7AEB0D98
+22:105 00:025 OCB: Should boot from 2. OCBOOT (T:4|F:1|G:0|E:1|DEF:0)
+22:131 00:025 OCB: Saved mode 0/0/0 - Success
+22:186 00:055 OCRAM: Extent allocation of 1464762142 bytes (A) gave 100000000
+79:488 57:302 OCRAM: SHA-256 Digest is: BBFCBF7BFD09C79465FA92C741EBB665625794C31578B81248F7FA0C2BCD4789
+79:517 00:029 OCB: Found chunklist BaseSystem.chunklist for DMG BaseSystem.dmg[10]
+85:248 05:731 OCDI: Built DMG DP: VenHw(957932CC-7E8E-433B-8F41-D391EA3C10F8,00000000)/MemoryMapped(0xA,0x100000000,0x100001000)/DMG_00000000574E7F1E.dmg/VenMsg(004B07E8-0B9C-427E-B0D4-A466E6E57A62,1E7F4E5700000000)
+85:274 00:026  BlockSize : 512 
+85:300 00:025  LastBlock : 2C5042 
+85:326 00:025  Valid efi partition table header
+85:351 00:025  Valid efi partition table header
+85:377 00:025  Valid primary and Valid backup partition table
+85:402 00:025  Partition entries read block success
+85:428 00:025  Number of partition entries: 128
+85:453 00:025  start check partition entries
+85:478 00:025  End check partition entries
+85:504 00:025  Index : 0
+85:969 00:465  Start LBA : 22
+85:994 00:024  End LBA : 2C5021
+86:019 00:024  Partition size: 2C5000
+86:044 00:025  Start : 440086:069 00:025  End : 58A04200
+86:094 00:025 Prepare to Free Pool
+86:132 00:037  BlockSize : 512 
+86:159 00:026  LastBlock : 2C4FFF 
+86:184 00:025 OCJS: Matched device path
+86:210 00:025 OCJS: Matched device path
+86:235 00:025 OCJS: Got APFS super block for D98C42BC-64AA-FD40-8526-09ABE6B1D748
+86:261 00:025 OCJS: Block (P:1|F:0) read req FA8 -> 7D40 of 1000 (mask 0, mul 8) - Success
+86:290 00:028 OCJS: APFS driver 2811160007000004/20260731 found for D98C42BC-64AA-FD40-8526-09ABE6B1D748, required >= 1600000000000000/20210101, allow
+86:315 00:025 OCJS: Connecting normally APFS driver on handle 7AAD6F98
+86:341 00:025  BlockSize : 512 
+86:366 00:025  LastBlock : 2C4FFF 
+86:391 00:025 AAPL: APFSStart:1507: Mounting with apfs_efi_osx-2811.160.7.0.4
+86:416 00:025 AAPL: efi_init_container:663: Container bc428cd9-aa64-40fd-8526-09abe6b1d748
+86:442 00:025 AAPL: efi_container_create:902: LoadedImage->DeviceHandle = 0x0
+86:933 00:490 AAPL: efi_container_create:964: Volume attached is external
+86:959 00:025 AAPL: nx_dev_init:767: warning: superblock indicates jumpstart record but this driver was not loaded from that partition
+86:984 00:025 AAPL: nx_mount:1230:  initializing cache w/hash_size 256 and cache size 4096
+87:010 00:025 AAPL: nx_mount:1548: checkpoint search: largest xid 103, best xid 103 @ 5
+87:035 00:025 AAPL: nx_mount:1575: stable checkpoint indices: desc 4 data 9
+87:061 00:025 AAPL: er_state_obj_get_for_recovery:8430: No ER state object for volume Preboot - rolling is not happening, nothing to recover.
+87:086 00:025 AAPL: er_state_obj_get_for_recovery:8430: No ER state object for volume macOS Base System - rolling is not happening, nothing to recover.
+87:112 00:025 OCBP: APFS Volume Info - 7A973498 (131072, D23E2524-4A32-45F1-A63B-FB8C449427A3, 16)
+87:138 00:025 OCBP: APFS Container Info - 7A966798 (1, BC428CD9-AA64-40FD-8526-09ABE6B1D748)
+87:163 00:025 OCBP: BlessedFileHEX (1/6 366) - 01 04 18 00 CC 32 79 95 8E 7E 3B 43 8F 41 D3 91 EA 3C 10 F8 00 00 00 00 01 03 18 00 0A 00 00 00 00 00 00 00 01 00 00 00 00 10 00 00 01 00 00 00 04 04 36 00 44 00 4D 00 47 00 5F 00 30 00 30 00
+87:189 00:025 OCBP: BlessedFileHEX (2/6 366) - 30 00 30 00 30 00 30 00 30 00 30 00 35 00 37 00 34 00 45 00 37 00 46 00 31 00 45 00 2E 00 64 00 6D 00 67 00 00 00 03 0A 1C 00 E8 07 4B 00 9C 0B 7E 42 B0 D4 A4 66 E6 E5 7A 62 1E 7F 4E 57 00 00
+87:215 00:025 OCBP: BlessedFileHEX (3/6 366) - 00 00 04 01 2A 00 01 00 00 00 22 00 00 00 00 00 00 00 00 50 2C 00 00 00 00 00 25 2F 69 50 94 F6 80 42 9C 54 05 D5 E5 A4 42 9B 02 02 04 03 24 00 F7 FC 74 BE 7C 0B F3 49 91 47 01 F4 04 2E 68 42
+87:241 00:026 OCBP: BlessedFileHEX (4/6 366) - 24 25 3E D2 32 4A F1 45 A6 3B FB 8C 44 94 27 A3 04 04 9A 00 5C 00 33 00 43 00 39 00 36 00 34 00 36 00 31 00 39 00 2D 00 36 00 35 00 39 00 30 00 2D 00 34 00 44 00 44 00 32 00 2D 00 42 00 33 00
+87:267 00:026 OCBP: BlessedFileHEX (5/6 366) - 35 00 36 00 2D 00 32 00 39 00 31 00 44 00 45 00 31 00 39 00 35 00 39 00 37 00 31 00 42 00 5C 00 53 00 79 00 73 00 74 00 65 00 6D 00 5C 00 4C 00 69 00 62 00 72 00 61 00 72 00 79 00 5C 00 43 00
+87:293 00:025 OCBP: BlessedFileHEX (6/6 366) - 6F 00 72 00 65 00 53 00 65 00 72 00 76 00 69 00 63 00 65 00 73 00 5C 00 62 00 6F 00 6F 00 74 00 2E 00 65 00 66 00 69 00 00 00 7F FF 04 00
+87:319 00:025 OCBP: BlessedFileDP - VenHw(957932CC-7E8E-433B-8F41-D391EA3C10F8,00000000)/MemoryMapped(0xA,0x100000000,0x100001000)/DMG_00000000574E7F1E.dmg/VenMsg(004B07E8-0B9C-427E-B0D4-A466E6E57A62,1E7F4E5700000000)/HD(1,GPT,50692F25-F694-4280-9C54-05D5E5A4429B,0x22,0x2C5000)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,24253ED2324AF145A63BFB8C449427A3)/\3C964619-6590-4DD2-B356-291DE195971B\System\Library\CoreServices\boot.efi
+87:345 00:026 OCBP: Blessed file is valid
+87:370 00:025 OCBP: 9 filesystems for APFS - Success
+87:846 00:476 OCBP: APFS Volume Info - 7A965398 (131072, D23E2524-4A32-45F1-A63B-FB8C449427A3, 16)
+87:887 00:040 OCBP: APFS Container Info - 7A966618 (1, BC428CD9-AA64-40FD-8526-09ABE6B1D748)
+87:913 00:025 OCBP: APFS match container BC428CD9-AA64-40FD-8526-09ABE6B1D748 vs BC428CD9-AA64-40FD-8526-09ABE6B1D748 for 8 of 9 - 1
+87:938 00:025 OCBP: Missing partition D23E2524-4A32-45F1-A63B-FB8C449427A3 on preboot - Not Found
+87:963 00:025 OCBP: No APFS booter 8 of 9 for D23E2524-4A32-45F1-A63B-FB8C449427A3 - Not Found
+87:989 00:025 OCBP: APFS Volume Info - 7A966718 (131072, 3C964619-6590-4DD2-B356-291DE195971B, 1)
+88:014 00:025 OCBP: APFS Container Info - 7A966918 (1, BC428CD9-AA64-40FD-8526-09ABE6B1D748)
+88:040 00:025 OCBP: APFS match container BC428CD9-AA64-40FD-8526-09ABE6B1D748 vs BC428CD9-AA64-40FD-8526-09ABE6B1D748 for 9 of 9 - 1
+88:066 00:025 OCBP: Found partition 3C964619-6590-4DD2-B356-291DE195971B on preboot
+88:091 00:025 OCBP: Want predefined list for APFS 16 at 3C964619-6590-4DD2-B356-291DE195971B
+88:117 00:025 OCBP: Predefined 3C964619-6590-4DD2-B356-291DE195971B \System\Library\CoreServices\boot.efi was found
+88:143 00:025 OCBP: Found APFS booter 9 of 9 for 3C964619-6590-4DD2-B356-291DE195971B (98F755B0)
+88:169 00:025 OCBP: APFS bless for BC428CD9-AA64-40FD-8526-09ABE6B1D748:<null string> is Success
+88:194 00:025 OCSB: Disabling secure boot for Apple images
+88:220 00:025 OCB: Perform boot OCBOOT to dp VenHw(957932CC-7E8E-433B-8F41-D391EA3C10F8,00000000)/MemoryMapped(0xA,0x100000000,0x100001000)/DMG_00000000574E7F1E.dmg/VenMsg(004B07E8-0B9C-427E-B0D4-A466E6E57A62,1E7F4E5700000000)/HD(1,GPT,50692F25-F694-4280-9C54-05D5E5A4429B,0x22,0x2C5000)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,24253ED2324AF145A63BFB8C449427A3)/\3C964619-6590-4DD2-B356-291DE195971B\System\Library\CoreServices\boot.efi (0/0)
+88:246 00:026 OCABC: EfiBootRt candidate - VenHw(957932CC-7E8E-433B-8F41-D391EA3C10F8,00000000)/MemoryMapped(0xA,0x100000000,0x100001000)/DMG_00000000574E7F1E.dmg/VenMsg(004B07E8-0B9C-427E-B0D4-A466E6E57A62,1E7F4E5700000000)/HD(1,GPT,50692F25-F694-4280-9C54-05D5E5A4429B,0x22,0x2C5000)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842,24253ED2324AF145A63BFB8C449427A3)/\3C964619-6590-4DD2-B356-291DE195971B\System\Library\CoreServices\boot.efi
+88:272 00:026 OCABC: IsEfiBootRt 0 (BP 1, Apple 0)
+88:297 00:025 OCSB: Direct booting for DMG image
+88:323 00:025 OCB: Secure boot, fixup efi ignored
+88:788 00:465 OCB: Arch filtering 79616018(723512)->79616018(723512) caps 0 - Success
+88:822 00:033 OCB: Matching <>/0[0] args on type 4
+88:868 00:046 OCABC: VMware Mac installed on 7A962818 - Success
+88:894 00:026 OCABC: Patching safe mode sur-2 at off 5F83
+88:920 00:025 OCABC: MMIO devirt start
+88:945 00:025 OCABC: MMIO devirt 0xE0000000 (0x10000 pages, 0x800000000000100D) skip 0
+88:970 00:025 OCABC: MMIO devirt 0xF7000000 (0x7E00 pages, 0x800000000000100D) skip 0
+88:996 00:025 OCABC: MMIO devirt 0xFEE00000 (0x1 pages, 0x8000000000000001) skip 0
+89:021 00:025 OCABC: MMIO devirt 0xFEE01000 (0x11FF pages, 0x800000000000100D) skip 0
+89:046 00:025 OCABC: MMIO devirt 0x860000000 (0x20200 pages, 0x800000000000100D) skip 0
+89:071 00:025 OCABC: MMIO devirt end, saved 935936 KB
+89:097 00:025 OCABC: Only 168/256 slide values are usable!
+89:122 00:025 OCABC: Valid slides - 88-255
+89:148 00:025 AAPL: #[EB.H.IS|!] Err(0xE) <- RT.GV boot-signature 7C436110-AB2A-4BBB-A880-FE41995C9F82
+89:173 00:025 AAPL: #[EB.H.IS|!] Err(0xE) <- RT.GV boot-image-key 7C436110-AB2A-4BBB-A880-FE41995C9F82
+89:198 00:025 AAPL: #[EB|H:IS] 0
+89:224 00:025 AAPL: #[EB|LOG:INIT] 2026-10-25T09:31:00
+89:248 00:024 AAPL: #[EB|VERSION] <"bootbase.efi 583~5906 (Official), built 2026-07-31T21:37:08-0700">
+89:274 00:025 AAPL: #[EB|BUILD] <"BUILD-INFO[402]:{"DisplayName":"bootbase.efi","DisplayVersion":"583~5906","RecordUuid":"7E0B5973-26C2-4455-85B4-B09B6801D59A","BuildTime":"2026-07-31T21:37:08-0700","ProjectName":"efiboot","ProductName":"bootbase.efi","SourceVersion":"583","BuildVersion":"5906","BuildConfiguration":"Release","BuildType":"Official","Compiler":"clang-2100.0.123.2","SdkVersion":"26.6","SdkBuild":"25G74","TargetArchitectures":"x86_64"}">
+89:738 00:464 AAPL: #[EB.CFG.DEV|!] Err(0xE) <- RT.GV booter-strict-xmlparser 7C436110-AB2A-4BBB-A880-FE41995C9F82
+89:763 00:024 AAPL: #[EB|CFG:DEV] r5 0x0 0x0
+89:788 00:024 AAPL: #[EB|H:IS] 0
+89:825 00:037 AAPL: #[EB|WL:MODE] 0
+89:851 00:025 AAPL: #[EB|CFG:ARG] boot-save-log 0x0000000000000002 (0x0000000000000002 < 0xFFFFFFFFFFFFFFFF) default
+89:876 00:025 AAPL: #[EB|CFG:ARG] wake-save-log 0x0000000000000002 (0x0000000000000002 < 0x0000000000000002) default
+89:901 00:025 AAPL: #[EB|CFG:ARG] console       0x0000000000000001 (0x0000000000000001 < 0x0000000000000001) default
+89:927 00:025 AAPL: #[EB|CFG:ARG] serial        0x0000000000000001 (0x0000000000000001 < 0x0000000000000000) default
+89:952 00:025 AAPL: #[EB|CFG:ARG] preoslog      0x0000000000000001 (0x0000000000000001 < 0xFFFFFFFFFFFFFFFF) default
+89:977 00:025 AAPL: #[EB|CFG:ARG] timestamps    0x0000000000000000 (0x0000000000000000 < 0xFFFFFFFFFFFFFFFF) default
+90:002 00:025 AAPL: #[EB|CFG:ARG] log-level     0x0000000000000001 (0x0000000000000001 & 0x0000000000000021) default
+90:028 00:025 AAPL: #[EB|CFG:ARG] breakpoint    0x0000000000000000 (0x0000000000000000 & 0x0000000000000000) default
+90:053 00:025 AAPL: #[EB|CFG:ARG] kc-read-size  0x0000000000100000 (0x0000000000100000 < 0xFFFFFFFFFFFFFFFF) default
+90:079 00:025 AAPL: #[EB|CFG:ARG] force-error   0x0000000000000000 (0x0000000000000000 & 0x0000000000000000) default
+90:104 00:025 AAPL: #[EB|H:IS] 0
+90:129 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01   0 0x00
+90:154 00:025 AAPL: #[EB|BRD:NV] Mac-27AD2F918AE68F61
+90:179 00:024 OCOS: OS set: <null> macOS 11.0
+90:644 00:465 OCOS: OS set: Apple Inc. macOS 11.0
+90:669 00:024 AAPL: #[EB|B:VAw]
+90:694 00:024 AAPL: #[EB|B:IAw]
+90:719 00:024 AAPL: #[EB|WL] 0 0 0x01 0x01   2 0x00
+90:744 00:025 AAPL: #[EB.BST.IDT|+]
+90:783 00:039 AAPL: #[EB.BST.IDT|-]
+90:809 00:026 AAPL: #[EB|WL] 0 0 0x01 0x01   3 0x00
+90:835 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01   4 0x00
+90:860 00:024 AAPL: #[EB|BRD:NV] Mac-27AD2F918AE68F61
+90:885 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01   5 0x00
+90:910 00:025 AAPL: #[EB.H.CHK|BM] 0x0000000000000000
+90:936 00:025 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.GV boot-signature 7C436110-AB2A-4BBB-A880-FE41995C9F82
+90:961 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01  23 0x0E
+90:987 00:025 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.GV boot-image-key 7C436110-AB2A-4BBB-A880-FE41995C9F82
+91:012 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01  24 0x0E
+91:037 00:025 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.GV boot-image 7C436110-AB2A-4BBB-A880-FE41995C9F82
+91:063 00:025 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.SV- boot-signature 7C436110-AB2A-4BBB-A880-FE41995C9F82
+91:088 00:024 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.SV- boot-image-key 7C436110-AB2A-4BBB-A880-FE41995C9F82
+91:113 00:025 AAPL: #[EB.H.LV|!] Err(0xE) <- RT.SV- boot-image 7C436110-AB2A-4BBB-A880-FE41995C9F82
+91:578 00:464 AAPL: #[EB|H:NOT]
+91:603 00:024 AAPL: #[EB|SB:P] 0x0
+91:638 00:034 AAPL: #[EB|LIMG:DP] VenMedia(957932CC-7E8E-433B-8F41-D391EA3C10F8)/MemMap(10:100000000-100001000)/DMG_00000000574E7F1E.dmg/VenMedia(004B07E8-0B9C-427E-B0D4-A466E6E57A62)/HD(Part1,Sig50692F25-F694-4280-9C54-05D5E5A4429B)/VenMedia(BE74FCF7-0B7C-49F3-9147-01F4042E6842)
+91:663 00:025 AAPL: #[EB|LIMG:FP] \3C964619-6590-4DD2-B356-291DE195971B\System\Library\CoreServices\boot.efi
+91:688 00:025 AAPL: #[EB|LIMG:OPT] 
+91:713 00:025 AAPL: #[EB.B.OBV|BM:+DMG]
+91:751 00:037 AAPL: #[EB.B.OBV|BM:+ROS]
+91:777 00:026 AAPL: #[EB.OPT.LXF|F] <"\\3C964619-6590-4DD2-B356-291DE195971B\\System\\Library\\CoreServices\\com.apple.Boot.plist">
+91:802 00:025 AAPL: #[EB.LD.LF|IN] 0 1 <"\\3C964619-6590-4DD2-B356-291DE195971B\\System\\Library\\CoreServices\\com.apple.Boot.plist"> <"0">
+91:828 00:025 AAPL: #[EB.LD.OFS|OPEN!] Err(0xE) <"\\3C964619-6590-4DD2-B356-291DE195971B\\System\\Library\\CoreServices\\com.apple.Boot.plist">
+91:853 00:025 AAPL: #[EB.OPT.LXF|LF!] Err(0xE)
+91:879 00:025 AAPL: #[EB.OPT.LXF|F] <"Library\\Preferences\\SystemConfiguration\\com.apple.Boot.plist">
+91:904 00:025 AAPL: #[EB.LD.LF|IN] 0 1 <"Library\\Preferences\\SystemConfiguration\\com.apple.Boot.plist"> <"0">
+91:930 00:025 AAPL: #[EB|KF] <"">
+91:955 00:025 AAPL: #[EB|MBA:CL] <"">
+91:980 00:025 AAPL: #[EB|MBA:NV] <"-v keepsyms=1 debug=0x100 -amd_no_dgpu_accel kextlog=0xffff slide=140">
+92:006 00:025 AAPL: #[EB|MBA:KF] <"">
+92:030 00:024 AAPL: #[EB|MBA:OUT] <"-v keepsyms=1 debug=0x100 -amd_no_dgpu_accel kextlog=0xffff slide=140">
+92:056 00:025 AAPL: #[EB|LOG:VERBOSE] 2026-10-25T09:31:03
+92:546 00:490 OCABC: GetVariable csr-active-config - Not Found
+92:572 00:025 AAPL: #[EB.CSR.S|VAR] 0x00000040
+92:597 00:024 AAPL: #[EB|OPT:BM] 0x8a1182
+92:622 00:025 AAPL: #[EB.OPT.LXF|F] <"\\3C964619-6590-4DD2-B356-291DE195971B\\System\\Library\\CoreServices\\PlatformSupport.plist">
+92:647 00:025 AAPL: #[EB.LD.LF|IN] 0 1 <"\\3C964619-6590-4DD2-B356-291DE195971B\\System\\Library\\CoreServices\\PlatformSupport.plist"> <"0">
+92:672 00:025 AAPL: #[EB.B.MN|BM:ROS]
+92:698 00:025 AAPL: #[EB|WL] 0 0 0x01 0x01  19 0x0E
+92:723 00:025 AAPL: #[EB.OPT.RKS|!] Err(0xE) <- BS.LocP EDB4A040-6D8A-11EC-8FAD-3E22FB93ADCF
+92:748 00:025 AAPL: #[EB.CS.CSKSD|+]
+92:774 00:025 AAPL: #[EB.G.CS|-?] Ok(0)
+92:808 00:034 AAPL: #[EB.LD.LF|IN] 0 1 <"<null string>"> <"1">
+92:852 00:043 AAPL: #[EB.B.SBS|SZ] 723512
+92:897 00:045 AAPL: #[EB|B:SHA] <577616335361e008b8f0654bb72384a5c4470fa2>
+92:941 00:043 AAPL: #[EB.WL.PWLFNV|!] Err(0xE) <- RT.GV wake-failure 7C436110-AB2A-4BBB-A880-FE41995C9F82
+92:984 00:043 AAPL: #[EB.WL.DT|!] Err(0xE) <- EB.WL.PWLFNV
+93:027 00:043 AAPL: #[EB.WL.PWLFRTC|NONE]
+93:070 00:042 AAPL: #[EB.WL.DT|!] Err(0xE) <- EB.WL.PWLFRTC
+93:113 00:043 AAPL: #[EB.LD.LKC|R.1] <"boot\System\Library\KernelCollections\BootKernelExtensions.kc">
+93:646 00:532 OC: Kext reservation size info 508000 exe 8E000
+93:695 00:049 OC: Trying 64-bit XNU hook on boot\System\Library\KernelCollections\BootKernelExtensions.kc
+93:733 00:037 OC: Result of 64-bit XNU hook on boot\System\Library\KernelCollections\BootKernelExtensions.kc (00000000) is Success
+93:771 00:038 OCAK: Read kernel version 25.6.0 (250600)
+93:815 00:043 OCAK: 64-bit PanicKextDump replace count - 1
+93:849 00:034 OCAK: [OK] Patch success kext dump
+93:883 00:034 OCAK: 64-bit PowerStateTimeout replace count - 0
+93:917 00:034 OCAK: No inline power state patch - Not Found, trying fallback
+93:956 00:038 OCAK: 64-bit PowerStateTimeout replace count - 1
+93:990 00:034 OCAK: [OK] Patch success power state
+94:025 00:034 OCAK: [OK] Found jettisoning fileset
+94:059 00:034 OCAK: 64-bit Set core count to thread count replace count - 2
+94:094 00:034 OCAK: Patching MSR 35h to 00080010 - Success
+94:132 00:038 OCAK: Setting FSB and TSC for Family 0xF and ExtFamily 0xA
+94:166 00:034 OCAK: BusFreq = 100000140Hz, BusFCvtt2n = 42949612830, BusFCvtn2t = 100000140
+94:200 00:034 OCAK: TscFreq = 3800005332Hz, TscFCvtt2n = 1130252965, TscFCvtn2t = 3800005334
+94:235 00:034 OCAK: 64-bit ProvideCurrentCpuInfoZeroMsrThreadCoreCount replace count - 2
+94:270 00:034 OCAK: 64-bit algrey | Force cpuid_cores_per_package to constant (user-specified) | 13.3+ | core count 08 (8 core fisici 7700) replace count - 1
+94:304 00:034 OC: Kernel patcher result 0 for kernel (algrey | Force cpuid_cores_per_package to constant (user-specified) | 13.3+ | core count 08 (8 core fisici 7700)) - Success
+94:780 00:475 OCAK: 64-bit algrey | _commpage_populate | Remove rdmsr | 10.13+ replace count - 1
+94:814 00:034 OC: Kernel patcher result 1 for kernel (algrey | _commpage_populate | Remove rdmsr | 10.13+) - Success
+94:861 00:047 OCAK: 64-bit algrey | _cpuid_set_cache_info | Set CPUID proper instead of 4 | 10.13+ replace count - 1
+94:896 00:034 OC: Kernel patcher result 2 for kernel (algrey | _cpuid_set_cache_info | Set CPUID proper instead of 4 | 10.13+) - Success
+94:931 00:035 OCAK: 64-bit algrey | _cpuid_set_generic_info | Remove wrmsr(0x8B) | 10.13+ replace count - 1
+94:966 00:034 OC: Kernel patcher result 3 for kernel (algrey | _cpuid_set_generic_info | Remove wrmsr(0x8B) | 10.13+) - Success
+95:001 00:035 OCAK: 64-bit algrey | _cpuid_set_generic_info | Replace rdmsr(0x8B) with constant 186 | 10.13+ replace count - 1
+95:036 00:034 OC: Kernel patcher result 4 for kernel (algrey | _cpuid_set_generic_info | Replace rdmsr(0x8B) with constant 186 | 10.13+) - Success
+95:071 00:035 OCAK: 64-bit algrey | _cpuid_set_generic_info | Set flag=1 | 10.13+ replace count - 1
+95:105 00:034 OC: Kernel patcher result 5 for kernel (algrey | _cpuid_set_generic_info | Set flag=1 | 10.13+) - Success
+95:142 00:036 OCAK: 64-bit algrey | _cpuid_set_generic_info | Disable check to allow leaf7 | 15.0+ replace count - 1
+95:177 00:034 OC: Kernel patcher result 6 for kernel (algrey | _cpuid_set_generic_info | Disable check to allow leaf7 | 15.0+) - Success
+95:212 00:034 OCAK: 64-bit Goldfish64, algrey | Bypass GenuineIntel check panic | 12.0+ replace count - 1
+95:246 00:034 OC: Kernel patcher result 7 for kernel (Goldfish64, algrey | Bypass GenuineIntel check panic | 12.0+) - Success
+95:281 00:034 OCAK: 64-bit algrey | _cpuid_set_cpufamily | Force CPUFAMILY_INTEL_PENRYN | 11.3+ replace count - 1
+95:315 00:034 OC: Kernel patcher result 8 for kernel (algrey | _cpuid_set_cpufamily | Force CPUFAMILY_INTEL_PENRYN | 11.3+) - Success
+95:376 00:060 OCAK: 64-bit algrey | _i386_init | Remove 3 rdmsr calls | 10.13+ replace count - 3
+95:409 00:033 OC: Kernel patcher result 9 for kernel (algrey | _i386_init | Remove 3 rdmsr calls | 10.13+) - Success
+95:445 00:035 OCAK: 64-bit algrey, XLNC | Remove version check and panic | 10.13+ replace count - 1
+95:919 00:473 OC: Kernel patcher result 10 for kernel (algrey, XLNC | Remove version check and panic | 10.13+) - Success
+95:954 00:034 OCAK: 64-bit Visual | thread_quantum_expire, thread_unblock, thread_invoke | Remove non-monotonic time panic | 12.0+ replace count - 3
+95:988 00:034 OC: Kernel patcher result 12 for kernel (Visual | thread_quantum_expire, thread_unblock, thread_invoke | Remove non-monotonic time panic | 12.0+) - Success
+96:040 00:051 OCAK: 64-bit Visual | thread_invoke, thread_dispatch | Remove non-monotonic time panic | 12.0+ replace count - 2
+96:075 00:035 OC: Kernel patcher result 13 for kernel (Visual | thread_invoke, thread_dispatch | Remove non-monotonic time panic | 12.0+) - Success
+96:142 00:067 OCAK: 64-bit Algrey / Zormeister | _mtrr_update_action | Fix PAT | 15.0+ replace count - 2
+96:176 00:034 OC: Kernel patcher result 14 for kernel (Algrey / Zormeister | _mtrr_update_action | Fix PAT | 15.0+) - Success
+96:235 00:058 OCAK: com.apple.driver.AMDSupport not in Boot KC, using kernel stub for symbol-only deps
+96:269 00:034 OC: Prelinked blocker (Disable) result 0 for com.apple.driver.AMDSupport (AMDSupport: panic/lockup su GPU AMD non supportate (macOS 26)) - Unsupported
+96:305 00:035 OCAK: com.apple.driver.AMDRadeonX7000 not in Boot KC, using kernel stub for symbol-only deps
+96:339 00:034 OC: Prelinked blocker (Disable) result 1 for com.apple.driver.AMDRadeonX7000 (AMDRadeonX7000: driver RDNA3 Apple, non per Navi 44) - Unsupported
+96:375 00:035 OCAK: com.apple.driver.AMDRadeonX6000 not in Boot KC, using kernel stub for symbol-only deps
+96:409 00:034 OC: Prelinked blocker (Disable) result 2 for com.apple.driver.AMDRadeonX6000 (AMDRadeonX6000: driver RDNA2 Apple, iGPU Raphael 610M) - Unsupported
+96:445 00:035 OCAK: com.apple.driver.AMDRadeonX5000 not in Boot KC, using kernel stub for symbol-only deps
+96:479 00:034 OC: Prelinked blocker (Disable) result 3 for com.apple.driver.AMDRadeonX5000 (AMDRadeonX5000: driver Apple legacy AMD) - Unsupported
+96:525 00:046 OCAK: Local relocs 689 on FFFFFF8004175000
+96:560 00:034 OC: Prelinked injection Lilu.kext (Lilu 1.7.2 (BSD-3): libreria di patch, richiesta da VirtualSMC/plugin) - Success
+96:594 00:034 OC: Prelinked injection Lilu.kext v1.7.2
+97:069 00:474 OCAK: Patching invalid size 1B28 with 1CD8000 for com.apple.iokit.IOACPIFamily
+97:106 00:037 OCAK: Local relocs 496 on FFFFFF80041A6000
+97:141 00:034 OC: Prelinked injection VirtualSMC.kext (VirtualSMC 1.3.8 (BSD-3): emulazione SMC, senza plugin CPU/SuperIO) - Success
+97:175 00:033 OC: Prelinked injection VirtualSMC.kext v1.3.8
+97:209 00:034 OC: Prelinked injection MCEReporterDisabler.kext (MCEReporterDisabler 0.5 (rehabman, plist-only): come nella VM, MinKernel 21) - Success
+97:256 00:046 OC: Prelinked injection MCEReporterDisabler.kext v0.5
+97:292 00:035 OCAK: Patching invalid size 154D4 with 1A8A000 for com.apple.iokit.IONetworkingFamily
+97:329 00:037 OCAK: Patching invalid size 53180 with 1790000 for com.apple.iokit.IOPCIFamily
+97:370 00:040 OCAK: Local relocs 513 on FFFFFF80041C1000
+97:404 00:034 OC: Prelinked injection LucyRTL8125Ethernet.kext (LucyRTL8125Ethernet 1.2.3 (GPLv2): NIC Realtek RTL8125 10ec:8125) - Success
+97:439 00:034 OC: Prelinked injection LucyRTL8125Ethernet.kext v1.2.300
+97:473 00:034 OC: Prelinked injection USBMapB840.kext (USBMapB840 (codeless): mappa porte xHCI, 4 controller, porte 1..14) - Success
+97:508 00:034 OC: Prelinked injection USBMapB840.kext v1.0
+97:542 00:034 OC: Prelink size 68169728 kext offset 67588096 reserved 581632
+97:577 00:034 OCAK: KC TEXT is 65536 bytes with 59912 Mach-O headers need 400
+97:621 00:043 OCAK: com.apple.driver.AppleIntelCPUPowerManagement not in Boot KC, using kernel stub for symbol-only deps
+97:655 00:034 OCAK: [OK] Skipping dummy AppleIntelCPUPowerManagement patch on 250600
+97:689 00:033 OCAK: 64-bit CaseySJ | probeBusGated | Disable 10 bit tags | 26.0+ | voce 26.0+ dal branch beta AMD_Vanilla (ea053f14, 2025-06-27), per kernel 25.x replace count - 1
+97:724 00:034 OC: Prelinked patcher result 16 for com.apple.iokit.IOPCIFamily (CaseySJ | probeBusGated | Disable 10 bit tags | 26.0+ | voce 26.0+ dal branch beta AMD_Vanilla (ea053f14, 2025-06-27), per kernel 25.x) - Success
+98:266 00:541 OC: Prelinked status - Success
+98:313 00:047 AAPL: #[EB.LD.LKFS|-?] Ok(0)
+98:355 00:042 AAPL: #[EB.LD.LKC|-?] Ok(0)
+98:398 00:042 AAPL: #[EB|BST:REV1]
+98:441 00:043 AAPL: #[EB|CSR:OUT] 0x00000040
+98:484 00:043 AAPL: #[EB.BST.FBS|+]
+98:541 00:056 AAPL: #[EB.BST.FBS|ADSZ] 0
+98:584 00:043 AAPL: #[EB.BST.FBS|KSSZ] 0
+98:627 00:042 AAPL: #[EB|SB:SBGMFNS] x86legacyap.im4m
+98:671 00:043 AAPL: #[EB|RH:PF] usr\standalone\OS.dmg.root_hash
+98:714 00:043 AAPL: #[EB|RH:MF] <"usr\\standalone\\OS.dmg.root_hash.x86legacyap.im4m">
+98:757 00:043 AAPL: #[EB.LD.LF|IN] 0 1 <"usr\\standalone\\OS.dmg.root_hash"> <"0">
+98:800 00:043 AAPL: #[EB.LD.OFS|OPEN!] Err(0xE) <"usr\\standalone\\OS.dmg.root_hash">
+98:844 00:043 AAPL: #[EB.RH.LRH|P!] Err(0xE) <- EB.LD.LF
+98:887 00:043 AAPL: #[EB.BST.FBS|!] Err(0xE) <- EB.RH.LRH
+98:921 00:034 OCSMC: SmcReadValue Key 4D535463 Size 1
+98:955 00:034 OCSMC: SmcReadValue Key 4D534163 Size 2
+98:998 00:042 AAPL: #[EB|LOG:DT] 2026-10-25T09:31:10
+99:042 00:043 AAPL: #[EB|LOG:EXITBS:START] 2026-10-25T09:31:10

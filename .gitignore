@@ -23,3 +23,9 @@ build/
 
 # bytecode Python (cache di import, rigenerata a ogni esecuzione)
 __pycache__/
+
+# EFI OpenCore per il bare metal: config con seriali generati, kext e tool di terze parti (licenze da verificare). Mai nel repository
+/research/ext/ocboot-baremetal/
+
+# Tabelle ACPI binarie della scheda madre dell utente (firmware MSI/AMI): restano locali
+research/hw_dump/baremetal_inventory/acpi/
