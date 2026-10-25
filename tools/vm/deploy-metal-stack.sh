@@ -125,7 +125,7 @@ SSH_OPTS=(-p "$PORT" -o BatchMode=yes -o ConnectTimeout=10)
 SSH_TARGET="$GUEST_USER@$HOST"
 
 guest_reachable() {
-  ssh "${SSH_OPTS[@]}" "$SSH_TARGET" 'true' >/dev/null 2>&1
+  ssh -n "${SSH_OPTS[@]}" "$SSH_TARGET" 'true' >/dev/null 2>&1   # -n: keep stdin for the ARM confirmation that follows
 }
 
 # ---------------------------------------------------------------- controlli locali (nessun SSH, nessuna scrittura)
@@ -311,9 +311,28 @@ REMOTE
 local_arm_check() {
   step "Presupposti dal piano della VM di test (sola lettura: $TEST_VM/test-plan.json)"
   python3 -I - "$TEST_VM" <<'PY'
-import hashlib, json, pathlib, sys
+import fcntl, hashlib, json, pathlib, sys
 vm = pathlib.Path(sys.argv[1])
 plan = json.loads((vm / 'test-plan.json').read_text())
+def vm_running(vm):
+    # the launcher holds an exclusive flock on .vm.lock for the whole QEMU run
+    handle = (vm / '.vm.lock').open('r')
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(handle, fcntl.LOCK_UN)
+        return False
+    except BlockingIOError:
+        return True
+    finally:
+        handle.close()
+def efi_verified(vm, plan):
+    if vm_running(vm):
+        # VM up: the live qcow2 is not comparable (QEMU writes it). Use the digest recorded at --start, which must equal the plan.
+        record = vm / '.launch-efi.sha256'
+        if not record.is_file():
+            return False
+        return record.read_text().split()[0] == plan.get('efi_sha256')
+    return hashlib.sha256((vm / plan['efi']).read_bytes()).hexdigest() == plan.get('efi_sha256')
 ba = plan['boot_args'].split()
 checks = {
     'stage 17': plan.get('stage') == 17,
@@ -325,7 +344,7 @@ checks = {
     'interrupts esplicito': 'navi48-interrupts=0' in ba or 'navi48-interrupts=1' in ba,
     'navi48-fb2 assente': not any(f.startswith('navi48-fb2') for f in ba),
     'navi48-m6 assente (Navi 44 lo rifiuta)': not any(f.startswith('navi48-m6') for f in ba),
-    'EFI verificata': hashlib.sha256((vm / plan['efi']).read_bytes()).hexdigest() == plan.get('efi_sha256'),
+    'EFI verificata': efi_verified(vm, plan),
 }
 for name, ok in checks.items():
     print(('ok    ' if ok else 'FAIL  ') + name)
@@ -336,6 +355,7 @@ PY
 # Guest: i presupposti, nell'ordine in cui fermano l'esecuzione. Con ARM_MODE=check esce dopo le verifiche.
 remote_arm_script() {
   printf 'ARM_MODE=%s\n' "$1"
+  printf 'ARM_FBNAME=%s\n' "${N48_ARM_FBNAME:-0}"
   cat <<'REMOTE'
 set -u
 NT="$HOME/navi48-staging/navi48test"
@@ -357,6 +377,8 @@ printf '%s\n' "$TOK" | grep -q '^navi48-fb2' && fail "navi48-fb2 presente: la ro
 ok "navi48-fb2 assente"
 kmutil showloaded --list-only 2>/dev/null | grep -qi 'com.navi48.bringup' || fail "kext di bring-up com.navi48.bringup non caricato"
 ok "kext di bring-up caricato (stage 17 dal boot-arg; lo stage raggiunto va letto dal log seriale)"
+kmutil showloaded --list-only 2>/dev/null | grep -qi 'com.hackintosh.RDNA4FB' || fail "RDNA4FB non caricato: il framebuffer della pipe (Navi 44) non c'e'; caricare il kext patchato prima dell'armamento"
+ok "RDNA4FB caricato (framebuffer della pipe, match 0x7590)"
 [ -x "$NT" ] || fail "navi48test assente: $NT"
 ok "navi48test presente"
 [ -x "$NM" ] || fail "n48nub assente: $NM"
@@ -365,7 +387,7 @@ ok "nub Metal pubblicato"
 [ -d /Library/GPUBundles/Navi48Metal.bundle ] && codesign --verify --strict /Library/GPUBundles/Navi48Metal.bundle >/dev/null 2>&1 \
   || fail "bundle Navi48Metal assente o firma non valida (deploy-metal-stack.sh --deploy)"
 ok "bundle installato, firma valida"
-FL=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags *: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
+FL=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags[^:]*: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
 [ -n "$FL" ] || fail "pipestat 0 non riporta 'flags': formato diverso, nessuna azione eseguita"
 FLV=$((FL))
 (( FLV & 2 )) || fail "pipe non adottata (flags $FL): eseguire prima la fase P1 (adozione)"
@@ -382,14 +404,19 @@ rollback() {
   sudo -n rm -f /private/tmp/n48m-headless-no || true
 }
 sudo -n touch /private/tmp/n48m-headless-no && sudo -n chmod 644 /private/tmp/n48m-headless-no || fail "flag headless-no non creato"
-sudo -n "$NT" accel pipeagdc 1 2>&1 | grep -E 'agdc status' || { rollback "pipeagdc 1"; fail "pipeagdc 1 senza stato AGDC"; }
-sudo -n "$NT" accel fbname 1 2>&1 | grep -E 'class name NOW' || { rollback "fbname 1"; fail "fbname 1 senza nome di classe"; }
+AG=$(sudo -n "$NT" accel pipeagdc 1 2>&1); echo "$AG" | grep -E 'agdc status'
+echo "$AG" | grep -Eq 'agdc status +: (0|12) ' || { rollback "pipeagdc 1"; fail "pipeagdc 1 non pubblicato (serve boot-arg navi48-agdc=1; status 1 = assente): desktop lasciato su CPU"; }   # 12 = already published in this boot
+if [ "$ARM_FBNAME" = 1 ]; then
+  sudo -n "$NT" accel fbname 1 2>&1 | grep -E 'class name NOW' || { rollback "fbname 1"; fail "fbname 1 senza nome di classe"; }
+else
+  echo "fbname 1 saltato (N48_ARM_FBNAME=0): la pipe accetta il nome RDNA4FB senza rinomina"
+fi
 sudo -n "$NT" accel pipearm 1 2>&1 | grep 0xccf || { rollback "pipearm 1"; fail "pipearm 1 rifiutata"; }
 sudo -n "$NT" accel pipereload 2>&1 | tail -1
 sudo -n launchctl asuser 501 launchctl setenv CI_USE_MTL_DAG_FOR_CIKL_SRC 0 || echo "AVVISO: backstop CIKL non impostato (nessun dominio utente): non fatale"
 sudo -n killall -9 WindowServer; sleep 15
 pgrep -x WindowServer >/dev/null || { rollback "WindowServer non ripartito"; fail "WindowServer non in esecuzione dopo il riavvio"; }
-FL2=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags *: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
+FL2=$(sudo -n "$NT" accel pipestat 0 2>&1 | sed -n 's/^ *flags[^:]*: *\(0x[0-9a-fA-F]*\).*/\1/p' | head -1)
 (( ${FL2:-0} & 4 )) || { rollback "pipe non armata dopo il riavvio"; fail "pipe non armata dopo il riavvio (flags ${FL2:-?})"; }
 echo "ARM_OK: WindowServer ripartito, pipe armata (flags $FL2). Verificare il monitor e raccogliere i log (metal_deploy_plan.md 8.4)."
 REMOTE
@@ -400,7 +427,7 @@ print_arm_plan() {
   echo "== Piano di --arm-desktop (P2, un monitor). Nessun comando eseguito in --dry-run."
   echo "1) host, sola lettura: presupposti del piano della VM di test (sotto)."
   echo "2) guest, sola lettura (ARM_MODE=check): macOS, 0 utenti, boot-arg, navi48-fb2 assente, kext, nub, bundle, pipe adottata."
-  echo "3) conferma digitata ARM; poi guest (ARM_MODE=arm): accel pipeagdc 1, fbname 1, pipearm 1, pipereload, killall -9 WindowServer,"
+  echo "3) conferma digitata ARM; poi guest (ARM_MODE=arm): accel pipeagdc 1, [fbname 1 solo con N48_ARM_FBNAME=1], pipearm 1, pipereload, killall -9 WindowServer,"
   echo "   verifica pipe armata. Rollback se un passo fallisce dopo i presupposti (pipearm 0, fbname 0, flag rimosso)."
   echo "   Script guest:"
   remote_arm_script arm | sed 's/^/   | /'
