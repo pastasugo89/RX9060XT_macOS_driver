@@ -54,5 +54,5 @@ Report completo, cronologia, ipotesi e passi successivi: [`research/reports/bare
 - Le prove in VM richiedono la voce GRUB VFIO "una tantum" (`tools/vm/prepare-vfio-test-boot.py arm` + riavvio), poi
   BAR0 a 256 MiB (`tools/vm/resize-vfio-bar.py 8`) e `memlock` ≥ 14 GiB per il processo che lancia la VM.
 - La chiavetta da 128 GB contiene dati personali: si scrive solo nella cartella `macOS-Tahoe-25G83-installer/`.
-- Ultimo commit: `41ea997` (21/10). Il lavoro successivo (RDNA4FB v2–v8, sicurezza, stack Metal, tool VM, EFI bare
-  metal) è nel working tree, non ancora committato; le EFI e i log hardware sotto `research/ext/` restano fuori da git.
+- Tutto il lavoro fino al 25/10 è committato (commit `22e50f0`…`a0de0d3`). Restano fuori da git, per scelta: le EFI
+  e gli strumenti scaricati in `research/ext/`, i seriali SMBIOS, le tabelle ACPI binarie della scheda e i binari Apple.
