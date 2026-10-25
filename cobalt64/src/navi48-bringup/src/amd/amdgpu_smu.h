@@ -245,6 +245,13 @@ kern_return_t smu_smc_hw_setup(DeviceContext &dev,
 // the reference's SMUInit stage.
 kern_return_t smu_hw_init(DeviceContext &dev, bool runSmcHwSetup);
 
+// [ADDED, n4x safety] Protection gate. Reads GetRunningSmuFeaturesHigh/Low (read-only messages) and checks the feature bits
+// THROTTLERS (PPT/TDC/temperature throttling), FW_CTF and FAN_CONTROL (n4x_safety_pure.h, check_protections). smu_hw_init calls it
+// after the features are enabled (or, with runSmcHwSetup false, without enabling anything). Until it passes, smu_protections_verified()
+// is false and the bring-up ladder does not go beyond SMUInit (amdgpu_init.cpp, bringup_to).
+kern_return_t smu_read_protections(const DeviceContext &dev);
+bool smu_protections_verified();
+
 // [ADDED here] Feature control + clock clamps. These live in the
 // reference's user-client (dext/MacAMDGPU.cpp, selectors 33 and 40)
 // rather than in smu_v14_0.cpp; this kext has no user client, so the

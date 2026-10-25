@@ -74,6 +74,7 @@
 
 #include "amdgpu_smu.h"
 #include "amdgpu_log.h"
+#include "n4x_safety_pure.h"      // check_protections (the protection gate below)
 
 #include <kern/thread.h>          // current_thread(): the owner of the shared mailbox lock (0.0.604)
 #include <libkern/OSAtomic.h>
@@ -641,6 +642,42 @@ smu_smc_hw_setup(DeviceContext &dev, uint64_t driver_table_mc)
 }
 
 //============================================================
+// [ADDED, n4x safety] protection gate. Two read-only messages (GetRunningSmuFeaturesLow/High, the same ones smc_hw_setup logs).
+// The verdict is kept here; smu_protections_verified() is what the bring-up ladder reads.
+//============================================================
+
+static bool gProtectionsVerified = false;
+
+bool smu_protections_verified()
+{
+    return gProtectionsVerified;
+}
+
+kern_return_t
+smu_read_protections(const DeviceContext &dev)
+{
+    gProtectionsVerified = false;
+    uint32_t lo = 0, hi = 0;
+    kern_return_t r = smu_send_msg_with_param(dev, PPSMC::GetRunningSmuFeaturesLow, 0, &lo);
+    if (r != kIOReturnSuccess) {
+        SMU_LOG("protections: GetRunningSmuFeaturesLow failed kr=0x%x — NOT verified", (unsigned)r);
+        return r;
+    }
+    r = smu_send_msg_with_param(dev, PPSMC::GetRunningSmuFeaturesHigh, 0, &hi);
+    if (r != kIOReturnSuccess) {
+        SMU_LOG("protections: GetRunningSmuFeaturesHigh failed kr=0x%x — NOT verified", (unsigned)r);
+        return r;
+    }
+    const n4xs::ProtectionReport rep = n4xs::check_protections(lo, hi);
+    gProtectionsVerified = rep.ok;
+    SMU_LOG("protections: running 0x%08x_%08x, required THROTTLERS(23) FW_CTF(28) FAN_CONTROL(29): %s, missing 0x%08x_%08x, VR0HOT(27) %s",
+            hi, lo, rep.ok ? "PRESENT" : "MISSING",
+            (unsigned)(rep.missing >> 32), (unsigned)rep.missing, rep.vr0hot ? "on" : "off");
+    if (!rep.ok) SMU_LOG("protections: NOT VERIFIED — the bring-up ladder stops at SMUInit");
+    return rep.ok ? kIOReturnSuccess : kIOReturnNotReady;
+}
+
+//============================================================
 // [ADDED] smu_hw_init — the SMU IP block's hw_init. Body ported from
 // `case BringupStage::SMUInit` in the reference's amdgpu_init.cpp:785,
 // which is not ported into this kext yet.
@@ -676,6 +713,7 @@ smu_hw_init(DeviceContext &dev, bool runSmcHwSetup)
     if (!runSmcHwSetup) {
         SMU_LOG("hw_init: smc_hw_setup skipped by caller — no clock/power "
                 "state was changed");
+        (void)smu_read_protections(dev);   // read-only: the gate reports what the firmware runs by default
         return kIOReturnSuccess;
     }
 
@@ -693,6 +731,8 @@ smu_hw_init(DeviceContext &dev, bool runSmcHwSetup)
         SMU_LOG("hw_init: smc_hw_setup non-fatal failure: 0x%x — "
                 "proceeding anyway", (unsigned)hwr);
     }
+    // The gate runs after the features are enabled (or not), and its verdict decides how far the ladder may go.
+    (void)smu_read_protections(dev);
     return kIOReturnSuccess;
 }
 

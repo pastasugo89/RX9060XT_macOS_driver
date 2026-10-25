@@ -1,0 +1,47 @@
+N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+N4X-SAFETY t=4331 hotspot=55 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x37000000
+N4X-SAFETY t=5334 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=6338 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=7340 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=8343 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=9346 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+com.apple.xpc.launchd|2026-10-21 16:46:34.202184 (system/com.apple.iomfb_fdr_loaN4X-SAFETY t=10350 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=11351 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=12355 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=13358 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=14361 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=15366 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=16369 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=17374 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=18380 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=19386 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=20391 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=21394 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=22400 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=23406 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21600000
+N4X-SAFETY t=24411 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=25418 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=26423 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=27429 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=28433 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=29439 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=30445 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=31450 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=32456 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=33461 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=34467 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=35472 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=36481 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21e00000
+N4X-SAFETY t=37484 hotspot=33 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x21c00000
+N4X-SAFETY t=38490 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=39495 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=40497 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=41503 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22c00000
+N4X-SAFETY t=42508 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=43514 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=44520 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=45525 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=46531 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=47536 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000
+N4X-SAFETY t=48541 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22c00000
+N4X-SAFETY t=49547 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22400000

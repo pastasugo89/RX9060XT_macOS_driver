@@ -31,6 +31,7 @@ public:
 	// Hardware IP ids (Linux soc15_hw_ip.h) we care about.
 	enum HwId : uint16_t {
 		HwMp1    = 1,
+		HwThm    = 3,     // THM_HWID (soc15_hw_ip.h): the thermal sensor block (n4x_safety)
 		HwGc     = 11,
 		HwMmhub  = 34,
 		HwOsssys = 40,

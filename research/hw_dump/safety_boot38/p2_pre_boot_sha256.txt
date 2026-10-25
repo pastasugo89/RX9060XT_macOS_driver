@@ -1,0 +1,2 @@
+8634f148a9a2e1750b66fcd5774bf50eee32061064d1be27f0e47e28695a8e0b  /mnt/vm/images/macos-gpu-test/OpenCore/OpenCore.stage1.qcow2
+23afdfc7d91c9478ccda777b247e43302fa2187d65d496165f6e18bde132ecc2  /mnt/vm/images/macos-gpu-test/test-plan.json

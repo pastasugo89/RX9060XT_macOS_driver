@@ -2,6 +2,7 @@
 // See amdgpu_init.h for the deviations list.
 #include "amdgpu_init.h"
 #include "amdgpu_log.h"
+#include "n4x_safety.h"
 #include "../fw/fw_table.h"
 #include "nbif_v6_3_1.h"
 
@@ -883,6 +884,18 @@ kern_return_t bringup_to(BringupContext &ctx, BringupStage target) {
     if (!ctx.dev) return kIOReturnNotReady;
     if ((uint32_t)target > (uint32_t)BringupStage::Max) target = BringupStage::Max;
     for (uint32_t s = (uint32_t)ctx.reached + 1; s <= (uint32_t)target; s++) {
+        // [n4x safety] Nothing beyond SMUInit runs unless the SMU protections (THROTTLERS, FW_CTF, FAN_CONTROL) are running and the
+        // thermal watchdog has not latched TRIP. Both checks are reads; a refusal leaves the ladder where it is (reached = SMUInit).
+        if ((BringupStage)s > BringupStage::SMUInit) {
+            const bool tripped = n4xs::refused();
+            if (tripped || !smu_protections_verified()) {
+                ctx.failedAt = (BringupStage)s;
+                ctx.lastResult = kIOReturnNotPermitted;
+                INIT_LOG("n4x safety: stage %u (%s) NOT run: %s", s, stage_name((BringupStage)s),
+                         tripped ? "thermal watchdog TRIP" : "SMU protections not verified (SMUInit gate)");
+                return kIOReturnNotPermitted;
+            }
+        }
         kern_return_t r = run_stage(ctx, (BringupStage)s);
         ctx.lastResult = r;
         if (r != kIOReturnSuccess) {

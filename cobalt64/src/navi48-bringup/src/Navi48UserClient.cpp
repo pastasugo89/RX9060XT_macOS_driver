@@ -5,6 +5,7 @@
 #include "Navi48Bringup.hpp"
 #include "amd/amdgpu_init.h"
 #include "amd/native_s1b.h"   // 0.0.600: native_s1b_refuse
+#include "amd/n4x_safety.h"   // n4x safety: refused() gates submit, power state and the accel experiment
 #include "amd/native_disp.h"    // 0.0.613: the display verbs 83..87 open only with boot-arg navi48-metal-disp=1
 #include "amd/native_disp_pure.h"
 #include "amd/native_s1c.h"   // 0.0.601: n1c_refuse_legacy
@@ -218,6 +219,7 @@ IOReturn Navi48UserClient::doReadVRAM(IOExternalMethodArguments *args) {
 
 IOReturn Navi48UserClient::doSubmitIB(IOExternalMethodArguments *args) {
 	if (amdgpu::native_s1b_refuse(1)) return kIOReturnNotPermitted;   // NATIVE S1b (0.0.600): refused once the VM self-test ran
+	if (n4xs::refused()) return kIOReturnNotPermitted;                // n4x safety: a latched thermal TRIP refuses new submissions
 	if (args->scalarInputCount < 3 || args->scalarOutputCount < 1) return kIOReturnBadArgument;
 	const uint64_t gpu_va  = args->scalarInput[0];
 	const uint32_t len_dw  = (uint32_t)args->scalarInput[1];
@@ -507,6 +509,11 @@ IOReturn Navi48UserClient::doPowerState(IOExternalMethodArguments *args) {
 	if (args->scalarInputCount < 1) return kIOReturnBadArgument;
 	const uint32_t state = (uint32_t)args->scalarInput[0];
 	if (state > 4) return kIOReturnBadArgument;
+	// n4x safety: after a latched TRIP only the clamp-down state (Low) is allowed; every state that can raise a clock is refused.
+	if (n4xs::refused() && state != amdgpu::SMUPowerState::Low) return kIOReturnNotPermitted;
+	// n4x safety: High (min 1500 MHz) and Peak (min = max = 2400 MHz) RAISE the GFX clock: refused unless navi48-clock-raise=1 (default OFF).
+	if ((state == amdgpu::SMUPowerState::High || state == amdgpu::SMUPowerState::Peak) && !n4xs::clock_raise_allowed())
+		return kIOReturnNotPermitted;
 	auto *dev = owner->deviceContext();
 	if (!dev) return kIOReturnNotReady;
 	amdgpu::SmuSeq smuSeq;   // 0.0.604: both clock messages of the power state under the shared mailbox lock
@@ -531,6 +538,7 @@ IOReturn Navi48UserClient::doReadScanFull(IOExternalMethodArguments *args) {
 // Fire (or just report on) the Phase 4 accelerator experiment. See
 // kNavi48SelAccelExperiment in the ABI header for why this is on demand.
 IOReturn Navi48UserClient::doAccelExperiment(IOExternalMethodArguments *args) {
+	if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety: the experiment verbs write GPU / display state
 	if (args->scalarInputCount < 1) return kIOReturnBadArgument;
 	const uint32_t action = (uint32_t)args->scalarInput[0];
 	// Rule 12: the action BOUND is the fifth site a new verb needs. Miss it and

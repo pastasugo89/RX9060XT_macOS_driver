@@ -1,0 +1,300 @@
+N4X-SAFETY t=3360741 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3361751 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3362760 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3363769 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3364779 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3365788 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3366798 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3367805 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3368813 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3369821 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3370831 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3371841 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3372850 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3373860 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3374870 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3375877 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3376887 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3377897 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3378907 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3379915 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3380923 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3381933 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3382943 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3383952 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3384961 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3385971 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3386980 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3387990 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3389000 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3390009 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3391019 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3392028 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3393032 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3394041 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3395049 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+[AHCI][DISK][00040040] setPowerState::2282:inNewPowerState = 2
+[AHCI][DISK][00040040] setPowerState::2340:Scheduling callout thread
+[AHCI][DISK][00040040] setPowerState::2373:k100SecondsInMicroSeconds
+[AHCI][DISK][00040040] ChangePowerState::4419:inPowerStateCommand: 230 status = 0x0
+[AHCI][DISK][00040040] ChangePowerState::2674:Finished power state transition to sleep.
+N4X-SAFETY t=3396058 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3397068 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3398078 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3399086 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3400095 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3401105 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3402112 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3403121 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3404131 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3405141 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3406150 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3407158 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3408168 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3409178 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3410186 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3411195 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3412205 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3413213 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3414219 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3415229 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3416238 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3417247 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3418255 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3419264 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3420274 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3421283 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3422290 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3423298 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3424306 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3425315 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3426323 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3427332 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3428342 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3429351 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3430360 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3431370 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 15 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+[AHCI][DISK][00040040] setPowerState::2282:inNewPowerState = 3
+[AHCI][DISK][00040040] setPowerState::2340:Scheduling callout thread
+[AHCI][DISK][00040040] setPowerState::2373:k100SecondsInMicroSeconds
+[AHCI][PRT][00040040] WaitSecsForNotBusy::3905:Port 4 PxTFD: 0x130
+[AHCI][PRT][00040040] AbortCommands::5382:Port 4 - called, deviceWithError -1, errCode = 0xe0030003
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6322:
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6373:Enabling device features
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6379:Calling ResendFromRecoveryQueue
+[AHCI][DISK][00040040] ChangePowerState::4419:inPowerStateCommand: 0 status = 0x0
+[AHCI][DISK][00040040] ChangePowerState::2622:Finished power state transition to on.
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 15 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+N4X-SAFETY t=3432380 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3433389 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3434399 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3435408 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3436418 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3437428 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3438437 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3439447 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3440455 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3441465 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3442470 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3443477 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3444487 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3445496 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3446503 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3447512 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3448522 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3449531 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3450539 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3451548 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3452557 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3453565 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3454575 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3455585 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3456592 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3457600 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3458610 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3459619 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3460628 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3461636 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3462646 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3463652 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3464662 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3465671 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3466681 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3467688 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3468697 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3469705 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3470713 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3471721 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3472731 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3473739 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3474749 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3475758 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3476768 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3477777 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3478785 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3479795 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3480804 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3481812 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3482819 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3483829 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3484839 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3485848 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3486858 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3487867 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3488874 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3489881 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3490891 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3491901 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3492910 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3493920 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3494929 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3495936 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3496946 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3497956 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3498965 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3499973 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3500983 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3501987 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3502997 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3504005 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3505014 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3506022 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3507031 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3508040 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3509048 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3510057 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3511065 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3512074 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3513084 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3514094 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3515103 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+[AHCI][DISK][00040040] setPowerState::2282:inNewPowerState = 2
+[AHCI][DISK][00040040] setPowerState::2340:Scheduling callout thread
+[AHCI][DISK][00040040] setPowerState::2373:k100SecondsInMicroSeconds
+[AHCI][DISK][00040040] ChangePowerState::4419:inPowerStateCommand: 230 status = 0x0
+[AHCI][DISK][00040040] ChangePowerState::2674:Finished power state transition to sleep.
+N4X-SAFETY t=3516111 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3517119 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3518129 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3519138 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3520146 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3521155 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3522164 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3523170 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3524179 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3525189 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 1 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+[AHCI][DISK][00040040] setPowerState::2282:inNewPowerState = 3
+[AHCI][DISK][00040040] setPowerState::2340:Scheduling callout thread
+[AHCI][DISK][00040040] setPowerState::2373:k100SecondsInMicroSeconds
+[AHCI][PRT][00040040] WaitSecsForNotBusy::3905:Port 4 PxTFD: 0x130
+[AHCI][PRT][00040040] AbortCommands::5382:Port 4 - called, deviceWithError -1, errCode = 0xe0030003
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6322:
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6373:Enabling device features
+[AHCI][DISK][00040040] InitiateDeviceRecovery::6379:Calling ResendFromRecoveryQueue
+[AHCI][DISK][00040040] ChangePowerState::4419:inPowerStateCommand: 0 status = 0x0
+[AHCI][DISK][00040040] ChangePowerState::2622:Finished power state transition to on.
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 5 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+N4X-SAFETY t=3526197 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3527207 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3528216 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3529226 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3530235 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3531245 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3532254 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3533264 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3534273 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3535281 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3536291 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3537301 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3538310 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3539319 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3540329 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3541338 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3542347 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3543356 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3544366 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3545375 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3546383 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3547392 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3548401 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3549411 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3550419 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3551429 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3552438 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3553447 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3554456 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3555466 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3556475 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3557483 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3558493 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3559502 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3560512 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3561518 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3562522 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3563530 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3564540 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3565550 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3566559 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3567568 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3568576 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3569586 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3570595 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3571604 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3572613 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3573623 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3574630 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3575640 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3576648 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3577656 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3578665 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3579675 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3580685 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3581692 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3582700 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+"AppleKeyStore":pid:162,sel:7:8088: unexpected session uid: -1 requested by: bluetoothd (162)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:162,:13297: operation failed (sel: 7 ret: e00002f0, -1)
+N4X-SAFETY t=3583710 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3584719 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3585728 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3586738 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3587748 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3588756 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3589764 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3590773 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3591782 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3592791 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3593801 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3594811 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3595819 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3596829 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3597837 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28600000
+N4X-SAFETY t=3598847 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3599855 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3600865 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3601873 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+N4X-SAFETY t=3602881 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000
+N4X-SAFETY t=3603891 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28800000

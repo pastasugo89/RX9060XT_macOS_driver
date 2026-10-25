@@ -10,6 +10,7 @@
 #include "dcn/navi48_dcn.hpp"
 #include "Navi48MetalNub.hpp"   // 0.0.610 (ABI 1.8): selectors 19 / 20; 0.0.656 (G6): registeredAccelerator()
 #include "amd/native_disp.h"     // 0.0.617 (K1): n48disp_on_ws_client_closed
+#include "amd/n4x_safety.h"      // n4x safety: refused() gates the writing selectors (submit, DAL, mode trial / hold)
 
 #include <IOKit/IOLib.h>
 #include <libkern/OSAtomic.h>
@@ -193,6 +194,8 @@ IOReturn IOAccelNavi48NativeClient::externalMethod(uint32_t selector, IOExternal
 		if (!shape(0, 0, sizeof(n48n_ctx), sizeof(n48n_ctx))) return kIOReturnBadArgument;
 		return amdgpu::n1c_ctx(r, static_cast<const n48n_ctx *>(args->structureInput), static_cast<n48n_ctx *>(args->structureOutput));
 	case N48N_SEL_SUBMIT: {
+		// n4x safety: a latched TRIP refuses new submissions (the GPU stops getting work; reads stay allowed).
+		if (n4xs::refused()) return kIOReturnNotPermitted;
 		// 32 + 32*n bytes: the size is checked against num_ibs inside the parser; here only the shape and the ceiling.
 		if (sic != 0 || soc != 1 || sos != 0 || sis < 32u + 32u || sis > 32u + 32u * N48N_MAX_IBS || args->structureInput == nullptr)
 			return kIOReturnBadArgument;
@@ -253,16 +256,19 @@ IOReturn IOAccelNavi48NativeClient::externalMethod(uint32_t selector, IOExternal
 	// ---- ABI 1.2 (0.0.604): the DISPCLK/DPPCLK experiment. bind() arms the display layer (idempotent; no register written): the step reads the OTG frame
 	// counter through the scanout status code.
 	case N48N_SEL_DAL_STEP:
+		if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety: a latched TRIP refuses every writer (clocks, display)
 		if (!shape(2, 0, 0, sizeof(n48n_dal_result))) return kIOReturnBadArgument;
 		(void)n48dcn::bind(owner);
 		return amdgpu::n1c_dal_step(r, si[0], si[1], static_cast<n48n_dal_result *>(args->structureOutput));
 	// ---- ABI 1.3 (0.0.605): the timed mode trial. bind() arms the display layer (idempotent; on a native boot it also takes the golden register copy, read-only).
 	case N48N_SEL_MODE_TRIAL:
+		if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety
 		if (!shape(3, 0, 0, sizeof(n48n_mode_result))) return kIOReturnBadArgument;
 		(void)n48dcn::bind(owner);
 		return amdgpu::n1c_mode_trial(r, si[0], si[1], si[2], static_cast<n48n_mode_result *>(args->structureOutput));
 	// ---- ABI 1.7 (0.0.609): the HELD mode of row 120. bind() as for the trial.
 	case N48N_SEL_MODE_HOLD:
+		if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety: a hold raises DISPCLK/DPPCLK hard minimums
 		if (!shape(2, 0, 0, sizeof(n48n_mode_result))) return kIOReturnBadArgument;
 		(void)n48dcn::bind(owner);
 		return amdgpu::n1c_mode_hold(r, si[0], si[1], static_cast<n48n_mode_result *>(args->structureOutput));

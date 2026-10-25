@@ -17,6 +17,7 @@
 #include "Navi48DisplayNub.hpp"       // 0.0.652 (M5): fbpublish 2
 #include <libkern/c++/OSData.h>
 #include "amd/native_s1b.h"   // 0.0.600 (native S1b): navi48-native=1, default OFF
+#include "amd/n4x_safety.h"   // n4x safety: the thermal watchdog (navi48-safety), read-only sensor + TRIP latch
 #include "amd/native_s1c.h"   // 0.0.612: n1c_latch_pci_bars
 #include "Navi48NativeClient.hpp"   // 0.0.601 (native S1c): the N48N user client
 #include "Navi48UserClient.hpp"
@@ -7410,6 +7411,23 @@ bool Navi48Bringup::start(IOService *provider) {
 	// build 0.0.515: the read-only raster device the AGDC LINKCFG reply reads through
 	// (n48dcn::liveRaster), built here - after stagePSP built the device context, before the Phase 4 block below can install
 	// any hook that calls it. No register is read or written by attach; it arms nothing (bind() still does that, on verbs 74-77).
+	// n4x safety: the thermal watchdog (boot-arg navi48-safety; default ON on the Navi 44 profile). It only READS THM_TCON_CUR_TMP.
+	// Without a resolved sensor it starts in TRIP (fail closed) and refuses the writing entry points; navi48-safety=0 turns it off.
+	{
+#if defined(N4X_ASIC_NAVI48)
+		const bool safetyDefault = false;
+#else
+		const bool safetyDefault = true;
+#endif
+		n4xs::Thresholds safetyTh {};
+		if (n4xs::config(safetyDefault, &safetyTh)) {
+			uint32_t thmByte = 0, sensorDword = 0;
+			if (ipDiscovery.isValid() && ipDiscovery.regByteOffset(IpDiscovery::HwThm, 0, n4xs::kThmSeg, n4xs::kThmCurTmpDword, thmByte) && thmByte != 0)
+				sensorDword = thmByte / 4u;   // the byte offset is (base + 0) * 4; RREG32 takes dwords
+			dev.rmmio = rmmio; dev.rmmioSize = rmmioSize;
+			n4xs::start(dev, sensorDword, safetyTh);
+		}
+	}
 	n48dcn::attach(this);
 	// ---- Phase 4 route experiment (navi48-accel-experiment=1) ----
 	// Apple's accelerator personalities all carry IOPropertyMatch
@@ -8987,6 +9005,8 @@ void Navi48Bringup::stop(IOService *provider) {
 	n48fbname::restore_on_unload();
 	// 0.0.603 (native S2a): the console plane back and every scanout watchdog thread finished BEFORE anything is unmapped (both need the registers).
 	n48dcn::scanShutdown();
+	// n4x safety: the watchdog thread ends before any register it reads is unmapped (no-op when it never started).
+	n4xs::stop();
 	// 0.0.610 (milestone #9): a published Metal nub (and the aux accelerator under it) goes before the GPU state does. No-op unless the nub was published.
 	Navi48DisplayNub::shutdown();      // 0.0.652 (M5): the framebuffer's nub first (no-op when never published)
 	Navi48MetalNub::shutdown();

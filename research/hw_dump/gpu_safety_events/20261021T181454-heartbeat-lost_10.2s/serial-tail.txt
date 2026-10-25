@@ -1,0 +1,300 @@
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+N4X-SAFETY t=2215822 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+N4X-SAFETY t=2216831 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+com.apple.xpc.launchd|2026-10-21 18:14:40.523358 <Notice>: Generating shutdown sapfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+tall report...
+
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/sbin/spindump
+  IOTimeSyncTimeSyncTimePort(0x52540013945e0008): Removing general notifier <ptr> for local clock port <ptr> stop
+N4X-SAFETY t=2217838 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/bin/heap
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/sbin/spindump
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/bin/swift-inspect
+macOSTaskPolicy: (com.apple.swift-inspect) may not get the task control port of (symptomsd) (pid: 232): (symptomsd) is hardened, (symptomsd) doesn't have get-task-allow, (com.apple.swift-inspect) is not a declared debugger(com.apple.swift-inspect) is not N4X-SAFETY t=2218848 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+AMFI: [non-fatal] unable to accelerate context: com.apple.kextstat | 65285
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/sbin/kextstat
+ASP: System is shutting down, (SIP is DISABLED) allowing process at path: /usr/sbin/spindump
+"AppleKeyStore":pid:4632,sel:7:8088: unexpected session uid: -1 requested by: spindump (4632)
+"AppleKeyStore":pid:4632,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+"AppleKeyStore":pid:4632,sel:7:8088: unexpected session uid: -1 requested by: spindump (4632)
+"AppleKeyStore":pid:4632,:13297: operation failed (sel: 7 ret: e00002c2, -1)
+N4X-SAFETY t=2219860 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+[System Event] [2220233505502] [INFO] [Subsystem: launchd] [Event: shutdown] shutdown DOMAIN_DEACTIVATE -> WRITE_DISABLED
+com.apple.xpc.launchd|2026-10-21 18:14:43.535678 (shutdown) <Notice>: shutdown DOMAIN_DEACTIVATE -> WRITE_DISABLED
+
+[System Event] [2220237433756] [INFO] [Subsystem: launchd] [Event: shutdown] shutdown WRITE_DISABLED -> WAITING_ON_COALITIONS
+com.apple.xpc.launchd|2026-10-21 18:14:43.535686 (shutdown) <Notice>: shutdown WRITE_DISABLED -> WAITING_ON_COALITIONS
+
+[System Event] [2220240932579] [INFO] [Subsystem: launchd] [Event: shutdown] shutdown WAITING_ON_COALITIONS -> WAITING_ON_SHUTDOWN_STALL_REPORT
+com.apple.xpc.launchd|2026-10-21 18:14:43.535687 (shutdown) <Notice>: shutdown WAITING_ON_COALITIONS -> WAITING_ON_SHUTDOWN_STALL_REPORT
+
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+com.apple.xpc.launchd|2026-10-21 18:14:43.588735 <Notice>: Shutdown stall reportapfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+[System Event] [2220284989731] [INFO] [Subsystem: launchd] [Event: shutdown] shutdown WAITING_ON_SHUTDOWN_STALL_REPORT -> LAUNCH_SHUTDOWN_TEARDOWN
+[System Event] [2220285014991] [INFO] [Subsystem: launchd] [Event: shutdown_installer_tasks] Doing boot task
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+ generated in 3 seconds.
+
+com.apple.xpc.launchd|2026-10-21 18:14:43.588764 (shutdown) <Notice>: shutdown WAITING_ON_SHUTDOWN_STALL_REPORT -> LAUNCH_SHUTDOWN_TEARDOWN
+
+com.apple.xpc.launchd|2026-10-21 18:14:43.588796 (shutdown_installer_tasks) <Notice>: Doing boot task
+
+[System Event] [2220298281410] [INFO] [Subsystem: launchd] [Event: shutdown_installer_tasks] optional boot task not present
+com.apple.xpc.launchd|2026-10-21 18:14:43.602152 (shutdown_installer_tasks) <Notice>: optional boot task not present
+
+[System Event] [2220302238235] [INFO] [Subsystem: launchd] [Event: deferred_install] Doing boot task
+com.apple.xpc.launchd|2026-10-21 18:14:43.602170 (deferred_install) <Notice>: Doing boot task
+
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+[System Event] [2220306884312] [INFO] [Subsystem: launchd] [Event: deferred_install] optional boot task not present
+com.apple.xpc.launchd|2026-10-21 18:14:43.602281 (deferred_install) <Notice>: optional boot task not present
+
+[System Event] [2220310238464] [INFO] [Subsystem: launchd] [Event: system] Userspace teardown took: 5078 ms
+com.apple.xpc.launchd|2026-10-21 18:14:43.602284 (system) <Notice>: Userspace teardown took: 5078 ms
+
+[System Event] [2220313205665] [INFO] [Subsystem: launchd] [Event: system] Will be calling reboot(2) with flags: 0x8
+com.apple.xpc.launchd|2026-10-21 18:14:43.602285 (system) <Notice>: Will be calling reboot(2) with flags: 0x8
+
+[System Event] [2220316429737] [INFO] [Subsystem: launchd] [Event: launchd] Quiescing queues
+com.apple.xpc.launchd|2026-10-21 18:14:43.602285 <Notice>: Quiescing queues
+
+[System Event] [2220318849566] [INFO] [Subsystem: launchd] [Event: shutdown] shutdown LAUNCH_SHUTDOWN_TEARDOWN -> WAITING_ON_QUIESCE
+com.apple.xpc.launchd|2026-10-21 18:14:43.602286 (shutdown) <Notice>: shutdown LAUNCH_SHUTDOWN_TEARDOWN -> WAITING_ON_QUIESCE
+
+apfs_scan_for_fragmentation_cb:580: disk2s1 Requested to stop all background work, interrupting scan for fragmentation iteration
+launchd quiesce complete
+
+IOConsoleUsers: gIOScreenLockState 3, hs 0, bs 0, now 0, sm 0xe0000255
+GTrace synchronization point 95
+IOPlatformHaltRestartAction -> AppleSMC
+IOPlatformHaltRestartAction -> AppleSMC
+PMRD: PagingOff all drivers took 2 ms
+
+PMRD: PagingOff total 3 ms
+
+syncing disks... Killing all processes 
+
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 2 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 19 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+vfs_unmountall(nonsystem) start
+unmount(1) /System/Library/AssetsV2/com_apple_MobileAsset_PKITrustStore/purpose_auto/6dd55b0d06633a00de6f57ccb910a66a5ba2409a.asset/.AssetData
+apfs_log_op_with_proc:3227: disk6s1 unmounting volume Creedence11M6270.SECUREPKITRUSTSTOREASSETS_SECUREPKITRUSTSTORE_Cryptex, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+nx_volume_group_update:706: disk6s1 Volume Creedence11M6270.SECUREPKITRUSTSTOREASSETS_SECUREPKITRUSTSTORE_Cryptex role 0x0 is not a System or Data volume
+apfs_vfsop_unmount:3708: disk6 nx_num_vols_mounted is 0
+container_unload:2359: vnode_close() invoked in the container unload path
+apfs: total mem allocated: 333165432 (317 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 5)
+unmount(1) /System/Volumes/Data/home
+Unmount of /System/Volumes/Data/home failed (45)
+unmount(1) /System/Volumes/Data skipped
+unmount(1) /System/Volumes/Update skipped
+unmount(1) /System/Volumes/VM skipped
+unmount(1) /System/Volumes/Preboot skipped
+unmount(1) /dev skipped
+unmount(1) / skipped
+vfs_unmountall(nonsystem) end
+DK: IOUserServer(com.apple.IOUserDockChannelSerial-0x1000002fd)-0x10000034f::systemHalt()
+DK: 1: terminate(IOUserDockChannelSerial-0x1000002fd)
+DK: IOUserServer(com.apple.driverkit.AppleUserHIDDrivers-0x100000340)-0x100000350::systemHalt()
+DK: 1: terminate(AppleUserUSBHostHIDDevice-0x100000340)
+DK: 1: terminate(AppleUserUSBHostHIDDevice-0x100000342)
+DK: 0: terminate(AppleUserHIDEventDriver-0x10000035a)
+DK: AppleUserHIDEventDriver-0x10000035a:force close (IOHIDInterface-0x100000355)
+AppleUserUSBHostHIDDevice:0x100000340 close by AppleUserHIDEventDriver:0x10000035a (0x0)
+DK: AppleUserHIDEventDriver-0x10000035a:force close (AppleUserUSBHostHIDDevice-0x100000340)
+DK: AppleUserHIDEventDriver-0x10000035e:force close (IOHIDInterface-0x100000359)
+AppleUserUSBHostHIDDevice:0x100000342 close by AppleUserHIDEventDriver:0x10000035e (0x0)
+DK: AppleUserHIDEventDriver-0x10000035e:force close (AppleUserUSBHostHIDDevice-0x100000342)
+DK: stale service AppleUserHIDEventDriver-0x10000035e found, skipping termination
+IOServicePH::systemHalt took 15 ms
+Killing all processes 
+
+continuing
+vfs_unmountall(system) start
+unmount(0) /System/Volumes/Data/home
+Unmount of /System/Volumes/Data/home failed (45)
+unmount(0) /System/Volumes/Data
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 8 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 5 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 3 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 11 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+apfs_log_op_with_proc:3227: disk2s1 unmounting volume macOS - Data, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+apfs_vfsop_unmount:3378: disk2s1 waiting for purgatory cleaner to finish
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 3 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 32 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+nx_volume_group_destitch_firmlinks:968: disk2s1 Destitch all firmlinks
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 1 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 12 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312593108
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312575051
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312575872
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312571430
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312571427
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312571351
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312571350
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312497214
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312084026
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312242160
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500311922457
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312242159
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500311922456
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312066551
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500311879702
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500311879701
+nx_volume_group_destitch_firmlinks:1014: disk2s1 Destitch inode 1152921500312571431
+nx_volume_group_update:795: disk2s1 Set volume (role 0x40) to 0 xid 0
+apfs_vfsop_unmount:3708: disk2 nx_num_vols_mounted is 4
+apfs: total mem allocated: 260809751 (248 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 4)
+unmount(0) /System/Volumes/Update
+apfs_log_op_with_proc:3227: disk2s5 unmounting volume Update, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+apfs_vfsop_unmount:3378: disk2s5 waiting for purgatory cleaner to finish
+nx_volume_group_update:706: disk2s5 Volume Update role 0xc0 is not a System or Data volume
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 2 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 8 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+apfs_vfsop_unmount:3708: disk2 nx_num_vols_mounted is 3
+apfs: total mem allocated: 260793859 (248 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 3)
+unmount(0) /System/Volumes/VM
+kern_close_file_for_direct_io(<ptr>) 0
+vnode_close(0)
+
+apfs_log_op_with_proc:3227: disk2s6 unmounting volume VM, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+apfs_vfsop_unmount:3378: disk2s6 waiting for purgatory cleaner to finish
+nx_volume_group_update:706: disk2s6 Volume VM role 0x8 is not a System or Data volume
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 1 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 5 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+apfs_vfsop_unmount:3708: disk2 nx_num_vols_mounted is 2
+apfs: total mem allocated: 260791875 (248 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 2)
+unmount(0) /System/Volumes/Preboot
+apfs_log_op_with_proc:3227: disk2s2 unmounting volume Preboot, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+apfs_log_op_with_proc:3227: os.dmgs1 ungrafting volume CheerG25G83.x86_64SystemCryptex, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+nx_volume_group_update:706: os.dmgs1 Volume CheerG25G83.x86_64SystemCryptex role 0x0 is not a System or Data volume
+apfs_log_op_with_proc:3227: os.clone.dmgs1 ungrafting volume CheerG25G83.x86_64SystemCryptex, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+nx_volume_group_update:706: os.clone.dmgs1 Volume CheerG25G83.x86_64SystemCryptex role 0x0 is not a System or Data volume
+graft_blockmap_lut_release:1080: reference count dropped to 0, free blockmap_lut
+apfs_log_op_with_proc:3227: app.dmgs1 ungrafting volume AppCryptex, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+nx_volume_group_update:706: app.dmgs1 Volume AppCryptex role 0x0 is not a System or Data volume
+graft_blockmap_lut_release:1080: reference count dropped to 0, free blockmap_lut
+apfs_vfsop_unmount:3378: disk2s2 waiting for purgatory cleaner to finish
+nx_volume_group_update:706: disk2s2 Volume Preboot role 0x10 is not a System or Data volume
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 1 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+_vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 8 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
+apfs_vfsop_unmount:3708: disk2 nx_num_vols_mounted is 1
+apfs: total mem allocated: 251146701 (239 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 1)
+unmount(0) /dev
+unmount(0) /
+N4X-SAFETY t=2220870 hotspot=40 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x28200000
+apfs_log_op_with_proc:3227: disk2s4 unmounting volume com.apple.os.update-60587424F5399FC05D957DF05B4D2F65543462495C77AEF520F790FBB57CB212, requested by: launchd (pid 1); parent: kernel_task (pid 0)
+gbitmap_update_thread_terminate:5586: disk2s4 called for snapshot, skipping
+nx_volume_group_destitch_firmlinks:968: disk2s4 Destitch all firmlinks
+apfs_vfsop_unmount:3708: disk2 nx_num_vols_mounted is 0
+container_unload:2359: vnode_close() invoked in the container unload path
+apfs: total mem allocated: 103839168 (99 mb);
+apfs_vfsop_unmount:3721: all done.  going home.  (numMountedAPFSVolumes 0)
+vfs_unmountall(system) end
+done
+CPU halted
+GTrace synchronization point 99
+[AHCI][DISK][00040020] setPowerState::2282:inNewPowerState = 3
+[AHCI][DISK][00040040] ChangePowerState::4419:inPowerStateCommand: 224 status = 0x0
+[AHCI][DISK][00040020] setPowerState::2340:Scheduling callout thread
+[AHCI][DISK][00040020] setPowerState::2373:k100SecondsInMicroSeconds
+[AHCI][PRT][00040020] WaitSecsForNotBusy::3905:Port 2 PxTFD: 0x130
+[AHCI][PRT][00040020] AbortCommands::5382:Port 2 - called, deviceWithError -1, errCode = 0xe0030003
+[AHCI][DISK][00040020] InitiateDeviceRecovery::6322:
+[AHCI][DISK][00040020] InitiateDeviceRecovery::6373:Enabling device features
+[AHCI][DISK][00040020] InitiateDeviceRecovery::6379:Calling ResendFromRecoveryQueue
+[AHCI][DISK][00040020] ChangePowerState::4419:inPowerStateCommand: 0 status = 0x0
+[AHCI][DISK][00040020] ChangePowerState::2622:Finished power state transition to on.
+[AHCI][DISK][00040020] ChangePowerState::4419:inPowerStateCommand: 224 status = 0x0
+PMRD: PowerOff driver IOBlockStorageDriver (0x10000023c) took 513 ms
+
+PMRD: PowerOff driver IOBlockStorageDriver (0x100000224) took 525 ms
+
+AppleUSB20XHCIPort@01600000: AppleUSBHostPort::terminateDevice: destroying 0x0627/0001/0000 (QEMU USB Tablet): port is powering off
+AppleUSB20XHCIPort@01500000: AppleUSBHostPort::terminateDevice: destroying 0x0627/0001/0000 (QEMU USB Keyboard): port is powering off
+AXS86P:P AlSPa: tshfutotirngm dPowln
+ug
+in::systemWillShutdown!
+
+X86PlatformPlugin::systemWillShutdown!
+IOPlatformHaltRestartAction -> AppleSMC
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+IOPlatformHaltRestartAction -> AppleSMC
+PMRD: PowerOff all drivers took 549 ms
+
+PMRD: PowerOff total 1157 ms
+
+Debugger called: <panic>
+
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+SMCWDT::setWatchdogTimer ERROR: smcWriteKey failed (kSMCBadCommand)
+Nested panic detected - entry count: 2 panic_caller: 0xffffff8015ba466e
+Attempting to commit panic log to NVRAM
+
+Nested panic string:
+Ticket lock 0xffffff8016168580 is unexpectedly owned by thread 0xffffff95104dba90 @lock_ticket.c:155
+<end nested panic string>
+
+
+
+RECURSIVE DEBUGGER ENTRY DETECTED
+
+
+Debugger called: <panic>
+

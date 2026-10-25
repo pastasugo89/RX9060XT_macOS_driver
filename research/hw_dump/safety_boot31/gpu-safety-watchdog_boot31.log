@@ -1,0 +1,4 @@
+2026-10-21T16:45:50 gpu-safety-watchdog: READY pid=122064 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
+2026-10-21T16:45:51 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log
+2026-10-21T16:46:29 gpu-safety-watchdog: N4X-SAFETY event=START sensor=THM_TCON_CUR_TMP dword=0x16600 warn=75 trip=80
+2026-10-21T16:46:29 gpu-safety-watchdog: heartbeat watch armed on the first heartbeat

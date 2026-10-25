@@ -9,6 +9,11 @@ c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_mes_set_hw_resourc
 c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_vadd_ir_abi.cpp" -o "$OUT/test_vadd_ir_abi"
 "$OUT/test_vadd_ir_abi"
 c++ -std=c++17 -O1 -Wall -I"$SRC" "$ROOT/tools/hosttests/test_ipdiscovery.cpp" "$SRC/ipdiscovery.cpp" -o "$OUT/test_ipdiscovery"
+# n4x safety (thermal watchdog of the kext): the pure decode / decision / protection / heartbeat logic.
+c++ -std=c++17 -O1 -Wall -Wextra -Werror -I"$SRC" "$ROOT/tools/hosttests/test_n4x_safety_pure.cpp" -o "$OUT/test_n4x_safety_pure"
+"$OUT/test_n4x_safety_pure"
+# The host watchdog (tools/vm/gpu-safety-watchdog.py): unit cases and the scenarios with a fake serial log and a fake QMP socket.
+python3 "$ROOT/tools/hosttests/test_gpu_safety_watchdog.py"
 # Navi 44 (questa scheda): 2 SE, 2 SA/SE, 4 RB/SE, 8 CU per SA
 "$OUT/test_ipdiscovery" "$ROOT/research/hw_dump/ip_discovery_table.bin" 2 2 4 8
 
