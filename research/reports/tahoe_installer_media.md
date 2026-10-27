@@ -118,8 +118,13 @@ copia/collega **l’intero InstallAssistant.pkg** in `Contents/SharedSupport/Sha
 Il primo supporto conteneva invece soltanto il membro XAR SharedSupport.dmg:
 preparazione errata, ora corretta senza scaricare nuovamente il pacchetto.
 
-ISO canonica ricostruita con l’intero pacchetto; SHA-256 letto dall’ISO uguale
-all’originale: `376923d7494cfa32b69f383bcfdce46aeedb609fe6a242ea12a6e015bfb77ba4`.
+ISO canonica ricostruita con l’intero pacchetto. Il digest
+`376923d7494cfa32b69f383bcfdce46aeedb609fe6a242ea12a6e015bfb77ba4` è
+registrato per l’`InstallAssistant.pkg` completo in SharedSupport (18 384 624 402
+byte), non costituisce un hash dell’intera ISO. La ISO presente sulla SanDisk
+personale è stata verificata solo tramite dimensione (18 442 831 872 byte),
+volume ID e nomi nella radice; non è stato calcolato un hash completo né
+confrontata byte per byte con la copia di build.
 La vecchia ISO è conservata come `Tahoe25G83-invalid-inner-dmg.iso`.
 Supporto sostituito nella VM a caldo tramite QMP dopo detach del volume
 Shared Support ed eject. Disco guest APFS già inizializzato dall’utente.

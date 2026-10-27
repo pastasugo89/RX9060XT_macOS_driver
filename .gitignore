@@ -29,3 +29,27 @@ __pycache__/
 
 # Tabelle ACPI binarie della scheda madre dell utente (firmware MSI/AMI): restano locali
 research/hw_dump/baremetal_inventory/acpi/
+
+# Local build trees/toolchains and shader/firmware artifacts; source fixes live in cobalt64/ and tools/.
+/research/builds/
+# Extracted initramfs contents from local Linux bring-up (regenerable, not project source).
+/VERSION
+/bin
+/sbin
+/lib
+/lib64
+/etc/
+/home/
+/usr/
+/var/
+/init
+/init_functions
+/new_root/
+/config
+/buildconfig
+/printf
+/compute-metal.png
+/quad-metal.png
+# Captured Apple framework code and confidential generated EFI configuration stay local.
+/research/hw_dump/**/*.bin
+/research/hw_dump/**/config.plist

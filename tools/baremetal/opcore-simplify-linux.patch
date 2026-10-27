@@ -1,0 +1,166 @@
+diff --git a/OpCore-Simplify.py b/OpCore-Simplify.py
+index e446a21..59e830a 100644
+--- a/OpCore-Simplify.py
++++ b/OpCore-Simplify.py
+@@ -11,6 +11,9 @@ from Scripts import run
+ from Scripts import smbios
+ from Scripts import utils
+ import updater
++import argparse
++import json
++from datetime import datetime, timezone
+ import os
+ import sys
+ import re
+@@ -19,11 +22,11 @@ import traceback
+ import time
+ 
+ class OCPE:
+-    def __init__(self):
++    def __init__(self, allow_unaccelerated=False):
+         self.u = utils.Utils("OpCore Simplify")
+         self.u.clean_temporary_dir()
+         self.ac = acpi_guru.ACPIGuru()
+-        self.c = compatibility_checker.CompatibilityChecker()
++        self.c = compatibility_checker.CompatibilityChecker(allow_unaccelerated=allow_unaccelerated)
+         self.co = config_prodigy.ConfigProdigy()
+         self.o = gathering_files.gatheringFiles()
+         self.h = hardware_customizer.HardwareCustomizer()
+@@ -46,12 +49,28 @@ class OCPE:
+                 print("")
+                 print("E. Export hardware report (Recommended)")
+                 print("")
++            if sys.platform.startswith("linux"):
++                print("E. Export Linux hardware report (scoped AMD desktop collector)")
++                print("")
+             print("Q. Quit")
+             print("")
+         
+             user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if os.name == "nt" else ""))
+             if user_input.lower() == "q":
+                 self.u.exit_program()
++            if user_input.lower() == "e" and sys.platform.startswith("linux"):
++                from Scripts import linux_hardware
++                report_data = linux_hardware.collect()
++                stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
++                report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport-Linux-" + stamp)
++                os.makedirs(report_dir)
++                report_path = os.path.join(report_dir, "Report.json")
++                with open(report_path, "x") as handle:
++                    json.dump(report_data, handle, indent=2)
++                is_valid, errors, warnings, data = self.v.validate_report(report_path)
++                if not is_valid:
++                    raise ValueError("Invalid Linux hardware report: " + str(errors))
++                return report_path, data
+             if user_input.lower() == "e":
+                 hardware_sniffer = self.o.gather_hardware_sniffer()
+ 
+@@ -458,11 +477,16 @@ class OCPE:
+                 self.u.request_input("Press Enter to main menu...")
+ 
+ if __name__ == '__main__':
+-    update_flag = updater.Updater().run_update()
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--allow-unaccelerated", action="store_true",
++                        help="experimental AMD GOP installer mode, without GPU acceleration")
++    parser.add_argument("--no-update", action="store_true", help="keep this local patched revision")
++    args = parser.parse_args()
++    update_flag = False if args.no_update or args.allow_unaccelerated else updater.Updater().run_update()
+     if update_flag:
+         os.execv(sys.executable, ['python3'] + sys.argv)
+ 
+-    o = OCPE()
++    o = OCPE(allow_unaccelerated=args.allow_unaccelerated)
+     while True:
+         try:
+             o.main()
+diff --git a/Scripts/compatibility_checker.py b/Scripts/compatibility_checker.py
+index c0b16a8..88c9593 100644
+--- a/Scripts/compatibility_checker.py
++++ b/Scripts/compatibility_checker.py
+@@ -6,8 +6,9 @@ from Scripts import utils
+ import time
+ 
+ class CompatibilityChecker:
+-    def __init__(self):
++    def __init__(self, allow_unaccelerated=False):
+         self.utils = utils.Utils()
++        self.allow_unaccelerated = allow_unaccelerated
+ 
+     def _widest_compatibility(self, compatibilities):
+         compatibilities = [
+@@ -215,6 +216,18 @@ class CompatibilityChecker:
+             for gpu_props in self.hardware_report.get("GPU").values()
+         )
+         
++        if gpu_compatibility == (None, None) and self.allow_unaccelerated:
++            candidates = [props for props in self.hardware_report["GPU"].values()
++                          if props.get("Manufacturer") == "AMD"
++                          and props.get("Device Type") == "Discrete GPU"]
++            if len(candidates) != 1:
++                raise ValueError("Experimental GOP mode requires exactly one AMD discrete GPU.")
++            candidates[0]["Unaccelerated"] = True
++            candidates[0].pop("OCLP Compatibility", None)
++            self.ocl_patched_macos_version = None
++            print("Experimental GOP installer mode: GPU remains unsupported; no acceleration or GUI success is guaranteed.")
++            return
++
+         if gpu_compatibility == (None, None):
+             print("")
+             print("You cannot install macOS without a supported GPU.")
+diff --git a/Scripts/config_prodigy.py b/Scripts/config_prodigy.py
+index e3d7ad0..85e7c09 100644
+--- a/Scripts/config_prodigy.py
++++ b/Scripts/config_prodigy.py
+@@ -509,6 +509,9 @@ class ConfigProdigy:
+             "keepsyms=1"
+         ]
+ 
++        if any(gpu.get("Unaccelerated") for gpu in hardware_report.get("GPU", {}).values()):
++            boot_args.append("-amd_no_dgpu_accel")
++
+         if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+             boot_args.append("-amfipassbeta")
+ 
+diff --git a/Scripts/dsdt.py b/Scripts/dsdt.py
+index 3f105fa..988edb1 100644
+--- a/Scripts/dsdt.py
++++ b/Scripts/dsdt.py
+@@ -118,7 +118,7 @@ class DSDT:
+                     continue # Skip any already disassembled files
+                 target_files[x] = {
+                     "assembled_name": os.path.basename(x),
+-                    "disassembled_name": ".".join(x.split(".")[:-1]) + ".dsl",
++                    "disassembled_name": os.path.splitext(os.path.basename(x))[0] + ".dsl",
+                 }
+             if not target_files:
+                 # Somehow we ended up with none?
+diff --git a/Scripts/hardware_customizer.py b/Scripts/hardware_customizer.py
+index c5620b6..7e4ba2c 100644
+--- a/Scripts/hardware_customizer.py
++++ b/Scripts/hardware_customizer.py
+@@ -49,6 +49,11 @@ class HardwareCustomizer:
+             
+             for device_name in devices:
+                 device_props = devices[device_name].copy()
++                if device_type == "GPU" and device_props.get("Unaccelerated"):
++                    if self.utils.parse_darwin_version(macos_version) < (23, 0, 0):
++                        raise ValueError("Experimental AMD GOP installer mode requires Darwin 23 or newer.")
++                    self.customized_hardware[device_type][device_name] = device_props
++                    continue
+                 if device_props.get("OCLP Compatibility") and self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[0]) >= self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]):
+                     self.customized_hardware[device_type][device_name] = device_props
+                     needs_oclp = True
+diff --git a/Scripts/kext_maestro.py b/Scripts/kext_maestro.py
+index 4b7ec47..d98b605 100644
+--- a/Scripts/kext_maestro.py
++++ b/Scripts/kext_maestro.py
+@@ -191,6 +191,8 @@ class KextMaestro:
+             selected_kexts.append("CpuTopologyRebuild")
+ 
+         for gpu_name, gpu_props in hardware_report.get("GPU", {}).items():
++            if gpu_props.get("Unaccelerated"):
++                continue  # Preserve GOP display; do not select acceleration patches.
+             if "Integrated GPU" in gpu_props.get("Device Type"):
+                 if "AMD" in gpu_props.get("Manufacturer"):
+                     selected_kexts.append("NootedRed")

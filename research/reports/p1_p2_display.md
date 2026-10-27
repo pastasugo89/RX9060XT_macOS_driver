@@ -1093,3 +1093,50 @@ Evidenze: `research/hw_dump/vbl_boot47/` (SHA256SUMS). EFI P2 come boot46 più `
 **Osservazione utente boot47 dopo l'arm** (riferita dal coordinatore): nessuna differenza. Orologio assente, nessuna trasparenza, login window invariata. Coerente con `frames=0` e `command_buffers=0` nel pid 705.
 
 **Spegnimento boot47 (23/10, 15:58)**: `sudo -n /sbin/shutdown -h now` -> `vfs_unmountall(system) end`, `CPU halted`, poi il panic in halt `Ticket lock ... unexpectedly owned ... @lock_ticket.c:155` in `IOPlatformHaltRestartAction -> AppleSMC`. Stessa firma dei boot 21, 25, 37 e 43. Il watchdog ha rilevato il silenzio (`heartbeat-lost 10.1 s`) e ha inviato QMP quit (rc=2), come previsto dal progetto. Evento: `research/hw_dump/gpu_safety_events/20261023T155855-heartbeat-lost_10.1s/`. Heartbeat totali 138, zero WARN/TRIP. `qemu-img check` (sola lettura) pulito. Evidenze finali: `research/hw_dump/vbl_boot47/` (`serial_boot47_final.txt`, `watchdog_boot47_final.log`, `qemu_img_check_boot47.txt`, `user_observation_boot47.txt`, SHA256SUMS).
+
+## Prova bare metal WindowServer/login trial (27/10/2026)
+
+Evidenza unificata: `research/hw_dump/macos_rdna4fb_boot_20261027/windowserver-login-trial.log`; log del job: `/private/var/tmp/navi44-login-test/run.log` sul Mac.
+
+- La prova è stata fatta dopo logout, alla finestra di login. L’utente ha confermato di **non aver effettuato il login**: quindi orologio del desktop e trasparenze non sono stati verificati.
+- La prima nuova sessione WindowServer (pid 1435) ha caricato Navi48Metal (`initWithAcceleratorPort -> ok`) e SkyLight ha scritto `Metal compositor activated` (19:21:35.593). Il contatore T1 a 19:21:45 ha però `pipelines gfx=1`, `command_buffers=0`, `frames=0`; il pipe ha `submit=0`, `will-perform=0`, `frames copied=0`.
+- Nella stessa inizializzazione, CoreDisplay ha ricevuto `IOFBSetDisplayModeAndDepth` con `mode=0`, `depth=0`, `displayID=0`; `IOFBGetDisplayModeInformation()` fallisce. RDNA4FB accetta il timing GOP e arma il VBL emulato a 8333 us, ma questo non basta ad assegnare un modo/display ID utilizzabile. La causa dei frame zero resta aperta; l’attivazione del compositore da sola non prova che il desktop stia disegnando sulla RX.
+- Il job ha riavviato WindowServer una seconda volta per il rollback. Il bundle conta come anomali gli avvii che non hanno completato un command buffer; dunque il contatore è passato da 1 (precedente login-window, 19:18) a 2 (pid 1435) e 3 (pid 1488). Al terzo avvio Navi48Metal si è correttamente auto-rifiutato (`crash counter: >= 3 starts within 300 s`) e SkyLight ha scelto `Software compositor activated` (19:22:03.977). Questo fallback è stato innescato dalla sequenza di prova ravvicinata e non diagnostica il primo avvio Metal.
+- Il job ha disarmato la pipe (`accel+0xccf=0`), rimosso il flag headless e terminato. La soglia del contatore è temporale (300 s); non cancellare i file di salvaguardia per forzare nuovi avvii.
+
+### Prossimo test controllato
+
+Non richiede un reboot né una modifica EFI/kext: una volta scaduti i tentativi precedenti (>300 s), avviare un solo trial, arrivare al login utente mentre la pipe è armata, usare la scrivania per circa 60–90 s e poi fare logout manuale. Il nuovo job preparato in `research/ext/navi44-desktop-candidate-20261027/desktop-session-test.sh` acquisisce i contatori e il log WindowServer nella sessione e attende il logout per disarmare e riavviare WindowServer; controlla prima che la salvaguardia non abbia avvii anomali recenti. È staged nel progetto ma non installato sul Mac. Il vecchio `desktop-login-test.sh` non va riutilizzato: torna alla login window dopo circa 30 s.
+
+**Decisione reboot**: nessun riavvio da fare adesso. Prima va preparata e verificata la procedura after-login; il prossimo reboot sarà richiesto soltanto se quella diagnosi indicherà una modifica necessaria a EFI, boot-args o kext.
+
+## Prova accelerata dopo login e loop di WindowServer (27/10/2026)
+
+L'utente ha riferito che, dopo logout e login con i driver caricati, il display è diventato magenta; durante la comparsa dell'interfaccia WindowServer tornava alla schermata di blocco. Il comportamento si è ripetuto e ha richiesto un riavvio.
+
+Evidenze raccolte dai file live `/private/var/tmp/navi44-session-test/run.log` e `windowserver-session.log` e dai report in `/Library/Logs/DiagnosticReports/`:
+
+- Il test è arrivato alla sessione utente. Navi48Metal ha importato superfici IOSurface 2560×1440 e WindowServer ha creato/inviato command buffer Vulkan (`vkQueueSubmit = 0`, completamento fence OK). Quindi il login ha attivato un carico grafico reale.
+- Le cache non contenevano diverse pipeline richieste da WindowServer: il log riporta `FALLBACK magenta`; le pipeline compute mancanti sono state saltate con placeholder no-op.
+- Il LaunchDaemon `com.navi48.translate` non era installato né caricato su questo macOS bare metal (`launchctl print system/com.navi48.translate`: servizio assente; payload sotto `/usr/local/navi48` assente). Senza il daemon non potevano avvenire traduzione dinamica degli AIR e hot-swap: il magenta era quindi atteso e persistente per quelle pipeline.
+- Sono presenti quattro crash report WindowServer (PID 3341, 3584, 3805, 4025, ore 20:16:26, 20:16:29, 20:16:40, 20:19:40), tutti `EXC_CRASH / SIGABRT` (`Abort trap: 6`). Il fault stack ripete `__assert_rtn → CA::OGL::Context::push_surface → CA::OGL::FlattenNode::retain_surface → CA::OGL::ImagingNode::render → CA::OGL::render_layers`. Il log sessione mostra inoltre il client GPU che chiude e la pipe che si auto-disarma. Questo spiega il ritorno alla schermata di blocco; non è soltanto un rendering lento.
+- Il catturatore ha registrato zero submit/frame nella pipe display e non ha acquisito i log finali durante il rollback (`WARNING log collection failed`; processo terminato con `rc=143`). I file sono stati salvati prima del riavvio; l'ultimo log WindowServer di 63 byte non è una cattura completa.
+
+**Esito e sicurezza:** la prova non dimostra un desktop accelerato funzionante. Non ripetere login/logout accelerati con questa combinazione. Prima di una nuova prova occorre ripristinare una sessione software stabile e preparare/verificare il traduttore, poi investigare separatamente l'assertion di CoreAnimation/OpenGL e il percorso di presentazione. Il traduttore può risolvere le pipeline magenta, ma da solo non spiega né garantisce di correggere i crash `push_surface` o i frame zero. Non cancellare i contatori di salvaguardia. La configurazione OpenCore attuale contiene ancora `navi48-metal-ws=1`; la rimozione di questo argomento va preparata come rollback reversibile prima di un nuovo reboot accelerato.
+
+## Preparazione del prossimo boot accelerato (27/10/2026)
+
+L'utente ha chiesto che il prossimo reboot tenti l'accelerazione. Verifiche read-only sul boot corrente:
+
+- macOS 26.6.2 (25G83); NVRAM contiene `navi48-stage=17`, `navi48-metal=1`, `navi48-metal-disp=1`, `navi48-metal-ws=1`, `navi48-agdc=1`, `rdna4-vbl=1` e `amfi_get_out_of_my_way=1`.
+- `com.navi48.bringup` 0.0.664 e `com.hackintosh.RDNA4FB` 0.0.8 sono caricati. `Navi48Accel`/nub invece non risultano caricati/pubblicati dopo il reboot; l'armamento non è persistente e deve essere ripetuto a ogni avvio.
+- L'ESP esterna `disk4s1` (OCBOOT, UUID `7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3`) non è montabile. `diskutil verifyVolume` non trova errori strutturali, ma lascia il FAT segnato dirty (454 file, circa 13.5 GB liberi). Non è stata riparata né modificata.
+
+Modifiche applicate senza reboot e senza toccare OCBOOT:
+
+- Installato `/usr/local/navi48` e `/Library/LaunchDaemons/com.navi48.translate.plist` dal payload staged, creati state/output con proprietario `nobody`, avviato il daemon. `launchctl print system/com.navi48.translate` conferma `state = running`, UID/GID `nobody`. Questo attiva la traduzione AIR→SPIR-V e l'hot-swap per le pipeline mancanti; non corregge da solo una possibile assertion di CoreAnimation.
+- Installati i tool e lo script one-shot in `/Library/Application Support/Navi44/accelerated-trial/`; plist `/Library/LaunchDaemons/org.navi44.accelerated-trial.plist`. Il job **non è caricato in questa sessione**: launchd lo avvierà al prossimo boot. Verifica la versione/build, boot-args, translator, kext, pubblica il nub, attende l'attach di Navi48Accel, adotta/arma la pipe e riavvia WindowServer una sola volta alla login window.
+- Dopo il login monitora WindowServer per 120 secondi. Se il PID cambia (crash/restart), disarma, crea `/private/tmp/n48m-off` e, se non c'è una sessione utente, ricarica WindowServer in software. Consuma il plist prima dei comandi GPU così il tentativo non si ripete ai reboot successivi. Se il processo resta stabile, lascia pipe armata.
+- Script e plist hanno superato `bash -n`/`plutil -lint`; preflight dry-run PASS. Nessuna prova GPU è stata eseguita in questa sessione; l'azione GPU avverrà soltanto al prossimo boot tramite il job one-shot.
+
+**Stato reboot:** il job è preparato. La prossima partenza userà gli attuali argomenti accelerati, ma l'ESP FAT è dirty e non è stata modificata. Rimane sperimentale: il traduttore elimina il fallback magenta quando riesce a convertire gli AIR, ma non c'è ancora prova che elimini il crash `CA::OGL::Context::push_surface` né che la pipe produca frame. Se la prova si stabilizza per 120 s, il driver resta armato; in caso di crash il job tenta il fallback software una sola volta.

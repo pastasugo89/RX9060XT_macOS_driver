@@ -1,13 +1,23 @@
-# Stato del progetto — 25 ottobre 2026
+# Stato del progetto — 26 ottobre 2026
 
 Driver Metal per **AMD Radeon RX 9060 XT** (Navi 44, `1002:7590`) su macOS Tahoe 26.6.2 (build 25G83), come port di
 [Cobalt64](cobalt64/README.md) (RX 9070 XT). Dettaglio fase per fase in [`FASI.md`](FASI.md); qui il quadro d'insieme.
 
 ## In una riga
 
+**Aggiornamento, 26/10:** macOS Tahoe 26.6.2 (25G83) è avviato su bare metal e il progetto è stato importato in macOS. `sysctl` rileva 8 core fisici e 16 processori logici; `system_profiler` rileva la RX 9060 XT (`1002:7590`) come display principale, con 14 MB di VRAM riportata e nessun kext grafico caricato. Non è stata verificata la stabilità prolungata né ottenuta accelerazione grafica bare metal. La sessione Codex è ora proseguita su macOS.
+
+**Build su macOS, 27/10:** toolchain isolata preparata; Navi44Bringup, RDNA4FB, Navi48Accel, RADV, n48xlate e bundle Navi48Metal compilati in staging. Gate A/B/C e 1694 controlli host dell'ausiliario passati; nessun componente è stato caricato o provato sulla GPU. La build Navi44 contiene cinque blob opzionali sostituiti da stub vuoti; il traduttore ha un install name assoluto da valutare prima di distribuire il bundle. Dettagli e limiti in `research/builds/macos-20261027/BUILD_REPORT.md`.
+
+**Preparazione desktop, 27/10:** candidate locali non distribuite per VBL del framebuffer (periodo dal modo pubblicato, diagnostica callback) e per bundle Metal con install ID rilocabile; build e controlli offline passati, nessuna prova su GPU o dimostrazione di desktop accelerato. La corrispondenza tra modo pubblicato e scanout fisico resta da verificare. Dettagli in `research/reports/desktop_accel_preparation_20261027.md`.
+
+**Primo test autorizzato, 27/10:** OCBOOT verificata 28/28, backup EFI reale verificato su chiavetta 128 GB; candidata discovery stage1 distribuita e verificata 31/31, ma non ancora avviata. Dettagli e ripristino in `research/reports/navi44_stage1_candidate_20261027.md`.
+
+**Prossimo test in preparazione, 27/10:** trovata inizializzazione del watchdog successiva alla PSP; preparata build sperimentale con gate iniziale e candidata di sola osservazione ancora stage1, non distribuita né provata. Il sensore resta non validato e il gate non può interrompere la PSP già iniziata. `research/reports/navi44_safety_next_test_20261027.md`.
+
 Lo stack del driver funziona sulla GPU (bring-up, compute, Metal headless verificato), ma **il desktop accelerato a
-video non è ancora stato ottenuto**: in VM WindowServer non manda lavoro al nostro display, e il passaggio al bare
-metal è fermo a un blocco del kernel durante l'avvio del ripristino di macOS.
+video non è ancora stato ottenuto**: in VM WindowServer non mandava lavoro al nostro display. Sul bare metal Tahoe è
+installato, la mappa BOOT17 fornisce input USB e l'utente è arrivato al desktop dopo la rimozione del limite `cpus`.
 
 ## Cosa funziona (verificato su hardware, nella VM con la GPU in passthrough)
 
@@ -36,17 +46,80 @@ Cobalt64 su bare metal non ha. Per questo il lavoro si è spostato sul bare meta
 
 ### 2. Bare metal (dal 23/10)
 
-Chiavetta di avvio con OpenCore 1.0.8 + ripristino di Tahoe 25G83. Dopo sei avvii:
+Chiavetta di avvio con OpenCore 1.0.8 + ripristino di Tahoe 25G83. Dopo undici avvii:
 
 - risolti l'abort di `boot.efi` e lo `STOP 0x16` (memoria) con `DevirtualiseMmio`;
 - **il kernel parte** sul Ryzen 7 7700 (patch AMD tutte applicate);
-- **blocco totale dopo `CoreAnalyticsHub start completed`** (tastiera morta), invariato con: grafica integrata spenta,
+- **output fermo dopo `CoreAnalyticsHub start completed` nei boot3–8** (tastiera morta), invariato con: grafica integrata spenta,
   `-amd_no_dgpu_accel`, due patch ACPI della DSDT AGESA.
 
 Report completo, cronologia, ipotesi e passi successivi: [`research/reports/baremetal_bringup.md`](research/reports/baremetal_bringup.md).
 
-**Prossimo passo proposto**: avvio 7 con **Resizable BAR disattivato** e **porta seriale disattivata** nel BIOS
-(configurazione delle EFI AM5 funzionanti), senza toccare la chiavetta.
+**Avvii 7 e 8 negativi**: resize BAR e whitelist F7000000 risultano eseguiti, stesso blocco. L'audit con
+OpCore Simplify ha individuato una patch AMD temporale precedente a Darwin 25.4 applicata su **25.6**: nel replay
+sulla BootKC della chiavetta i primi due match sono vicini a funzioni estranee allo scheduler, benché il log
+riportasse `Success`. La nuova EFI usa la correzione 25.4+, abilita IOPCIIsHotplugPort per AM5 e aggiunge le
+16 definizioni CPU generate dal firmware. Questo corregge problemi concreti; la causa completa del blocco
+resta sconosciuta: anche il boot9 con la nuova base non raggiunge la GUI.
+
+**Boot9 negativo, nuova schermata:** foto IMG_0667, kext Lilu/NVMeFix/RestrictEvents avviati e ultima riga visibile
+`ACPI: WSMT`. Nessun panic; Caps Lock non risponde dopo 2–3 minuti. Patch aggiornata, hotplug AM5 e quattro SSDT
+confermati nel log; 28 payload verificati. La diversa ultima riga non dimostra avanzamento né identifica il colpevole.
+**Serial/COM ora disattivata**, confermata da Linux (stato 0); ReBAR/Above 4G restano attivi.
+La variante `research/ext/opcore-simplify-b840-acpi-debug/` mantiene la v2 e cambia soltanto i boot-args
+per la diagnostica ACPI e il buffer log: **già attiva su OCBOOT**, con backup del config e ripristino invariato.
+**Boot10: riavvio spontaneo durante il verbose**, senza cattura; il firmware torna a GRUB e Linux. Il nuovo log
+conferma gli argomenti diagnostici e le patch, ma termina all'handoff; nessun panic file nella radice USB.
+Causa e punto del riavvio sconosciuti; nessuna GUI o installazione raggiunta. Evidenze in `research/hw_dump/baremetal_boot10/`.
+
+**Boot11, video IMG_0668:** prosegue oltre l'elenco ACPI, carica le tabelle AML, stampa AppleACPICPU e arriva ad
+IOHIDFamily/AppleACPIButtons/AppleRTC/AppleHPET. Negli ultimi fotogrammi `HPET: map device registers failed`,
+poi messaggio AppleVTD e nero a 120,69 s; l'utente conferma POST/GRUB autonomo. Nessun panic/backtrace leggibile
+o rapporto recuperato. Questo localizza meglio l'output finale, non la causa del reset.
+**Boot12, foto IMG_0669:** page fault XNU 25.6.0 su CPU 0, `CR2=0xFED802B0`, `RIP=0xffffff80266e8a61`; il caller
+visibile è nella catena `_sync_iss_to_iks`/`_panic`, mentre il RIP non è attribuito con certezza e il backtrace termina
+su frame pointer invalido. CR2 è un indirizzo lineare; coincide numericamente con due OpRegion DSDT a base FED80000
+e ricade nel descriptor EFI `[0xF7000000,0xFEE00000)`, senza provare una corrispondenza fisica.
+**Boot13:** `cpus=1` + whitelist `F7000000` supera il logo Apple e arriva a una schermata animata di pairing Bluetooth
+Magic Keyboard/Mouse. La NuPhy Node75 e il mouse GravaStar M2 non rispondono via cavo. **Boot14:** stessa GUI animata,
+input ancora inattivo; l'utente conferma prove sia con i dongle USB sia cablati, collegati direttamente alla scheda
+madre. GUI Recovery/utilità non confermate: non è ancora un ripristino utilizzabile. Linux vede NuPhy `19f5:1030`
+(HID su XHC0 `HS01`, `1022:15b6`) e mouse Compx `3554:f576` (HID su XHC1 `HS01`, `1022:15b7`); entrambi i controller
+e le porte sono coperti dalla mappa. Boot14 aveva cambiato solo i selettori a `AppleUSBHostController` +
+`IOParentMatch/IOPropertyMatch(pcidebug)`, ma il test negativo non prova che il binding sia corretto o errato su macOS.
+**BOOT15 (mappa disabilitata) non è mai stato avviato né provato**, quindi resta non classificato. L'utente riferisce
+che BOOT16 ha ripetuto la schermata animata Magic Keyboard/Mouse senza input. L'analisi del plist ha trovato 0/23
+porte con gli alias Tahoe `usb-port-number`/`usb-port-type`: il runtime USBToolBox 1.2.0 li aggiunge per Darwin >=25,
+ma BOOT16 usava una mappa nativa senza quel runtime. Questa omissione è reale e plausibile, non una causa confermata.
+Sulla sola EFI OCBOOT è ora presente **BOOT17**: copia BOOT16 con i due alias aggiunti a tutte le 23 porte, mantenendo
+controller, match, raw port 14/4/4/1 e le tre classificazioni interne osservate come 255. È cambiato solo
+`EFI/OC/Kexts/USBMapB840.kext/Contents/Info.plist` (SHA `71f93330…`); config invariata (`55d53e17…`) e altri 27 file
+identici. Preflight BOOT16 28/28, postmanifest BOOT17 28/28 e `ocvalidate` 1.0.8 passano. Backup dell'Info BOOT16 e
+record in `research/ext/usbtoolbox-linux-tahoe-boot17-candidate/deploy-evidence/20261026T131317524219Z/`; chiavetta
+A140-3052 smontata. **L'utente conferma BOOT17 con input USB funzionante e Recovery raggiunta**; le utility, la rete e
+l'installer non sono state verificate da questa sessione. `ReleaseUsbOwnership=True` non dimostra l'impostazione BIOS
+XHCI hand-off, che resta ignota. Nessun bypass pairing o altro kext/binario aggiunto. Il reset boot11 e il panic boot12
+restano distinti. BIOS invariato. Per i prossimi passi senza scritture vedere
+`research/reports/recovery_install_readonly_20261026.md`; dettagli USB nei report §§15–17 e
+`research/reports/usb_tahoe_schema_diagnosis_20261026.md`.
+Dettaglio: [`opcore_simplify_linux_b840.md`](research/reports/opcore_simplify_linux_b840.md).
+
+**Storage e installazione bare metal (26/10):** sul Lexar la partizione archivio Btrfs da 50 GiB è montata su
+`/mnt/vm` (UUID `0ae89dbc-e934-4c12-a6bd-90d01e5bd0da`). Sono stati ripristinati e verificati gli archivi dei
+materiali selezionati, inclusi i due file GRUB protetti; i 445 hash del manifest passano come utente. Per rendere
+leggibili i materiali sono state corrette solo 51 directory genitore implicite; nessun file o chiave è stato toccato.
+I dischi VM non sono stati preservati. L’utente conferma che Tahoe è stato installato e BOOT17 è arrivata a Setup
+Assistant; dopo la scelta della regione il caricamento è rimasto per circa 30 minuti. Il primo resoconto diceva che
+puntatore e rotella rispondevano; in una precisazione successiva l’utente riferisce che poi il puntatore si fermò e il
+blocco diventò completo. Ethernet era collegata; dopo il riavvio il PC è tornato a Linux e il primo login non è avvenuto.
+Il video IMG_0681 è una ripresa di verbose startup con errori kext, non una schermata di panic leggibile; l’errore
+IOVersatile non è attribuito come causa del blocco successivo. Nel video successivo Ethernet era scollegata prima dell’avvio, ma Setup Assistant è rimasto fermo alla regione e poi si è bloccato completamente anche offline.
+I metadati Linux read-only vedono
+APFS sul Lexar e archivio Btrfs da 50 GiB; gli indici attuali sono p5 e p4. Il volume APFS è 161,924,251,648 byte
+(150 GiB preparati più 862,978,048 byte) e il suo PARTUUID è diverso dalla fotografia preinstallazione. Due vecchie
+partizioni Windows Recovery, identificate da GUID nei metadati storici, non compaiono più; il volume NTFS Windows e
+l’EFI da 1 GiB sono ancora presenti. La causa del cambiamento GPT non è attribuita e non è stata tentata una riparazione.
+Linux non ha montato APFS. Il video IMG_0681 è stato campionato lungo tutta la clip: non mostra un panic leggibile; l’ultimo frame è nero. Il test offline Ethernet è negativo. L'utente riferisce che Shift+Invio non seleziona la voce nel picker, dunque Safe Boot non è stato verificato. Dopo il deployment precedente, la variante `cpus=2` non è stata avviata. OCBOOT contiene la prova all-threads: è stato rimosso solo `cpus=2`, con gli altri 27 file EFI invariati; manifest 28/28 e `ocvalidate` 1.0.8 sono passati. L'utente ha poi avviato macOS e completato la configurazione; `sysctl` su macOS conferma 8 core fisici e 16 processori logici. XNU tratta `cpus=VALUE` come massimo dei processori logici. La patch AMD per gli 8 core fisici è rimasta invariata. Backup `cpus=2` e BOOT17 `cpus=1` sono fuori da EFI. Procedura e hash: `research/reports/recovery_install_readonly_20261026.md` e `research/ext/opcore-all-threads-candidate-20261026/`; il video è documentato in `research/ext/boot-setup-video-0681/analysis.md`.
 
 ## Promemoria operativi
 
@@ -54,5 +127,14 @@ Report completo, cronologia, ipotesi e passi successivi: [`research/reports/bare
 - Le prove in VM richiedono la voce GRUB VFIO "una tantum" (`tools/vm/prepare-vfio-test-boot.py arm` + riavvio), poi
   BAR0 a 256 MiB (`tools/vm/resize-vfio-bar.py 8`) e `memlock` ≥ 14 GiB per il processo che lancia la VM.
 - La chiavetta da 128 GB contiene dati personali: si scrive solo nella cartella `macOS-Tahoe-25G83-installer/`.
-- Tutto il lavoro fino al 25/10 è committato (commit `22e50f0`…`a0de0d3`). Restano fuori da git, per scelta: le EFI
+- Il lavoro precedente è nei commit `22e50f0`…`a0de0d3`; audit e strumenti bare metal del 25/10 sono ancora modifiche
+  locali non committate. Restano fuori da git, per scelta: le EFI
   e gli strumenti scaricati in `research/ext/`, i seriali SMBIOS, le tabelle ACPI binarie della scheda e i binari Apple.
+
+### 27 ottobre 2026, 22:46 — primo desktop accelerato bare metal
+
+Stage19c ha completato 120 s con WindowServer PID 517 stabile: utente conferma trasparenze/effetti e uso del desktop; log conferma 5.734 presentazioni scanout senza errori GPU nel campione. Il passaggio decisivo è stato completare la ricetta Cobalt64 con `fbname 1`, correggendo prima attesa del nub e verifica del nome troncato a 8 byte dal tool. Magenta iniziale correlato a 65 pipeline placeholder, tutte sostituite da shader reali durante la sessione. Stage20 (bundle 22) predispone 167 shader in cache, inclusi 132 runtime validati, e mantiene RADV/traduttore e logica del driver. Pronto il test monouso al prossimo riavvio; versione21 funzionante salvata in `/Library/GPUBundles/Navi48Metal.bundle.stage19c-working`. Dettagli nel rapporto `research/reports/navi44_vs_cobalt64_desktop_20261027.md`. La scomparsa del magenta al prossimo login è ancora da verificare.
+
+### Stage21 predisposto — correzioni combinate desktop
+
+Al posto dello Stage20 ancora non avviato, predisposto Stage21/bundle23: 212 shader in cache, riduzione logging ripetitivo in 16 punti, hot-swap a 100ms con controlli di sicurezza dei file conservati (224 verifiche passate), traduttore a priorità normale dal prossimo boot. Sessione accelerata corrente PID517 preservata; backup versione21 funzionante e versione22. Restano da misurare miglioramenti ed eventuali artefatti nel nuovo avvio; shader mai incontrati possono richiedere ancora traduzione. Rapporto `research/reports/navi44_vs_cobalt64_desktop_20261027.md`.

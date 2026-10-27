@@ -1,9 +1,27 @@
 # Volume Btrfs per la VM sul Lexar
 
-Completato il 20/10/2026 su autorizzazione esplicita dell'utente, dopo la
-riduzione di Windows eseguita dall'utente. Nessun ulteriore ridimensionamento.
+## Aggiornamento 26/10/2026 — layout per macOS
 
-## Risultato
+Su autorizzazione dell’utente, la vecchia p7 da 200 GiB che conteneva le VM è stata sostituita. Il layout corrente sul
+Lexar è p7 Btrfs da 50 GiB per l’archivio di lavoro preservato e p8 da 150 GiB con tipo GPT Apple APFS, ancora senza
+filesystem. p1–p6 sono state mantenute dalla procedura approvata. La prima esecuzione ha terminato dopo aver scritto la
+GPT e formattato p7, lasciandola vuota; non è stata ripetuta. La procedura restore-only ha ripristinato l’archivio e
+aggiornato la sola UUID della voce `/mnt/vm` in fstab. `tar --compare` è passato per l’archivio principale e per quello
+GRUB protetto; i checksum approvati corrispondono. Il log è
+`research/ext/vm-preservation-20261026/lexar-restore-20261026T161046Z/progress.jsonl`.
+
+Il fix accessibilità successivo ha portato a 0755 solo 51 directory genitore implicite create come root:root 0700;
+nessun file, chiave o directory esplicita dell’archivio è stato modificato. Il manifest di 445 file passa come
+`pastasugo89`; log: `research/ext/vm-preservation-20261026/lexar-restore-20261026T161046Z/fix-parent-permissions.jsonl`.
+
+La p8 non è stata formattata da Linux: la formattazione APFS e l’installazione restano da fare, dopo aver identificato
+in Recovery la partizione da 150 GiB sul Lexar. Vedi `research/reports/recovery_install_readonly_20261026.md`.
+
+Stato storico del 20/10/2026, dopo la riduzione di Windows eseguita
+dall'utente; il layout iniziale qui sotto è stato superato dall'aggiornamento
+26/10 in cima al documento.
+
+## Risultato iniziale (20/10/2026)
 
 | Voce | Valore |
 |---|---|
@@ -75,4 +93,6 @@ UUID=be2a9624-d2c1-4778-ac99-fcf9258d3328 /mnt/vm btrfs defaults,noatime,compres
 
 La partizione Linux originale resta sul Samsung, separata da questo volume.
 Nessun installer, sorgente o altro file del progetto è stato trasferito.
-La VM macOS è ancora da creare; lo spazio che mancava è ora disponibile.
+Alla data del 20/10, la VM macOS era ancora da creare e lo spazio era
+disponibile. La VM è stata poi installata e, il 26/10, dismessa su
+autorizzazione dell'utente per predisporre il target macOS bare metal.
