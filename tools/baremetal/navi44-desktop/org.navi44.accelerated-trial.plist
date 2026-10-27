@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.navi44.accelerated-trial</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/private/var/tmp/navi44-accelerated-trial/launchd.log</string>
+	<key>StandardOutPath</key>
+	<string>/private/var/tmp/navi44-accelerated-trial/launchd.log</string>
+</dict>
+</plist>

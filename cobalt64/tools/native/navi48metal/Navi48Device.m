@@ -2125,7 +2125,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
         if (r != VK_SUCCESS) { if (err) *err = n48_err(24, [NSString stringWithFormat:@"vkMapMemory = %d", r]); return nil; }
     }
     }
-    N48LOG("N48Buffer %p: %lu bytes (alloc %llu, memtype %d) mapped at %p", (__bridge void *)self, (unsigned long)len,
+    N48LOGR("N48Buffer %p: %lu bytes (alloc %llu, memtype %d) mapped at %p", (__bridge void *)self, (unsigned long)len,
            (unsigned long long)mr.size, mt, _ptr);
     return self;
 }
@@ -2142,7 +2142,13 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
     if (!N48R.hostExt || !n48_vkGetMHPP) NCFAIL(112, @"VK_EXT_external_memory_host is not available on this RADV");
     if (((uintptr_t)p & (N48R.hostAlign - 1)) || (len & (N48R.hostAlign - 1))) NCFAIL(113, @"pointer %p / length %lu not aligned to %llu (page-aligned page-multiple memory only)", p, (unsigned long)len, (unsigned long long)N48R.hostAlign);
     if (len > 64u << 20) NCFAIL(114, @"length %lu > 64 MiB (the N48N per-BO import limit)", (unsigned long)len);
-    VkBufferCreateInfo bc = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .size = len,
+    // Vulkan external-memory contract: buffers whose allocation imports HOST_ALLOCATION
+    // must declare that handle type at buffer creation, before vkAllocateMemory/import.
+    VkExternalMemoryBufferCreateInfo extBuf = {
+        .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+        .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+    };
+    VkBufferCreateInfo bc = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, .pNext = &extBuf, .size = len,
         .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT };
     VkResult r = vkCreateBuffer(N48R.dev, &bc, NULL, &_vkbuf);
@@ -2162,7 +2168,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
     if (r != VK_SUCCESS) NCFAIL(119, @"vkBindBufferMemory = %d", r);
     @synchronized ([Navi48Device class]) { N48R.impTotal += len; }
     _ptr = p; _imported = YES; _asz = 0; _deallocator = [d copy];
-    N48LOG("N48Buffer %p: NO-COPY %lu bytes at %p imported (host memory type %d)", (__bridge void *)self, (unsigned long)len, p, mt);
+    N48LOGR("N48Buffer %p: NO-COPY %lu bytes at %p imported (host memory type %d)", (__bridge void *)self, (unsigned long)len, p, mt);
     #undef NCFAIL
     return self;
 }
@@ -2543,7 +2549,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
         .format = _fmt->vk, .components = cm, .subresourceRange = { isDS ? n48dp_view_aspect(_aspects) : VK_IMAGE_ASPECT_COLOR_BIT, 0, (uint32_t)_levels, 0, ti.layers } };   // bundle 10: a depth/stencil sampling view has ONE aspect
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(36, [NSString stringWithFormat:@"vkCreateImageView = %d", r]); return nil; }
-    N48LOG("N48Texture %p: %lux%lu%s pf %lu vkformat %d levels %lu (alloc %llu, memtype %d)%s", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, is3D ? [NSString stringWithFormat:@"x%lu (3D)", (unsigned long)_depth].UTF8String : "",
+    N48LOGR("N48Texture %p: %lux%lu%s pf %lu vkformat %d levels %lu (alloc %llu, memtype %d)%s", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, is3D ? [NSString stringWithFormat:@"x%lu (3D)", (unsigned long)_depth].UTF8String : "",
            (unsigned long)_pf, _fmt->vk, (unsigned long)_levels, (unsigned long long)mr.size, mt, _viewSwz ? " [sampled through a swizzled view]" : "");
     return self;
 }
@@ -2630,7 +2636,7 @@ N48_DNR(N48Texture)
     IOSurfaceUnlock(s, kIOSurfaceLockAvoidSync, NULL);
     size_t alloc = IOSurfaceGetAllocSize(s);
     uint32_t spf = IOSurfaceGetPixelFormat(s);
-    N48LOG("newTexture(iosurface): id %u %zux%zu bpr %zu allocSize %zu base %p pixelFormat 0x%08x planes %zu", IOSurfaceGetID(s), sw, sh, bpr, alloc, base, spf, pc);
+    N48LOGR("newTexture(iosurface): id %u %zux%zu bpr %zu allocSize %zu base %p pixelFormat 0x%08x planes %zu", IOSurfaceGetID(s), sw, sh, bpr, alloc, base, spf, pc);
     // F1 (build 16): when the import of the surface is refused (out of the kernel's import budget, an unimportable range) this init does NOT return nil (SkyLight aborts on a nil texture: AbortWithTextureInfo). It jumps to
     // the "baseless" branch below (same GPU-only image, same classification) with f1 set: the content captured through this wrapper is blank, the process stays up. The import cache is flushed and the import retried
     // first (n48_imp_get). The branch itself is not edited for this except that a size difference between descriptor and plane no longer refuses and no "protected" note is logged.
@@ -2674,7 +2680,7 @@ N48_DNR(N48Texture)
         nr = vkCreateImageView(N48R.dev, &nvc, NULL, &_view);
         if (nr != VK_SUCCESS) IOSFAIL(91, @"vkCreateImageView = %d", nr);
         _iosNoBase = YES; _ios = (IOSurfaceRef)CFRetain(s); n48_led_add(self, s, 0, spf, (uint32_t)pc, YES); _led = YES;   // retained (F3: not use-counted for its life) and entered in the ledger; set last so a failed init above never releases
-        N48LOG("newTexture(iosurface) %p: plane %lu %zux%zu bpr %zu pf %lu -> GPU-ONLY (no CPU mapping): optimal VkImage, not backed by the surface's memory", (__bridge void *)self, (unsigned long)plane, sw, sh, bpr, (unsigned long)_pf);
+        N48LOGR("newTexture(iosurface) %p: plane %lu %zux%zu bpr %zu pf %lu -> GPU-ONLY (no CPU mapping): optimal VkImage, not backed by the surface's memory", (__bridge void *)self, (unsigned long)plane, sw, sh, bpr, (unsigned long)_pf);
         // P6: same rule as the mapped surfaces (n48s_classify: geometry/pitch vs the plane + the DisplaySurface::GetMTLTexture backtrace). Inputs: width/height/pixel format/bytesPerRow/allocSize from the IOSurface
         // object (none needs a CPU mapping); alloc 0 -> bpr*height (n48df_nobase_alloc); the cache key's base is 0, which no mapped surface has (a mapped one passed the !base test above).
         // The image is the copy source, so the format must be 4 bytes per texel (the slot's pitch is in 4-byte texels) and the image must be the plane's size.
@@ -2688,7 +2694,7 @@ N48_DNR(N48Texture)
     pin.alloc = alloc; pin.poff = ((uintptr_t)pbase >= (uintptr_t)base) ? (uint64_t)((uintptr_t)pbase - (uintptr_t)base) : UINT64_MAX;
     if (!n48pl_bound(&pin, &pout)) IOSFAIL(pout.code, @"%s", pout.why);
     const NSUInteger poff = (NSUInteger)pout.off;
-    if (pc > 1) N48LOG("newTexture(iosurface): plane %lu of %zu: offset %lu size %zux%zu bpe %zu bpr %zu (bufferRowLength %zu texels)", (unsigned long)plane, pc, (unsigned long)poff, sw, sh, bpe, bpr, pout.rowlen);
+    if (pc > 1) N48LOGR("newTexture(iosurface): plane %lu of %zu: offset %lu size %zux%zu bpe %zu bpr %zu (bufferRowLength %zu texels)", (unsigned long)plane, pc, (unsigned long)poff, sw, sh, bpe, bpr, pout.rowlen);
     // m11h6: IOSurface allocations are page-granular in the VM map, but IOSurfaceGetAllocSize reports the exact byte size (e.g. 5760, 303360, 1840000).
     // Import the whole pages that hold the surface: round up to the host-pointer alignment. The extra tail bytes are the surface's own page, never another object's.
     const size_t ialloc = (alloc + (size_t)N48R.hostAlign - 1) & ~((size_t)N48R.hostAlign - 1);
@@ -2707,7 +2713,7 @@ N48_DNR(N48Texture)
     else r = n48_import_alloc(&ma, &_imem);
     n48t_add(&T1.imp, n48_now() - timp_);
     if (n48f1_action((int)r) == N48F1_FALLBACK) { _imem = VK_NULL_HANDLE; _impShared = NO; N48F1_FALL(@"vkAllocateMemory(import %zu B at %p) = %d, running import total %llu B", ialloc, base, r, (unsigned long long)N48R.impTotal); }
-    if (impHit) { static _Atomic int nlog; if (atomic_fetch_add(&nlog, 1) < 8) N48LOG("newTexture(iosurface): id %u import REUSED from the cache (%zu B)", IOSurfaceGetID(s), ialloc); }
+    if (impHit) { static _Atomic int nlog; if (atomic_fetch_add(&nlog, 1) < 8) N48LOGR("newTexture(iosurface): id %u import REUSED from the cache (%zu B)", IOSurfaceGetID(s), ialloc); }
     else @synchronized ([Navi48Device class]) { N48R.impTotal += ialloc; N48LOG("newTexture(iosurface): imported %zu B (host memory type %d, bits 0x%x); running import total %llu B", ialloc, hmt, hp.memoryTypeBits, (unsigned long long)N48R.impTotal); }
     _ialloc = ialloc; _ibase = (uint8_t *)base + poff; _ioff = poff; _ibpr = bpr; _ios = (IOSurfaceRef)CFRetain(s); n48_led_add(self, s, ialloc, spf, (uint32_t)pc, NO); _led = YES; _size = ialloc;   // F3: retained, not use-counted for its life; entered in the ledger
     VkFormatFeatureFlags offs = n48_fmt_feats(_fmt);
@@ -2721,7 +2727,7 @@ N48_DNR(N48Texture)
         VkFormatFeatureFlags lneed = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
             (attOK ? VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT : 0) | ((d.usage & MTLTextureUsageShaderWrite) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0);
         if ((lfp.linearTilingFeatures & lneed) != lneed) { N48LOG("newTexture(iosurface): path (a) unavailable: LINEAR features 0x%x lack 0x%x for vk format %d", lfp.linearTilingFeatures, lneed & ~lfp.linearTilingFeatures, _fmt->vk); tryA = NO; }
-        else N48LOG("newTexture(iosurface): LINEAR features 0x%x cover 0x%x for vk format %d", lfp.linearTilingFeatures, lneed, _fmt->vk);
+        else N48LOGR("newTexture(iosurface): LINEAR features 0x%x cover 0x%x for vk format %d", lfp.linearTilingFeatures, lneed, _fmt->vk);
     }
     if (tryA) {
         VkExternalMemoryImageCreateInfo emi = { .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT };
@@ -2733,7 +2739,7 @@ N48_DNR(N48Texture)
             VkImageSubresource sr = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0 }; VkSubresourceLayout sl; vkGetImageSubresourceLayout(N48R.dev, li, &sr, &sl);
             VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, li, &mr);
             BOOL pitchOK = sl.rowPitch == bpr && sl.offset == 0;
-            N48LOG("newTexture(iosurface): linear layout for %lux%lu (descriptor; surface %zux%zu): rowPitch %llu offset %llu size %llu vs IOSurface bytesPerRow %zu -> %s; image req size %llu align %llu typeBits 0x%x (host bits 0x%x)",
+            N48LOGR("newTexture(iosurface): linear layout for %lux%lu (descriptor; surface %zux%zu): rowPitch %llu offset %llu size %llu vs IOSurface bytesPerRow %zu -> %s; image req size %llu align %llu typeBits 0x%x (host bits 0x%x)",
                    (unsigned long)_w, (unsigned long)_h, sw, sh, (unsigned long long)sl.rowPitch, (unsigned long long)sl.offset, (unsigned long long)sl.size, bpr, pitchOK ? "MATCH" : "MISMATCH",
                    (unsigned long long)mr.size, (unsigned long long)mr.alignment, mr.memoryTypeBits, hp.memoryTypeBits);
             BOOL fits = pitchOK && n48pl_bind_ok(poff, mr.size, mr.alignment, ialloc) && (mr.alignment == 0 || ((uintptr_t)base % mr.alignment) == 0) && (mr.memoryTypeBits & (1u << hmt));
@@ -2777,7 +2783,7 @@ N48_DNR(N48Texture)
         .format = _fmt->vk, .components = icm, .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) IOSFAIL(91, @"vkCreateImageView = %d", r);
-    N48LOG("newTexture(iosurface) %p: plane %lu offset %lu %zux%zu bpr %zu pf %lu -> PATH (%s): %s", (__bridge void *)self, (unsigned long)plane, (unsigned long)poff, sw, sh, bpr, (unsigned long)_pf, _iosLinear ? "a" : "b",
+    N48LOGR("newTexture(iosurface) %p: plane %lu offset %lu %zux%zu bpr %zu pf %lu -> PATH (%s): %s", (__bridge void *)self, (unsigned long)plane, (unsigned long)poff, sw, sh, bpr, (unsigned long)_pf, _iosLinear ? "a" : "b",
            _iosLinear ? "LINEAR VkImage bound directly to the imported IOSurface pages" : "optimal VkImage + copies to/from a VkBuffer over the imported pages (bufferRowLength = bytesPerRow/4)");
     // S5.2a: is this one of CoreDisplay's display surfaces (D-copy source)? A buffer over the import is the copy's source (path (b) already has _ibuf).
     if (pc <= 1 && _w == sw && _h == sh && n48s_classify(sw, sh, spf, d.usage, bpr, alloc, IOSurfaceGetID(s), base)) {   // build 7: only an exact-size texture can be a display surface
@@ -2847,7 +2853,7 @@ N48_DNR(N48Texture)
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) BFAIL(130, @"vkCreateImageView = %d", r);
     _hostBuf = b; _hoff = off; _ibase = (uint8_t *)[b contents] + off; _ibpr = bpr;
-    N48LOG("N48Texture %p: %lux%lu pf %lu over buffer %p offset %lu bytesPerRow %lu (%s memory; copy path b)", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, (unsigned long)_pf,
+    N48LOGR("N48Texture %p: %lux%lu pf %lu over buffer %p offset %lu bytesPerRow %lu (%s memory; copy path b)", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, (unsigned long)_pf,
            (__bridge void *)b, (unsigned long)off, (unsigned long)bpr, [b n48Imported] ? "client" : "bundle");
     #undef BFAIL
     return self;
@@ -3048,7 +3054,7 @@ N48_RESOURCE_SPI
         .components = vcm, .subresourceRange = { root->_aspects ? n48dp_view_aspect(root->_aspects) : VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
     VkResult r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) VFAIL(98, @"vkCreateImageView = %d", r);
-    N48LOG("N48Texture view %p of %p: pf %lu -> %lu (vk format %d -> %d), swizzle %u%u%u%u", (__bridge void *)self, (__bridge void *)root, (unsigned long)root->_pf, (unsigned long)pf, root->_fmt->vk, f->vk,
+    N48LOGR("N48Texture view %p of %p: pf %lu -> %lu (vk format %d -> %d), swizzle %u%u%u%u", (__bridge void *)self, (__bridge void *)root, (unsigned long)root->_pf, (unsigned long)pf, root->_fmt->vk, f->vk,
            swz.red, swz.green, swz.blue, swz.alpha);
     #undef VFAIL
     return self;
@@ -3223,7 +3229,7 @@ static VkSampler n48_make_sampler(const N48SampCfg *c, NSError **err) {
     if (d.maxAnisotropy > 1) N48LOG("sampler: maxAnisotropy %lu ignored (samplerAnisotropy not enabled)", (unsigned long)d.maxAnisotropy);
     _s = n48_make_sampler(&c, err);
     if (!_s) return nil;
-    N48LOG("N48SamplerState %p: vk %p (min %d mag %d mip %d addr %d/%d/%d cmp %d %s)", (__bridge void *)self, (void *)_s, c.minF, c.magF, c.mipF, c.as, c.at, c.ar, c.cmp, c.unnorm ? "unnormalized" : "normalized");
+    N48LOGR("N48SamplerState %p: vk %p (min %d mag %d mip %d addr %d/%d/%d cmp %d %s)", (__bridge void *)self, (void *)_s, c.minF, c.magF, c.mipF, c.as, c.at, c.ar, c.cmp, c.unnorm ? "unnormalized" : "normalized");
     return self;
 }
 - (void)dealloc { if (N48R.ok && _s) vkDestroySampler(N48R.dev, _s, NULL); }
@@ -3744,7 +3750,7 @@ static void n48hs_register(id obj, NSArray<NSString *> *shas, BOOL metaRequired,
     [n48hs_reg addObject:e];
     if (!n48hs_timer) {
         n48hs_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, n48hs_q);
-        dispatch_source_set_timer(n48hs_timer, dispatch_time(DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC), 500 * NSEC_PER_MSEC, 100 * NSEC_PER_MSEC);
+        dispatch_source_set_timer(n48hs_timer, dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC), 100 * NSEC_PER_MSEC, 20 * NSEC_PER_MSEC);
         dispatch_source_set_event_handler(n48hs_timer, ^{ n48hs_tick_all(); });
         dispatch_resume(n48hs_timer);
     }
@@ -6038,7 +6044,7 @@ static void n48_census_log(void) {
 
 // ---- 11e: samplers ----
 - (id)newSamplerStateWithDescriptor:(MTLSamplerDescriptor *)d {
-    N48LOG("newSamplerStateWithDescriptor:");
+    N48LOGR("newSamplerStateWithDescriptor:");
     NSError *err = nil;
     N48SamplerState *s = [[N48SamplerState alloc] initWithDevice:self descriptor:d error:&err];
     if (!s) N48LOG("newSamplerState: failed: %s", err.localizedDescription.UTF8String);
@@ -6113,7 +6119,7 @@ static void n48_census_log(void) {
 
 // ---- 10c: textures ----
 - (id)newTextureWithDescriptor:(MTLTextureDescriptor *)d {
-    N48LOG("newTextureWithDescriptor: %lux%lu pf %lu usage 0x%lx", (unsigned long)d.width, (unsigned long)d.height, (unsigned long)d.pixelFormat, (unsigned long)d.usage);
+    N48LOGR("newTextureWithDescriptor: %lux%lu pf %lu usage 0x%lx", (unsigned long)d.width, (unsigned long)d.height, (unsigned long)d.pixelFormat, (unsigned long)d.usage);
     NSError *err = nil;
     N48Texture *t = [[N48Texture alloc] initWithDevice:self descriptor:d error:&err];
     if (!t) N48LOG("newTextureWithDescriptor NIL: pf %lu type %lu usage 0x%lx storage %lu %lux%lux%lu mips %lu array %lu samples %lu (%s)", (unsigned long)d.pixelFormat, (unsigned long)d.textureType,
@@ -6124,7 +6130,7 @@ static void n48_census_log(void) {
 
 // 11h.6: IOSurface-backed texture (plane 0 of a single-plane 32 bpp surface); nil + log when the surface cannot be imported.
 - (id)newTextureWithDescriptor:(MTLTextureDescriptor *)d iosurface:(IOSurfaceRef)s plane:(NSUInteger)plane {
-    N48LOG("newTextureWithDescriptor:iosurface:plane: %lux%lu pf %lu usage 0x%lx plane %lu", (unsigned long)d.width, (unsigned long)d.height, (unsigned long)d.pixelFormat, (unsigned long)d.usage, (unsigned long)plane);
+    N48LOGR("newTextureWithDescriptor:iosurface:plane: %lux%lu pf %lu usage 0x%lx plane %lu", (unsigned long)d.width, (unsigned long)d.height, (unsigned long)d.pixelFormat, (unsigned long)d.usage, (unsigned long)plane);
     NSError *err = nil;
     N48Texture *t = [[N48Texture alloc] initWithDevice:self descriptor:d iosurface:s plane:plane error:&err];
     if (!t) N48LOG("newTextureWithDescriptor:iosurface:plane: NIL: pf %lu type %lu usage 0x%lx storage %lu %lux%lu plane %lu (%s)", (unsigned long)d.pixelFormat, (unsigned long)d.textureType,
