@@ -1,0 +1,9 @@
+{
+  "sha256" : "452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe",
+  "function" : "tile_average_luma_quad",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.air",
+  "bytes" : 5504,
+  "stage" : 3
+}

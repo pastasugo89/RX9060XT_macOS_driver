@@ -1,0 +1,15 @@
+{
+  "previous_config_sha256": "8710fe3bb6f4b4e3b18399ad4749d5262c63987ddcf32b18bf02472e794f7551",
+  "config_sha256": "3e65bd9af20a11398188c1965e008b681f9ffabcd4fe0b73393635ba55711976",
+  "changed_key": "NVRAM.Add.7C436110-AB2A-4BBB-A880-FE41995C9F82.boot-args",
+  "added_arguments": "cpus=1",
+  "efi_file_count": 28,
+  "non_config_payloads_unchanged": true,
+  "ocvalidate_passed": true,
+  "hardware_boot_tested": false,
+  "deployed_at_utc": "20261025T123357Z",
+  "usb_uuid": "A140-3052",
+  "deployed_to_usb": true,
+  "backup": "/run/media/pastasugo89/OCBOOT/_config-pre-cpus1-20261025T123357Z/config.plist",
+  "recovery_sha256_before_and_after": "bbfcbf7bfd09c79465fa92c741ebb665625794c31578b81248f7fa0c2bcd4789"
+}

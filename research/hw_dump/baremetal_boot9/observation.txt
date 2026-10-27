@@ -1,0 +1,10 @@
+Boot9, 25/10/2026: foto IMG_0667.HEIC; EFI Simplify v2.
+Lilu, NVMeFix e RestrictEvents riportano started/loaded. Nessun panic o backtrace visibile.
+Ultima riga visibile: ACPI WSMT, indirizzo 0x8A5D8000, lunghezza 0x28.
+Nel log OpenCore la tabella successiva e APIC, poi IVRS e le SSDT; queste righe non sono nella foto.
+La foto documenta il punto di interruzione del testo, non lo stack del thread bloccato.
+Utente: dopo 2-3 minuti il LED Caps Lock non risponde. Non raggiunta la GUI.
+Seriale disabilitata: Linux PNP0501:00/status = 0.
+Log: nuova patch temporale AMD 26.4+ count=2, IOPCIIsHotplugPort count=1; quattro SSDT inserite.
+Tutti i 28 file EFI della chiavetta coincidono con il manifest v2 prima della preparazione diagnostica.
+Il cambio di schermata non prova un avanzamento rispetto ai boot3-8. Causa ancora non identificata.

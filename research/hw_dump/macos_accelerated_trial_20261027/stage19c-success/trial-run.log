@@ -1,0 +1,858 @@
+START Tue Oct 27 19:54:41 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 19:54:41 UTC 2026
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x1000005aa, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x1000005aa
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9521ee5000  (accelerator 0xffffff9521bac000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff99ee8baa00)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000005c1
+  vendor calls            : 4 (vendor info 3, GPU capability 1, other 0, bad length 0)
+  command 0x1 x3
+  command 0x980 x1
+STOP initial pipestat failed: /Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh: line 97: /Library/Application: No such file or directory
+END rc=1 Tue Oct 27 19:54:54 UTC 2026
+START Tue Oct 27 20:07:03 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 20:07:03 UTC 2026
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x10000058c, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x10000058c
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9926ce8c00  (accelerator 0xffffff9df39b7000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff9926c5fd40)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x100000591
+  vendor calls            : 3 (vendor info 2, GPU capability 1, other 0, bad length 0)
+  command 0x1 x2
+  command 0x980 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff9926ce8c00
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 20:07:16 UTC 2026
+WINDOWSERVER_READY pid=487 Tue Oct 27 20:07:17 UTC 2026
+LOGIN_SEEN pid=487 Tue Oct 27 20:07:27 UTC 2026
+WINDOWSERVER_CRASH_LOOP old=487 new=973 after_login_seconds=2
+FAILSAFE_BEGIN rc=1 Tue Oct 27 20:07:31 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 1; factory mask 0xd; adopted pipe 0xffffff9926ce8c00
+FAILSAFE_DEFERRED_USER_SESSION_PRESENT
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 20:07:31 UTC 2026
+START Tue Oct 27 20:45:50 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 20:45:50 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000556, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x100000556
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff965c68dc00  (accelerator 0xffffff965b4f5000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff9b27df0a40)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x10000055a
+  vendor calls            : 6 (vendor info 3, GPU capability 2, other 1, bad length 0)
+  command 0x1 x3
+  command 0x980 x2
+  command 0x3 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff965c68dc00
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 20:46:03 UTC 2026
+WINDOWSERVER_READY pid=481 Tue Oct 27 20:46:04 UTC 2026
+CIKL_BACKSTOP=uid501-set
+LOGIN_SEEN pid=481 Tue Oct 27 20:46:17 UTC 2026
+WINDOWSERVER_MISSING after_login_seconds=1
+FAILSAFE_BEGIN rc=1 Tue Oct 27 20:46:20 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x27b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 2; factory mask 0xd; adopted pipe 0xffffff965c68dc00
+FAILSAFE_DEFERRED_USER_SESSION_PRESENT
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 20:46:20 UTC 2026
+START Tue Oct 27 20:54:00 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 20:54:01 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x1000005c3, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x1000005c3
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff99e4eb0000  (accelerator 0xffffff86b1e27000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff904b862e40)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000005cc
+  vendor calls            : 6 (vendor info 3, GPU capability 2, other 1, bad length 0)
+  command 0x1 x3
+  command 0x980 x2
+  command 0x3 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff99e4eb0000
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 20:54:14 UTC 2026
+WINDOWSERVER_READY pid=517 Tue Oct 27 20:54:15 UTC 2026
+CIKL_BACKSTOP=uid501-set
+LOGIN_SEEN pid=517 Tue Oct 27 20:54:35 UTC 2026
+WINDOWSERVER_RETRY_ONCE old=517 new=909 after_login_seconds=2 Tue Oct 27 20:54:38 UTC 2026
+SAMPLE=1 Tue Oct 27 20:54:52 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x27b / 0xd
+  auto-disarmed           : the WindowServer GPU client closed while armed (re-arm needs an explicit `pipearm 1`)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 2 / 0 / 0 / 0; handled 2 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x27b / 0xd
+  auto-disarmed           : the WindowServer GPU client closed while armed (re-arm needs an explicit `pipearm 1`)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+2026-10-27 21:07:49 69c6bcab2eb235d9b31399966b4edbb0609751154a656523afa6af2d5818654d uid=88 OK 69c6bcab2eb235d9b31399966b4edbb0609751154a656523afa6af2d5818654d downsample_8_frag_lpf 4804 bytes
+2026-10-27 21:07:50 71633d1918acc33eddfe72ef13e9cc87b5c29474b415b291c87cb044aa58abe3 uid=88 OK 71633d1918acc33eddfe72ef13e9cc87b5c29474b415b291c87cb044aa58abe3 narrow_blur_11_frag_lpf 2956 bytes
+2026-10-27 21:07:50 75f98f13688498cd85b1637b58cbf531ce8bef222bd3c51a82040069a029cf52 uid=88 OK 75f98f13688498cd85b1637b58cbf531ce8bef222bd3c51a82040069a029cf52 TmuaXc_Isrc_Isrc 3304 bytes
+2026-10-27 21:07:50 78a0f28fa329bb954dbe9d9998c22bdb5c8e0b8ddcf5f983da00941ea0355650 uid=88 OK 78a0f28fa329bb954dbe9d9998c22bdb5c8e0b8ddcf5f983da00941ea0355650 SimpleVertex 1096 bytes
+2026-10-27 21:07:50 7957069c0dbaa5580802dd53df1d69a2008e7746b7ac94a09092988b99353451 uid=88 OK 7957069c0dbaa5580802dd53df1d69a2008e7746b7ac94a09092988b99353451 TimgXcn_IybrN3Oc3mtc4nlnlnlXq 17716 bytes
+2026-10-27 21:07:53 7a8b6cec088e299f46fda7a7ff8c5be6f24667bac865da59b97540ef128ad86d uid=88 OK 7a8b6cec088e299f46fda7a7ff8c5be6f24667bac865da59b97540ef128ad86d TimgXcu_Idfr 3284 bytes
+2026-10-27 21:07:54 7d3aa53a0ba42946fcc18bfb56005a2e9e7e3276a6c4ccbde0c5761573337bf3 uid=88 OK 7d3aa53a0ba42946fcc18bfb56005a2e9e7e3276a6c4ccbde0c5761573337bf3 variable_blur_downsample_frag_lpf 4036 bytes
+2026-10-27 21:07:54 8ac1900c4e1d5b6a483a98efa5089e19bf92d9e7c0ed50bfaf3bb8db4612689b uid=88 OK 8ac1900c4e1d5b6a483a98efa5089e19bf92d9e7c0ed50bfaf3bb8db4612689b variable_blur_vert_lpf 2368 bytes
+2026-10-27 21:07:55 8f7a08476a7ba17fccf8b5198de2fbda94757efc38fd39e5ae841884f574537e uid=88 OK 8f7a08476a7ba17fccf8b5198de2fbda94757efc38fd39e5ae841884f574537e TsplXc_Isrc 2144 bytes
+2026-10-27 21:07:55 9d9eaf0bdd37f9b4d5984674722c1dcf866c9a213f144ae65a104912cdfcc613 uid=88 OK 9d9eaf0bdd37f9b4d5984674722c1dcf866c9a213f144ae65a104912cdfcc613 TkfhBvcmXc_Isrc 8148 bytes
+2026-10-27 21:07:55 9de3cc5b82e99ffb35b8f2c3d704aec9329ab300e578f92808c49f032fedd718 uid=88 OK 9de3cc5b82e99ffb35b8f2c3d704aec9329ab300e578f92808c49f032fedd718 Xcu 444 bytes
+2026-10-27 21:07:55 9f30ae489fd5f98853b2961ec59a0de258cdc9bdb321fbb96fd742dee88346ff uid=88 OK 9f30ae489fd5f98853b2961ec59a0de258cdc9bdb321fbb96fd742dee88346ff TimgXc_Ixrg 1796 bytes
+2026-10-27 21:07:56 c75fc60dddc55ec87a8a922a4fe5daab9b10d4adac84fc5ac736788b8471d18e uid=88 OK c75fc60dddc55ec87a8a922a4fe5daab9b10d4adac84fc5ac736788b8471d18e BdsoXc 1372 bytes
+2026-10-27 21:07:56 ca276bd0c4ee5e64437e9423adf13a5ef941a487de2068b70b80cd7101adb717 uid=88 OK ca276bd0c4ee5e64437e9423adf13a5ef941a487de2068b70b80cd7101adb717 TimgXc_IsrcCcl 2932 bytes
+2026-10-27 21:07:56 cf3a4b8b65fb303ed645d4741f8c3c672165d2061880c6bfe1cd88db2c8c0a09 uid=88 OK cf3a4b8b65fb303ed645d4741f8c3c672165d2061880c6bfe1cd88db2c8c0a09 TimgBdrkXcn_IsrcCrd 4328 bytes
+2026-10-27 21:07:56 cfe5d84c111ebdf912eda16a46c0883a8e0c66db700d023e422920eb707ae7b8 uid=88 OK cfe5d84c111ebdf912eda16a46c0883a8e0c66db700d023e422920eb707ae7b8 downsample_4_frag_lpf 2452 bytes
+2026-10-27 21:07:57 d36cc66c1ba0c3fd0db90c654e88ff25f5a161622151245a8ce2f4dc0449fea0 uid=88 OK d36cc66c1ba0c3fd0db90c654e88ff25f5a161622151245a8ce2f4dc0449fea0 TimgXcn_Isrc 3380 bytes
+2026-10-27 21:07:57 d829013bb2f194e07bd39facec3452aade878150861ce2ccf401c6678bd7f9db uid=88 OK d829013bb2f194e07bd39facec3452aade878150861ce2ccf401c6678bd7f9db TdfgXc_Isrc 3816 bytes
+2026-10-27 21:45:50 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+2026-10-27 21:54:01 start (src=/private/tmp/n48m out=/private/var/tmp/n48m-spv state=/private/var/tmp/n48m-translate-state key=14c6ef69775c validator=/usr/local/navi48/spirv-val sandbox=on uid=4294967294)
+WINDOWSERVER_SECOND_RESTART old=909 new=1218 after_login_seconds=16
+FAILSAFE_BEGIN rc=1 Tue Oct 27 20:54:54 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x27b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 2; factory mask 0xd; adopted pipe 0xffffff99e4eb0000
+FAILSAFE_DEFERRED_USER_SESSION_PRESENT
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 20:54:54 UTC 2026
+START Tue Oct 27 21:07:57 UTC 2026
+CANDIDATE=stage18-hostmem-buffer
+BOOT_ARGS_OK Tue Oct 27 21:07:57 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000598, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x100000598
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9aeeaa0400  (accelerator 0xffffff9154eac000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff9621d794c0)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000005ab
+  vendor calls            : 5 (vendor info 3, GPU capability 1, other 1, bad length 0)
+  command 0x1 x3
+  command 0x980 x1
+  command 0x3 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff9aeeaa0400
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 21:08:11 UTC 2026
+WINDOWSERVER_READY pid=518 Tue Oct 27 21:08:12 UTC 2026
+CIKL_BACKSTOP=uid501-set
+LOGIN_SEEN pid=518 Tue Oct 27 21:08:30 UTC 2026
+WINDOWSERVER_RETRY_ONCE old=518 new=867 after_login_seconds=1 Tue Oct 27 21:08:31 UTC 2026
+WINDOWSERVER_SECOND_RESTART old=867 new=1183 after_login_seconds=14
+FAILSAFE_BEGIN rc=1 Tue Oct 27 21:08:45 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x27b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 2; factory mask 0xd; adopted pipe 0xffffff9aeeaa0400
+FAILSAFE_DEFERRED_USER_SESSION_PRESENT
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 21:08:45 UTC 2026
+START Tue Oct 27 21:35:10 UTC 2026
+CANDIDATE=stage19-native-compositor
+BOOT_ARGS_OK Tue Oct 27 21:35:11 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000548, ops table ABI 3, 152 bytes
+STOP nub status failed: NO Navi48MetalNub in the registry
+END rc=1 Tue Oct 27 21:35:25 UTC 2026
+START Tue Oct 27 21:40:03 UTC 2026
+CANDIDATE=stage19b-registry-readiness
+BOOT_ARGS_OK Tue Oct 27 21:40:03 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x1000005c0, ops table ABI 3, 152 bytes
+REGISTRY_READY after_seconds=0
+Navi48MetalNub present, registry ID 0x1000005c0
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff86b426d800  (accelerator 0xffffff951a73a000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff904dc6a080)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000005c8
+  vendor calls            : 6 (vendor info 3, GPU capability 2, other 1, bad length 0)
+  command 0x1 x3
+  command 0x980 x2
+  command 0x3 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel fbname: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  armed                   : 1 (status 0)
+  className word index    : 3  (-1 = not located)
+  arms / disarms / refusals: 1 / 0 / 0
+  class name NOW          : AMDRDNA4
+  OSMetaClass             : 0xffffff7fabe45ea8
+STOP framebuffer rename readback
+FAILSAFE_BEGIN rc=1 Tue Oct 27 21:40:17 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 0 / 1; factory mask 0xd; adopted pipe 0xffffff86b426d800
+accel fbname: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  armed                   : 0 (status 0)
+  className word index    : -1  (-1 = not located)
+  arms / disarms / refusals: 1 / 1 / 0
+  class name NOW          : RDNA4FB
+  OSMetaClass             : 0
+FAILSAFE_FRAMEBUFFER_NAME_RESTORED
+FAILSAFE_WINDOWSERVER_RESTARTED_SOFTWARE
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 21:40:17 UTC 2026
+START Tue Oct 27 21:46:03 UTC 2026
+CANDIDATE=stage19c-fbname-readback
+BOOT_ARGS_OK Tue Oct 27 21:46:03 UTC 2026
+CIKL_BACKSTOP=system-launchd-set
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x100000537, ops table ABI 3, 152 bytes
+REGISTRY_READY after_seconds=1
+Navi48MetalNub present, registry ID 0x100000537
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffffa35a8fe400  (accelerator 0xffffff9e8de44000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff94f434ae80)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x100000546
+  vendor calls            : 3 (vendor info 2, GPU capability 1, other 0, bad length 0)
+  command 0x1 x2
+  command 0x980 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel fbname: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  armed                   : 1 (status 0)
+  className word index    : 3  (-1 = not located)
+  arms / disarms / refusals: 1 / 0 / 0
+  class name NOW          : AMDRDNA4
+  OSMetaClass             : 0xffffff7fb3245ea8
+FRAMEBUFFER_RENAME_VERIFIED=AMDRDNA4FB
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffffa35a8fe400
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 21:46:18 UTC 2026
+WINDOWSERVER_READY pid=517 Tue Oct 27 21:46:20 UTC 2026
+CIKL_BACKSTOP=uid501-set
+LOGIN_SEEN pid=517 Tue Oct 27 21:46:42 UTC 2026
+SAMPLE=1 Tue Oct 27 21:46:58 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 2666 / 2666 / 2666; handled 3 / 2666 / 2666 / 2666
+  submit pass-through / will-perform: 0 / 2666
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 2666
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 81782370709 / 8333500 / 7131117 / 8333500
+2026-10-27 22:46:52 5e48b063da3b78bff47b34dc86759fddb274fd1ea90bb2706c44ff86b3a59f84 uid=88 OK 5e48b063da3b78bff47b34dc86759fddb274fd1ea90bb2706c44ff86b3a59f84 TimgXcu_Iscd 5656 bytes
+2026-10-27 22:46:52 7db61138b3253a88df3bb41fa9063031e032e08417bffb64dfc87ad4a2bf8d42 uid=88 OK 7db61138b3253a88df3bb41fa9063031e032e08417bffb64dfc87ad4a2bf8d42 TimgXcn_IsrcFmb 6272 bytes
+2026-10-27 22:46:52 8141b86703ed2d8a22e0cbfa2ba656266ec1907cf5d88d9808ad8dcf9eb4390d uid=88 OK 8141b86703ed2d8a22e0cbfa2ba656266ec1907cf5d88d9808ad8dcf9eb4390d sdf_filter_vert_lpf 1452 bytes
+2026-10-27 22:46:53 86d76cd48223aa149a278aedbdfb8028acb6895feb6ee5b50da1313a563d406f uid=88 OK 86d76cd48223aa149a278aedbdfb8028acb6895feb6ee5b50da1313a563d406f TimgBdfuXcu_Iscd 6668 bytes
+2026-10-27 22:46:54 9f39e953060759f4384e8d18bd3fe3585510ed0c75a5008b856329944a5b5c6e uid=88 OK 9f39e953060759f4384e8d18bd3fe3585510ed0c75a5008b856329944a5b5c6e glass_background_no_bleed_lpf 15420 bytes
+2026-10-27 22:46:54 a130e06418601d36d57ada13cbecc084061877fc96d5b2f93f5df6cbdfdc4f74 uid=88 OK a130e06418601d36d57ada13cbecc084061877fc96d5b2f93f5df6cbdfdc4f74 TcimXc_Isrg 2144 bytes
+2026-10-27 22:46:54 b3e68f6991509fc9d24e9d0ea57a5a0e254398dc9b39b0ef4a93238fe596aee9 uid=88 OK b3e68f6991509fc9d24e9d0ea57a5a0e254398dc9b39b0ef4a93238fe596aee9 TkfhBvcmXc_Iscd 10648 bytes
+2026-10-27 22:46:54 b712ee16d9e71438af9f76187d35fbcbeec156c1216e4ab162791c86ae5b3a73 uid=88 OK b712ee16d9e71438af9f76187d35fbcbeec156c1216e4ab162791c86ae5b3a73 TimgXc_IsrcFmb 4988 bytes
+2026-10-27 22:46:55 c113edb27384ff3d8b82fd8261cd742eef72975e9de96123010086f398802a12 uid=88 OK c113edb27384ff3d8b82fd8261cd742eef72975e9de96123010086f398802a12 TimgBdfuXcu_Irsd 4648 bytes
+2026-10-27 22:46:55 e6cadecff316a972944f80df3fc7c492c6c9080ec5fd34e5c62b55fdcfe3ca42 uid=88 OK e6cadecff316a972944f80df3fc7c492c6c9080ec5fd34e5c62b55fdcfe3ca42 TimgXc_IybrN3Oc3mtc4nlnlnlXq 16472 bytes
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+SAMPLE=2 Tue Oct 27 21:47:13 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 4319 / 4319 / 4319; handled 3 / 4319 / 4319 / 4319
+  submit pass-through / will-perform: 0 / 4319
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 4319
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 97382804062 / 8333500 / 6824242 / 8333500
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+SAMPLE=3 Tue Oct 27 21:47:29 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 4549 / 4549 / 4549; handled 3 / 4549 / 4549 / 4549
+  submit pass-through / will-perform: 0 / 4549
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 4549
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 112733228362 / 8333500 / 7070249 / 8333500
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+SAMPLE=4 Tue Oct 27 21:47:45 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 4658 / 4658 / 4658; handled 3 / 4658 / 4658 / 4658
+  submit pass-through / will-perform: 0 / 4658
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 4658
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 128666999440 / 8333500 / 6934460 / 8333500
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+SAMPLE=5 Tue Oct 27 21:48:00 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 4767 / 4767 / 4767; handled 3 / 4767 / 4767 / 4767
+  submit pass-through / will-perform: 0 / 4767
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 4767
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 144009092446 / 8333500 / 7092220 / 8333500
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+SAMPLE=6 Tue Oct 27 21:48:16 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 4869 / 4869 / 4869; handled 3 / 4869 / 4869 / 4869
+  submit pass-through / will-perform: 0 / 4869
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 4869
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 159851197258 / 8333500 / 7032127 / 8333500
+2026-10-27 22:46:55 fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe uid=88 OK fb1bf5a8a52e88732c3492e44ca6e1f19cd3362a3159b855e5150545f1319dbe glass_background_sdf_no_bleed_lpf 49544 bytes
+2026-10-27 22:46:56 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b uid=88 OK 32a2aa2403f89efb4dbb025fde3fdafcc2604585a0db3dd640b3d65b3262074b TmuaXc_IsrcCcl_Isqr 4036 bytes
+2026-10-27 22:46:56 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd uid=88 OK 425f175dbd05f6ff452575153b9254bb05ed4eaabfc033f38341a01ed360b4bd TimgXc_Isup 3380 bytes
+2026-10-27 22:46:56 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e uid=88 OK 4c909d05626a192792f136f3d7f3a9f53c470495b875dca0fee0103c575a2b8e TrimXc_Iscf 4376 bytes
+2026-10-27 22:46:57 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd uid=88 OK 52617bddbe71115b72caf978915a887465fb244788ec0229763a9638d74849dd TcimXc_Isup 3400 bytes
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+SAMPLE=7 Tue Oct 27 21:48:31 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 5414 / 5414 / 5414; handled 3 / 5414 / 5414 / 5414
+  submit pass-through / will-perform: 0 / 5414
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 5415
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 175518296377 / 8333500 / 5786428 / 8333500
+2026-10-27 22:46:57 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 uid=88 OK 5380e3d173de9926773e04a637973f37238b72a1aa90d287852d31d10a9ba7d7 Tm1aXc_Isup_Isup 5240 bytes
+2026-10-27 22:46:57 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 uid=88 OK 711253db765a889f69f5eb8222957635316a0a74b238f87957ccb05cf2af4b23 TcimXcn_IsrcFmb 6292 bytes
+2026-10-27 22:46:57 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da uid=88 OK 77ff3ced05f76412287c594e08a407e415f4b5595f56e96e294698dc56d4f1da TmuaXc_Isrg_Isqr 3232 bytes
+2026-10-27 22:46:57 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 uid=88 OK 84e1e7108f59119f2f96c1a8fa7c2c85e67a69764927f8b0eb8bde79e267a551 Tm1aBpldXc_Isup_Isup 5896 bytes
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+2026-10-27 22:48:29 0013d1b384ec6db08c559c4c04430dc7e4fdaeaa2f4683ff7c81d57e6914e39a uid=88 OK 0013d1b384ec6db08c559c4c04430dc7e4fdaeaa2f4683ff7c81d57e6914e39a glass_background_sdf_lpf 53088 bytes
+2026-10-27 22:48:30 70f05827cc3f68277b085cbfccb76d811ad593a4fa477966018416ffa0c6e384 uid=88 OK 70f05827cc3f68277b085cbfccb76d811ad593a4fa477966018416ffa0c6e384 Tc33Xc_Isrc 3492 bytes
+2026-10-27 22:48:30 763fd3667b8420ba3138481cf5d8cfec0cb2c202159e65bd374032b717bb7e4c uid=88 OK 763fd3667b8420ba3138481cf5d8cfec0cb2c202159e65bd374032b717bb7e4c TidaXcn_Isrc 3344 bytes
+2026-10-27 22:48:30 a4f689aeadfd46be4467cb5c6fb35695a29e348a98bfda8ba51904e17cb18965 uid=88 OK a4f689aeadfd46be4467cb5c6fb35695a29e348a98bfda8ba51904e17cb18965 BdrkXc 1552 bytes
+2026-10-27 22:48:30 d7579e0188efbf170457c22dfc8bb5a856f742a60b787b4fd7b1dd8e04d6b830 uid=88 OK d7579e0188efbf170457c22dfc8bb5a856f742a60b787b4fd7b1dd8e04d6b830 narrow_blur_27_frag_lpf 4500 bytes
+SAMPLE=8 Tue Oct 27 21:48:47 UTC 2026
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 3 / 5950 / 5950 / 5950; handled 3 / 5950 / 5950 / 5950
+  submit pass-through / will-perform: 0 / 5950
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 5950
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 191293735655 / 8333500 / 6763882 / 8333500
+2026-10-27 22:46:58 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd uid=88 OK 98b904285367e66178f8b26354c6ffc672c4e3a4a298d12bf76ff2bedabf6bdd TdffXc_Iscd 5800 bytes
+2026-10-27 22:46:58 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 uid=88 OK 9b59a02fba8a1d089eff710a5189e076d8696c5a6571931ac48af35be0434b39 TrimXc_Iref 3392 bytes
+2026-10-27 22:46:58 aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 uid=88 OK aa3b8c6a4f5e53fd05af2e748c3f4fa9c3d4636edadf798fcb0fe7d06ad43926 TcimXc_Ixrg 1816 bytes
+2026-10-27 22:46:58 bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 uid=88 OK bac2371b4c45773c149de270aecd542ae259495e8aeaee8a4c0ec7a4d4519e72 TpncXcn_Irrg_Isup 6988 bytes
+2026-10-27 22:46:59 bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 uid=88 OK bc72740fb6feff07332992e7fa203010cedad75a5a45fa0180d14d36ed853a10 TdffXc_Irsd 3780 bytes
+2026-10-27 22:46:59 be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 uid=88 OK be1e5d2cf61d8bb4d3d900cc527955af96c9b18d741aaf8ab7d3674fad3185a1 TpncXcn_Ialp_Isqr 4588 bytes
+2026-10-27 22:46:59 bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e uid=88 OK bf20198d657d131f0a86eb138c5106d40bb602bd79f7d1a327de7d35bcc8853e TmuaXc_Isrc_Isup 4896 bytes
+2026-10-27 22:46:59 c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 uid=88 OK c84e13c411570d62e1a2e141576bd4dede0703743df67d086b6f7e1da15d56c4 TmuaXc_Ialp_Isqr 3232 bytes
+2026-10-27 22:46:59 d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb uid=88 OK d4965028e4bdbe48e75eee58ac52798edbcb2403211d625ab3d67038ce18d7cb TdffXc_Isrc 3384 bytes
+2026-10-27 22:47:00 dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad uid=88 OK dc846c18c14ea66c8859a71255e8458083457af558c245ca422ccab73fc193ad TmuaXc_IalpCcl_Isqr 4072 bytes
+2026-10-27 22:47:00 f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 uid=88 OK f926358fd5eb74188d45068ae6bb9d43e59a301d6af47e470b7dff2b433ddc81 TcimXc_IalpCcl 2988 bytes
+2026-10-27 22:48:29 0013d1b384ec6db08c559c4c04430dc7e4fdaeaa2f4683ff7c81d57e6914e39a uid=88 OK 0013d1b384ec6db08c559c4c04430dc7e4fdaeaa2f4683ff7c81d57e6914e39a glass_background_sdf_lpf 53088 bytes
+2026-10-27 22:48:30 70f05827cc3f68277b085cbfccb76d811ad593a4fa477966018416ffa0c6e384 uid=88 OK 70f05827cc3f68277b085cbfccb76d811ad593a4fa477966018416ffa0c6e384 Tc33Xc_Isrc 3492 bytes
+2026-10-27 22:48:30 763fd3667b8420ba3138481cf5d8cfec0cb2c202159e65bd374032b717bb7e4c uid=88 OK 763fd3667b8420ba3138481cf5d8cfec0cb2c202159e65bd374032b717bb7e4c TidaXcn_Isrc 3344 bytes
+2026-10-27 22:48:30 a4f689aeadfd46be4467cb5c6fb35695a29e348a98bfda8ba51904e17cb18965 uid=88 OK a4f689aeadfd46be4467cb5c6fb35695a29e348a98bfda8ba51904e17cb18965 BdrkXc 1552 bytes
+2026-10-27 22:48:30 d7579e0188efbf170457c22dfc8bb5a856f742a60b787b4fd7b1dd8e04d6b830 uid=88 OK d7579e0188efbf170457c22dfc8bb5a856f742a60b787b4fd7b1dd8e04d6b830 narrow_blur_27_frag_lpf 4500 bytes
+2026-10-27 22:48:31 ad8c2841af214a025784fabddbbaa13574396cd5e74608c092e5a2dcb3ee967a uid=88 OK ad8c2841af214a025784fabddbbaa13574396cd5e74608c092e5a2dcb3ee967a TcimBsltXc_Icir 2776 bytes
+2026-10-27 22:48:32 e57c301385b5e2b1f4624bca5ea9892da7a063413944a663c8b49ffe61c03846 uid=88 OK e57c301385b5e2b1f4624bca5ea9892da7a063413944a663c8b49ffe61c03846 TmuaXc_Isrc_Icir 3076 bytes
+2026-10-27 22:48:33 c7b80b9e55ef77bb7a4140b893b3d1858b5d63302637f7fd896dd5ffe5604c05 uid=88 OK c7b80b9e55ef77bb7a4140b893b3d1858b5d63302637f7fd896dd5ffe5604c05 TbvcXc_Isrc_Isrc 6512 bytes
+2026-10-27 22:48:34 f4325ca559aeaabc6895198eb1137e3a6984494d86b902c1d6ac680e207ee48c uid=88 OK f4325ca559aeaabc6895198eb1137e3a6984494d86b902c1d6ac680e207ee48c narrow_blur_15_frag_lpf 3332 bytes
+TRIAL_STABLE_120S pid=517; pipe left armed for user inspection
+END rc=0 Tue Oct 27 21:48:47 UTC 2026

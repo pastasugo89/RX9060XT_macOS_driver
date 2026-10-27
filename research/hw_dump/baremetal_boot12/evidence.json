@@ -1,0 +1,39 @@
+{
+  "boot": "12",
+  "date": "2026-10-25",
+  "original_photo": {
+    "path": "/home/pastasugo89/Scaricati/IMG_0669.HEIC",
+    "sha256": "91119435f76c9795cf67f5248978faeab4122f2ca75fb058168d9ad1dd9ef14d"
+  },
+  "local_visual_conversions": {
+    "IMG_0669.png": "3af6d10c959632823f939a8da513b1eb0758ee37dc01a0d9f79fea24f931b89f",
+    "crop-panic-header.png": "c50bdc2cfb79e6019efa4767a0f70582a3f1ca0746b1c963f0d153f0375c64f0",
+    "crop-panic.png": "e440749cc8c7e96fb58e7d84b5a93772731f8354233c040e25beed9f8e0f8771",
+    "crop-meta.png": "0665a25c801e6cdf96e5e55c54ae3a4d80698764d983266d8cd5142ef043cae0"
+  },
+  "panic": {
+    "cpu": 0,
+    "trap": "page fault (14)",
+    "cr2": "0x00000000fed802b0",
+    "rip": "0xffffff80266e8a61",
+    "rax": "0x00000000fed80000",
+    "kernel": "Darwin/XNU 25.6.0"
+  },
+  "open_core_log": {
+    "path": "OCBOOT:/opencore-2026-10-25-185831.txt",
+    "line": 457,
+    "excerpt": "MMIO devirt 0xF7000000 (0x7E00 pages, 0x800000000000100D) skip 0",
+    "captured_locally": false
+  },
+  "candidate": {
+    "path": "research/ext/opcore-simplify-b840-cpus1-mmio-f700",
+    "config_sha256": "55d53e17585af340d3d23c99bd2a305390c7c64005d1735f31d07b742012ac25",
+    "hardware_tested": false
+  },
+  "limitations": [
+    "The boot-args suffix is clipped in the photo after cpus=.",
+    "CR2 is a linear address; numerical overlap with EFI descriptor and DSDT OpRegions does not establish physical mapping or cause.",
+    "Trap RIP has no certain image attribution; backtrace terminates on an invalid frame pointer.",
+    "No panic-* file was recovered."
+  ]
+}

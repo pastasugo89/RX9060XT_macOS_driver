@@ -1,0 +1,358 @@
+{
+  "Motherboard": {
+    "Name": "Micro-Star International Co., Ltd. B840 GAMING PLUS WIFI (MS-7E57)",
+    "Chipset": "B840",
+    "Platform": "Desktop"
+  },
+  "BIOS": {
+    "Version": "2.A53",
+    "Release Date": "09/10/2025",
+    "Firmware Type": "UEFI",
+    "Secure Boot": "Disabled"
+  },
+  "CPU": {
+    "Manufacturer": "AMD",
+    "Processor Name": "AMD Ryzen 7 7700 8-Core Processor",
+    "Codename": "Raphael",
+    "Core Count": "8",
+    "CPU Count": "1",
+    "SIMD Features": "FPU VME DE PSE TSC MSR PAE MCE CX8 APIC SEP MTRR PGE MCA CMOV PAT PSE36 CLFLUSH MMX FXSR SSE SSE2 HT SYSCALL NX MMXEXT FXSR_OPT PDPE1GB RDTSCP LM CONSTANT_TSC REP_GOOD AMD_LBR_V2 NOPL XTOPOLOGY NONSTOP_TSC CPUID EXTD_APICID APERFMPERF RAPL PNI PCLMULQDQ MONITOR SSSE3 FMA CX16 SSE4.1 SSE4.2 MOVBE POPCNT AES XSAVE AVX F16C RDRAND LAHF_LM CMP_LEGACY SVM EXTAPIC CR8_LEGACY ABM SSE4A MISALIGNSSE 3DNOWPREFETCH OSVW IBS SKINIT WDT TCE TOPOEXT PERFCTR_CORE PERFCTR_NB BPEXT PERFCTR_LLC MWAITX CPUID_FAULT CPB CAT_L3 CDP_L3 HW_PSTATE SSBD MBA PERFMON_V2 IBRS IBPB STIBP IBRS_ENHANCED VMMCALL FSGSBASE BMI1 AVX2 SMEP BMI2 ERMS INVPCID CQM RDT_A AVX512F AVX512DQ RDSEED ADX SMAP AVX512IFMA CLFLUSHOPT CLWB AVX512CD SHA_NI AVX512BW AVX512VL XSAVEOPT XSAVEC XGETBV1 XSAVES CQM_LLC CQM_OCCUP_LLC CQM_MBM_TOTAL CQM_MBM_LOCAL USER_SHSTK AVX512_BF16 CLZERO IRPERF XSAVEERPTR RDPRU WBNOINVD CPPC ARAT NPT LBRV SVM_LOCK NRIP_SAVE TSC_SCALE VMCB_CLEAN FLUSHBYASID DECODEASSISTS PAUSEFILTER PFTHRESHOLD AVIC VGIF X2AVIC V_SPEC_CTRL VNMI AVX512VBMI UMIP PKU OSPKE AVX512_VBMI2 GFNI VAES VPCLMULQDQ AVX512_VNNI AVX512_BITALG AVX512_VPOPCNTDQ RDPID OVERFLOW_RECOV SUCCOR SMCA FSRM FLUSH_L1D AMD_LBR_PMC_FREEZE"
+  },
+  "GPU": {
+    "Navi 44 [Radeon RX 9050 / 9060 XT] [7590] (0000:03:00.0)": {
+      "Device ID": "1002-7590",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x1)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
+      "Subsystem ID": "A4931DA2",
+      "ACPI Path": "\\_SB.PCI0.GPP0.SWUS.SWDS.VGA_",
+      "Manufacturer": "AMD",
+      "Codename": "Navi 44",
+      "Device Type": "Discrete GPU",
+      "Resizable BAR": "Enabled"
+    }
+  },
+  "Network": {
+    "RTL8125 2.5GbE Controller [8125] (0000:07:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "10EC-8125",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x2)/Pci(0x8,0x0)/Pci(0x0,0x0)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GPP7.UP02.DP80.WN00"
+    },
+    "NCM8x5/WCN785x Wi-Fi 7(802.11be) 320MHz 2x2 [FastConnect 7800] [1107] (0000:08:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "17CB-1107",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x2)/Pci(0x9,0x0)/Pci(0x0,0x0)",
+      "Subsystem ID": "E0F7105B",
+      "ACPI Path": "\\_SB.PCI0.GPP7.UP02.DP90.LN00"
+    }
+  },
+  "USB Controllers": {
+    "Device [43ef] (0000:05:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-43EF",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x0)",
+      "Subsystem ID": "11421B21",
+      "ACPI Path": "\\_SB.PCI0.GPP7.XH00"
+    },
+    "Raphael/Granite Ridge USB 3.1 xHCI [15b6] (0000:0a:00.3)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-15B6",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x3)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GP17.XHC0"
+    },
+    "Raphael/Granite Ridge USB 3.1 xHCI [15b7] (0000:0a:00.4)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-15B7",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x4)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GP17.XHC1"
+    },
+    "Raphael/Granite Ridge USB 2.0 xHCI [15b8] (0000:0b:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-15B8",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GP19.XHC2"
+    }
+  },
+  "Storage Controllers": {
+    "Lexar NM790 / Patriot Viper VP4300 Lite NVMe SSD (DRAM-less) [1602] (0000:04:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1D97-1602",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x2)/Pci(0x0,0x0)",
+      "Subsystem ID": "16021D97",
+      "ACPI Path": "\\_SB.PCI0.GPP1.NVME"
+    },
+    "500 Series Chipset SATA Controller [43eb] (0000:05:00.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-43EB",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x1)",
+      "Subsystem ID": "10621B21",
+      "ACPI Path": "\\_SB.PCI0.GPP7.EP01"
+    },
+    "NVMe SSD Controller 980 (DRAM-less) [a809] (0000:09:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "144D-A809",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)",
+      "Subsystem ID": "A801144D"
+    }
+  },
+  "Input": {
+    "Compx 2.4G Wireless Receiver (event1)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver (event10)": {
+      "Bus Type": "USB"
+    },
+    "Nordic Semiconductor NuPhy Halo75 V2 Dongle (event2)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver (event3)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver (event4)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver Consumer Control (event5)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver System Control (event6)": {
+      "Bus Type": "USB"
+    },
+    "Nordic Semiconductor NuPhy Halo75 V2 Dongle Keyboard (event7)": {
+      "Bus Type": "USB"
+    },
+    "Nordic Semiconductor NuPhy Halo75 V2 Dongle Mouse (event8)": {
+      "Bus Type": "USB"
+    },
+    "Compx 2.4G Wireless Receiver (event9)": {
+      "Bus Type": "USB"
+    }
+  },
+  "System Devices": {
+    "Raphael/Granite Ridge Root Complex [14d8] (0000:00:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14D8",
+      "PCI Path": "PciRoot(0x0)/Pci(0x0,0x0)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GNBD"
+    },
+    "Raphael/Granite Ridge IOMMU [14d9] (0000:00:00.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14D9",
+      "PCI Path": "PciRoot(0x0)/Pci(0x0,0x2)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.IOMA"
+    },
+    "Raphael/Granite Ridge Dummy Host Bridge [14da] (0000:00:01.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x0)",
+      "Subsystem ID": "00000000",
+      "ACPI Path": "\\_SB.PCI0.D003"
+    },
+    "Raphael/Granite Ridge GPP Bridge [14db] (0000:00:01.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DB",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x1)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GPP0"
+    },
+    "Raphael/Granite Ridge GPP Bridge [14db] (0000:00:01.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DB",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x2)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GPP1"
+    },
+    "Raphael/Granite Ridge Dummy Host Bridge [14da] (0000:00:02.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x0)",
+      "Subsystem ID": "00000000",
+      "ACPI Path": "\\_SB.PCI0.D00F"
+    },
+    "Raphael/Granite Ridge GPP Bridge [14db] (0000:00:02.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DB",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GPP7"
+    },
+    "Raphael/Granite Ridge GPP Bridge [14db] (0000:00:02.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DB",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x2)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GPP8"
+    },
+    "Raphael/Granite Ridge Dummy Host Bridge [14da] (0000:00:03.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x3,0x0)",
+      "Subsystem ID": "00000000",
+      "ACPI Path": "\\_SB.PCI0.D012"
+    },
+    "Raphael/Granite Ridge Dummy Host Bridge [14da] (0000:00:04.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x4,0x0)",
+      "Subsystem ID": "00000000",
+      "ACPI Path": "\\_SB.PCI0.D021"
+    },
+    "Raphael/Granite Ridge Dummy Host Bridge [14da] (0000:00:08.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x0)",
+      "Subsystem ID": "00000000",
+      "ACPI Path": "\\_SB.PCI0.D026"
+    },
+    "Raphael/Granite Ridge Internal GPP Bridge to Bus [C:A] [14dd] (0000:00:08.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DD",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)",
+      "Subsystem ID": "14627E57",
+      "ACPI Path": "\\_SB.PCI0.GP17"
+    },
+    "Raphael/Granite Ridge Internal GPP Bridge to Bus [C:A] [14dd] (0000:00:08.3)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DD",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x3)",
+      "Subsystem ID": "14627E57",
+      "ACPI Path": "\\_SB.PCI0.GP19"
+    },
+    "FCH SMBus Controller [790b] (0000:00:14.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-790B",
+      "PCI Path": "PciRoot(0x0)/Pci(0x14,0x0)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.D032"
+    },
+    "FCH LPC Bridge [790e] (0000:00:14.3)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-790E",
+      "PCI Path": "PciRoot(0x0)/Pci(0x14,0x3)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.SBRG"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 0 [14e0] (0000:00:18.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E0",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x0)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 1 [14e1] (0000:00:18.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E1",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x1)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 2 [14e2] (0000:00:18.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E2",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x2)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 3 [14e3] (0000:00:18.3)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E3",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x3)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 4 [14e4] (0000:00:18.4)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E4",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x4)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 5 [14e5] (0000:00:18.5)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E5",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x5)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 6 [14e6] (0000:00:18.6)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E6",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x6)",
+      "Subsystem ID": "00000000"
+    },
+    "Raphael/Granite Ridge Data Fabric; Function 7 [14e7] (0000:00:18.7)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14E7",
+      "PCI Path": "PciRoot(0x0)/Pci(0x18,0x7)",
+      "Subsystem ID": "00000000"
+    },
+    "Navi 10 XL Upstream Port of PCI Express Switch [1478] (0000:01:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1002-1478",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x1)/Pci(0x0,0x0)",
+      "Subsystem ID": "14781DA2",
+      "ACPI Path": "\\_SB.PCI0.GPP0.SWUS"
+    },
+    "Navi 10 XL Downstream Port of PCI Express Switch [1479] (0000:02:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1002-1479",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x1)/Pci(0x0,0x0)/Pci(0x0,0x0)",
+      "Subsystem ID": "14791002",
+      "ACPI Path": "\\_SB.PCI0.GPP0.SWUS.SWDS"
+    },
+    "Navi 48 HDMI/DP Audio Controller [ab40] (0000:03:00.1)": {
+      "Bus Type": "PCI",
+      "Device ID": "1002-AB40",
+      "PCI Path": "PciRoot(0x0)/Pci(0x1,0x1)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x1)",
+      "Subsystem ID": "AB401002",
+      "ACPI Path": "\\_SB.PCI0.GPP0.SWUS.SWDS.HDAU"
+    },
+    "500 Series Chipset Switch Upstream Port [43e9] (0000:05:00.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-43E9",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x2)",
+      "Subsystem ID": "02011B21",
+      "ACPI Path": "\\_SB.PCI0.GPP7.UP02"
+    },
+    "500 Series Chipset Switch Downstream Port [43ea] (0000:06:08.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-43EA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x2)/Pci(0x8,0x0)",
+      "Subsystem ID": "33081B21",
+      "ACPI Path": "\\_SB.PCI0.GPP7.UP02.DP80"
+    },
+    "500 Series Chipset Switch Downstream Port [43ea] (0000:06:09.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-43EA",
+      "PCI Path": "PciRoot(0x0)/Pci(0x2,0x1)/Pci(0x0,0x2)/Pci(0x9,0x0)",
+      "Subsystem ID": "33081B21",
+      "ACPI Path": "\\_SB.PCI0.GPP7.UP02.DP90"
+    },
+    "Raphael/Granite Ridge PCIe Dummy Function [14de] (0000:0a:00.0)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-14DE",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GP17.VGA_"
+    },
+    "Family 19h PSP/CCP [1649] (0000:0a:00.2)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-1649",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x2)",
+      "Subsystem ID": "7E571462",
+      "ACPI Path": "\\_SB.PCI0.GP17.APSP"
+    },
+    "Ryzen HD Audio Controller [15e3] (0000:0a:00.6)": {
+      "Bus Type": "PCI",
+      "Device ID": "1022-15E3",
+      "PCI Path": "PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x6)",
+      "Subsystem ID": "EE571462",
+      "ACPI Path": "\\_SB.PCI0.GP17.AZAL"
+    }
+  },
+  "Monitor": {
+    "card1-DP-1": {
+      "Connector Type": "DP",
+      "Resolution": "2560x1440",
+      "Connected GPU": "Navi 44 [Radeon RX 9050 / 9060 XT] [7590] (0000:03:00.0)"
+    }
+  }
+}

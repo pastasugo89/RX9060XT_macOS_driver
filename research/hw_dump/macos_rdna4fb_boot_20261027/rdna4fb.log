@@ -1,0 +1,423 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-27 19:05:35.405 Df log[869:1c4d] [com.apple.log:] log run noninteractively, parent: 864 (zsh), args: '/usr/bin/log' 'show' '--last' '15m' '--style' 'compact' '--predicate' 'eventMessage CONTAINS[c] "RDNA4FB" OR eventMessage CONTAINS[c] "com.hackintosh.RDNA4FB"'
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/_CodeSignature/.BC.T_FRFeBF was modified by event 89344
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/MacOS/.BC.T_esptRs was modified by event 89344
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/.BC.T_sbwtSZ was modified by event 89344
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/_CodeSignature/CodeResources was modified by event 83968
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/_CodeSignature was modified by event 148736
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/MacOS/RDNA4FB was modified by event 83968
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/MacOS was modified by event 148736
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents/Info.plist was modified by event 83968
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext/Contents was modified by event 148736
+2026-10-27 19:06:21.117 Df kernelmanagerd[124:1c82] /Library/Extensions/RDNA4FB-0.0.8-n44.kext was modified by event 148736
+2026-10-27 19:06:21.162 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Processed request: 
+requestedExts: []
+bundledExts: []
+repositoryExts: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext]
+appleInternalCandidateExts: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext]
+optionalDependencyTable: [:]
+2026-10-27 19:06:21.169 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] other kext requests: 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext
+2026-10-27 19:06:21.210 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] requesting latest approval status and kext history from system policy for: 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+2026-10-27 19:06:21.236 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:21.237 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:21.240 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] kexts for dependency resolution: 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+2026-10-27 19:06:21.244 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] new auxiliary kext collection candidates: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext (new)
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext (existing)
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext (existing)
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext (existing)
+2026-10-27 19:06:21.245 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Resolved request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: [com.highpoint-tech.kext.HighPointIOP v4.4.5 (571AEA63-3845-3A83-B37F-5FD117C0FFDE) in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext signed @team(DX6G69M9N2) (e917a18aeefac30f0249fe451715c48100d5a1fc) entitlements: [com.apple.security.get-task-allow: true] flags [0, 1, 4, 8, 9, 14], com.navi48.accelprobe v0.0.7 (8081E748-A6B5-34E8-A666-74BAF8CC84C8) in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext signed @none (4eb9ed797e48838a97032e80fb450be73f2e93a0) flags [0, 1, 4, 8, 9, 14], com.highpoint-tech.kext.HighPointRR v4.22.1 (6DF47B93-DB65-36BD-9392-0101CFDDDDFF) in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext signed @team(DX6G69M9N2) (4fb1f14d2b3d9639665a4df7e953b63765306616) entitlements: [com.apple.security.get-task-allow: true] flags [0, 1, 4, 8, 9, 14]]
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:21.251 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:CollectionBuild] trying to build:
+	bundlePaths: 
+		/Library/Apple/System/Library/Extensions/AppleMobileDevice.kext
+		/Library/Extensions/HighPointIOP.kext
+		/Library/Extensions/HighPointRR.kext
+		/Library/Extensions/Navi48Accel-0.0.7.kext
+		/Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:22.587 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] gathering approvals for: 
+	/Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:22.588 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:22.589 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:22.589 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] Triggered kext upgrade: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:22.589 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:22.589 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:22.591 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] Serviced request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: [com.highpoint-tech.kext.HighPointIOP v4.4.5 (571AEA63-3845-3A83-B37F-5FD117C0FFDE) in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext signed @team(DX6G69M9N2) (e917a18aeefac30f0249fe451715c48100d5a1fc) entitlements: [com.apple.security.get-task-allow: true] flags [0, 1, 4, 8, 9, 14], com.navi48.accelprobe v0.0.7 (8081E748-A6B5-34E8-A666-74BAF8CC84C8) in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext signed @none (4eb9ed797e48838a97032e80fb450be73f2e93a0) flags [0, 1, 4, 8, 9, 14], com.highpoint-tech.kext.HighPointRR v4.22.1 (6DF47B93-DB65-36BD-9392-0101CFDDDDFF) in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext signed @team(DX6G69M9N2) (4fb1f14d2b3d9639665a4df7e953b63765306616) entitlements: [com.apple.security.get-task-allow: true] flags [0, 1, 4, 8, 9, 14]]
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:22.592 E  kernelmanagerd[124:1c82] library rebuild request failed: Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+2026-10-27 19:06:27.221 Df kernelmanagerd[124:21d6] [com.apple.km.logging:LoadRequestResolution] loadExtensions(withPaths:withIdentifiers:withPersonalityNames:withDependencyAndFolderPaths:options:withReply:): Loading paths: ["/Library/Extensions/RDNA4FB-0.0.8-n44.kext"], identifiers: [], personalityNames: []
+2026-10-27 19:06:27.222 Df kernelmanagerd[124:21d6] [com.apple.km.logging:LoadRequestResolution] [LimitedRequestProcessor] Processed request: 
+requestedExts: []
+followupRequest: 
+paths: ["/Library/Extensions/RDNA4FB-0.0.8-n44.kext"],
+identifiers: [],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [clientPrivileged, ]
+2026-10-27 19:06:27.222 Df kernelmanagerd[124:21d6] [com.apple.km.logging:LoadRequestResolution] [LimitedLoadRequestHandler] Resolved request: 
+directLoadPlatformExtensions: []
+followupRequest: 
+paths: ["/Library/Extensions/RDNA4FB-0.0.8-n44.kext"],
+identifiers: [],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [clientPrivileged, ]
+2026-10-27 19:06:27.222 Df kernelmanagerd[124:21d6] [com.apple.km.logging:LoadRequestResolution] [LimitedLoadRequestHandler] Serviced request: requestCompleted: false
+followupRequest: 
+paths: ["/Library/Extensions/RDNA4FB-0.0.8-n44.kext"],
+identifiers: [],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [clientPrivileged, ]
+2026-10-27 19:06:27.222 Df kernelmanager_helper[306:1ece] Handling loadOrRebuildRequest: 
+paths: ["/Library/Extensions/RDNA4FB-0.0.8-n44.kext"],
+identifiers: [],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [clientPrivileged, ]
+2026-10-27 19:06:27.314 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Processed request: 
+requestedExts: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+bundledExts: []
+repositoryExts: []
+appleInternalCandidateExts: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext]
+optionalDependencyTable: [:]
+2026-10-27 19:06:27.323 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] other kext requests: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:27.332 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] requesting latest approval status and kext history from system policy for: 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:27.372 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:27.373 Df syspolicyd[261:1f41] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:27.375 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] kexts for dependency resolution: 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext
+2026-10-27 19:06:27.380 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] new auxiliary kext collection candidates: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext (new)
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext (existing)
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext (existing)
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext (existing)
+2026-10-27 19:06:27.381 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Resolved request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: []
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:27.381 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:CollectionBuild] trying to build:
+	bundlePaths: 
+		/Library/Apple/System/Library/Extensions/AppleMobileDevice.kext
+		/Library/Extensions/HighPointIOP.kext
+		/Library/Extensions/HighPointRR.kext
+		/Library/Extensions/Navi48Accel-0.0.7.kext
+		/Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:28.379 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] gathering approvals for: 
+	/Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:28.379 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:28.380 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:28.380 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] Triggered kext upgrade: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:28.380 Df syspolicyd[261:1ecc] [com.apple.syspolicy.kext:default] Blocking upgrade dialog for kext that is already pending upgrade: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:28.381 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] Serviced request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: []
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:28.381 E  kernelmanagerd[124:21d6] failed to load/rebuild extensions: Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+2026-10-27 19:06:28.381 E  kmutil[1002:21cf] (KernelManagement) Remote encountered error: Error Domain=KMErrorDomain Code=27 "Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings." UserInfo={NSLocalizedDescription=Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.}
+2026-10-27 19:06:28.382 E  kmutil[1002:21cf] kmutil encountered error (27): Extension with identifiers com.hackintosh.RDNA4FB not approved to load. Please approve using System Settings.
+2026-10-27 19:06:36.166 Df kernelmanagerd[124:22bf] [com.apple.km.logging:LoadRequestResolution] loadExtensions(withPaths:withIdentifiers:withPersonalityNames:withDependencyAndFolderPaths:options:withReply:): Loading paths: [], identifiers: ["com.hackintosh.RDNA4FB"], personalityNames: []
+2026-10-27 19:06:36.166 Df kernelmanagerd[124:22bf] [com.apple.km.logging:LoadRequestResolution] [LimitedRequestProcessor] Processed request: 
+requestedExts: []
+followupRequest: 
+paths: [],
+identifiers: ["com.hackintosh.RDNA4FB"],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [disallowAuth, clientPrivileged, ]
+2026-10-27 19:06:36.166 Df kernelmanagerd[124:22bf] [com.apple.km.logging:LoadRequestResolution] [LimitedLoadRequestHandler] Resolved request: 
+directLoadPlatformExtensions: []
+followupRequest: 
+paths: [],
+identifiers: ["com.hackintosh.RDNA4FB"],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [disallowAuth, clientPrivileged, ]
+2026-10-27 19:06:36.166 Df kernelmanagerd[124:22bf] [com.apple.km.logging:LoadRequestResolution] [LimitedLoadRequestHandler] Serviced request: requestCompleted: false
+followupRequest: 
+paths: [],
+identifiers: ["com.hackintosh.RDNA4FB"],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [disallowAuth, clientPrivileged, ]
+2026-10-27 19:06:36.167 Df kernelmanager_helper[306:1ece] Handling loadOrRebuildRequest: 
+paths: [],
+identifiers: ["com.hackintosh.RDNA4FB"],
+personalityNames: [],
+extraRepositories: [],
+dependencyKextsAndRepositories: [],
+flags: [disallowAuth, clientPrivileged, ]
+2026-10-27 19:06:36.259 Df kernelmanager_helper[306:1ece] Looking for latest used extensions with bundle ID com.hackintosh.RDNA4FB
+2026-10-27 19:06:36.259 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] Checking unstaged bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:36.286 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Processed request: 
+requestedExts: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+bundledExts: []
+repositoryExts: []
+appleInternalCandidateExts: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext]
+optionalDependencyTable: [:]
+2026-10-27 19:06:36.294 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] other kext requests: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:36.300 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] requesting latest approval status and kext history from system policy for: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+2026-10-27 19:06:36.324 Df syspolicyd[261:22aa] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:36.325 Df syspolicyd[261:22aa] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:06:36.329 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] kexts for dependency resolution: 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext
+2026-10-27 19:06:36.334 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] new auxiliary kext collection candidates: 
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext (new)
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext (existing)
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext (existing)
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext (existing)
+2026-10-27 19:06:36.335 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Resolved request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: []
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:36.335 Df kernelmanager_helper[306:1ece] will continue to service this request without asking for approvals with the following list:
+ Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext
+Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext
+Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext
+Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:36.376 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:CollectionBuild] trying to build:
+	bundlePaths: 
+		/Library/Apple/System/Library/Extensions/AppleMobileDevice.kext
+		/Library/Extensions/HighPointIOP.kext
+		/Library/Extensions/HighPointRR.kext
+		/Library/Extensions/Navi48Accel-0.0.7.kext
+		/Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:06:37.079 Df kernelmanager_helper[306:1ece] [com.apple.km.logging:LoadRequestResolution] Serviced request: 
+approvalsRequiredFromSyspolicyd: true
+newAuxiliaryContents: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: []
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: [Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext]
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:06:37.080 E  kernelmanagerd[124:22bf] failed to load/rebuild extensions: Loading extension(s): com.hackintosh.RDNA4FB requires a reboot
+2026-10-27 19:06:37.080 E  syspolicyd[261:1ecc] (KernelManagement) Remote encountered error: Error Domain=KMErrorDomain Code=28 "Loading extension(s): com.hackintosh.RDNA4FB requires a reboot" UserInfo={NSLocalizedDescription=Loading extension(s): com.hackintosh.RDNA4FB requires a reboot}
+2026-10-27 19:10:53.353 Df syspolicyd[249:531] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:10:53.354 Df syspolicyd[249:531] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:10:53.356 Df kernelmanagerd[124:30c] Validate approval for /Library/Extensions/RDNA4FB-0.0.8-n44.kext in auxKC: approved
+2026-10-27 19:10:53.356 Df kernelmanagerd[124:30c] installation check: bundle for com.hackintosh.RDNA4FB is at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:10:55.552 E  kernelmanagerd[124:30c] error: tried to insert an invalid codeful kernel extension in the restricted lookup table: Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:10:57.065 Df kernel[0:8af] \^[[32mRecorded kext com.hackintosh.RDNA4FB as a candidate for inclusion in prelinked kernel.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[33mLoading kext com.hackintosh.RDNA4FB.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[32mKext com.hackintosh.RDNA4FB resolving dependencies.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.iokit.IOGraphicsFamily.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.iokit.IOPCIFamily.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.kpi.iokit.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.kpi.libkern.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.kpi.mach.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[36mKext com.hackintosh.RDNA4FB added dependency com.apple.kpi.unsupported.\^[[0m
+2026-10-27 19:10:57.065 Df kernel[0:7e8] \^[[32mKext com.hackintosh.RDNA4FB successfully resolved dependencies.\^[[0m
+2026-10-27 19:10:57.066 Df kernel[0:56d] \^[[33mKext com.hackintosh.RDNA4FB executable loaded; 13 pages at 0xffffff7f96638000 (load tag 123).\^[[0m
+2026-10-27 19:10:57.067 Df kernel[0:7eb] \^[[36mKext com.hackintosh.RDNA4FB calling module start function.\^[[0m
+2026-10-27 19:10:57.067 Df kernel[0:7eb] \^[[36mKext com.hackintosh.RDNA4FB registered class RDNA4FB.\^[[0m
+2026-10-27 19:10:57.067 Df kernel[0:7eb] \^[[33mKext com.hackintosh.RDNA4FB has IOService subclass RDNA4FB; enabling autounload.\^[[0m
+2026-10-27 19:10:57.067 Df kernel[0:7eb] \^[[33mKext com.hackintosh.RDNA4FB is now started.\^[[0m
+2026-10-27 19:10:57.067 Df kernel[0:7eb] \^[[33mKext com.hackintosh.RDNA4FB loaded.\^[[0m
+2026-10-27 19:10:58.030 Df kernel[0:56d] (RDNA4FB) RDNA4FB: probe on PCI device 0x75901002
+2026-10-27 19:10:58.030 Df kernel[0:56d] (RDNA4FB) RDNA4FB: Navi 44 variant: RX 9060 XT
+2026-10-27 19:10:58.030 Df kernel[0:56d] (RDNA4FB) RDNA4FB: console base 0x880000001 carries flag bits, using 0x880000000
+2026-10-27 19:10:58.030 Df kernel[0:56d] (RDNA4FB) RDNA4FB: console framebuffer: base=0x880000000 2560x1440 stride=10240 depth=32 len=14745600
+2026-10-27 19:10:58.030 Df kernel[0:56d] (RDNA4FB) RDNA4FB: mmio: BAR5 mapped, 512 KiB
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: VBIOS: 131072 bytes from expansion ROM at 0xf6a80000
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: VBIOS: valid AtomBIOS image at +0x0, 58880 bytes
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: connector 0: DisplayPort objid=0x3113 encoder=0x211e ddc-line=0 hpd-pin=1
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: connector 1: HDMI-A objid=0x320c encoder=0x221e ddc-line=1 hpd-pin=2
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: connector 2: HDMI-A objid=0x330c encoder=0x2120 ddc-line=2 hpd-pin=3
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: discovery: not present in image (inject the full 2MiB flash dump to enable)
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: setpixelclock absent
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: dig1transmittercontrol absent
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: digxencodercontrol absent
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: enablecrtc absent
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: setcrtc_usingdtdtiming absent
+2026-10-27 19:10:58.120 Df kernel[0:56d] (RDNA4FB) RDNA4FB: cmd: enabledisppowergating absent
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: discovery: on-die TMR at vram+0x3faff0000, first dwords 28211407 00030001
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: discovery: on-die binary valid, 42 IPs (no ROM injection needed)
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: mmio: VRAM size 16304 MiB (RCC_CONFIG_MEMSIZE @ 0x378c)
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn: register dump (encoders, read-only) ---
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   OTG0_OTG_CONTROL = 0x00011201
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   [0] HUBP_surf=0x00000008 DP_PIXEL_FORMAT=0x00000200 DP_MSA_COLORIMETRY=0x40000000 DIG_FE_CNTL=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   [1] HUBP_surf=0x00000008 DP_PIXEL_FORMAT=0x00000000 DP_MSA_COLORIMETRY=0x00000000 DIG_FE_CNTL=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   [2] HUBP_surf=0x00000008 DP_PIXEL_FORMAT=0x00000000 DP_MSA_COLORIMETRY=0x00000000 DIG_FE_CNTL=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   [3] HUBP_surf=0x00000008 DP_PIXEL_FORMAT=0x00000000 DP_MSA_COLORIMETRY=0x00000000 DIG_FE_CNTL=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_MSA_MISC = 0x00000000 (MISC1..4)
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_VID_STREAM_CNTL = 0x00010201
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_SEC_CNTL  = 0x00000000 (GSP/VSC/ASP enables)
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_SEC_CNTL1 = 0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_SEC_CNTL2 = 0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_SEC_CNTL7 = 0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   DP0_DP_MSA_VBID_MISC = 0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   MCM0 shaper=0x00000000 3dlut_mode=0x00000000 1dlut=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   MCM1 shaper=0x00000000 3dlut_mode=0x00000000 1dlut=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   MCM2 shaper=0x00000000 3dlut_mode=0x00000000 1dlut=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn:   MCM3 shaper=0x00000000 3dlut_mode=0x00000000 1dlut=0x00000000
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: dcn: --- end register dump ---
+2026-10-27 19:10:58.123 Df kernel[0:56d] (RDNA4FB) RDNA4FB: edid: HPD_Y=0x00000001 (hpd1=1 hpd2=0 hpd3=0 hpd4=0)
+2026-10-27 19:10:58.133 Df kernel[0:56d] (RDNA4FB) RDNA4FB: edid: connector 0 (AUX0): GSM product 0x5c87 EDID 1.4
+2026-10-27 19:10:58.133 Df kernel[0:56d] (RDNA4FB) RDNA4FB: edid: connector 0 (AUX0): preferred 2560x1440@143.973Hz pclk=604250kHz h(blank=160 fp=48 sw=32 +) v(blank=103 fp=3 sw=10 -)
+2026-10-27 19:10:58.143 Df kernel[0:8ef] (RDNA4FB) RDNA4FB: edid: connector 0 (AUX0): read extension block (tag 0x02)
+2026-10-27 19:10:58.143 Df kernel[0:8ef] (RDNA4FB) RDNA4FB: i2c: line 1: transaction failed (sw_status=0x00001101, NACK)
+2026-10-27 19:10:58.143 Df kernel[0:8ef] (RDNA4FB) RDNA4FB: edid: connector 1 (DDC1): no reply
+2026-10-27 19:10:58.143 Df kernel[0:8ef] (RDNA4FB) RDNA4FB: i2c: line 2: transaction failed (sw_status=0x00001101, NACK)
+2026-10-27 19:10:58.143 Df kernel[0:8ef] (RDNA4FB) RDNA4FB: edid: connector 2 (DDC2): no reply
+2026-10-27 19:10:59.099 Df kernel[0:751] (RDNA4FB) RDNA4FB: published IOFBTimingRange (default, 312 bytes): version 2, clock 497250000..498250000 Hz, links 0, bandwidth 25920000000 bit/s, encodings 0x1, bpc 0x2, colorimetry 0x3, dynrange 0x1
+2026-10-27 19:10:59.099 Df kernel[0:751] (RDNA4FB) RDNA4FB: started
+2026-10-27 19:10:59.099 Df kernel[0:751] (IOPCIFamily) [PCIe:0 36745871513 ns] [childPublished()] child RDNA4FB(0x1000004ba) published
+2026-10-27 19:11:00.184 Df displaypolicyd[145:319] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0xb2000020 (DG,published,quiet,pubSched,pubArmed) vid.did=1002.7590 b:d:f=3:0:0 
+gpu 0x25ad        pci 0x100000298 IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x1000004ba     /RDNA4FB
+2026-10-27 19:11:03.164 Df kernelmanagerd[124:874] Received kext load notification: com.hackintosh.RDNA4FB
+2026-10-27 19:11:03.929 Df WindowServer[198:36f] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x20 (DG) vid.did=1002.7590 b:d:f=3:0:0 
+gpu 0x25ad        pci 0x100000298 IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x1000004ba     /RDNA4FB
+2026-10-27 19:11:03.929 Df kernel[0:36f] (RDNA4FB) RDNA4FB: power: registered power states (doze-only, system sleep vetoed)
+2026-10-27 19:11:03.929 Df kernel[0:36f] (RDNA4FB) RDNA4FB: enableController: adopting firmware scanout 2560x1440
+2026-10-27 19:11:03.929 Df kernel[0:36f] (RDNA4FB) RDNA4FB: vbl: using advertised current mode 0x1 refresh 16.16=0x780000
+2026-10-27 19:11:03.929 Df kernel[0:7a] PMRD: RDNA4FB tag flags 200
+2026-10-27 19:11:03.929 Df kernel[0:36f] (RDNA4FB) RDNA4FB: vbl: emulated VBL armed, period 8333 us
+2026-10-27 19:11:03.929 Df kernel[0:36f] (RDNA4FB) RDNA4FB: newUserClient: no IOFBConfig; 0 alias mode(s) kept
+2026-10-27 19:11:03.929 Df kernel[0:7a] PMRD: Added RDNA4FB to system sleep preventers list (Total 1)
+2026-10-27 19:11:03.929 Df kernel[0:7a] PMRD: System Sleep Preventers: RDNA4FB
+2026-10-27 19:11:03.934 Df kernel[0:36f] (RDNA4FB) RDNA4FB: validate: call 1, descripSize 204, description set
+2026-10-27 19:11:03.934 Df kernel[0:36f] (RDNA4FB) RDNA4FB: validate: GOP timing accepted (1): clock 497750000 Hz, numLinks 0, descriptor
+2026-10-27 19:11:03.934 Df kernel[0:36f] (RDNA4FB) RDNA4FB: setDetailedTimings: 1 alias mode(s) of the GOP timing
+2026-10-27 19:11:03.938 Df kernel[0:1f0] (RDNA4FB) RDNA4FB: vbl: invoking callback 1
+2026-10-27 19:11:03.947 Df kernel[0:1f0] (RDNA4FB) RDNA4FB: vbl: invoking callback 2
+2026-10-27 19:11:03.955 Df kernel[0:1f0] (RDNA4FB) RDNA4FB: vbl: invoking callback 3
+2026-10-27 19:11:15.253 Df kernelmanager_helper[355:aa7] [com.apple.km.logging:LoadRequestResolution] checking bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:15.254 Df kernelmanager_helper[355:aa7] [com.apple.km.logging:LoadRequestResolution] checking unstaged bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:16.028 Df kernelmanager_helper[355:aa7] [com.apple.km.logging:LoadRequestResolution] checking bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:16.028 Df kernelmanager_helper[355:aa7] [com.apple.km.logging:LoadRequestResolution] checking unstaged bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:16.758 Df SafeEjectGPUService[625:1475] [com.apple.GPUWrangler:default] (reg) gpu 0x25ad flags 0x20 (DG) vid.did=1002.7590 b:d:f=3:0:0 
+gpu 0x25ad        pci 0x100000298 IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0
+gpu 0x25ad       agdc 0x000000000 
+gpu 0x25ad       gpuc 0x000000000 
+gpu 0x25ad agdpclient 0x000000000 
+gpu 0x25ad      accel 0x000000000 
+gpu 0x25ad     fb0:-1 0x1000004ba     /RDNA4FB
+2026-10-27 19:11:45.603 Df log[807:1a64] [com.apple.log:] log run noninteractively, parent: 802 (zsh), args: '/usr/bin/log' 'show' '--last' '8m' '--style' 'compact' '--predicate' 'eventMessage CONTAINS[c] "RDNA4FB"'
+2026-10-27 19:11:57.942 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] checking bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:57.942 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] checking unstaged bundle path /Library/Extensions/RDNA4FB-0.0.8-n44.kext for Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+2026-10-27 19:11:57.979 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] requesting latest approval status and kext history from system policy for: 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+2026-10-27 19:11:58.002 Df syspolicyd[249:1bd2] [com.apple.syspolicy.kext:default] canLoadKernelExtension - direct, evaluate, Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:11:58.003 Df syspolicyd[249:1bd2] [com.apple.syspolicy.kext:default] Kernel Extension ALLOWED: Kext ((null), com.hackintosh.RDNA4FB) version: 20db67d123a73ed65a7fd355d438989d770cb079
+2026-10-27 19:11:58.007 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] kexts for dependency resolution: 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext 
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext (codeless)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext 
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+2026-10-27 19:11:58.011 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] new auxiliary kext collection candidates: 
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext (existing)
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext (existing)
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext (existing)
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext (existing)
+2026-10-27 19:11:58.011 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] existing, approved auxiliary kext collection direct loads: 
+	Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext
+	Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext
+	Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext
+	Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext
+	Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext
+2026-10-27 19:11:58.012 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] [FullLoadOrRebuildRequestHandler] Resolved request: 
+approvalsRequiredFromSyspolicyd: false
+newAuxiliaryContents: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: [com.navi48.accelprobe v0.0.7 (8081E748-A6B5-34E8-A666-74BAF8CC84C8) in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext signed @none (4eb9ed797e48838a97032e80fb450be73f2e93a0) flags [0, 1, 4, 8, 9, 14]]
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: []
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:11:58.016 Df kernelmanager_helper[355:1a20] [com.apple.km.logging:LoadRequestResolution] Serviced request: 
+approvalsRequiredFromSyspolicyd: false
+newAuxiliaryContents: [Kext com.apple.driver.AppleMobileDevice v4.0 in codeless kext bundle com.apple.driver.AppleMobileDevice at /Library/Apple/System/Library/Extensions/AppleMobileDevice.kext, Kext com.navi48.accelprobe v0.0.7 in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext, Kext com.hackintosh.RDNA4FB v0.0.8 in executable kext bundle com.hackintosh.RDNA4FB at /Library/Extensions/RDNA4FB-0.0.8-n44.kext, Kext com.highpoint-tech.kext.HighPointRR v4.22.1 in executable kext bundle com.highpoint-tech.kext.HighPointRR at /Library/Extensions/HighPointRR.kext, Kext com.highpoint-tech.kext.HighPointIOP v4.4.5 in executable kext bundle com.highpoint-tech.kext.HighPointIOP at /Library/Extensions/HighPointIOP.kext]
+directLoadPlatformExtensions: []
+directLoadAuxiliaryExtensions: [com.navi48.accelprobe v0.0.7 (8081E748-A6B5-34E8-A666-74BAF8CC84C8) in executable kext bundle com.navi48.accelprobe at /Library/Extensions/Navi48Accel-0.0.7.kext signed @none (4eb9ed797e48838a97032e80fb450be73f2e93a0) flags [0, 1, 4, 8, 9, 14]]
+extensionsNeedingApproval: []
+approvedUnbuiltExtensions: []
+safebootBlockedExtensions: []
+unsupportedExtensions: []
+2026-10-27 19:12:20.504 Df log[865:1e4a] [com.apple.log:] log run noninteractively, parent: 685 (codex), args: '/usr/bin/log' 'show' '--last' '10m' '--style' 'compact' '--predicate' 'eventMessage CONTAINS[c] "RDNA4FB"'

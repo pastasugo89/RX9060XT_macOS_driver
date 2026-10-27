@@ -1,0 +1,31 @@
+Navi48Bringup: probe: Navi 44 RX 9060 XT/9060/9050 (0x7590, rev 0xc0) — bring-up enabled
+AppleRouteOff: gfxc-ramtop: host-page RAM bound 0x85df00000 (read). Derived 0x85df00000, legacy floor 0x800000000, map reason OK (derived from the EFI memory map). EFI map: 74 descriptor(s), 61 RAM, 5 device window(s), 0 empty, 0 out of order; RAM total 32540 MiB vs installed 32768 MiB.
+Navi48Bringup: pci bars: register 0x10 -> [0x860000000, +0x10000000)
+Navi48Bringup: pci bars: register 0x18 -> [0x870000000, +0x200000)
+Navi48Bringup: pci bars: register 0x20 -> [0x1000, +0x100)
+Navi48Bringup: pci bars: register 0x24 -> [0xf6a00000, +0x80000)
+Navi48Bringup: pci bars: register 0x30 -> [0xf6a80000, +0x20000)
+Navi48Bringup: pci bars: BAR0 union [0x860000000, +0x10000000) (IOPCIFamily [0x860000000, +0x10000000), config space 0x860000000, ReBAR size 0x10000000)
+Navi48Bringup: native-s1c: BAR0 latch: IOPCIFamily and config space agree on BAR0
+Navi48Bringup: native-s1c: pci bars latched: 5 BAR range(s) will never be imported as host pages
+Navi48Bringup: mmio: BAR5 mapped, 512 KiB
+Navi48Bringup: mmio: VRAM size 16304 MiB (RCC_CONFIG_MEMSIZE @ 0x378c)
+Navi48Bringup: discovery: on-die TMR at vram+0x3faff0000, first dwords 28211407 00030001
+Navi48Bringup: discovery: on-die binary valid, 42 IPs
+Navi48Bringup: ip: GC    v12.0.0  (4 segment bases)
+Navi48Bringup: ip: MMHUB v4.1.0  (2 segment bases)
+Navi48Bringup: ip: PSP   v14.0.2  (15 segment bases)
+Navi48Bringup: ip: SMU   v14.0.2  (15 segment bases)
+Navi48Bringup: ip: SDMA  v7.0.0  (4 segment bases)
+Navi48Bringup: ip: IH    v7.0.0  (2 segment bases)
+Navi48Bringup: ip: NBIF  v6.3.1  (6 segment bases)
+Navi48Bringup: ip: DCN   v4.1.0  (5 segment bases)
+Navi48Bringup: ip: HDP   v7.0.0  (2 segment bases)
+Navi48Bringup: ip: UMC   v8.14.0  (3 segment bases)
+Navi48Bringup: psp: boot=0x80000000 sos=0x00000000 ring64=0x00000000  [bootloader READY, sOS down, C2PMSG_64 resp-flag clear]
+Navi48Bringup: stages: navi48-stage=1 (mac-amdgpu BringupStage numbering; 5 = PSP SOS)
+Navi48Bringup: dmubcmd: boot-arg navi48-dmubcmd REFUSED on Navi 44 (the DMUB command verbs address the Navi 48 PHY D / DIG3 monitor B): verbs 95-97 are OFF
+Navi48Bringup: disp2: boot-arg navi48-disp2 REFUSED on Navi 44 (the second display path is Navi 48 only: DIG3 / PHY D): verb 98 is OFF
+Navi48Bringup: dcn: read-only raster path NOT BUILT - no mapped BAR5 in the device context (the LINKCFG reply keeps the CEA fallback)
+Navi48Bringup: accel-gate: navi48-accel-gate=1 — self-test: LoadAccelerator only after the stage-17 compute dispatch passes
+Navi48Bringup: start: done (VRAM 16304 MiB, 42 IPs)

@@ -1,0 +1,25 @@
+{
+  "integration_tests": 8,
+  "failures": 0,
+  "errors": 0,
+  "test_command": "python tools/baremetal/test-simplify-linux.py",
+  "real_hardware_report_valid": true,
+  "report_errors": 0,
+  "report_warnings": 0,
+  "acpi_uid_range": "0..15",
+  "ocvalidate_version": "1.0.8",
+  "ocvalidate_passed": true,
+  "efi_files_verified_local_stage_usb": 28,
+  "hardware_boot_tested": false,
+  "tool_source_sha256": {
+    "tools/baremetal/audit-kernel-patches.py": "393502c451dffabd4da38937f23bfa950539bd3ad76424c9e130960486b4bdb5",
+    "tools/baremetal/build-simplify-b840.py": "68d2c2d83c624e7893637d1f3fd491b71d11e841c734da9af9ce238722ec5095",
+    "tools/baremetal/deploy-simplify-b840.py": "971180208f93c7b812e912a988c85345e33573be5a963e1d103067f291a7301d",
+    "tools/baremetal/gather-simplify-b840.py": "56419298af9e4f144b2a76b8a0d89d5f09d5e926ed554b9e8df7492c6dabc856",
+    "tools/baremetal/linux_hardware.py": "0c4c02c4276a7ea951f3f626a9fd65a3c88429bfb06ee500487c79d76d5184dd",
+    "tools/baremetal/prepare-installer-smallbar.py": "5a4b21a9d3f24c5648a6cd75bfdf475f9fc158873fddd860f4a246e782afd7be",
+    "tools/baremetal/prepare-opcore-simplify.py": "ad78ef23eac35215d8730db906daaa26bb59496b7255aa09b48afa45233e8e7c",
+    "tools/baremetal/test-simplify-linux.py": "1b24d7e382d8a70ee0882115e1fdab7d906fec11186b70ba7c0bfc67e304e408",
+    "tools/baremetal/opcore-simplify-linux.patch": "ae5b35a3525aa4fce4e66e8997a27c9feabb4a9d4e44fb2a506d59c051214850"
+  }
+}

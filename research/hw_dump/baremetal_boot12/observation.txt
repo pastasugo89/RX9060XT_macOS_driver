@@ -1,0 +1,17 @@
+Boot12 — lettura visiva di IMG_0669.HEIC (25/10/2026)
+
+Trascrizione leggibile:
+panic(cpu 0 caller 0xffffff80164d50da): Kernel trap at 0xffffff80266e8a61, type = 14=page fault
+CR2: 0x00000000fed802b0   RIP: 0xffffff80266e8a61   RAX: 0x00000000fed80000
+Fault CPU 0, PL 0, VF 1, error code 0
+Darwin/XNU 25.6.0.
+
+Il suffisso della riga boot-args è tagliato nella foto dopo “cpus=”. La config USB del boot12 era la variante cpus=1; la foto da sola non attesta il valore completo né che XNU abbia applicato il limite. Il backtrace leggibile passa per _sync_iss_to_iks e _panic; l’indirizzo RIP del trap non è stato attribuito a un’immagine con certezza. La foto segnala frame pointer non allineato/invalid e backtrace terminato. Il panic log non risultava disponibile nella schermata.
+
+OpenCore log letto in sola lettura dalla OCBOOT UUID A140-3052: opencore-2026-10-25-185831.txt, linea 457: “OCABC: MMIO devirt 0xF7000000 (0x7E00 pages, 0x800000000000100D) skip 0”. Descriptor [0xF7000000, 0xFEE00000); il valore numerico CR2 cade nell’intervallo. CR2 è un indirizzo lineare e ciò non dimostra corrispondenza fisica.
+
+La DSDT locale research/hw_dump/baremetal_inventory/acpi/DSDT contiene OpRegion SystemMemory GSMM (base 0xFED80000, length 0x1000) e SMIC (base 0xFED80000, length 0x800000), entrambe includono numericamente 0xFED802B0. La relazione con il page fault non è provata.
+
+La variante per boot13 è un esperimento: unica differenza dalla EFI cpus=1 verificata, Booter.MmioWhitelist Address=0xF7000000 Enabled=True. SHA config 55d53e17585af340d3d23c99bd2a305390c7c64005d1735f31d07b742012ac25. Deployment/preflight/backup in research/ext/opcore-simplify-b840-cpus1-mmio-f700/DEPLOYMENT.json. Hardware boot pendente.
+
+Foto originale (HEIC) conservata nel percorso locale /home/pastasugo89/Scaricati/IMG_0669.HEIC; il PNG e i ritagli qui sono conversioni locali per lettura, non contenuti generati.

@@ -53,3 +53,5 @@ research/hw_dump/baremetal_inventory/acpi/
 # Captured Apple framework code and confidential generated EFI configuration stay local.
 /research/hw_dump/**/*.bin
 /research/hw_dump/**/config.plist
+
+/new_root

@@ -1,0 +1,12 @@
+Boot11, video IMG_0668.MOV (123.263333 s), stessa EFI diagnostica del boot10.
+Il kernel supera la semplice enumerazione delle tabelle ACPI e stampa caricamento riuscito e AppleACPICPU.
+Poi prosegue con inizializzazione periferiche; IOHIDFamily, AppleACPIButtons, AppleRTC e AppleHPET sono caricati.
+Ultimi fotogrammi: HPET: map device registers failed; [addMemoryRange()] AppleVTD is not yet installed as gSystem.
+Nessun panic o backtrace leggibile nei fotogrammi finali. Schermo nero da circa 120.693 s.
+Utente conferma comparsa autonoma successiva di MSI/GRUB: reset reale, non solo perdita di segnale.
+Log OC nuovo: opencore-2026-10-25-121010.txt, stessa configurazione e 28 payload verificati, EXITBS:START come limite copertura UEFI.
+Nessun panic file in radice USB o variabile NVRAM panic trovati. Causa del reset non identificata.
+Le righe di tracing ExNameSegment non sono da sole errori ACPI. Il messaggio HPET e un errore di mapping, non prova della causa del reset.
+Prossimo test controllato: solo cpus=1, mantenendo tutte le patch AMD (incluso core count fisico 08), SSDT, kext, BAR e BIOS.
+Il test limita le CPU logiche usate da XNU; non elimina i nodi ACPI e il loro elenco puo ancora comparire completo.
+Un eventuale successo indicherebbe sensibilita alla modalita multiprocessore o alle variazioni di temporizzazione, senza isolare un bug TSC.

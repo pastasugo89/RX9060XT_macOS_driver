@@ -1,0 +1,1 @@
+Boot7: utente riferisce stesso blocco, nessun progresso. Foto IMG_0666.HEIC: ultime righe CoreAnalyticsHub start completed; Kext com.apple.iokit.IOTimeSyncFamily is already loaded. Nessun panic/backtrace visibile. Resize Apple eseguito: BAR0 14 -> 8, BAR2 8 -> 1. Non equivale a una lettura delle risorse da XNU.

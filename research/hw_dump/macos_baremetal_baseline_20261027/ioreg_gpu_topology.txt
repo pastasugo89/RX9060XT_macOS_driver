@@ -1,0 +1,16 @@
+    | |   |           | |   "name" = <"display">
+    | |   |           | |   "subsystem-id" = <93a40000>
+    | |   |           | |   "IOPCIACSCapabilities" = 0
+    | |   |           | |   "acpi-pmcap-offset" = 80
+    | |   |           | |   "AAPL,gray-page" = <01000000>
+    | |   |           | |   "AAPL,ndrv-dev" = Yes
+    | |   |           | |   "IOPMIsPowerManaged" = Yes
+    | |   |           | |   "compatible" = <"pci1da2,a493","pci1002,7590","pciclass,030000","VGA">
+    | |   |           | |   "IOPCIExpressDeviceCapabilities2" = 7539103
+    | |   |           | |   "IOHibernateState" = <00000000>
+    | |   |           | |   "IOPCIExpressDeviceCapabilities" = 36769
+    | |   |           | |   "attached-gpu-control-path" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0/IONDRVFramebuffer/AGPM"
+    | |   |           | |   "reg" = <000003000000000000000000000000000000000010000342000000000000000000000000000000101800034200000000000000000000000000002000200003010000000000000000000000000001000024000302000000000000000000000000000008003000030200000000000000000000000000000200>
+    | |   |           | |   "IOPCIPowerManagementCapabilities" = 18446744073441338369
+    | |   |           | |   "device-id" = <90750000>
+    | |   |           | |   "revision-id" = <c0000000>

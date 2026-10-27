@@ -1,0 +1,8 @@
+kern.bootargs: -v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 
+kern.osrelease: 25.6.0
+kern.osversion: 25G83
+hw.machine: x86_64
+hw.model: MacPro7,1
+hw.ncpu: 16
+hw.physicalcpu: 8
+machdep.cpu.brand_string: AMD Ryzen 7 7700 8-Core Processor              

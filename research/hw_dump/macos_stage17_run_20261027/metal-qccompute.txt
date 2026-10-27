@@ -1,0 +1,130 @@
+Navi48Metal: cienv: set CI_USE_MTL_DAG_FOR_CIKL_SRC=0 (Core Image takes its kernel-language parser, not the nil [device compiler])
+2026-10-27 18:49:46.884 mtlprobe[873:7775] Navi48Metal: initWithAcceleratorPort 0x2303
+Navi48Metal: census: N48RenderEncoder lacks 40 of 139 MTLRenderCommandEncoder methods: !setTileSamplerStates:withRange: !dispatchThreadsPerTile: !drawIndexedPatches:patchIndexBuffer:patchIndexBufferOffset:controlPointIndexBuffer:controlPointIndexBufferOffset:indirectBuffer:indirectBufferOffset: !drawIndexedPatches:patchStart:patchCount:patchIndexBuffer:patchIndexBufferOffset:controlPointIndexBuffer:controlPointIndexBufferOffset:instanceCount:baseInstance: !drawIndexedPrimitives:indexType:indexBuffer:indexBufferOffset:indirectBuffer:indirectBufferOffset: !drawPatches:patchIndexBuffer:patchIndexBufferOffset:indirectBuffer:indirectBufferOffset:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !drawPatches:patchStart:patchCount:patchIndexBuffer:patchIndexBufferOffset:instanceCount:baseInstance: !drawPrimitives:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:withRange: !sampleCountersInBuffer:atSampleIndex:withBarrier: !setDepthTestMinBound:maxBound: !setFragmentIntersectionFunctionTable:atBufferIndex: !setFragmentIntersectionFunctionTables:withBufferRange: !setFragmentSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setFragmentVisibleFunctionTables:withBufferRange: !setTessellationFactorBuffer:offset:instanceStride: !setTessellationFactorScale:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !setThreadgroupMemoryLength:offset:atIndex: !setTileBuffer:offset:atIndex: !setTileBufferOffset:atIndex: !setTileBuffers:offsets:withRange: !setTileBytes:length:atIndex: !setTileIntersectionFunctionTable:atBufferIndex: !setTileIntersectionFunctionTables:withBufferRange: !setTileSamplerState:atIndex: !setTileSamplerState:lodMinClamp:lodMaxClamp:atIndex: !setTileSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setTileTexture:atIndex: !setTileTextures:withRange: !setTileVisibleFunctionTable:atBufferIndex: !setTileVisibleFunctionTables:withBufferRange: !setVertexAmplificationCount:viewMappings:
+Navi48Metal: census: N48RenderEncoder (cont.) MTLRenderCommandEncoder: !setVertexIntersectionFunctionTable:atBufferIndex: !setVertexIntersectionFunctionTables:withBufferRange: !setVertexSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setVertexVisibleFunctionTable:atBufferIndex: !setVertexVisibleFunctionTables:withBufferRange: !tileHeight !tileWidth
+Navi48Metal: census: N48ComputeEncoder lacks 12 of 47 MTLComputeCommandEncoder methods: !dispatchThreadgroupsWithIndirectBuffer:indirectBufferOffset:threadsPerThreadgroup: !executeCommandsInBuffer:indirectBuffer:indirectBufferOffset: !executeCommandsInBuffer:withRange: !sampleCountersInBuffer:atSampleIndex:withBarrier: !setImageblockWidth:height: !setIntersectionFunctionTable:atBufferIndex: !setIntersectionFunctionTables:withBufferRange: !setSamplerStates:lodMinClamps:lodMaxClamps:withRange: !setStageInRegion: !setStageInRegionWithIndirectBuffer:indirectBufferOffset: !setVisibleFunctionTable:atBufferIndex: !setVisibleFunctionTables:withBufferRange:
+Navi48Metal: census: N48BlitEncoder lacks 8 of 34 MTLBlitCommandEncoder methods: !copyFromTexture:sourceSlice:sourceLevel:toTexture:destinationSlice:destinationLevel:sliceCount:levelCount: !copyIndirectCommandBuffer:sourceRange:destination:destinationIndex: !optimizeIndirectCommandBuffer:withRange: !resetCommandsInBuffer:withRange: !resolveCounters:inRange:destinationBuffer:destinationOffset: !sampleCountersInBuffer:atSampleIndex:withBarrier: getTextureAccessCounters:region:mipLevel:slice:resetCounters:countersBuffer:countersBufferOffset: resetTextureAccessCounters:region:mipLevel:slice:
+Navi48Metal: census: N48CommandBuffer lacks 2 of 39 MTLCommandBuffer methods: !parallelRenderCommandEncoderWithDescriptor: !resourceStateCommandEncoder
+Navi48Metal: census: Navi48Device lacks 2 of 139 MTLDevice methods: !sparseTileSizeWithTextureType:pixelFormat:sampleCount: !sparseTileSizeWithTextureType:pixelFormat:sampleCount:sparsePageSize:
+Navi48Metal: census: N48Texture lacks 1 of 53 MTLTexture methods: !gpuResourceID
+Navi48Metal: census: N48Buffer lacks 2 of 25 MTLBuffer methods: !newRemoteBufferViewForDevice: !remoteStorageBuffer
+Navi48Metal: census: N48RenderPipelineState lacks 0 of 27 MTLRenderPipelineState methods:
+Navi48Metal: census: N48ComputePipelineState lacks 12 of 19 MTLComputePipelineState methods: !functionHandleWithBinaryFunction: !functionHandleWithFunction: !functionHandleWithName: !gpuResourceID !newComputePipelineStateWithAdditionalBinaryFunctions:error: !newComputePipelineStateWithBinaryFunctions:error: !newIntersectionFunctionTableWithDescriptor: !newVisibleFunctionTableWithDescriptor: !reflection !requiredThreadsPerThreadgroup !shaderValidation !allocatedSize
+Navi48Metal: census: N48CommandQueue lacks 0 of 11 MTLCommandQueue methods:
+Navi48Metal: census: N48SamplerState lacks 1 of 3 MTLSamplerState methods: !gpuResourceID
+Navi48Metal: census: N48DepthStencilState lacks 1 of 3 MTLDepthStencilState methods: !gpuResourceID
+Navi48Metal: census: N48Fence lacks 0 of 3 MTLFence methods:
+Navi48Metal: census: N48Heap lacks 0 of 22 MTLHeap methods:
+Navi48Metal: census: 81 (class, selector) pair(s) missing in this process
+Navi48Metal: argumentBuffersSupport -> Tier1 (0) for this application: argument buffers beyond the basics are not implemented
+mtlprobe: using device AMD Radeon RX 9060 XT registryID=0x100000738
+qccompute: device responds to newComputePipelineStateWithDescriptor:error: = 1
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv
+Navi48Metal: dump kernel function 'compute_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 5280 bytes
+Navi48Metal: dump: per-user directory /tmp/n48m/0 ready (daemon list grant: added)
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.air (kernel 'compute_average_luma' stage 3, sidecar /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.kernel.json)
+qccompute: compute_average_luma: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.air (kernel 'compute_average_luma' stage 3, sidecar /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv
+Navi48Metal: dump kernel function 'compute_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 5280 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.air (kernel 'compute_average_luma' stage 3, sidecar /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.kernel.json)
+qccompute: compute_average_luma: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv
+Navi48Metal: dump kernel function 'compute_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 5280 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.air (kernel 'compute_average_luma' stage 3, sidecar /tmp/n48m/0/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.kernel.json)
+qccompute: compute_average_luma: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv
+Navi48Metal: dump kernel function 'compute_sum_luma' class _MTLFunctionInternal stage 3 bitcodeData 4736 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.air (kernel 'compute_sum_luma' stage 3, sidecar /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.kernel.json)
+qccompute: compute_sum_luma: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.air (kernel 'compute_sum_luma' stage 3, sidecar /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv
+Navi48Metal: dump kernel function 'compute_sum_luma' class _MTLFunctionInternal stage 3 bitcodeData 4736 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.air (kernel 'compute_sum_luma' stage 3, sidecar /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.kernel.json)
+qccompute: compute_sum_luma: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv
+Navi48Metal: dump kernel function 'compute_sum_luma' class _MTLFunctionInternal stage 3 bitcodeData 4736 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.air (kernel 'compute_sum_luma' stage 3, sidecar /tmp/n48m/0/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.kernel.json)
+qccompute: compute_sum_luma: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv
+Navi48Metal: dump kernel function 'tile_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 4656 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.air (kernel 'tile_average_luma' stage 3, sidecar /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.kernel.json)
+qccompute: tile_average_luma: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.air (kernel 'tile_average_luma' stage 3, sidecar /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv
+Navi48Metal: dump kernel function 'tile_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 4656 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.air (kernel 'tile_average_luma' stage 3, sidecar /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.kernel.json)
+qccompute: tile_average_luma: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv
+Navi48Metal: dump kernel function 'tile_average_luma' class _MTLFunctionInternal stage 3 bitcodeData 4656 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.air (kernel 'tile_average_luma' stage 3, sidecar /tmp/n48m/0/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.kernel.json)
+qccompute: tile_average_luma: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv
+Navi48Metal: dump kernel function 'tile_average_luma_quad' class _MTLFunctionInternal stage 3 bitcodeData 5504 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.air (kernel 'tile_average_luma_quad' stage 3, sidecar /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.kernel.json)
+qccompute: tile_average_luma_quad: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.air (kernel 'tile_average_luma_quad' stage 3, sidecar /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv
+Navi48Metal: dump kernel function 'tile_average_luma_quad' class _MTLFunctionInternal stage 3 bitcodeData 5504 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.air (kernel 'tile_average_luma_quad' stage 3, sidecar /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.kernel.json)
+qccompute: tile_average_luma_quad: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv
+Navi48Metal: dump kernel function 'tile_average_luma_quad' class _MTLFunctionInternal stage 3 bitcodeData 5504 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.air (kernel 'tile_average_luma_quad' stage 3, sidecar /tmp/n48m/0/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.kernel.json)
+qccompute: tile_average_luma_quad: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv
+Navi48Metal: dump kernel function 'compute_apl' class _MTLFunctionInternal stage 3 bitcodeData 6240 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.air (kernel 'compute_apl' stage 3, sidecar /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.kernel.json)
+qccompute: compute_apl: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.air (kernel 'compute_apl' stage 3, sidecar /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv
+Navi48Metal: dump kernel function 'compute_apl' class _MTLFunctionInternal stage 3 bitcodeData 6240 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.air (kernel 'compute_apl' stage 3, sidecar /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.kernel.json)
+qccompute: compute_apl: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv
+Navi48Metal: dump kernel function 'compute_apl' class _MTLFunctionInternal stage 3 bitcodeData 6240 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.air (kernel 'compute_apl' stage 3, sidecar /tmp/n48m/0/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.kernel.json)
+qccompute: compute_apl: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv
+Navi48Metal: dump kernel function 'compute_apl_fast' class _MTLFunctionInternal stage 3 bitcodeData 6496 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.air (kernel 'compute_apl_fast' stage 3, sidecar /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.kernel.json)
+qccompute: compute_apl_fast: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.air (kernel 'compute_apl_fast' stage 3, sidecar /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv
+Navi48Metal: dump kernel function 'compute_apl_fast' class _MTLFunctionInternal stage 3 bitcodeData 6496 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.air (kernel 'compute_apl_fast' stage 3, sidecar /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.kernel.json)
+qccompute: compute_apl_fast: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv
+Navi48Metal: dump kernel function 'compute_apl_fast' class _MTLFunctionInternal stage 3 bitcodeData 6496 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.air (kernel 'compute_apl_fast' stage 3, sidecar /tmp/n48m/0/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.kernel.json)
+qccompute: compute_apl_fast: descriptor:options:reflection:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv
+Navi48Metal: dump kernel function 'sum_apl_and_compute_dimming_factor' class _MTLFunctionInternal stage 3 bitcodeData 5984 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.air (kernel 'sum_apl_and_compute_dimming_factor' stage 3, sidecar /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.kernel.json)
+qccompute: sum_apl_and_compute_dimming_factor: descriptor:error: -> NIL (Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.air (kernel 'sum_apl_and_compute_dimming_factor' stage 3, sidecar /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.kernel.json))
+Navi48Metal: newComputePipelineStateWithFunction:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv
+Navi48Metal: dump kernel function 'sum_apl_and_compute_dimming_factor' class _MTLFunctionInternal stage 3 bitcodeData 5984 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.air (kernel 'sum_apl_and_compute_dimming_factor' stage 3, sidecar /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.kernel.json)
+qccompute: sum_apl_and_compute_dimming_factor: function:error: -> NIL
+Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
+Navi48Metal: compute pipeline creation failed: spvcache miss for kernel: /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/spvcache/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv
+Navi48Metal: dump kernel function 'sum_apl_and_compute_dimming_factor' class _MTLFunctionInternal stage 3 bitcodeData 5984 bytes
+Navi48Metal: Navi48Metal: compute pipeline not in spvcache; AIR dumped for offline translation: /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.air (kernel 'sum_apl_and_compute_dimming_factor' stage 3, sidecar /tmp/n48m/0/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.kernel.json)
+qccompute: sum_apl_and_compute_dimming_factor: descriptor:options:reflection:error: -> NIL
+mtlprobe: FAIL qccompute (7)

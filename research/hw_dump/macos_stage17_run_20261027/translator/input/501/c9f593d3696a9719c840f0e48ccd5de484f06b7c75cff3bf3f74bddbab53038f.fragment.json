@@ -1,0 +1,9 @@
+{
+  "sha256" : "c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f",
+  "function" : "quad_fs",
+  "stageName" : "fragment",
+  "role" : "fragment",
+  "air" : "\/tmp\/n48m\/0\/c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f.air",
+  "bytes" : 3856,
+  "stage" : 2
+}

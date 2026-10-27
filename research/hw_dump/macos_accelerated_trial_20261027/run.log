@@ -1,0 +1,99 @@
+START Tue Oct 27 19:54:41 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 19:54:41 UTC 2026
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x1000005aa, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x1000005aa
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9521ee5000  (accelerator 0xffffff9521bac000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff99ee8baa00)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000005c1
+  vendor calls            : 4 (vendor info 3, GPU capability 1, other 0, bad length 0)
+  command 0x1 x3
+  command 0x980 x1
+STOP initial pipestat failed: /Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh: line 97: /Library/Application: No such file or directory
+END rc=1 Tue Oct 27 19:54:54 UTC 2026
+START Tue Oct 27 20:07:03 UTC 2026
+BOOT_ARGS_OK Tue Oct 27 20:07:03 UTC 2026
+  Hello: kernel ABI 1.12 (tool 1.12), kext build 664
+publish: 0 (Success)
+  state 1 (published): nub registry entry 0x10000058c, ops table ABI 3, 152 bytes
+Navi48MetalNub present, registry ID 0x10000058c
+  Navi48,Ready = 1
+  Navi48,MetalABI = 3
+  Navi48,TaskVASize = 17179869184
+  Navi48,VRAMBytes = 17095983104
+accel pipeadopt: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED (perform's CPU copy can run at frame rate)
+  factory mask now        : 0xd (needs 0xd = RESOURCE|SYSMEMORY|VIDMEMORY)
+  adopted pipe            : 0xffffff9926ce8c00  (accelerator 0xffffff9df39b7000)
+  aux traces: pipes ours / all, display-machine starts / PCI substituted: 1 / 1, 1 / 1 (last walk provider 0xffffff9926c5fd40)
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x100000591
+  vendor calls            : 3 (vendor info 2, GPU capability 1, other 0, bad length 0)
+  command 0x1 x2
+  command 0x980 x1
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff9926ce8c00
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTART_WINDOWSERVER old=201 Tue Oct 27 20:07:16 UTC 2026
+WINDOWSERVER_READY pid=487 Tue Oct 27 20:07:17 UTC 2026
+LOGIN_SEEN pid=487 Tue Oct 27 20:07:27 UTC 2026
+WINDOWSERVER_CRASH_LOOP old=487 new=973 after_login_seconds=2
+FAILSAFE_BEGIN rc=1 Tue Oct 27 20:07:31 UTC 2026
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 1; factory mask 0xd; adopted pipe 0xffffff9926ce8c00
+FAILSAFE_DEFERRED_USER_SESSION_PRESENT
+FAILSAFE_DONE
+END rc=1 Tue Oct 27 20:07:31 UTC 2026

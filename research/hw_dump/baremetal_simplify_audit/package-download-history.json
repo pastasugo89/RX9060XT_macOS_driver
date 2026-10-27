@@ -1,0 +1,56 @@
+[
+    {
+        "product_name": "AppleMCEReporterDisabler",
+        "id": 738162736,
+        "url": "https://github.com/acidanthera/bugtracker/files/3703498/AppleMCEReporterDisabler.kext.zip",
+        "sha256": null
+    },
+    {
+        "product_name": "CtlnaAHCIPort",
+        "id": 927362352,
+        "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip",
+        "sha256": "c8cf54f8b98995d076f365765025068e3d612f6337e279774203441c06f1a474"
+    },
+    {
+        "product_name": "Lilu",
+        "id": 423054015,
+        "url": "https://github.com/dortania/build-repo/releases/download/Lilu-c7a1cda/Lilu-1.7.3-RELEASE.zip",
+        "sha256": "ae087cc321d9490e58268cb5a701baa71549dd8a5b28c7216cf84e9a1d352f99"
+    },
+    {
+        "product_name": "NVMeFix",
+        "id": 232064609,
+        "url": "https://github.com/dortania/build-repo/releases/download/NVMeFix-4862220/NVMeFix-1.1.4-RELEASE.zip",
+        "sha256": "8c0c9b83f6f36db59a963ab91205a5d26aa9b368736b3b885ee8fa9ad90f6e9e"
+    },
+    {
+        "product_name": "OpenCorePkg",
+        "id": 422286327,
+        "url": "https://github.com/dortania/build-repo/releases/download/OpenCorePkg-78d5ff8/OpenCore-1.0.9-RELEASE.zip",
+        "sha256": "4553874974746ab2c800d88d26700c5c8701c82a1d8fddcd1aac3e8488f8352d"
+    },
+    {
+        "product_name": "RTL812xLucy",
+        "id": 911231304,
+        "url": "https://github.com/Mieze/RTL812xLucy/releases/download/v1.1.1/RTL812xLucy-V1.1.1.zip",
+        "sha256": "7a50f9b8c776405ea537bf1c42bc7e062446fba8442aa1cfa7f2a60a966b295e"
+    },
+    {
+        "product_name": "RestrictEvents",
+        "id": 232065220,
+        "url": "https://github.com/dortania/build-repo/releases/download/RestrictEvents-9265e78/RestrictEvents-1.1.7-RELEASE.zip",
+        "sha256": "e5a8c15adeba9251be2709899214fe7fd847f6d38fca6c09adb65e9b2af64f0a"
+    },
+    {
+        "product_name": "USBToolBox",
+        "id": 359051316,
+        "url": "https://github.com/USBToolBox/kext/releases/download/1.2.0/USBToolBox-1.2.0-RELEASE.zip",
+        "sha256": "c315a3a5acfd496dd97d0d19b4fbd1d487103d2fd541c5651583d4c9cebcfe07"
+    },
+    {
+        "product_name": "VirtualSMC",
+        "id": 397854847,
+        "url": "https://github.com/dortania/build-repo/releases/download/VirtualSMC-b5c62c2/VirtualSMC-1.3.9-RELEASE.zip",
+        "sha256": "0d020ad354fc72f9143b0cc4d57335e9f3a61c9c3b1f8ccf7b332223d8a541c5"
+    }
+]

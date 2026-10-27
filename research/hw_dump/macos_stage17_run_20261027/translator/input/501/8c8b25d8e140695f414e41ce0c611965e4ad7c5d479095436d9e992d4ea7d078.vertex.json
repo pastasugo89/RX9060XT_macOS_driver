@@ -1,0 +1,9 @@
+{
+  "sha256" : "8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078",
+  "function" : "quad_vs",
+  "stageName" : "vertex",
+  "role" : "vertex",
+  "air" : "\/tmp\/n48m\/0\/8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078.air",
+  "bytes" : 3376,
+  "stage" : 1
+}

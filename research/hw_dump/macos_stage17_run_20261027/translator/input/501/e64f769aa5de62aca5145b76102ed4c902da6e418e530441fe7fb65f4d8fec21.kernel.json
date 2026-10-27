@@ -1,0 +1,9 @@
+{
+  "sha256" : "e64f769aa5de62aca5145b76102ed4c902da6e418e530441fe7fb65f4d8fec21",
+  "function" : "fill_buf",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/e64f769aa5de62aca5145b76102ed4c902da6e418e530441fe7fb65f4d8fec21.air",
+  "bytes" : 3456,
+  "stage" : 3
+}

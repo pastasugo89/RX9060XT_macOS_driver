@@ -1,0 +1,6 @@
+      Type: GPU
+      Bus: PCIe
+      VRAM (Total): 14 MB
+      Vendor: AMD (0x1002)
+      Device ID: 0x7590
+          Resolution: 2560 x 1440 (QHD/WQHD - Wide Quad High Definition)

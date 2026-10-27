@@ -1,0 +1,3 @@
+47:667 00:044 OCAK: Vtable patching failed for kext com.hackintosh.RDNA4FB
+47:696 00:029 OC: Prelinked injection RDNA4FB.kext (EXPERIMENTAL: display timing and recovery unverified) - Invalid Parameter
+47:726 00:029 OC: Prelinked injection RDNA4FB.kext v0.0.8

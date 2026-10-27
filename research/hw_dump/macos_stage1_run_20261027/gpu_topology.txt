@@ -1,0 +1,5 @@
+    | |   |           +-o VGA@0  <class IOPCIDevice, id 0x100000296, registered, matched, active, busy 0 (5217 ms), retain 14>
+    | |   |           | +-o Navi48Bringup  <class Navi48Bringup, id 0x100000324, registered, matched, active, busy 0 (0 ms), retain 5>
+    | |   |           | +-o AMDSupport  <class AMDSupport, id 0x1000004dc, registered, matched, active, busy 0 (0 ms), retain 5>
+    | |   |           | +-o .Display_boot  <class IONDRVFramebuffer, id 0x1000004dd, registered, matched, active, busy 0 (3 ms), retain 20>
+    | |   |           |   +-o AppleMCCSControlModule  <class AppleMCCSControlModule, id 0x1000004e3, registered, matched, active, busy 0 (0 ms), retain 7>

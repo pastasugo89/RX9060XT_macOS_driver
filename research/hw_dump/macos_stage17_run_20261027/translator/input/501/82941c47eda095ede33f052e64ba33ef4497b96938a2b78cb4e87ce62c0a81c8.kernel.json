@@ -1,0 +1,9 @@
+{
+  "sha256" : "82941c47eda095ede33f052e64ba33ef4497b96938a2b78cb4e87ce62c0a81c8",
+  "function" : "write_tex",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/82941c47eda095ede33f052e64ba33ef4497b96938a2b78cb4e87ce62c0a81c8.air",
+  "bytes" : 3728,
+  "stage" : 3
+}

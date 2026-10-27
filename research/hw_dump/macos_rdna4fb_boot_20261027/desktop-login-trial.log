@@ -1,0 +1,120 @@
+START Tue Oct 27 18:20:01 UTC 2026
+STOP missing com.navi48.bringup
+START Tue Oct 27 18:20:19 UTC 2026
+WAITING_FOR_LOGOUT
+LOGOUT_CONFIRMED
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3b / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 0 / 0 / 0 / 0; handled 0 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipeagdc: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  agdc status             : 0 (PUBLISHED)
+  published / start ok    : 1 / 1
+  registry ID             : 0x1000007c1
+  vendor calls            : 6 (vendor info 3, GPU capability 2, other 1, bad length 0)
+  command 0x1 x3
+  command 0x980 x2
+  command 0x3 x1
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3f (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 1 (255 = not readable)
+  arms / disarms          : 1 / 0; factory mask 0xd; adopted pipe 0xffffff904022f000
+accel pipereload: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  operator restart window : OPEN, waiting for the old WindowServer client's close
+  time left               : 14999 ms of 15000 - run `killall -9 WindowServer` now
+  opened / closes tolerated / closed by slot 267 / expired: 1 / 0 / 0 / 0
+  pipe / GPU              : ARMED / ok
+RESTARTING_WINDOWSERVER old_pid=198
+WINDOWSERVER_NEW_PID=1435
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+TRIAL_COMPLETE; restoring baseline
+ROLLBACK_BEGIN
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  hook calls 267/277/278/279: 1 / 0 / 0 / 0; handled 1 / 0 / 0 / 0
+  submit pass-through / will-perform: 0 / 0
+  bytes copied / frames copied / completed-disarmed: 0 / 0 / 0
+accel pipestat: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags / factory mask    : 0x3f / 0xd
+  BAR0 kernel mapping     : WRITE-COMBINED
+  vblank timestamp switch                                : ON
+  stamps written (txn+0x178 / +0x188)                    : 0
+  skipped: switch off + pipe disarmed                    : 0
+  skipped: bad transaction pointer + wrong class         : 0
+  skipped: no coherent OTG sample + HUNG                 : 0
+  skipped: arithmetic refused + write refused            : 0
+  last t_vbl (mach abs) / period ns / to-next-vblank ns / period abs: 0 / 0 / 0 / 0
+accel pipearm: hook installed = no
+  TTL calls so far        : 0
+  first unsupported slot  : none yet
+  status                  : 0 (OK)
+  flags                   : 0x3b (1 display ON, 2 adopted, 4 armed, 8 capabilities, 16 shortcut ON, 32 BAR0 kernel mapping write-combined)
+  BAR0 kernel mapping     : WRITE-COMBINED
+  accel+0xccf now         : 0 (255 = not readable)
+  arms / disarms          : 1 / 1; factory mask 0xd; adopted pipe 0xffffff904022f000
+ROLLBACK_DONE (kernel/GUI recovery not guaranteed)
+END rc=0 Tue Oct 27 18:22:03 UTC 2026

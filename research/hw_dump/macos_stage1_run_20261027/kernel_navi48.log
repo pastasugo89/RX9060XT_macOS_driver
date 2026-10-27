@@ -1,0 +1,27 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-27 15:39:26.196 Df kernel[0:64e] \^[[32mRecorded kext com.navi48.bringup as a candidate for inclusion in prelinked kernel.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:64e] \^[[33mLoading kext com.navi48.bringup.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[32mKext com.navi48.bringup resolving dependencies.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.iokit.IOPCIFamily.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.kpi.bsd.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.kpi.iokit.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.kpi.libkern.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.kpi.mach.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[36mKext com.navi48.bringup added dependency com.apple.kpi.unsupported.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[32mKext com.navi48.bringup successfully resolved dependencies.\^[[0m
+2026-10-27 15:39:26.196 Df kernel[0:658] \^[[33mKext com.navi48.bringup executable loaded; 1930 pages at 0xffffff800423f000 (load tag 88).\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[36mKext com.navi48.bringup calling module start function.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[36mKext com.navi48.bringup registered class Navi48Bringup.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[33mKext com.navi48.bringup has IOService subclass Navi48Bringup; enabling autounload.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[36mKext com.navi48.bringup registered class Navi48UserClient.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[33mKext com.navi48.bringup has IOService subclass Navi48UserClient; enabling autounload.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[36mKext com.navi48.bringup registered class IOAccelNavi48NativeClient.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[33mKext com.navi48.bringup has IOService subclass IOAccelNavi48NativeClient; enabling autounload.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[36mKext com.navi48.bringup registered class Navi48MetalNub.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:658] \^[[33mKext com.navi48.bringup has IOService subclass Navi48MetalNub; enabling autounload.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:583] \^[[36mKext com.navi48.bringup registered class Navi48DisplayNub.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:583] \^[[33mKext com.navi48.bringup has IOService subclass Navi48DisplayNub; enabling autounload.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:583] \^[[33mKext com.navi48.bringup is now started.\^[[0m
+2026-10-27 15:39:26.197 Df kernel[0:583] \^[[33mKext com.navi48.bringup loaded.\^[[0m
+2026-10-27 15:39:56.541 Df kernel[0:8d9] Boot args: -v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0
+2026-10-27 15:39:57.198 Df kernel[0:89b] Boot args: -v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0

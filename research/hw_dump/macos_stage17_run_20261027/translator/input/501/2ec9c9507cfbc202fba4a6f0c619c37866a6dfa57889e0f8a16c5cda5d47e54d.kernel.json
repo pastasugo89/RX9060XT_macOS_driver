@@ -1,0 +1,9 @@
+{
+  "sha256" : "2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d",
+  "function" : "compute_average_luma",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.air",
+  "bytes" : 5280,
+  "stage" : 3
+}

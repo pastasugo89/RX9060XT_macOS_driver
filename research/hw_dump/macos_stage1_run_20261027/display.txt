@@ -1,0 +1,21 @@
+Graphics/Displays:
+
+    Display:
+
+      Type: GPU
+      Bus: PCIe
+      PCIe Lane Width: x16
+      VRAM (Total): 14 MB
+      Vendor: AMD (0x1002)
+      Device ID: 0x7590
+      Revision ID: 0x00c0
+      Kernel Extension Info: No Kext Loaded
+      Displays:
+        Display:
+          Resolution: 2560 x 1440 (QHD/WQHD - Wide Quad High Definition)
+          UI Looks like: 2560 x 1440
+          Framebuffer Depth: 24-Bit Color (ARGB8888)
+          Main Display: Yes
+          Mirror: Off
+          Online: Yes
+

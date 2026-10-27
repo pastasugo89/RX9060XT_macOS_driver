@@ -1,0 +1,9 @@
+{
+  "sha256" : "c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358",
+  "function" : "sum_apl_and_compute_dimming_factor",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.air",
+  "bytes" : 5984,
+  "stage" : 3
+}

@@ -1,0 +1,9 @@
+{
+  "sha256" : "1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e",
+  "function" : "compute_apl",
+  "stageName" : "kernel",
+  "role" : "kernel",
+  "air" : "\/tmp\/n48m\/0\/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.air",
+  "bytes" : 6240,
+  "stage" : 3
+}

@@ -1,0 +1,10 @@
++-o AppleSMC  <class AppleSMC, id 0x1000002c2, registered, matched, active, busy 0 (0 ms), retain 13>
+  |   "IOClass" = "AppleSMC"
+  |   "IOUserClientClass" = "AppleSMCClient"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleSMC"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleSMC"
+  | |   "IOProviderClass" = "AppleSMC"
+  +-o AppleSMCClient  <class AppleSMCClient, id 0x10000059f, !registered, !matched, active, busy 0, retain 6>
+  +-o AppleSMCClient  <class AppleSMCClient, id 0x1000005a0, !registered, !matched, active, busy 0, retain 6>
+  +-o AppleSMCClient  <class AppleSMCClient, id 0x1000005a1, !registered, !matched, active, busy 0, retain 6>
+  +-o AppleSMCClient  <class AppleSMCClient, id 0x100000b3e, !registered, !matched, active, busy 0, retain 6>

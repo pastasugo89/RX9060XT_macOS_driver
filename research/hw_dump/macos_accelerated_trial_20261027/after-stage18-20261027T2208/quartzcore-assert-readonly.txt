@@ -1,0 +1,17 @@
+48 8d 35 dc ed 22 00 48 8d 0d c9 40 23 00 ba 95
+04 00 00 e8 08 1b 20 00 48 8d 3d 0a ee 22 00 48
+8d 35 bd ed 22 00 48 8d 0d 09 ee 22 00 ba 96 04
+00 00 e8 e9 1a 20 00 48 8d 3d 72 94 aa 36 48 8d
+35 fb 64 b3 33 e8 98 1c 20 00 e9 43 fe ff ff 48
+8d 3d d3 ed 22 00 48 8d 35 86 ed 22 00 48 8d 0d
+eb ed 22 00 ba a2 04 00 00 e8 b2 1a 20 00 
+LEA 16e390: ogl-context.cpp
+LEA 16e397: surf != nullptr
+LEA 16e3a8: push_surface
+LEA 16e3af: ogl-context.cpp
+LEA 16e3b6: _current_surface != surf
+LEA 16e3c7: 
+LEA 16e3ce: ğV‰Vø
+LEA 16e3df: push_surface
+LEA 16e3e6: ogl-context.cpp
+LEA 16e3ed: found != slist->end ()

@@ -1,0 +1,2 @@
+machdep.xcpm.cpu_thermal_level: 0
+machdep.xcpm.gpu_thermal_level: 0

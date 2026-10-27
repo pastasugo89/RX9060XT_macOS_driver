@@ -1,0 +1,1308 @@
+Navi48Bringup: probe: Navi 44 RX 9060 XT/9060/9050 (0x7590, rev 0xc0) — bring-up enabled
+AppleRouteOff: gfxc-ramtop: host-page RAM bound 0x83df00000 (read). Derived 0x83df00000, legacy floor 0x800000000, map reason OK (derived from the EFI memory map). EFI map: 74 descriptor(s), 61 RAM, 5 device window(s), 0 empty, 0 out of order; RAM total 32028 MiB vs installed 32768 MiB.
+Navi48Bringup: pci bars: register 0x10 -> [0x880000000, +0x10000000)
+Navi48Bringup: pci bars: register 0x18 -> [0x890000000, +0x200000)
+Navi48Bringup: pci bars: register 0x20 -> [0x1000, +0x100)
+Navi48Bringup: pci bars: register 0x24 -> [0xf6a00000, +0x80000)
+Navi48Bringup: pci bars: register 0x30 -> [0xf6a80000, +0x20000)
+Navi48Bringup: pci bars: BAR0 union [0x880000000, +0x10000000) (IOPCIFamily [0x880000000, +0x10000000), config space 0x880000000, ReBAR size 0x10000000)
+Navi48Bringup: native-s1c: BAR0 latch: IOPCIFamily and config space agree on BAR0
+Navi48Bringup: native-s1c: pci bars latched: 5 BAR range(s) will never be imported as host pages
+Navi48Bringup: mmio: BAR5 mapped, 512 KiB
+Navi48Bringup: mmio: VRAM size 16304 MiB (RCC_CONFIG_MEMSIZE @ 0x378c)
+Navi48Bringup: discovery: on-die TMR at vram+0x3faff0000, first dwords 28211407 00030001
+Navi48Bringup: discovery: on-die binary valid, 42 IPs
+Navi48Bringup: ip: GC    v12.0.0  (4 segment bases)
+Navi48Bringup: ip: MMHUB v4.1.0  (2 segment bases)
+Navi48Bringup: ip: PSP   v14.0.2  (15 segment bases)
+Navi48Bringup: ip: SMU   v14.0.2  (15 segment bases)
+Navi48Bringup: ip: SDMA  v7.0.0  (4 segment bases)
+Navi48Bringup: ip: IH    v7.0.0  (2 segment bases)
+Navi48Bringup: ip: NBIF  v6.3.1  (6 segment bases)
+Navi48Bringup: ip: DCN   v4.1.0  (5 segment bases)
+Navi48Bringup: ip: HDP   v7.0.0  (2 segment bases)
+Navi48Bringup: ip: UMC   v8.14.0  (3 segment bases)
+Navi48Bringup: psp: boot=0x80000000 sos=0x00000000 ring64=0x00000000  [bootloader READY, sOS down, C2PMSG_64 resp-flag clear]
+Navi48Bringup: stages: navi48-stage=17 (mac-amdgpu BringupStage numbering; 5 = PSP SOS)
+Navi48Bringup: psp-stage: requested (navi48-psp=1) — this stage WRITES to VRAM and the PSP mailbox
+Navi48Bringup: rebar census: extended config readable; Resizable BAR capability found at 0x200, 2 entries
+Navi48Bringup: rebar census: BAR0 capability dword 0x0007f000 (supported sizes mask 0x7f00, bit k = 1 MiB << k), control dword 0x00000840 -> current size code 8 = 256 MiB
+Navi48Bringup: rebar census: BAR2 capability dword 0x00001fe0 (supported sizes mask 0x1fe, bit k = 1 MiB << k), control dword 0x00000102 -> current size code 1 = 2 MiB
+Navi48Bringup: rebar census: BAR0 offers sizes mask 0x7f00, smallest 256 MiB, current 256 MiB (ResizeAppleGpuBars code for 'smallest' = the lowest set bit)
+Navi48Bringup: vram: BAR0 plan: IOPCIFamily [0x880000000, +256 MiB), config space 0x880000000, ReBAR current 256 MiB, VRAM 16304 MiB -> OK (map 256 MiB, vramLimit 256 MiB)
+Navi48Bringup: vram: BAR0 aperture phys 0x880000000, 256 MiB, mapped write-combining
+Navi48Bringup: vram: console framebuffer phys 0x880000000 2560x1440 rowBytes 10240 depth 32 (14400 KiB) -> inside BAR0
+Navi48Bringup: vram: console framebuffer occupies vram+[0x0, 0xe10000)
+Navi48Bringup: vram: bring-up region vram+[0xf00000, 0x2f00000) (15 MiB in)
+Navi48Bringup: vram: vramLimit 256 MiB (mapped 256 MiB, VRAM 16304 MiB, hi reserve 768 MiB)
+Navi48Bringup: vram: aperture check at vram+0xf00000: wrote 4e343821 a5c3f00d 00f00000 ff0fffff; MM window read 4e343821 a5c3f00d 00f00000 ff0fffff; BAR0 read 4e343821 a5c3f00d 00f00000 ff0fffff -> MATCH (was 86a2aa00 8ae2aa04 bd9238a0 b1d238a4)
+Navi48Bringup: vram: aperture check at vram+0x8780000: wrote 4e343821 a5c3f00d 08780000 f787ffff; MM window read 4e343821 a5c3f00d 08780000 f787ffff; BAR0 read 4e343821 a5c3f00d 08780000 f787ffff -> MATCH (was 857a2d95 893a2d91 be4abf35 b20abf31)
+Navi48Bringup: vram: aperture check at vram+0xfff0000: wrote 4e343821 a5c3f00d 0fff0000 f000ffff; MM window read 4e343821 a5c3f00d 0fff0000 f000ffff; BAR0 read 4e343821 a5c3f00d 0fff0000 f000ffff -> MATCH (was 849433c6 88d433c2 bfa4a166 b3e4a162)
+Navi48Bringup: vram: aperture checks at vram+[0xf00000, 0x8780000, 0xfff0000] -> ALL MATCH
+Navi48Bringup: psp-stage: SUCCESS — SOS alive (sign-of-life 0x04a0d82f)
+Navi48Bringup: psp: boot=0x00000000 sos=0x04a0d82f ring64=0x80c00000  [bootloader not-ready, sOS ALIVE, C2PMSG_64 resp-flag set]
+Navi48Bringup: psp: sOS alive: C2PMSG_81=0x04a0d82f C2PMSG_58=0x003b0f0d C2PMSG_59=0x00000000
+Navi48Bringup: dev: PCI command 0x0006 (bus master ON)
+Navi48Bringup: dev: gc_info v1.3: 2 SE x 2 SA x 8 CU, 4 RB/SE (32 CU total)
+Navi48Bringup: dev: context ready — MC base 0x8000000000, region vram+[0xf00000, 0x10000000), GC base 0x1260 MP0 base 0x16000 MMHUB base 0x1a000
+Navi48Bringup: native-s1b: navi48-native=1 accepted (no Apple-path or self-test boot-arg armed); the VM self-test runs after stage 17
+Navi48Bringup: doorbell: BAR2 mapped, 2048 KiB at phys 0x890000000
+Navi48Bringup: stages: running ladder to 17 (ComputeDispatch); smu-full=1
+Navi48Bringup: init: running stage 2 (IHInit)
+Navi48Bringup: nbif: doorbell_path_init: NBIF 6.3.1, bar2Phys=0x890000000 bar2Size=2048 KiB, rmmioSize=524288 bytes (dword index >= 0x20000 needs SMN)
+Navi48Bringup: nbif:   NBIO base[0] = 0x00000000  (unresolved)
+Navi48Bringup: nbif:   NBIO base[1] = 0x00000014
+Navi48Bringup: nbif:   NBIO base[2] = 0x00000d20
+Navi48Bringup: nbif:   NBIO base[3] = 0x00010400
+Navi48Bringup: nbif:   NBIO base[4] = 0x0241b000
+Navi48Bringup: nbif:   NBIO base[5] = 0x04040000
+Navi48Bringup: nbif: RCC_DEV0_EPF2_STRAP2 bidx=5 off=0xd102 abs=0x0404d102 byte=0x10134408 via=SMN: before=0x03132000
+Navi48Bringup: nbif: init_registers: clearing STRAP_NO_SOFT_RESET_DEV0_F2 (bit 7, mask 0x00000080); was 0
+Navi48Bringup: nbif: RCC_DEV0_EPF2_STRAP2: 0x03132000 -> wrote 0x03132000 -> after=0x03132000 (check 0x00000080) OK
+Navi48Bringup: nbif: remap_hdp_registers: MMIO_REG_HOLE_OFFSET=0x0007f000 (0x80000 - 4096), MEM_FLUSH<-0x0007f000 REG_FLUSH<-0x0007f004; rmmio=mapped rmmioSize=524288 bytes
+Navi48Bringup: nbif: remap_hdp_registers: BAR5+0x0007f000 currently reads 0xffffffff, BAR5+0x0007f004 reads 0xffffffff (expect 0/~0 for an unused hole)
+Navi48Bringup: nbif: BIF_BX0_REMAP_HDP_MEM_FLUSH_CNTL bidx=2 off=0x012d abs=0x00000e4d byte=0x3934 via=BAR5: before=0x0000385c
+Navi48Bringup: nbif: BIF_BX0_REMAP_HDP_MEM_FLUSH_CNTL: 0x0000385c -> wrote 0x0007f000 -> after=0x0007f000 (check 0x0007fffc) OK
+Navi48Bringup: nbif: BIF_BX0_REMAP_HDP_REG_FLUSH_CNTL bidx=2 off=0x012e abs=0x00000e4e byte=0x3938 via=BAR5: before=0x00003858
+Navi48Bringup: nbif: BIF_BX0_REMAP_HDP_REG_FLUSH_CNTL: 0x00003858 -> wrote 0x0007f004 -> after=0x0007f004 (check 0x0007fffc) OK
+Navi48Bringup: nbif: RCC_DEV0_EPF0_RCC_DOORBELL_APER_EN bidx=2 off=0x00c0 abs=0x00000de0 byte=0x3780 via=BAR5: before=0x00000000
+Navi48Bringup: nbif: RCC_DEV0_EPF0_RCC_DOORBELL_APER_EN: 0x00000000 -> wrote 0x00000001 -> after=0x00000001 (check 0x00000001) OK
+Navi48Bringup: nbif: enable_doorbell_aperture(true): BIF_DOORBELL_APER_EN now 1
+Navi48Bringup: nbif: enable_doorbell_selfring_aperture(true): bar2Phys=0x890000000 bar2Size=2048 KiB bar2Mapped=yes
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_BASE_LOW bidx=2 off=0x00f4 abs=0x00000e14 byte=0x3850 via=BAR5: before=0x00000000
+Navi48Bringup: nbif: enable_doorbell_selfring_aperture: writing BASE_LOW 0x90000000 (BAR2 phys 0x890000000; the high half is written next)
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_BASE_LOW: 0x00000000 -> wrote 0x90000000 -> after=0x90000000 (check 0xffffffff) OK
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_BASE_HIGH bidx=2 off=0x00f3 abs=0x00000e13 byte=0x384c via=BAR5: before=0x00000000
+Navi48Bringup: nbif: enable_doorbell_selfring_aperture: writing BASE_HIGH 0x00000008 (NON-ZERO: BAR2 is above 4 GiB; first time this value is written on hardware)
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_BASE_HIGH: 0x00000000 -> wrote 0x00000008 -> after=0x00000008 (check 0xffffffff) OK
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_CNTL bidx=2 off=0x00f5 abs=0x00000e15 byte=0x3854 via=BAR5: before=0x00000100
+Navi48Bringup: nbif: BIF_BX_PF0_DOORBELL_SELFRING_GPA_APER_CNTL: 0x00000100 -> wrote 0x00000003 -> after=0x00000003 (check 0x000fff03) OK
+Navi48Bringup: nbif:   SELFRING_GPA_APER_CNTL = 0x00000003: EN=1 MODE=1 SIZE=0x0
+Navi48Bringup: nbif: gc_doorbell_init: NBIO/NBIF version 6.3.1 -> direct (BASE_IDX 2) register table
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_0_CTRL bidx=2 off=0x01cb abs=0x00000eeb byte=0x3bac via=BAR5: before=0x00000000
+Navi48Bringup: nbif:   ENTRY_0 before = 0x00000000: ENABLE=0 AWID=0x0 FENCE=0 RANGE_OFFSET=0x0 RANGE_SIZE=0x0 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x0
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_0_CTRL: 0x00000000 -> wrote 0x30000007 -> after=0x30000007 (check 0xffffffff) OK
+Navi48Bringup: nbif:   ENTRY_0 after  = 0x30000007: ENABLE=1 AWID=0x3 FENCE=0 RANGE_OFFSET=0x0 RANGE_SIZE=0x0 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x3
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_3_CTRL bidx=2 off=0x01ce abs=0x00000eee byte=0x3bb8 via=BAR5: before=0x00000000
+Navi48Bringup: nbif:   ENTRY_3 before = 0x00000000: ENABLE=0 AWID=0x0 FENCE=0 RANGE_OFFSET=0x0 RANGE_SIZE=0x0 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x0
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_3_CTRL: 0x00000000 -> wrote 0x3000000d -> after=0x3000000d (check 0xffffffff) OK
+Navi48Bringup: nbif:   ENTRY_3 after  = 0x3000000d: ENABLE=1 AWID=0x6 FENCE=0 RANGE_OFFSET=0x0 RANGE_SIZE=0x0 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x3
+Navi48Bringup: nbif: doorbell_path_init: complete. SDMA S2A entry 2 is left to the SDMA stage (call nbif_v6_3_1_sdma_doorbell_range).
+Navi48Bringup: ih: hw_init: OSSSYS base=0x10a0 (IH 7.0.0)
+Navi48Bringup: ih: ring alloc ok: ring bus=0x3ce60000 cpu=0xffffffee81480000 (262144 B), wptr_shadow bus=0x1e0508000
+Navi48Bringup: ih: ring programmed: BASE=0x003ce600 BASE_HI=0000000000 (bus=0x3ce60000, 262144 B / 65536 dwords)
+Navi48Bringup: ih:   IH_RB_CNTL=0xa0110120 (RB_SIZE=16 MC_SPACE=2 WB=1 SNOOP=1 OVF=1 REARM=0)
+Navi48Bringup: ih:   WPTR_ADDR_LO=0xe0508000 HI=0x00000001 (bus=0x1e0508000)
+Navi48Bringup: ih:   IH_DOORBELL_RPTR=0000000000 (use_doorbell=0 index=376 bar2=mapped)
+Navi48Bringup: ih:   readback: CNTL=0x20110120 BASE=0x003ce600 RPTR=0000000000 WPTR=0000000000
+Navi48Bringup: ih: storm/flood: STORM_CLIENT_LIST_CNTL=0x00040000 INT_FLOOD_CNTL=0x00000008 MSI_STORM_CTRL=0x00000003
+Navi48Bringup: ih: interrupts enabled: IH_RB_CNTL=0x20110121 (ENABLE_INTR=0, polled mode=yes)
+Navi48Bringup: ih: IH ring online (ring=0x3ce60000 wptr_shadow=0x1e0508000) - polled, call ih_poll()/ih_process() to consume
+Navi48Bringup: init: stage 2 (IHInit) done
+Navi48Bringup: init: running stage 3 (GMCInit)
+Navi48Bringup: gmc: mc_init: MMHUB FB_LOCATION_BASE=0x8000 TOP=0x83fb FB_OFFSET=0 -> vram_start=0x8000000000 vram_base_offset=0 (read-only, never reprogrammed — the console scans out of this window)
+Navi48Bringup: gmc: mc_init: GART bump region starts at 0 (0 - legacy, contends with Apple for page 0)
+Navi48Bringup: gmc: mc_init: real_vram=16304 MB visible=256 MB vram=[0x8000000000..0x83faffffff] gart=[0x8400000000..0x840fffffff] fb_offset=0
+Navi48Bringup: gmc: vram_alloc_hi: MC [0x8010000000..0x83cb000000) = vram+[0x10000000..0x3cb000000) size=15280 MB (device-only — CPU reaches it through MM_INDEX, not BAR0; top 768 MB reserved: PSP TMR, IP discovery, and Apple's page-table arena)
+Navi48Bringup: gmc: vram_alloc: MC [0x8002700000..0x8010000000) = vram+[0x2700000..0x10000000) size=217 MB (BAR0-mapped; below vram+0x2700000 is reserved: console fb / PSP / GART PT / fw_buf)
+Navi48Bringup: gmc: mmhub v4_1_0 offsets initialised (base IP=9 BASE_IDX=0, ctx_dist=1 eng_dist=1 eng_addr_dist=2)
+Navi48Bringup: gmc: gfxhub v12_0 offsets initialised (base IP=0 BASE_IDX=0, ctx_dist=1 eng_dist=1 eng_addr_dist=2)
+Navi48Bringup: gmc: resources: gart_pt mc=0x8001600000 vram+0x1600000 (524288 B, zeroed) dummy bus=0x1e0507000 scratch bus=0x1e0506000
+Navi48Bringup: gmc: setup_vm_pt_regs(ip=9): PT mc=0x8001600000 -> pd_addr=0x1600001 (vram_start=0x8000000000 vram_base_offset=0)
+Navi48Bringup: gmc: setup_vm_pt_regs(ip=9): BASE_LO32 0000000000->0x01600001 BASE_HI32 0000000000->0000000000 START_LO32 0000000000->0x08400000 END_LO32 0000000000->0x0840ffff | readback BASE=0000000000:0x01600001 START=0000000000:0x08400000 END=0000000000:0x0840ffff
+Navi48Bringup: gmc: init_system_aperture(ip=9): aperture=[0x8000000000..0x83faffffff] (>>18: 0x200000..0x20febf) default_addr=0xffffff81e0506000 pf_default=0x1e0507000 pfcntl2=0xe0000
+Navi48Bringup: gmc: init_tlb(ip=9): MX_L1_TLB_CNTL 0x501 -> 0x1059
+Navi48Bringup: gmc: init_cache(ip=9): L2_CNTL 0x80602 -> 0x80e01, CNTL3=0x80130009 (seed 0x80100007)
+Navi48Bringup: gmc: enable_system_domain(ip=9 depth=0 block_size=0): CONTEXT0_CNTL 0x03fffc00 -> 0x03fffc01 (readback 0x03fffc01)
+Navi48Bringup: gmc: mmhub_gart_enable done (pt=0x8001600000 gart=[0x8400000000..0x840fffffff])
+Navi48Bringup: gmc: set_fault_enable_default(ip=9, value=1): L2_PROTECTION_FAULT_CNTL 0x3ffffffc -> 0x3ffffffc
+Navi48Bringup: gmc: flush_gpu_tlb(ip=9 vmid=0 type=0): req=0xf80001 acked
+Navi48Bringup: gmc: GMCInit complete
+Navi48Bringup: init: stage 3 (GMCInit) done
+Navi48Bringup: init: running stage 4 (PSPInit)
+Navi48Bringup: psp: init: vram_start(mc)=0x8000000000 vramBase=0xf00000 vramLimit=0x10000000
+Navi48Bringup: psp: init: fw_pri vram+0xf00000 mc=0x8000f00000 size=1048576 | ring vram+0x1000000 mc=0x8001000000 size=4096
+Navi48Bringup: psp: init: cmd vram+0x1004000 mc=0x8001004000 | fence vram+0x1008000 mc=0x8001008000 | tmr vram+0x1100000 mc=0x8001100000 size=4194304
+Navi48Bringup: psp: init: fw_buf vram+0x1f00000 mc=0x8001f00000 size=0x800000 (VRAM-backed; the reference's GART/sysmem fw_buf is not ported)
+Navi48Bringup: psp: runtime_db: cookie=0xed5 ver=0x100 entry_count=1 (db @ VRAM+0x3faf00000)
+Navi48Bringup: psp: runtime_db: PPTABLE_ERR scpm_status=1073741824 (enabled=1)
+Navi48Bringup: init: stage 4 (PSPInit) done
+Navi48Bringup: init: running stage 5 (PSPLoadSOS)
+Navi48Bringup: psp: parse_sos: hdr ver 2.0, ip 14.0, ucode_size=420960, ucode_off=0x100, total=421216
+Navi48Bringup: psp: parse_sos: 9 sub-images — SOS 125472 (ver 0x3b0f0d) TOC 2304 (ver 0) RL 0 (ver 0) KDB 6816 SPL 832 SYS 78272
+Navi48Bringup: psp: adopt_sos_alive: SOS already alive (loaded by src/psp.cpp) — C2PMSG_81=0x04a0d87e C2PMSG_58=0x003b0f0d (sos fw ver) C2PMSG_59=0000000000 C2PMSG_64=0x80c00000 C2PMSG_35=0000000000
+Navi48Bringup: psp: adopt_sos_alive: C2PMSG_64 masked=0x80000000 (ring_create expects 0x80000000)
+Navi48Bringup: init: stage 5 (PSPLoadSOS) done
+Navi48Bringup: init: running stage 6 (PSPRingCreate)
+Navi48Bringup: psp: ring_create entry: C2PMSG_64=0x80c00000 C2PMSG_81=0x04a0d87e sosAlive=1
+Navi48Bringup: psp: ring_create: SOS ready, C2PMSG_64=0x80c00000
+Navi48Bringup: psp: ring_create: wrote ring addr=0x8001000000 size=4096 type=2 (kick=0x20000)
+Navi48Bringup: psp: ring_created mc=0x8001000000 size=4096 (response=0x80c20000)
+Navi48Bringup: psp: cmd_buf mc=0x8001004000 (vram+0x1004000) fence_buf mc=0x8001008000 (vram+0x1008000)
+Navi48Bringup: psp: query_fw_reservation: submitting FB_FW_RESERV_ADDR (cmd_id=0x50, no payload)
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x50 wptr=0 slot=0 frame@vram+0x1000000 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=1
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x50 ok (fence=1, status=0, 1000 us)
+Navi48Bringup: psp: query_fw_reservation: FB_FW_RESERV_ADDR ok (resp=0) addr=0x3f7e00000 size=0x3200000
+Navi48Bringup: psp: query_fw_reservation: submitting FB_FW_RESERV_EXT_ADDR (cmd_id=0x51, no payload)
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x51 wptr=16 slot=1 frame@vram+0x1000040 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=2
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x51 ok (fence=2, status=0, 1000 us)
+Navi48Bringup: psp: query_fw_reservation: FB_FW_RESERV_EXT_ADDR ok (resp=0) addr=0x3dac00000 size=0x400000
+Navi48Bringup: init: stage 6 (PSPRingCreate) done
+Navi48Bringup: init: running stage 7 (TMRSetup)
+Navi48Bringup: psp: setup_tmr: pinned PSP IP v14.0.3, discovered MP0 v14.0.2
+Navi48Bringup: psp: LOAD_TOC (sub-bin): size=2304 staged at vram+0xf00000 mc=0x8000f00000 (fw_pri zeroed first, 1048576 B)
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x20 wptr=32 slot=2 frame@vram+0x1000080 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=3
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x20 ok (fence=3, status=0, 18000 us)
+Navi48Bringup: psp: load_toc: resp.tmr_size@880=0 (0); reference's cmd_buf+16 dword=0
+Navi48Bringup: psp: LOAD_TOC (sub-bin) ok — resp=0 PSP reported tmr_size=0 (0)
+Navi48Bringup: psp: setup_tmr: LOAD_TOC sub-bin ok — PSP reported tmr_size=0 (0) from 2304-byte sub-bin
+Navi48Bringup: psp: setup_tmr: SKIP SETUP_TMR (psp_v14_0_3 — boot_time_tmr by SOS, see psp_skip_tmr in upstream amdgpu_psp.c:906); the reserved TMR slot at vram+0x1100000 stays unused
+Navi48Bringup: psp: rl_load: psp.rl absent (size=0, ptr=0) — skipping (SOS package may not include RL)
+Navi48Bringup: psp: asd_initialize: no ASD staged (parsed=0, size=0) — skipping (psp_parse_ta_microcode is not ported; no TA package is embedded yet)
+Navi48Bringup: init: stage 7 (TMRSetup) done
+Navi48Bringup: init: running stage 8 (PSPFwLoad)
+Navi48Bringup: ucode: loader: smu      type  18   327168 bytes @+256
+Navi48Bringup: ucode: loader: imu      type  68    66048 bytes @+256
+Navi48Bringup: ucode: loader: imu      type  69    66048 bytes @+66304
+Navi48Bringup: ucode: loader: rlc      type  20     2560 bytes @+25344
+Navi48Bringup: ucode: loader: rlc      type  21    23472 bytes @+27904
+Navi48Bringup: ucode: loader: rlc      type  26    66048 bytes @+51376
+Navi48Bringup: ucode: loader: rlc      type  48    33280 bytes @+117424
+Navi48Bringup: ucode: loader: rlc      type   8    25088 bytes @+256
+Navi48Bringup: ucode: loader: pfp      type  87    92512 bytes @+256
+Navi48Bringup: ucode: loader: pfp      type  90   262144 bytes @+92768
+Navi48Bringup: ucode: loader: me       type  88   200992 bytes @+256
+Navi48Bringup: ucode: loader: me       type  92   262144 bytes @+201248
+Navi48Bringup: ucode: loader: mec      type  89   193248 bytes @+256
+Navi48Bringup: ucode: loader: mec      type  94   262144 bytes @+193504
+Navi48Bringup: ucode: loader: mec      type  95   262144 bytes @+193504
+Navi48Bringup: ucode: loader: uni_mes  type  33   209888 bytes @+256
+Navi48Bringup: ucode: loader: uni_mes  type  34   524288 bytes @+210144
+Navi48Bringup: ucode: loader: uni_mes  type  81   209888 bytes @+256
+Navi48Bringup: ucode: loader: uni_mes  type  82   524288 bytes @+210144
+Navi48Bringup: ucode: loader: sdma     type  71    47616 bytes @+256
+Navi48Bringup: ucode: loader: 20 payloads ready (smu 1 imu 1 rlc 1 cp 1 mes 1 sdma 1)
+Navi48Bringup: psp: load_non_psp_fw: starting firmware load sequence (Linux AMDGPU_UCODE_ID order: SMU, SDMA, CP, MES, IMU, RLC; autoload last)
+Navi48Bringup: psp: fw_buf_stage: 327168 B at vram+0x1f00000 mc=0x8001f00000 (slot 0..327680 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=18 fw_phy_addr=0x8001f00000 fw_size=327168
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=48 slot=3 frame@vram+0x10000c0 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=4
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=4, status=0, 26000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=18, size=327168) ok — resp=0 tmr_fw_addr=0
+Navi48Bringup: psp: load_non_psp_fw: SMU loaded (size=327168)
+Navi48Bringup: psp: fw_buf_stage: 47616 B at vram+0x1f50000 mc=0x8001f50000 (slot 327680..376832 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=71 fw_phy_addr=0x8001f50000 fw_size=47616
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=64 slot=4 frame@vram+0x1000100 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=5
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=5, status=0, 2000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=71, size=47616) ok — resp=0 tmr_fw_addr=0x83f860d000
+Navi48Bringup: psp: load_non_psp_fw: SDMA loaded (size=47616)
+Navi48Bringup: psp: fw_buf_stage: 92512 B at vram+0x1f5c000 mc=0x8001f5c000 (slot 376832..471040 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=87 fw_phy_addr=0x8001f5c000 fw_size=92512
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=80 slot=5 frame@vram+0x1000140 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=6
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=6, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=87, size=92512) ok — resp=0 tmr_fw_addr=0x83f871d000
+Navi48Bringup: psp: load_non_psp_fw: RS64_PFP loaded (size=92512)
+Navi48Bringup: psp: fw_buf_stage: 262144 B at vram+0x1f73000 mc=0x8001f73000 (slot 471040..733184 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=90 fw_phy_addr=0x8001f73000 fw_size=262144
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=96 slot=6 frame@vram+0x1000180 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=7
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=7, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=90, size=262144) ok — resp=0 tmr_fw_addr=0x83f9600000
+Navi48Bringup: psp: load_non_psp_fw: RS64_PFP_P0 loaded (size=262144)
+Navi48Bringup: psp: load_non_psp_fw: RS64_PFP_P1 not present
+Navi48Bringup: psp: fw_buf_stage: 200992 B at vram+0x1fb3000 mc=0x8001fb3000 (slot 733184..937984 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=88 fw_phy_addr=0x8001fb3000 fw_size=200992
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=112 slot=7 frame@vram+0x10001c0 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=8
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=8, status=0, 8000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=88, size=200992) ok — resp=0 tmr_fw_addr=0x83f895d000
+Navi48Bringup: psp: load_non_psp_fw: RS64_ME loaded (size=200992)
+Navi48Bringup: psp: fw_buf_stage: 262144 B at vram+0x1fe5000 mc=0x8001fe5000 (slot 937984..1200128 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=92 fw_phy_addr=0x8001fe5000 fw_size=262144
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=128 slot=8 frame@vram+0x1000200 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=9
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=9, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=92, size=262144) ok — resp=0 tmr_fw_addr=0x83f9700000
+Navi48Bringup: psp: load_non_psp_fw: RS64_ME_P0 loaded (size=262144)
+Navi48Bringup: psp: load_non_psp_fw: RS64_ME_P1 not present
+Navi48Bringup: psp: fw_buf_stage: 193248 B at vram+0x2025000 mc=0x8002025000 (slot 1200128..1396736 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=89 fw_phy_addr=0x8002025000 fw_size=193248
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=144 slot=9 frame@vram+0x1000240 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=10
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=10, status=0, 8000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=89, size=193248) ok — resp=0 tmr_fw_addr=0x83f8b9d000
+Navi48Bringup: psp: load_non_psp_fw: RS64_MEC loaded (size=193248)
+Navi48Bringup: psp: fw_buf_stage: 262144 B at vram+0x2055000 mc=0x8002055000 (slot 1396736..1658880 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=94 fw_phy_addr=0x8002055000 fw_size=262144
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=160 slot=10 frame@vram+0x1000280 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=11
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=11, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=94, size=262144) ok — resp=0 tmr_fw_addr=0x83f9800000
+Navi48Bringup: psp: load_non_psp_fw: RS64_MEC_P0 loaded (size=262144)
+Navi48Bringup: psp: fw_buf_stage: 262144 B at vram+0x2095000 mc=0x8002095000 (slot 1658880..1921024 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=95 fw_phy_addr=0x8002095000 fw_size=262144
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=176 slot=11 frame@vram+0x10002c0 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=12
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=12, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=95, size=262144) ok — resp=0 tmr_fw_addr=0x83f98c0000
+Navi48Bringup: psp: load_non_psp_fw: RS64_MEC_P1 loaded (size=262144)
+Navi48Bringup: psp: load_non_psp_fw: RS64_MEC_P2 not present
+Navi48Bringup: psp: load_non_psp_fw: RS64_MEC_P3 not present
+Navi48Bringup: psp: fw_buf_stage: 209888 B at vram+0x20d5000 mc=0x80020d5000 (slot 1921024..2134016 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=33 fw_phy_addr=0x80020d5000 fw_size=209888
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=192 slot=12 frame@vram+0x1000300 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=13
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=13, status=0, 8000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=33, size=209888) ok — resp=0 tmr_fw_addr=0x83f861d000
+Navi48Bringup: psp: load_non_psp_fw: CP_MES loaded (size=209888)
+Navi48Bringup: psp: fw_buf_stage: 524288 B at vram+0x2109000 mc=0x8002109000 (slot 2134016..2658304 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=34 fw_phy_addr=0x8002109000 fw_size=524288
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=208 slot=13 frame@vram+0x1000340 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=14
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=14, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=34, size=524288) ok — resp=0 tmr_fw_addr=0x83f9500000
+Navi48Bringup: psp: load_non_psp_fw: CP_MES_DATA loaded (size=524288)
+Navi48Bringup: psp: fw_buf_stage: 66048 B at vram+0x2189000 mc=0x8002189000 (slot 2658304..2727936 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=68 fw_phy_addr=0x8002189000 fw_size=66048
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=224 slot=14 frame@vram+0x1000380 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=15
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=15, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=68, size=66048) ok — resp=0 tmr_fw_addr=0
+Navi48Bringup: psp: load_non_psp_fw: IMU_I loaded (size=66048)
+Navi48Bringup: psp: fw_buf_stage: 66048 B at vram+0x219a000 mc=0x800219a000 (slot 2727936..2797568 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=69 fw_phy_addr=0x800219a000 fw_size=66048
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=240 slot=15 frame@vram+0x10003c0 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=16
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=16, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=69, size=66048) ok — resp=0 tmr_fw_addr=0
+Navi48Bringup: psp: load_non_psp_fw: IMU_D loaded (size=66048)
+Navi48Bringup: psp: load_non_psp_fw: GLOBAL_TAP_DELAYS not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: SE0_TAP_DELAYS not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: SE1_TAP_DELAYS not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: SE2_TAP_DELAYS not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: SE3_TAP_DELAYS not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: RLC_RESTORE_LIST_SRM_CNTL not present (v2.x variant)
+Navi48Bringup: psp: fw_buf_stage: 2560 B at vram+0x21ab000 mc=0x80021ab000 (slot 2797568..2801664 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=20 fw_phy_addr=0x80021ab000 fw_size=2560
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=256 slot=16 frame@vram+0x1000400 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=17
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=17, status=0, 2000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=20, size=2560) ok — resp=0 tmr_fw_addr=0x83f8506700
+Navi48Bringup: psp: load_non_psp_fw: RLC_RESTORE_LIST_GPM_MEM loaded (size=2560)
+Navi48Bringup: psp: fw_buf_stage: 23472 B at vram+0x21ac000 mc=0x80021ac000 (slot 2801664..2826240 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=21 fw_phy_addr=0x80021ac000 fw_size=23472
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=272 slot=17 frame@vram+0x1000440 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=18
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=18, status=0, 2000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=21, size=23472) ok — resp=0 tmr_fw_addr=0x83f8506f00
+Navi48Bringup: psp: load_non_psp_fw: RLC_RESTORE_LIST_SRM_MEM loaded (size=23472)
+Navi48Bringup: psp: fw_buf_stage: 66048 B at vram+0x21b2000 mc=0x80021b2000 (slot 2826240..2895872 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=26 fw_phy_addr=0x80021b2000 fw_size=66048
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=288 slot=18 frame@vram+0x1000480 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=19
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=19, status=0, 4000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=26, size=66048) ok — resp=0 tmr_fw_addr=0x83f8510f00
+Navi48Bringup: psp: load_non_psp_fw: RLC_IRAM loaded (size=66048)
+Navi48Bringup: psp: fw_buf_stage: 33280 B at vram+0x21c3000 mc=0x80021c3000 (slot 2895872..2932736 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=48 fw_phy_addr=0x80021c3000 fw_size=33280
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=304 slot=19 frame@vram+0x10004c0 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=20
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=20, status=0, 2000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=48, size=33280) ok — resp=0 tmr_fw_addr=0x83f8520f00
+Navi48Bringup: psp: load_non_psp_fw: RLC_DRAM_BOOT loaded (size=33280)
+Navi48Bringup: psp: load_non_psp_fw: RLC_P not present (v2.x variant)
+Navi48Bringup: psp: load_non_psp_fw: RLC_V not present (v2.x variant)
+Navi48Bringup: psp: fw_buf_stage: 25088 B at vram+0x21cc000 mc=0x80021cc000 (slot 2932736..2961408 of 8388608)
+Navi48Bringup: psp: LOAD_IP_FW: fw_type=8 fw_phy_addr=0x80021cc000 fw_size=25088
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 wptr=320 slot=20 frame@vram+0x1000500 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=21
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x6 ok (fence=21, status=0, 2000 us)
+Navi48Bringup: psp: LOAD_IP_FW(type=8, size=25088) ok — resp=0 tmr_fw_addr=0x83f8500000
+Navi48Bringup: psp: load_non_psp_fw: RLC_G loaded (size=25088)
+Navi48Bringup: psp: AUTOLOAD_RLC: submitting cmd_id=0x21 (no payload)
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x21 wptr=336 slot=21 frame@vram+0x1000540 cmd_buf mc=0x8001004000 fence mc=0x8001008000 fence_value=22
+Navi48Bringup: psp: ring_cmd_submit: cmd_id=0x21 ok (fence=22, status=0, 1000 us)
+Navi48Bringup: psp: rlc_autoload_start: ok (resp=0)
+Navi48Bringup: psp: load_non_psp_fw: RLC autoload started (after all gfx firmware)
+Navi48Bringup: psp: load_non_psp_fw: all firmware loaded successfully
+Navi48Bringup: init: PSPFwLoad: all embedded firmware loaded through the PSP
+Navi48Bringup: init: stage 8 (PSPFwLoad) done
+Navi48Bringup: init: running stage 9 (SMUInit)
+Navi48Bringup: smu: send msg=0x01 (TestMessage) param=0xabcd0001 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x01 (TestMessage) resp=0x01 (OK) ret=0xabcd0002
+Navi48Bringup: smu: test_message: ok (echo 0xabcd0002)
+Navi48Bringup: smu: send msg=0x02 (GetSmuVersion) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x02 (GetSmuVersion) resp=0x01 (OK) ret=0x00664700
+Navi48Bringup: smu: smu_version: 0.102.71.0
+Navi48Bringup: smu: send msg=0x01 (TestMessage) param=0xabcd0001 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x01 (TestMessage) resp=0x01 (OK) ret=0xabcd0002
+Navi48Bringup: smu: test_message: ok (echo 0xabcd0002)
+Navi48Bringup: smu: send msg=0x02 (GetSmuVersion) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x02 (GetSmuVersion) resp=0x01 (OK) ret=0x00664700
+Navi48Bringup: smu: smu_version: 0.102.71.0
+Navi48Bringup: smu: send msg=0x03 (GetDriverIfVersion) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x03 (GetDriverIfVersion) resp=0x01 (OK) ret=0x00000033
+Navi48Bringup: smu: driver_if_version: 0x33
+Navi48Bringup: smu: hw_init: SMU online (pmfw 0x00664700, if 0x00000033)
+Navi48Bringup: smu: send msg=0x03 (GetDriverIfVersion) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x03 (GetDriverIfVersion) resp=0x01 (OK) ret=0x00000033
+Navi48Bringup: smu: driver_if_version: 0x33
+Navi48Bringup: smu: smc_hw_setup: SMC IF version = 0x33
+Navi48Bringup: smu: smc_hw_setup: driver_table slot zeroed at vram+0x1d00000
+Navi48Bringup: smu: smc_hw_setup: driver_table @ mc=0x8001d00000 size=65536
+Navi48Bringup: smu: send msg=0x0e (SetDriverDramAddrHigh) param=0x00000080 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0e (SetDriverDramAddrHigh) resp=0x01 (OK)
+Navi48Bringup: smu: send msg=0x0f (SetDriverDramAddrLow) param=0x01d00000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0f (SetDriverDramAddrLow) resp=0x01 (OK)
+Navi48Bringup: smu: smc_hw_setup: SetDriverDramAddr ok (hi=0x80 lo=0x1d00000)
+Navi48Bringup: smu: send msg=0x14 (UseDefaultPPTable) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x14 (UseDefaultPPTable) resp=0x01 (OK)
+Navi48Bringup: smu: smc_hw_setup: UseDefaultPPTable ok — IFWI default pptable applied
+Navi48Bringup: smu: send msg=0x36 (RunDcBtc) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x36 (RunDcBtc) resp=0x01 (OK)
+Navi48Bringup: smu: smc_hw_setup: RunDcBtc ok
+Navi48Bringup: smu: send msg=0x35 (NotifyPowerSource) param=0x00000001 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x35 (NotifyPowerSource) resp=0xff (Failed)
+Navi48Bringup: smu: msg=0x35 param=0x1 resp=0xff (not OK)
+Navi48Bringup: smu: smc_hw_setup: NotifyPowerSource(AC) non-fatal kr=0xe00002bc
+Navi48Bringup: smu: send msg=0x04 (SetAllowedFeaturesMaskLow) param=0xffffffff [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x04 (SetAllowedFeaturesMaskLow) resp=0xfd (CmdRejectedPrereq)
+Navi48Bringup: smu: msg=0x4 param=0xffffffff resp=0xfd (not OK)
+Navi48Bringup: smu: smc_hw_setup: SetAllowedFeaturesMaskLow non-fatal kr=0xe00002d8 — proceeding to EnableAllSmuFeatures with PMFW default mask
+Navi48Bringup: smu: send msg=0x05 (SetAllowedFeaturesMaskHigh) param=0xffffffff [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x05 (SetAllowedFeaturesMaskHigh) resp=0xfd (CmdRejectedPrereq)
+Navi48Bringup: smu: msg=0x5 param=0xffffffff resp=0xfd (not OK)
+Navi48Bringup: smu: smc_hw_setup: SetAllowedFeaturesMaskHigh non-fatal kr=0xe00002d8
+Navi48Bringup: smu: send msg=0x06 (EnableAllSmuFeatures) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x06 (EnableAllSmuFeatures) resp=0x01 (OK)
+Navi48Bringup: smu: smc_hw_setup: EnableAllSmuFeatures ok
+Navi48Bringup: smu: send msg=0x0c (GetRunningSmuFeaturesLow) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0c (GetRunningSmuFeaturesLow) resp=0x01 (OK) ret=0x38fffcfb
+Navi48Bringup: smu: send msg=0x0d (GetRunningSmuFeaturesHigh) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0d (GetRunningSmuFeaturesHigh) resp=0x01 (OK) ret=0x0498f59e
+Navi48Bringup: smu: smc_hw_setup: running features = 0x498f59e_0x38fffcfb
+Navi48Bringup: smu: smc_hw_setup: ok
+Navi48Bringup: smu: send msg=0x0c (GetRunningSmuFeaturesLow) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0c (GetRunningSmuFeaturesLow) resp=0x01 (OK) ret=0x38fffcfb
+Navi48Bringup: smu: send msg=0x0d (GetRunningSmuFeaturesHigh) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x0d (GetRunningSmuFeaturesHigh) resp=0x01 (OK) ret=0x0498f59e
+Navi48Bringup: smu: protections: running 0x0498f59e_38fffcfb, required THROTTLERS(23) FW_CTF(28) FAN_CONTROL(29): PRESENT, missing 0x00000000_00000000, VR0HOT(27) on
+Navi48Bringup: init: stage 9 (SMUInit) done
+Navi48Bringup: init: running stage 10 (IMUInit)
+Navi48Bringup: imu: init_full: IMU microcode handed to PSP (version=0). RLC autoload will bring IMU online - no driver MMIO needed. IMU liveness is observed by RLCInit's CP_STAT / RLC_RLCS_BOOTLOAD_STATUS poll, not here.
+Navi48Bringup: init: stage 10 (IMUInit) done
+Navi48Bringup: init: running stage 11 (RLCInit)
+Navi48Bringup: rlc: init_full: GC base[0]=0x1260 base[1]=0xa000 vram_start=0x8000000000 bar0=256 MB
+Navi48Bringup: rlc: autoload poll start: CP_STAT[GC0]=0000000000(@0x21a0) BOOTLOAD_STATUS[GC1]=0x8000003f(@0xee7c) BOOTLOAD_STATUS[GC0(wrong)]=0000000000(@0x60dc) GRBM_STATUS[GC0]=0x0000382c(@0x2004) CGCG_CGLS_CTRL[GC1]=0x0001003c(@0xec49)
+Navi48Bringup: rlc: autoload addr probe: GC base[0]=0x1260 base[1]=0xa000 | 0x4E7C@GC0=0000000000 0x4E7C@GC1=0x8000003f 0x4C49@GC0=0xffffffff 0x4C49@GC1=0x0001003c | proven R9700: 0x4E7C@GC1=0x8000003f 0x4C49@GC1=0x0001003c
+Navi48Bringup: rlc: RLC autoload complete (cp_stat=0000000000 bootload=0x8000003f after 0 us)
+Navi48Bringup: rlc: CSB alloc: gpu_va=0x8002700000 size=16384 (csb_dwords=75) vram_byte_offset=0x2700000
+Navi48Bringup: rlc: CSB filled: clustercount=6, total_dwords=75 (300 bytes) -> vram+0x2700000 (MC 0x8002700000)
+Navi48Bringup: rlc: CSB readback: [0]=6(clusters, want 6) [1]=34(reg_count, want 34) [2]=0xa03e(reg_index, want 0xa03e) [3]=0
+Navi48Bringup: rlc: RLC_CSIB_ADDR_HI @0xa988: 0000000000 -> wrote 0x00000080 -> reads 0x00000080
+Navi48Bringup: rlc: RLC_CSIB_ADDR_LO @0xa987: 0000000000 -> wrote 0x02700000 -> reads 0x02700000
+Navi48Bringup: rlc: RLC_CSIB_LENGTH @0xa989: 0000000000 -> wrote 0x0000004b -> reads 0x0000004b
+Navi48Bringup: rlc: CSIB programmed: ADDR=0x8002700000 LENGTH=75
+Navi48Bringup: rlc: RLC_SRM_CNTL @0xec80: 0x00000002 -> wrote 0x00000003 -> reads 0x00000003 (SRM enabled, auto-incr addr)
+Navi48Bringup: rlc: init_full: done — bootload_complete=1 csb_populated=1 csib_programmed=1 srm_enabled=1
+Navi48Bringup: init: stage 11 (RLCInit) done
+Navi48Bringup: init: running stage 12 (CPInit)
+Navi48Bringup: init: doorbell_init: BAR2 2048 KiB, size=2097152 num_kernel=1449 max_idx=0x1a8 (upstream Navi10 map)
+Navi48Bringup: init: doorbell_init: kiq=0 mec0=0x3 mes0=0xb uq=[0xd..0x8a] | gfx0=0x8b gfx_uq_end=0xff | sdma0=0x100(dw 0x200) ih=0x178 | mes_aggregated=0x1a0,0x1a2,0x1a4,0x1a6,0x1a8
+Navi48Bringup: init: CPInit: RS64 TMR addresses from PSP — PFP ic=0x83f871d000 dc=0x83f9600000  ME ic=0x83f895d000 dc=0x83f9700000  MEC ic=0x83f8b9d000 dc0=0x83f9800000 dc1=0x83f98c0000
+Navi48Bringup: cp:   CP_ME_CNTL [dw 0xa803]: before=0x1514a000 wrote=0x1514a000 after=0x1514a000
+Navi48Bringup: cp: cp_enable(halt): CP_STAT reached 0 after 0 us
+Navi48Bringup: cp: CP_ME_CNTL halted (ME_HALT=1 PFP_HALT=1, value=0x1514a000, readback=0x1514a000)
+Navi48Bringup: cp: CP_MEC_RS64_CNTL: GC[1]+0x2904=dw 0xc904 -> 0x40030000 (USED, header BASE_IDX 1), GC[0]+0x2904=dw 0x3b64 -> 0000000000 (ignored)
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL [dw 0xc904]: before=0x40030000 wrote=0x400f0010 after=0x40030000
+Navi48Bringup: cp: CP_MEC_RS64_CNTL disabled (MEC halted): value=0x400f0010 (readback=0x40030000)
+Navi48Bringup: cp: rs64_caches: TMR addresses from the ladder — pfp ic=0x83f871d000 dc=0x83f9600000 | me ic=0x83f895d000 dc=0x83f9700000 | mec ic=0x83f8b9d000 dc0=0x83f9800000 dc1=0x83f98c0000
+Navi48Bringup: cp: === RS64 cache base survey (before) ===
+Navi48Bringup: cp:   CP_PFP_IC_BASE_LO [dw 0xf840] = 0xf871d000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_HI [dw 0xf841] = 0x00000003
+Navi48Bringup: cp:   CP_PFP_IC_BASE_CNTL [dw 0xf842] = 0000000000
+Navi48Bringup: cp:   CP_PFP_IC_OP_CNTL [dw 0xf843] = 0x0000000a
+Navi48Bringup: cp:   CP_ME_IC_BASE_LO [dw 0xf844] = 0xf895d000
+Navi48Bringup: cp:   CP_ME_IC_BASE_HI [dw 0xf845] = 0x00000003
+Navi48Bringup: cp:   CP_ME_IC_BASE_CNTL [dw 0xf846] = 0000000000
+Navi48Bringup: cp:   CP_ME_IC_OP_CNTL [dw 0xf847] = 0x0000000a
+Navi48Bringup: cp:   CP_CPC_IC_BASE_CNTL [dw 0xf84e] = 0000000000
+Navi48Bringup: cp:   CP_CPC_IC_OP_CNTL [dw 0xc97a] = 0x0000000a
+Navi48Bringup: cp:   CP_GFX_RS64_DC_BASE_CNTL [dw 0xca08] = 0000000000
+Navi48Bringup: cp:   CP_GFX_RS64_DC_OP_CNTL [dw 0xca09] = 0000000000
+Navi48Bringup: cp:   CP_MEC_DC_BASE_CNTL [dw 0xc90b] = 0000000000
+Navi48Bringup: cp:   CP_MEC_DC_OP_CNTL [dw 0xc90c] = 0000000000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   [gfx pipe 0] DC_BASE0 = 00000003_f9600000  DC_BASE1 = 00000003_f9700000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000001 after=0xdeadbeef
+Navi48Bringup: cp:   [gfx pipe 1] DC_BASE0 = deadbeef_deadbeef  DC_BASE1 = deadbeef_deadbeef
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   [mec pipe 0] MDBASE = 00000003_f9800000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000005 after=0000000000
+Navi48Bringup: cp:   [mec pipe 1] MDBASE = 00000003_f98c0000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=2 queue=0 vmid=0) [dw 0xa900] wrote=0x00000006 after=0000000000
+Navi48Bringup: cp:   [mec pipe 2] MDBASE = 00000003_f9800000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=3 queue=0 vmid=0) [dw 0xa900] wrote=0x00000007 after=0000000000
+Navi48Bringup: cp:   [mec pipe 3] MDBASE = 00000003_f98c0000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp: === end RS64 cache base survey (before) ===
+Navi48Bringup: cp: rs64_caches: PFP IC base already nonzero (00000003_f871d000) — leaving it alone
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp: rs64_caches: PFP DC_BASE0 already nonzero (00000003_f9600000) — leaving it alone
+Navi48Bringup: cp: rs64_caches: ME IC base already nonzero (00000003_f895d000) — leaving it alone
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp: rs64_caches: ME DC_BASE1 already nonzero (00000003_f9700000) — leaving it alone
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp: rs64_caches: CPC IC base already nonzero — leaving the whole MEC cache block alone
+Navi48Bringup: cp: === RS64 cache base survey (after) ===
+Navi48Bringup: cp:   CP_PFP_IC_BASE_LO [dw 0xf840] = 0xf871d000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_HI [dw 0xf841] = 0x00000003
+Navi48Bringup: cp:   CP_PFP_IC_BASE_CNTL [dw 0xf842] = 0000000000
+Navi48Bringup: cp:   CP_PFP_IC_OP_CNTL [dw 0xf843] = 0x0000000a
+Navi48Bringup: cp:   CP_ME_IC_BASE_LO [dw 0xf844] = 0xf895d000
+Navi48Bringup: cp:   CP_ME_IC_BASE_HI [dw 0xf845] = 0x00000003
+Navi48Bringup: cp:   CP_ME_IC_BASE_CNTL [dw 0xf846] = 0000000000
+Navi48Bringup: cp:   CP_ME_IC_OP_CNTL [dw 0xf847] = 0x0000000a
+Navi48Bringup: cp:   CP_CPC_IC_BASE_CNTL [dw 0xf84e] = 0000000000
+Navi48Bringup: cp:   CP_CPC_IC_OP_CNTL [dw 0xc97a] = 0x0000000a
+Navi48Bringup: cp:   CP_GFX_RS64_DC_BASE_CNTL [dw 0xca08] = 0000000000
+Navi48Bringup: cp:   CP_GFX_RS64_DC_OP_CNTL [dw 0xca09] = 0000000000
+Navi48Bringup: cp:   CP_MEC_DC_BASE_CNTL [dw 0xc90b] = 0000000000
+Navi48Bringup: cp:   CP_MEC_DC_OP_CNTL [dw 0xc90c] = 0000000000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   [gfx pipe 0] DC_BASE0 = 00000003_f9600000  DC_BASE1 = 00000003_f9700000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000001 after=0xdeadbeef
+Navi48Bringup: cp:   [gfx pipe 1] DC_BASE0 = deadbeef_deadbeef  DC_BASE1 = deadbeef_deadbeef
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   [mec pipe 0] MDBASE = 00000003_f9800000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000005 after=0000000000
+Navi48Bringup: cp:   [mec pipe 1] MDBASE = 00000003_f98c0000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=2 queue=0 vmid=0) [dw 0xa900] wrote=0x00000006 after=0000000000
+Navi48Bringup: cp:   [mec pipe 2] MDBASE = 00000003_f9800000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=3 queue=0 vmid=0) [dw 0xa900] wrote=0x00000007 after=0000000000
+Navi48Bringup: cp:   [mec pipe 3] MDBASE = 00000003_f98c0000  CPC_IC_BASE = 00000003_f8b9d000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp: === end RS64 cache base survey (after) ===
+Navi48Bringup: cp: rs64_caches: all required RS64 cache bases are in place
+Navi48Bringup: cp: config_gfx_rs64: PFP (gc_12_0_0_pfp, 354912 bytes, hdr v2.0, ucode_ver=0xc76): ucode_start_addr lo=0x00003000 hi=0x00070000
+Navi48Bringup: cp: config_gfx_rs64: ME (gc_12_0_0_me, 463392 bytes, hdr v2.0, ucode_ver=0xc12): ucode_start_addr lo=0x00003000 hi=0x00070000
+Navi48Bringup: cp: config_gfx_rs64: MEC (gc_12_0_0_mec, 455648 bytes, hdr v2.0, ucode_ver=0xd7a): ucode_start_addr lo=0x00003000 hi=0x00070000
+Navi48Bringup: cp: config_gfx_rs64: start — GC base[0]=0x1260 base[1]=0xa000; PFP pc=0x00000c00/0x0001c000 ME pc=0x00000c00/0x0001c000 MEC pc=0x00000c00/0x0001c000
+Navi48Bringup: cp:   CP_ME_CNTL (before rs64 config) [dw 0xa803] = 0x1514a000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL (before rs64 config) [dw 0xc904] = 0x40030000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START [dw 0x30a4]: before=0000000000 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START_HI [dw 0x30b9]: before=0000000000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000001 after=0xdeadbeef
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START [dw 0x30a4]: before=0xdeadbeef wrote=0x00000c00 after=0xdeadbeef
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START_HI [dw 0x30b9]: before=0xdeadbeef wrote=0x0001c000 after=0xdeadbeef
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_ME_CNTL (PFP pipe reset assert) [dw 0xa803]: before=0x1514a000 wrote=0x151ca000 after=0x1514a000
+Navi48Bringup: cp:   CP_ME_CNTL (PFP pipe reset clear) [dw 0xa803]: before=0x1514a000 wrote=0x1510a000 after=0x1510a000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START [dw 0x30a5]: before=0000000000 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START_HI [dw 0x30d9]: before=0000000000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000001 after=0xdeadbeef
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START [dw 0x30a5]: before=0xdeadbeef wrote=0x00000c00 after=0xdeadbeef
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START_HI [dw 0x30d9]: before=0xdeadbeef wrote=0x0001c000 after=0xdeadbeef
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_ME_CNTL (ME pipe reset assert) [dw 0xa803]: before=0x1510a000 wrote=0x1530a000 after=0x1510a000
+Navi48Bringup: cp:   CP_ME_CNTL (ME pipe reset clear) [dw 0xa803]: before=0x1510a000 wrote=0x1500a000 after=0x1500a000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900]: before=0x00000800 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938]: before=0000000000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=1 queue=0 vmid=0) [dw 0xa900] wrote=0x00000005 after=0000000000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900]: before=0x00000800 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938]: before=0000000000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=2 queue=0 vmid=0) [dw 0xa900] wrote=0x00000006 after=0000000000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900]: before=0x00000c00 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938]: before=0x0001c000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=1 pipe=3 queue=0 vmid=0) [dw 0xa900] wrote=0x00000007 after=0000000000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900]: before=0x00000c00 wrote=0x00000c00 after=0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938]: before=0x0001c000 wrote=0x0001c000 after=0x0001c000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL (MEC pipe reset assert) [dw 0xc904]: before=0x40030000 wrote=0x400f0000 after=0x40030000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL (MEC pipe reset clear) [dw 0xc904]: before=0x40030000 wrote=0x40000000 after=0x40000000
+Navi48Bringup: cp: config_gfx_rs64: done — PFP/ME/MEC program counters programmed and all pipes pulsed
+Navi48Bringup: cp: === CP state dump (after cp_config_gfx_rs64) ===
+Navi48Bringup: cp:   sw wptr=0  ring_mc=0 (0 dwords)  doorbell=0
+Navi48Bringup: cp:   CP_RB0_RPTR [dw 0x21c0] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR [dw 0x3054] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR_HI [dw 0x3055] = 0000000000
+Navi48Bringup: cp:   CP_RB0_CNTL [dw 0x3041] = 0x00f00000
+Navi48Bringup: cp:   CP_RB0_BASE [dw 0x3040] = 0xfedcbaef
+Navi48Bringup: cp:   CP_RB0_BASE_HI [dw 0x30b1] = 0000000000
+Navi48Bringup: cp:   CP_RB_ACTIVE [dw 0x31a0] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_LOWER [dw 0x305a] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_UPPER [dw 0x305b] = 0x00000108
+Navi48Bringup: cp:   CP_ME_CNTL [dw 0xa803] = 0x1500a000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL [dw 0xc904] = 0x40000000
+Navi48Bringup: cp:   CP_STAT [dw 0x21a0] = 0000000000
+Navi48Bringup: cp:   GRBM_STATUS [dw 0x2004] = 0x0000382c
+Navi48Bringup: cp:   GRBM_GFX_CNTL [dw 0xa900] = 0000000000
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START [dw 0x30a4] = 0x00000c00
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START_HI [dw 0x30b9] = 0x0001c000
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START [dw 0x30a5] = 0x00000c00
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START_HI [dw 0x30d9] = 0x0001c000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900] = 0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938] = 0x0001c000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_LO [dw 0xf840] = 0xf871d000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_HI [dw 0xf841] = 0x00000003
+Navi48Bringup: cp:   CP_PFP_IC_OP_CNTL [dw 0xf843] = 0x0000000a
+Navi48Bringup: cp:   CP_ME_IC_BASE_LO [dw 0xf844] = 0xf895d000
+Navi48Bringup: cp:   CP_ME_IC_BASE_HI [dw 0xf845] = 0x00000003
+Navi48Bringup: cp:   CP_ME_IC_OP_CNTL [dw 0xf847] = 0x0000000a
+Navi48Bringup: cp:   CP_CPC_IC_OP_CNTL [dw 0xc97a] = 0x0000000a
+Navi48Bringup: cp:   rs64_configured=1 (pfp pc=0x00000c00/0x0001c000 me pc=0x00000c00/0x0001c000 mec pc=0x00000c00/0x0001c000) caches_configured=1 fetch_proven=0 gfx_mqd_inited=0 kgq_mapped=0 ring_test_passed=0
+Navi48Bringup: cp: --- GFX HQD block me0/pipe0/queue0 (after cp_config_gfx_rs64) ---
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_ACTIVE [dw 0x30e0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_MAPPED [dw 0x30f4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR [dw 0x30de] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR_HI [dw 0x30df] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_CONTROL [dw 0x30fa] = 0x00000100
+Navi48Bringup: cp:   CP_GFX_HQD_VMID [dw 0x30e1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUEUE_PRIORITY [dw 0x30e4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUANTUM [dw 0x30e5] = 0x00000a01
+Navi48Bringup: cp:   CP_GFX_HQD_BASE [dw 0x30e6] = 0xfedcbaef
+Navi48Bringup: cp:   CP_GFX_HQD_BASE_HI [dw 0x30e7] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CNTL [dw 0x30ef] = 0x00f00000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR [dw 0x30e8] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR [dw 0x30e9] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR_HI [dw 0x30ea] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR [dw 0x30f1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR_HI [dw 0x30f2] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_OFFSET [dw 0x30ee] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CSMD_RPTR [dw 0x30f0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUE_MGR_CONTROL [dw 0x30f5] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_STATUS0 [dw 0x30f8] = 0x40000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_CONTROL0 [dw 0x30f9] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_LO [dw 0x30eb] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_HI [dw 0x30ec] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp: --- end GFX HQD block (after cp_config_gfx_rs64) ---
+Navi48Bringup: cp:   TMR: pfp ic=0x83f871d000 dc=0x83f9600000 | me ic=0x83f895d000 dc=0x83f9700000 | mec ic=0x83f8b9d000 dc0=0x83f9800000 dc1=0x83f98c0000
+Navi48Bringup: cp: === end CP state dump (after cp_config_gfx_rs64) ===
+Navi48Bringup: cp: RS64 prepared before GFXHUB setup; CP remains halted, no queue mapped
+Navi48Bringup: smu: send msg=0x29 (DisallowGfxOff) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x29 (DisallowGfxOff) resp=0x01 (OK)
+Navi48Bringup: init: gfxhub: DisallowGfxOff before manual GART setup: 0
+Navi48Bringup: gmc: setup_vm_pt_regs(ip=0): PT mc=0x8001600000 -> pd_addr=0x1600001 (vram_start=0x8000000000 vram_base_offset=0)
+Navi48Bringup: gmc: setup_vm_pt_regs(ip=0): BASE_LO32 0000000000->0x01600001 BASE_HI32 0000000000->0000000000 START_LO32 0000000000->0x08400000 END_LO32 0000000000->0x0840ffff | readback BASE=0000000000:0x01600001 START=0000000000:0x08400000 END=0000000000:0x0840ffff
+Navi48Bringup: gmc: init_system_aperture(ip=0): aperture=[0x8000000000..0x83faffffff] (>>18: 0x200000..0x20febf) default_addr=0xffffff81e0506000 pf_default=0x1e0507000 pfcntl2=0x60000
+Navi48Bringup: gmc: init_tlb(ip=0): MX_L1_TLB_CNTL 0x501 -> 0x1059
+Navi48Bringup: gmc: init_cache(ip=0): L2_CNTL 0x80602 -> 0x80e01, CNTL3=0x80130009 (seed 0x80120007)
+Navi48Bringup: gmc: enable_system_domain(ip=0 depth=0 block_size=0): CONTEXT0_CNTL 0x03fffc00 -> 0x03fffc01 (readback 0x03fffc01)
+Navi48Bringup: gmc: setup_vmid_config(ip=0): APPLE CONTEXT GEOMETRY on VMIDs 1-15 — DEPTH 1 / PAGE_TABLE_BLOCK_SIZE 7 (expect CNTL 0x03fffd73) instead of our DEPTH 3 / BLOCK 0. CONTEXT0 (VMID 0, where every queue THIS driver owns runs) and MMHUB are NOT touched; VMIDs 1-15 on GFXHUB are used only by Apple's AMDRadeonX6000.
+Navi48Bringup: gmc: gfxhub_gart_enable done (pt=0x8001600000 gart=[0x8400000000..0x840fffffff])
+Navi48Bringup: gmc: gfxhub CP_DEBUG 0x307f: 0x20400000 -> 0x20408000 readback=0x20408000 bit15=1
+Navi48Bringup: gmc: set_fault_enable_default(ip=0, value=1): L2_PROTECTION_FAULT_CNTL 0x3ffffffc -> 0x3ffffffc
+Navi48Bringup: gmc: gfxhub GCVM L2 fault control readback=0x3ffffffc crash_mask=0xc0000000 clear=1
+Navi48Bringup: gmc: flush_gpu_tlb(ip=0 vmid=0 type=0): req=0xf80001 acked
+Navi48Bringup: gart: init: gart aperture [0x8400000000..0x8410000000) size=268435456 bytes, 65536 PTEs, pt_bus=0x8001600000 pt_vram_off=0x1600000 (524288 bytes), reads_supported=1 (x86, no IOMMU: bus addr == host phys)
+Navi48Bringup: init: gfxhub: GART live on the GC hub (pt=0x8001600000)
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cec1000 -> mc=0x8400000000 (4 PTEs @ 4KB stride starting at PT idx 0, PT vram_off=0x1600000)
+Navi48Bringup: cp: ring: 16384 bytes cpu=0xffffffee8167c000 bus=0x3cec1000 -> gart_mc=0x8400000000
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e0505000 -> mc=0x8400004000 (1 PTEs @ 4KB stride starting at PT idx 4, PT vram_off=0x1600000)
+Navi48Bringup: cp: mqd: 4096 bytes cpu=0xffffffee81600000 bus=0x1e0505000 -> gart_mc=0x8400004000
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cec5000 -> mc=0x8400005000 (4 PTEs @ 4KB stride starting at PT idx 5, PT vram_off=0x1600000)
+Navi48Bringup: cp: wb: 16384 bytes cpu=0xffffffee8166c000 bus=0x3cec5000 -> gart_mc=0x8400005000
+Navi48Bringup: cp: storage ok: ring mc=0x8400000000 (4096 dwords, cpu=0xffffffee8167c000, phys=0x3cec1000), mqd mc=0x8400004000 (cpu=0xffffffee81600000), wb mc=0x8400005000 (cpu=0xffffffee8166c000)
+Navi48Bringup: cp: storage wb slots: rptr mc=0x8400005000 wptr mc=0x8400005040 fence mc=0x8400005080
+Navi48Bringup: cp: cp_init_full: doorbell_index=139 (bar2=0xffffffee6ee1d000 size=2097152)
+Navi48Bringup: cp: === CP state dump (cp_init_full entry) ===
+Navi48Bringup: cp:   sw wptr=0  ring_mc=0x8400000000 (4096 dwords)  doorbell=139
+Navi48Bringup: cp:   wb rptr=0  wb wptr=0  wb fence=0 (rptr_mc=0x8400005000 wptr_mc=0x8400005040 fence_mc=0x8400005080)
+Navi48Bringup: cp:   CP_RB0_RPTR [dw 0x21c0] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR [dw 0x3054] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR_HI [dw 0x3055] = 0000000000
+Navi48Bringup: cp:   CP_RB0_CNTL [dw 0x3041] = 0x00f00000
+Navi48Bringup: cp:   CP_RB0_BASE [dw 0x3040] = 0xfedcbaef
+Navi48Bringup: cp:   CP_RB0_BASE_HI [dw 0x30b1] = 0000000000
+Navi48Bringup: cp:   CP_RB_ACTIVE [dw 0x31a0] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_LOWER [dw 0x305a] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_UPPER [dw 0x305b] = 0x00000108
+Navi48Bringup: cp:   CP_ME_CNTL [dw 0xa803] = 0x1500a000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL [dw 0xc904] = 0x40000000
+Navi48Bringup: cp:   CP_STAT [dw 0x21a0] = 0000000000
+Navi48Bringup: cp:   GRBM_STATUS [dw 0x2004] = 0x0000382c
+Navi48Bringup: cp:   GRBM_GFX_CNTL [dw 0xa900] = 0000000000
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START [dw 0x30a4] = 0x00000c00
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START_HI [dw 0x30b9] = 0x0001c000
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START [dw 0x30a5] = 0x00000c00
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START_HI [dw 0x30d9] = 0x0001c000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900] = 0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938] = 0x0001c000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_LO [dw 0xf840] = 0xf871d000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_HI [dw 0xf841] = 0x00000003
+Navi48Bringup: cp:   CP_PFP_IC_OP_CNTL [dw 0xf843] = 0x0000000a
+Navi48Bringup: cp:   CP_ME_IC_BASE_LO [dw 0xf844] = 0xf895d000
+Navi48Bringup: cp:   CP_ME_IC_BASE_HI [dw 0xf845] = 0x00000003
+Navi48Bringup: cp:   CP_ME_IC_OP_CNTL [dw 0xf847] = 0x0000000a
+Navi48Bringup: cp:   CP_CPC_IC_OP_CNTL [dw 0xc97a] = 0x0000000a
+Navi48Bringup: cp:   rs64_configured=1 (pfp pc=0x00000c00/0x0001c000 me pc=0x00000c00/0x0001c000 mec pc=0x00000c00/0x0001c000) caches_configured=1 fetch_proven=0 gfx_mqd_inited=0 kgq_mapped=0 ring_test_passed=0
+Navi48Bringup: cp: --- GFX HQD block me0/pipe0/queue0 (cp_init_full entry) ---
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_ACTIVE [dw 0x30e0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_MAPPED [dw 0x30f4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR [dw 0x30de] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR_HI [dw 0x30df] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_CONTROL [dw 0x30fa] = 0x00000100
+Navi48Bringup: cp:   CP_GFX_HQD_VMID [dw 0x30e1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUEUE_PRIORITY [dw 0x30e4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUANTUM [dw 0x30e5] = 0x00000a01
+Navi48Bringup: cp:   CP_GFX_HQD_BASE [dw 0x30e6] = 0xfedcbaef
+Navi48Bringup: cp:   CP_GFX_HQD_BASE_HI [dw 0x30e7] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CNTL [dw 0x30ef] = 0x00f00000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR [dw 0x30e8] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR [dw 0x30e9] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR_HI [dw 0x30ea] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR [dw 0x30f1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR_HI [dw 0x30f2] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_OFFSET [dw 0x30ee] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CSMD_RPTR [dw 0x30f0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUE_MGR_CONTROL [dw 0x30f5] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_STATUS0 [dw 0x30f8] = 0x40000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_CONTROL0 [dw 0x30f9] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_LO [dw 0x30eb] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_HI [dw 0x30ec] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp: --- end GFX HQD block (cp_init_full entry) ---
+Navi48Bringup: cp:   TMR: pfp ic=0x83f871d000 dc=0x83f9600000 | me ic=0x83f895d000 dc=0x83f9700000 | mec ic=0x83f8b9d000 dc0=0x83f9800000 dc1=0x83f98c0000
+Navi48Bringup: cp: === end CP state dump (cp_init_full entry) ===
+Navi48Bringup: gfx: gpu_early_init: GC 12.0.0 caps max_se=2 max_sh_per_se=2 max_be_per_se=4 max_cu_per_sh=8 max_hw_contexts=8 (physical CUs=32)
+Navi48Bringup: gfx: gpu_early_init: sc_prim_fifo fe=0x20 be=0x100 hiz_tile=0 earlyz_tile=0x4c0
+Navi48Bringup: gfx: gpu_early_init: WARNING discovery reports GC 12.0.0, not 12.0.1 — the hardcoded Navi 48 caps may not apply
+Navi48Bringup: gfx: probe: GC bases base[0]=0x1260 base[1]=0xa000
+Navi48Bringup: gfx: probe: GRBM_GFX_INDEX (BASE_IDX 1) @0xc200=0xe0000000  GB_ADDR_CONFIG (BASE_IDX 0) @0x263e=0x08200545  GRBM_STATUS (BASE_IDX 0) @0x2004=0x0000382c
+Navi48Bringup: gfx: probe: GRBM_GFX_INDEX cross-check at GC[0] @0x3460=0xffffffff (expected garbage — not this register's BASE_IDX)
+Navi48Bringup: gfx: constants_init: GRBM_CNTL@0x2000 0x00300018 -> 0x003000ff (READ_TIMEOUT=0xff)
+Navi48Bringup: gfx: constants_init: golden DB_MEM_CONFIG@0x2632 0x00008035 -> 0x00008035
+Navi48Bringup: gfx: gb_addr_config@0x263e=0x08200545 num_pipes=32 num_se=16 num_rb_per_se=4 num_pkrs=32 pipe_interleave=256 max_compressed_frags=2
+Navi48Bringup: gfx: get_gb_addr_config: WARNING GB_ADDR_CONFIG says 16 SEs but caps say max_shader_engines=2
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest RB: CC_RB_BACKEND_DISABLE@0x263d=0000000000 (dis=0) GC_USER_RB_BACKEND_DISABLE@0xfb94=0000000000 (dis=0) rb_mask=0xff active_rb=0xff
+Navi48Bringup: gfx: setup_rb: max_sa=4 rb_width_per_sa=2 rb_per_sa=0x3 active_sa=0xf (4 SAs) global_active_rb=0xff active_rb_bitmap=0xff num_rbs=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE0 SA0 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE0 SA1 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE1 SA0 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE1 SA1 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: get_cu_info: num_active_cus=32 num_active_wgps=16 (physical max 32 CUs)
+Navi48Bringup: gfx: get_cu_info: cu_bitmap SE0=[0xff,0xff] SE1=[0xff,0xff] SE2=[0,0] SE3=[0,0]
+Navi48Bringup: gfx: constants_init: VMIDs 0..7 SH_MEM_CONFIG@0xa9e4=0x0000c00c, VMIDs 1..7 SH_MEM_BASES@0xa9e3=0x00010002 (GRBM_GFX_CNTL@0xa900 deselected)
+Navi48Bringup: gfx: init_compute_vmid: programmed VMIDs 8..15 (SH_MEM_CONFIG@0xa9e4=0x0000c00c SH_MEM_BASES@0xa9e3=0x00010002 SPI_GDBG_PER_VMID_CNTL@0x31d2 TRAP_EN=1)
+Navi48Bringup: gfx: constants_init complete: max_se=2 max_sh=2 max_be=4 max_cu_per_sh=8 (active_rbs=8 active_cus=32)
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_LOWER [dw 0x305a]: before=0000000000 wrote=0x00000458 after=0x00000458
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_UPPER [dw 0x305b]: before=0x00000108 wrote=0x000007f8 after=0x000007f8
+Navi48Bringup: cp:   CP_MEC_DOORBELL_RANGE_LOWER [dw 0x305c]: before=0x00000110 wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_MEC_DOORBELL_RANGE_UPPER [dw 0x305d]: before=0x00000ffc wrote=0x00000450 after=0x00000450
+Navi48Bringup: cp: doorbell ranges: GFX=[0x8b..0xff] MEC=[0..0x8a]
+Navi48Bringup: cp: CP_MEC_RS64_CNTL: GC[1]+0x2904=dw 0xc904 -> 0x40000000 (USED, header BASE_IDX 1), GC[0]+0x2904=dw 0x3b64 -> 0000000000 (ignored)
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL [dw 0xc904]: before=0x40000000 wrote=0x3c000000 after=0x3c000000
+Navi48Bringup: cp: CP_MEC_RS64_CNTL enabled (MEC running): value=0x3c000000 (readback=0x3c000000)
+Navi48Bringup: cp:   CP_ME_CNTL [dw 0xa803]: before=0x1500a000 wrote=0x0100a000 after=0x0100a000
+Navi48Bringup: cp: cp_enable(unhalt): CP_STAT reached 0 after 19 us
+Navi48Bringup: cp: CP_ME_CNTL running (ME_HALT=0 PFP_HALT=0, value=0x0100a000, readback=0x0100a000)
+Navi48Bringup: cp: === CP state dump (after cp_gfx_enable(true), no queue mapped) ===
+Navi48Bringup: cp:   sw wptr=0  ring_mc=0x8400000000 (4096 dwords)  doorbell=139
+Navi48Bringup: cp:   wb rptr=0  wb wptr=0  wb fence=0 (rptr_mc=0x8400005000 wptr_mc=0x8400005040 fence_mc=0x8400005080)
+Navi48Bringup: cp:   CP_RB0_RPTR [dw 0x21c0] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR [dw 0x3054] = 0000000000
+Navi48Bringup: cp:   CP_RB0_WPTR_HI [dw 0x3055] = 0000000000
+Navi48Bringup: cp:   CP_RB0_CNTL [dw 0x3041] = 0x00f00080
+Navi48Bringup: cp:   CP_RB0_BASE [dw 0x3040] = 0xfedcbaef
+Navi48Bringup: cp:   CP_RB0_BASE_HI [dw 0x30b1] = 0000000000
+Navi48Bringup: cp:   CP_RB_ACTIVE [dw 0x31a0] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_LOWER [dw 0x305a] = 0x00000458
+Navi48Bringup: cp:   CP_RB_DOORBELL_RANGE_UPPER [dw 0x305b] = 0x000007f8
+Navi48Bringup: cp:   CP_ME_CNTL [dw 0xa803] = 0x0100a000
+Navi48Bringup: cp:   CP_MEC_RS64_CNTL [dw 0xc904] = 0x3c000000
+Navi48Bringup: cp:   CP_STAT [dw 0x21a0] = 0000000000
+Navi48Bringup: cp:   GRBM_STATUS [dw 0x2004] = 0x0000382c
+Navi48Bringup: cp:   GRBM_GFX_CNTL [dw 0xa900] = 0000000000
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START [dw 0x30a4] = 0x00000c00
+Navi48Bringup: cp:   CP_PFP_PRGRM_CNTR_START_HI [dw 0x30b9] = 0x0001c000
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START [dw 0x30a5] = 0x00000c00
+Navi48Bringup: cp:   CP_ME_PRGRM_CNTR_START_HI [dw 0x30d9] = 0x0001c000
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START [dw 0xc900] = 0x00000c00
+Navi48Bringup: cp:   CP_MEC_RS64_PRGRM_CNTR_START_HI [dw 0xc938] = 0x0001c000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_LO [dw 0xf840] = 0xf871d000
+Navi48Bringup: cp:   CP_PFP_IC_BASE_HI [dw 0xf841] = 0x00000003
+Navi48Bringup: cp:   CP_PFP_IC_OP_CNTL [dw 0xf843] = 0x0000000a
+Navi48Bringup: cp:   CP_ME_IC_BASE_LO [dw 0xf844] = 0xf895d000
+Navi48Bringup: cp:   CP_ME_IC_BASE_HI [dw 0xf845] = 0x00000003
+Navi48Bringup: cp:   CP_ME_IC_OP_CNTL [dw 0xf847] = 0x0000000a
+Navi48Bringup: cp:   CP_CPC_IC_OP_CNTL [dw 0xc97a] = 0x0000000a
+Navi48Bringup: cp:   rs64_configured=1 (pfp pc=0x00000c00/0x0001c000 me pc=0x00000c00/0x0001c000 mec pc=0x00000c00/0x0001c000) caches_configured=1 fetch_proven=0 gfx_mqd_inited=0 kgq_mapped=0 ring_test_passed=0
+Navi48Bringup: cp: --- GFX HQD block me0/pipe0/queue0 (after cp_gfx_enable(true), no queue mapped) ---
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_ACTIVE [dw 0x30e0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_MAPPED [dw 0x30f4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR [dw 0x30de] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR_HI [dw 0x30df] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_CONTROL [dw 0x30fa] = 0x00000100
+Navi48Bringup: cp:   CP_GFX_HQD_VMID [dw 0x30e1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUEUE_PRIORITY [dw 0x30e4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUANTUM [dw 0x30e5] = 0x00000a01
+Navi48Bringup: cp:   CP_GFX_HQD_BASE [dw 0x30e6] = 0xfedcbaef
+Navi48Bringup: cp:   CP_GFX_HQD_BASE_HI [dw 0x30e7] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CNTL [dw 0x30ef] = 0x00f00080
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR [dw 0x30e8] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR [dw 0x30e9] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR_HI [dw 0x30ea] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR [dw 0x30f1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR_HI [dw 0x30f2] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_OFFSET [dw 0x30ee] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CSMD_RPTR [dw 0x30f0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUE_MGR_CONTROL [dw 0x30f5] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_STATUS0 [dw 0x30f8] = 0x40000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_CONTROL0 [dw 0x30f9] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_LO [dw 0x30eb] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_HI [dw 0x30ec] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp: --- end GFX HQD block (after cp_gfx_enable(true), no queue mapped) ---
+Navi48Bringup: cp:   TMR: pfp ic=0x83f871d000 dc=0x83f9600000 | me ic=0x83f895d000 dc=0x83f9700000 | mec ic=0x83f8b9d000 dc0=0x83f9800000 dc1=0x83f98c0000
+Navi48Bringup: cp: === end CP state dump (after cp_gfx_enable(true), no queue mapped) ===
+Navi48Bringup: cp: CP front-ends running, GFX queue NOT mapped yet — PM4Test will build the v12_gfx_mqd and have the MES map it (navi48-cp-legacy-rb=1 selects the old CP_RB0_* path instead)
+Navi48Bringup: cp: CP ready: doorbell 139 reserved for the GFX ring (ring_mc=0x8400000000), MEC pipes active, caches_configured=1, rs64_configured=1
+Navi48Bringup: init: stage 12 (CPInit) done
+Navi48Bringup: init: running stage 13 (MESInit)
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e8111000 -> mc=0x8400009000 (1 PTEs @ 4KB stride starting at PT idx 9, PT vram_off=0x1600000)
+Navi48Bringup: mes: EOP: 2048 B  cpu=0xffffffee8160d000  phys=0x1e8111000  gart_mc=0x8400009000
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e8110000 -> mc=0x840000a000 (1 PTEs @ 4KB stride starting at PT idx 10, PT vram_off=0x1600000)
+Navi48Bringup: mes: MQD: 4096 B  cpu=0xffffffee81601000  phys=0x1e8110000  gart_mc=0x840000a000
+Navi48Bringup: gmc: bind_existing: 65536 bytes @ bus=0x3cec9000 -> mc=0x840000b000 (16 PTEs @ 4KB stride starting at PT idx 11, PT vram_off=0x1600000)
+Navi48Bringup: mes: ring: 65536 B  cpu=0xffffffee817a0000  phys=0x3cec9000  gart_mc=0x840000b000
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3ced9000 -> mc=0x840001b000 (4 PTEs @ 4KB stride starting at PT idx 27, PT vram_off=0x1600000)
+Navi48Bringup: mes: cmd: 16384 B  cpu=0xffffffee81670000  phys=0x3ced9000  gart_mc=0x840001b000
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cedd000 -> mc=0x840001f000 (4 PTEs @ 4KB stride starting at PT idx 31, PT vram_off=0x1600000)
+Navi48Bringup: mes: wb: 16384 B  cpu=0xffffffee81664000  phys=0x3cedd000  gart_mc=0x840001f000
+Navi48Bringup: mes: storage: EOP 0x8400009000, MQD 0x840000a000, ring 0x840000b000, cmd 0x840001b000
+Navi48Bringup: mes: storage: wb 0x840001f000 (rptr 0x840001f000, wptr 0x840001f040), ring 16384 dw, doorbell idx 0xb (BAR2 byte 0x2c)
+Navi48Bringup: mes: init_full: using embedded blob gc_12_0_0_uni_mes (734432 B)
+Navi48Bringup: mes: parse_ucode_header: ucode ver 0 @+256 (209888 B), data ver 0 @+210144 (524288 B), uc_start=0xfffffffff0005000 data_start=0xfffffffff0100000
+Navi48Bringup: mes: pipe 0 uc_start_addr = 0xfffffffff0005000
+Navi48Bringup: mes: kiq_setting: RLC_CP_SCHEDULERS before = 0x3038
+Navi48Bringup: mes: kiq_setting: me=3 pipe=1 queue=0 RLC_CP_SCHEDULERS=0x30e8 (readback 0x30e8)
+Navi48Bringup: mes: enable: CP_MES_CNTL before = 0x40000000, CP_MES_INSTR_PNTR = 0x800
+Navi48Bringup: mes: enable: CP_MES_MSCRATCH_LO before 0, HI before 0
+Navi48Bringup: mes: enable: PIPE0_RESET pulse, CP_MES_CNTL = 0x40010000 (readback 0x40010000)
+Navi48Bringup: mes: enable: PRGRM_CNTR_START = 0xfc001400 / _HI = 0x3fffffff (uc_start 0xfffffffff0005000 >> 2 = 0x3ffffffffc001400)
+Navi48Bringup: mes: enable: activate write CP_MES_CNTL = 0x4000000
+Navi48Bringup: mes: enable: pipe 0 active, uc_start=0xfffffffff0005000; CP_MES_CNTL after = 0x4000000, CP_MES_INSTR_PNTR = 0x77d4
+Navi48Bringup: mes: unmapped_doorbell_handling: CP_UNMAPPED_DOORBELL before = 0xc30
+Navi48Bringup: mes: unmapped_doorbell_handling enabled: CP_UNMAPPED_DOORBELL=0xd31 (readback 0xd31)
+Navi48Bringup: mes: queue_init: MQD mc=0x840000a000 cpu=0xffffffee81601000 | pq_base=0x840000b0/0 (ring 0x840000b000>>8) | rptr=0x1f000/0x84 | wptr_poll=0x1f040/0x84 | eop=0x84000090/0 (0x8400009000>>8) eop_ctrl=0x8 | persist=0xbe05501 mqd_ctrl=0
+Navi48Bringup: mes: queue_init: CP_HQD_PQ_DOORBELL_CONTROL before = 0
+Navi48Bringup: mes: queue_init: pipe 0, ring 0x840000b000 (16384 dw), doorbell 0xb, pq_ctrl=0xd830890d db_ctrl=0x4000002c
+Navi48Bringup: mes: queue_init: readback CP_MQD_BASE_ADDR=0xa000 CP_HQD_PQ_BASE=0x840000b0 CP_HQD_PQ_CONTROL=0xd830890d CP_HQD_PQ_DOORBELL_CONTROL=0x4000002c CP_HQD_ACTIVE=0x1
+Navi48Bringup: mes: sched_version (pipe 0) = 0x1028093 (masked = 0x8093)
+Navi48Bringup: mes: aggregated_doorbell: CTRL1 (reg 0x283c) 0 -> 0x40000680 (readback 0x40000680, offset 0x1a0)
+Navi48Bringup: mes: aggregated_doorbell: CTRL2 (reg 0x283d) 0 -> 0x40000688 (readback 0x40000688, offset 0x1a2)
+Navi48Bringup: mes: aggregated_doorbell: CTRL3 (reg 0x283e) 0 -> 0x40000690 (readback 0x40000690, offset 0x1a4)
+Navi48Bringup: mes: aggregated_doorbell: CTRL4 (reg 0x283f) 0 -> 0x40000698 (readback 0x40000698, offset 0x1a6)
+Navi48Bringup: mes: aggregated_doorbell: CTRL5 (reg 0x2840) 0 -> 0x400006a0 (readback 0x400006a0, offset 0x1a8)
+Navi48Bringup: mes: aggregated_doorbell: CP_HQD_GFX_CONTROL 0 -> 0x8000 (readback 0)
+Navi48Bringup: mes: aggregated_doorbell: LOW=0x1a0 NORMAL=0x1a2 MED=0x1a4 HIGH=0x1a6 RT=0x1a8
+Navi48Bringup: mes: set_hw_resources: compute_hqd_mask = 0xfc on pipes 0..3 (queues 0..1 reserved for kernel compute queues)
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e810e000 -> mc=0x8400023000 (1 PTEs @ 4KB stride starting at PT idx 35, PT vram_off=0x1600000)
+Navi48Bringup: mes: sch_ctx: 4096 B  cpu=0xffffffee81605000  phys=0x1e810e000  gart_mc=0x8400023000
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e810d000 -> mc=0x8400024000 (1 PTEs @ 4KB stride starting at PT idx 36, PT vram_off=0x1600000)
+Navi48Bringup: mes: status_fence: 4096 B  cpu=0xffffffee8160f000  phys=0x1e810d000  gart_mc=0x8400024000
+Navi48Bringup: mes: set_hw_resources: header=0x40001 flags=0x80447 oversub=50 vmid_mmhub=0xfe vmid_gfxhub=0xfe
+Navi48Bringup: mes: set_hw_resources: sch_ctx_mc=0x8400023000 status_fence_mc=0x8400024000
+Navi48Bringup: mes: set_hw_resources: gc_base[0..4]=0x1260/0xa000/0x1c000/0x2402c00/0
+Navi48Bringup: mes: set_hw_resources: mmhub_base[0..4]=0x1a000/0x2408800/0/0/0
+Navi48Bringup: mes: set_hw_resources: osssys_base[0..4]=0x10a0/0x240a000/0/0/0
+Navi48Bringup: mes: set_hw_resources: gfx_hqd=0xfe/0 sdma_hqd=0xf/0xf compute_hqd[0..3]=0xfc/0xfc/0xfc/0xfc
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC]: VMID0 cntl=0x3fffc01 pt=00000000_01600001 start=00000000_08400000 end=00000000_0840ffff GART=[0x8400000000..0x840fffffff]
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC]: sch_ctx dword[0..3]=00000000/00000000/00000000/00000000
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC]: status_fence dword[0..3]=00000000/00000000/00000000/00000000
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: mes: submit_pkt: pipe 0 header=0x40001 api_status@dw50 fence_addr=0x840001f0c0 fence_value=1
+Navi48Bringup: mes: kick_doorbell: BAR2+0x2c <= 0x80 (sw_wptr 128 dw)
+Navi48Bringup: mes: submit_pkt: pipe 0 ok in ~100 us (status=0x1, chained query slot=0)
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC]: VMID0 cntl=0x3fffc01 pt=00000000_01600001 start=00000000_08400000 end=00000000_0840ffff GART=[0x8400000000..0x840fffffff]
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC]: sch_ctx dword[0..3]=00010fa0/00000000/00000000/00000000
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC]: status_fence dword[0..3]=00000000/00000000/00000000/00000000
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00040b52 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=1 perm=0x5 mapping_err=1 cid=5 rw=write
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x1e810c000 -> mc=0x8400025000 (1 PTEs @ 4KB stride starting at PT idx 37, PT vram_off=0x1600000)
+Navi48Bringup: mes: cleaner_shader_fence: 4096 B  cpu=0xffffffee8160a000  phys=0x1e810c000  gart_mc=0x8400025000
+Navi48Bringup: mes: set_hw_resources_1: header=0x40131 kiq_unmap_timeout=0xa cleaner_shader_fence_mc=0x8400025000 (api_status @ dw 2)
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC_1]: VMID0 cntl=0x3fffc01 pt=00000000_01600001 start=00000000_08400000 end=00000000_0840ffff GART=[0x8400000000..0x840fffffff]
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC_1]: sch_ctx dword[0..3]=00010fa0/00000000/00000000/00000000
+Navi48Bringup: mes: hwresource-checkpoint[before SET_HW_RSRC_1]: status_fence dword[0..3]=00000000/00000000/00000000/00000000
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00040b52 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=1 perm=0x5 mapping_err=1 cid=5 rw=write
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: mes: submit_pkt: pipe 0 header=0x40131 api_status@dw2 fence_addr=0x840001f0c0 fence_value=2
+Navi48Bringup: mes: kick_doorbell: BAR2+0x2c <= 0x100 (sw_wptr 256 dw)
+Navi48Bringup: mes: submit_pkt: pipe 0 ok in ~0 us (status=0x2, chained query slot=0)
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC_1]: VMID0 cntl=0x3fffc01 pt=00000000_01600001 start=00000000_08400000 end=00000000_0840ffff GART=[0x8400000000..0x840fffffff]
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC_1]: sch_ctx dword[0..3]=00010fa0/00000000/00000000/00000000
+Navi48Bringup: mes: hwresource-checkpoint[after SET_HW_RSRC_1]: status_fence dword[0..3]=00000000/00000000/00000000/00000000
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00040b53 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=1 walker_err=1 perm=0x5 mapping_err=1 cid=5 rw=write
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: mes: submit_pkt: pipe 0 header=0x400b1 api_status@dw2 fence_addr=0x840001f0c0 fence_value=3
+Navi48Bringup: mes: kick_doorbell: BAR2+0x2c <= 0x180 (sw_wptr 384 dw)
+Navi48Bringup: mes: submit_pkt: pipe 0 ok in ~0 us (status=0x3, chained query slot=0)
+Navi48Bringup: init: stage 13 (MESInit) done
+Navi48Bringup: init: running stage 14 (GFXInit)
+Navi48Bringup: gfx: gpu_early_init: GC 12.0.0 caps max_se=2 max_sh_per_se=2 max_be_per_se=4 max_cu_per_sh=8 max_hw_contexts=8 (physical CUs=32)
+Navi48Bringup: gfx: gpu_early_init: sc_prim_fifo fe=0x20 be=0x100 hiz_tile=0 earlyz_tile=0x4c0
+Navi48Bringup: gfx: gpu_early_init: WARNING discovery reports GC 12.0.0, not 12.0.1 — the hardcoded Navi 48 caps may not apply
+Navi48Bringup: gfx: probe: GC bases base[0]=0x1260 base[1]=0xa000
+Navi48Bringup: gfx: probe: GRBM_GFX_INDEX (BASE_IDX 1) @0xc200=0xe0000000  GB_ADDR_CONFIG (BASE_IDX 0) @0x263e=0x08200545  GRBM_STATUS (BASE_IDX 0) @0x2004=0x0000382c
+Navi48Bringup: gfx: probe: GRBM_GFX_INDEX cross-check at GC[0] @0x3460=0xffffffff (expected garbage — not this register's BASE_IDX)
+Navi48Bringup: gfx: constants_init: GRBM_CNTL@0x2000 0x003000ff -> 0x003000ff (READ_TIMEOUT=0xff)
+Navi48Bringup: gfx: constants_init: golden DB_MEM_CONFIG@0x2632 0x00008035 -> 0x00008035
+Navi48Bringup: gfx: gb_addr_config@0x263e=0x08200545 num_pipes=32 num_se=16 num_rb_per_se=4 num_pkrs=32 pipe_interleave=256 max_compressed_frags=2
+Navi48Bringup: gfx: get_gb_addr_config: WARNING GB_ADDR_CONFIG says 16 SEs but caps say max_shader_engines=2
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest RB: CC_RB_BACKEND_DISABLE@0x263d=0000000000 (dis=0) GC_USER_RB_BACKEND_DISABLE@0xfb94=0000000000 (dis=0) rb_mask=0xff active_rb=0xff
+Navi48Bringup: gfx: setup_rb: max_sa=4 rb_width_per_sa=2 rb_per_sa=0x3 active_sa=0xf (4 SAs) global_active_rb=0xff active_rb_bitmap=0xff num_rbs=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE0 SA0 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE0 SA1 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE1 SA0 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: harvest SA: GRBM_CC_GC_SA_UNIT_DISABLE@0x2249=0x00fff000 (dis=0xfff0) GRBM_GC_USER_SA_UNIT_DISABLE@0xfb92=0x00fff000 (dis=0xfff0) sa_mask=0xf active_sa=0xf
+Navi48Bringup: gfx: harvest WGP: CC_GC_SHADER_ARRAY_CONFIG@0x226f=0xfff00000 GC_USER_SHADER_ARRAY_CONFIG@0xfb90=0xfff00000 inactive_wgps=0xfff0 wgp_mask=0xf active_wgp=0xf
+Navi48Bringup: gfx: get_cu_info: SE1 SA1 cu_bitmap=0x000000ff active_cus=8
+Navi48Bringup: gfx: get_cu_info: num_active_cus=32 num_active_wgps=16 (physical max 32 CUs)
+Navi48Bringup: gfx: get_cu_info: cu_bitmap SE0=[0xff,0xff] SE1=[0xff,0xff] SE2=[0,0] SE3=[0,0]
+Navi48Bringup: gfx: constants_init: VMIDs 0..7 SH_MEM_CONFIG@0xa9e4=0x0000c00c, VMIDs 1..7 SH_MEM_BASES@0xa9e3=0x00010002 (GRBM_GFX_CNTL@0xa900 deselected)
+Navi48Bringup: gfx: init_compute_vmid: programmed VMIDs 8..15 (SH_MEM_CONFIG@0xa9e4=0x0000c00c SH_MEM_BASES@0xa9e3=0x00010002 SPI_GDBG_PER_VMID_CNTL@0x31d2 TRAP_EN=1)
+Navi48Bringup: gfx: constants_init complete: max_se=2 max_sh=2 max_be=4 max_cu_per_sh=8 (active_rbs=8 active_cus=32)
+Navi48Bringup: init: stage 14 (GFXInit) done
+Navi48Bringup: init: running stage 15 (SDMAInit)
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_2_CTRL bidx=2 off=0x01cd abs=0x00000eed byte=0x3bb4 via=BAR5: before=0x00000000
+Navi48Bringup: nbif:   ENTRY_2 before = 0x00000000: ENABLE=0 AWID=0x0 FENCE=0 RANGE_OFFSET=0x0 RANGE_SIZE=0x0 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x0
+Navi48Bringup: nbif: sdma_doorbell_range: instance 0 use_doorbell=true index=0x200 size=0x14
+Navi48Bringup: nbif: GDC_S2A0_S2A_DOORBELL_ENTRY_2_CTRL: 0x00000000 -> wrote 0x3029001d -> after=0x3029001d (check 0xffffffff) OK
+Navi48Bringup: nbif:   ENTRY_2 after  = 0x3029001d: ENABLE=1 AWID=0xe FENCE=0 RANGE_OFFSET=0x200 RANGE_SIZE=0x14 64BIT_DIS=0 DEDUCT=0 DROP=0 AWADDR_31_28=0x3
+Navi48Bringup: sdma: init_full: starting SDMA bringup (instances=2, microcode_loaded=1)
+Navi48Bringup: sdma: init_full: GC v12.0.0 -> reg table gc_12_0_0 (QUEUE0_RB_CNTL=0x0080, MCU_CNTL=0x588e); GC base[0]=0x1260 base[1]=0xa000; SDMA0 IP resolved, SDMA1 IP resolved
+Navi48Bringup: sdma: init_full: doorbell slots sdma_engine[0]=0x100 sdma_engine[1]=0x10a (programmed as index<<1), BAR2 2048 KiB
+Navi48Bringup: sdma: init_full: step 1/5 — clear RB/IB enable, unhalt MCU (bare-metal path, PSP-autoloaded MCU stays live)
+Navi48Bringup: sdma: SDMA0 gfx_stop: RB_CNTL 0x00040800 -> 0x00040800, IB_CNTL 0x00000100 -> 0x00000100
+Navi48Bringup: sdma: SDMA0 MCU_CNTL @dword 0xf88e: 0000000000 -> 0000000000 (HALT=0) readback=0000000000
+Navi48Bringup: sdma: SDMA0 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00040800 rptr=0 wptr=0  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdma: SDMA1 gfx_stop: RB_CNTL 0x00040800 -> 0x00040800, IB_CNTL 0x00000100 -> 0x00000100
+Navi48Bringup: sdma: SDMA1 MCU_CNTL @dword 0xf8ae: 0000000000 -> 0000000000 (HALT=0) readback=0000000000
+Navi48Bringup: sdma: SDMA1 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00040800 rptr=0 wptr=0  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdma: init_full: step 2/5 — allocate ring + WB per instance
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cf02000 -> mc=0x8400026000 (4 PTEs @ 4KB stride starting at PT idx 38, PT vram_off=0x1600000)
+Navi48Bringup: sdma: instance 0: WB page sysmem phys=0x3cf02000 -> GART mc=0x8400026000 (16384 bytes)
+Navi48Bringup: sdma: instance 0: ring 4096 dwords @ mc 0x8002704000 (vram_off 0x2704000), wb @ mc 0x8400026000 (sysmem/gart), rptr_addr=0x8400026000 wptr_poll_addr=0x8400026040, doorbell slot 0x200
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cf06000 -> mc=0x840002a000 (4 PTEs @ 4KB stride starting at PT idx 42, PT vram_off=0x1600000)
+Navi48Bringup: sdma: instance 1: WB page sysmem phys=0x3cf06000 -> GART mc=0x840002a000 (16384 bytes)
+Navi48Bringup: sdma: instance 1: ring 4096 dwords @ mc 0x8002708000 (vram_off 0x2708000), wb @ mc 0x840002a000 (sysmem/gart), rptr_addr=0x840002a000 wptr_poll_addr=0x840002a040, doorbell slot 0x214
+Navi48Bringup: sdma: init_full: step 4/5 — gfx_resume each instance (program RB_BASE/CNTL/WPTR/RPTR, doorbell, watchdog, unhalt MCU, enable RB+IB)
+Navi48Bringup: sdma: SDMA0 gfx_resume: starting (ring_gpu_va=0x8002704000, rb_size=4096 dwords, rptr_addr=0x8400026000, doorbell_slot=0x200)
+Navi48Bringup: sdma: SDMA0 regs [before gfx_resume]: RB_CNTL=0x00040800 RB_BASE=0000000000:0000000000 RPTR=0000000000 WPTR=0000000000 IB_CNTL=0x00000100
+Navi48Bringup: sdma: SDMA0 regs [before gfx_resume]: RPTR_ADDR=0000000000:0000000000 WPTR_POLL_ADDR=0000000000:0000000000 DOORBELL=0000000000 OFFSET=0000000000 MCU_CNTL=0000000000 STATUS=0x6e1ee557
+Navi48Bringup: sdma: SDMA0  RB_CNTL initial = 0x00040800 (programming RB_SIZE=12, RB_PRIV=1)
+Navi48Bringup: sdma: SDMA0  WPTR_POLL_ADDR = 0x00000084:0x00026040 (mc 0x8400026040)
+Navi48Bringup: sdma: SDMA0  RB_RPTR_ADDR = 0x00000084:0x00026000 (mc 0x8400026000, sysmem/gart)
+Navi48Bringup: sdma: SDMA0  RB_BASE = 0000000000:0x80027040 (ring_gpu_va 0x8002704000 >> 8 / >> 40)
+Navi48Bringup: sdma: SDMA0  DOORBELL before = 0000000000, DOORBELL_OFFSET before = 0000000000
+Navi48Bringup: sdma: SDMA0  DOORBELL=0x10000000 DOORBELL_OFFSET=0x800
+Navi48Bringup: sdma: SDMA0  WATCHDOG_CNTL 0000000000 -> 0x00000001
+Navi48Bringup: sdma: SDMA0  UTCL1_CNTL 0x3b000288 -> 0x3b000689
+Navi48Bringup: sdma: SDMA0  UTCL1_PAGE 0x000cec20 -> 0x000c0c20
+Navi48Bringup: sdma: SDMA0  unhalting MCU (writing MCU_CNTL.HALT=0, RESET=0)
+Navi48Bringup: sdma: SDMA0 MCU_CNTL @dword 0xf88e: 0000000000 -> 0000000000 (HALT=0) readback=0000000000
+Navi48Bringup: sdma: SDMA0: gfx_resume done — RB_CNTL=0x00841819 IB_CNTL=0x00000101 (RB_ENABLED on QUEUE 0, IB_ENABLED, engine running)
+Navi48Bringup: sdma: SDMA0 regs [after gfx_resume]: RB_CNTL=0x00841819 RB_BASE=0000000000:0x80027040 RPTR=0000000000 WPTR=0000000000 IB_CNTL=0x00000101
+Navi48Bringup: sdma: SDMA0 regs [after gfx_resume]: RPTR_ADDR=0x00000084:0x00026000 WPTR_POLL_ADDR=0x00000084:0x00026040 DOORBELL=0x10000000 OFFSET=0x00000800 MCU_CNTL=0000000000 STATUS=0x6e1ee557
+Navi48Bringup: sdma: SDMA0: use_doorbell=yes (slot 0x200), engine unhalted
+Navi48Bringup: sdma: SDMA0 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00841819 rptr=0 wptr=0  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdma: SDMA1 gfx_resume: starting (ring_gpu_va=0x8002708000, rb_size=4096 dwords, rptr_addr=0x840002a000, doorbell_slot=0x214)
+Navi48Bringup: sdma: SDMA1 regs [before gfx_resume]: RB_CNTL=0x00040800 RB_BASE=0000000000:0000000000 RPTR=0000000000 WPTR=0000000000 IB_CNTL=0x00000100
+Navi48Bringup: sdma: SDMA1 regs [before gfx_resume]: RPTR_ADDR=0000000000:0000000000 WPTR_POLL_ADDR=0000000000:0000000000 DOORBELL=0000000000 OFFSET=0000000000 MCU_CNTL=0000000000 STATUS=0x6e1ee557
+Navi48Bringup: sdma: SDMA1  RB_CNTL initial = 0x00040800 (programming RB_SIZE=12, RB_PRIV=1)
+Navi48Bringup: sdma: SDMA1  WPTR_POLL_ADDR = 0x00000084:0x0002a040 (mc 0x840002a040)
+Navi48Bringup: sdma: SDMA1  RB_RPTR_ADDR = 0x00000084:0x0002a000 (mc 0x840002a000, sysmem/gart)
+Navi48Bringup: sdma: SDMA1  RB_BASE = 0000000000:0x80027080 (ring_gpu_va 0x8002708000 >> 8 / >> 40)
+Navi48Bringup: sdma: SDMA1  DOORBELL before = 0000000000, DOORBELL_OFFSET before = 0000000000
+Navi48Bringup: sdma: SDMA1  DOORBELL=0x10000000 DOORBELL_OFFSET=0x850
+Navi48Bringup: sdma: SDMA1  WATCHDOG_CNTL 0000000000 -> 0x00000001
+Navi48Bringup: sdma: SDMA1  UTCL1_CNTL 0x3b000288 -> 0x3b000689
+Navi48Bringup: sdma: SDMA1  UTCL1_PAGE 0x000cec20 -> 0x000c0c20
+Navi48Bringup: sdma: SDMA1  unhalting MCU (writing MCU_CNTL.HALT=0, RESET=0)
+Navi48Bringup: sdma: SDMA1 MCU_CNTL @dword 0xf8ae: 0000000000 -> 0000000000 (HALT=0) readback=0000000000
+Navi48Bringup: sdma: SDMA1: gfx_resume done — RB_CNTL=0x00841819 IB_CNTL=0x00000101 (RB_ENABLED on QUEUE 0, IB_ENABLED, engine running)
+Navi48Bringup: sdma: SDMA1 regs [after gfx_resume]: RB_CNTL=0x00841819 RB_BASE=0000000000:0x80027080 RPTR=0000000000 WPTR=0000000000 IB_CNTL=0x00000101
+Navi48Bringup: sdma: SDMA1 regs [after gfx_resume]: RPTR_ADDR=0x00000084:0x0002a000 WPTR_POLL_ADDR=0x00000084:0x0002a040 DOORBELL=0x10000000 OFFSET=0x00000850 MCU_CNTL=0000000000 STATUS=0x6e1ee557
+Navi48Bringup: sdma: SDMA1: use_doorbell=yes (slot 0x214), engine unhalted
+Navi48Bringup: sdma: SDMA1 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00841819 rptr=0 wptr=0  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdma: init_full: step 5/5 — sdma_ring_test on each instance (submit FENCE pkt, watch WB write)
+Navi48Bringup: sdma: instance 0: ring_test — FENCE 0xcafec0de -> mc 0x8400026080 (ring mc 0x8002704000, wptr 0)
+Navi48Bringup: sdma: SDMA0 kick: wptr=4 (byte 0x10) doorbell@BAR2+0x800; readback RB_WPTR=0x00000010 RB_RPTR=0000000000 wb_rptr=0000000000
+Navi48Bringup: sdma: instance 0: ring_test ok in ~0 us
+Navi48Bringup: sdma: instance 1: ring_test — FENCE 0xcafec0de -> mc 0x840002a080 (ring mc 0x8002708000, wptr 0)
+Navi48Bringup: sdma: SDMA1 kick: wptr=4 (byte 0x10) doorbell@BAR2+0x850; readback RB_WPTR=0x00000010 RB_RPTR=0000000000 wb_rptr=0000000000
+Navi48Bringup: sdma: instance 1: ring_test ok in ~0 us
+Navi48Bringup: sdma: init_full: done — final per-instance status:
+Navi48Bringup: sdma: SDMA0 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00841819 rptr=0x10 wptr=0x10  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdma: SDMA1 status: STATUS_REG=0x6e1ee557 RB_CNTL=0x00841819 rptr=0x10 wptr=0x10  (idle=1 rb_empty=1 rb_full=0 ib_idle=1 srbm_idle=1)
+Navi48Bringup: sdmadcc: DEFAULT SDMA0_DCC_CNTL 0x0000aabe -> 0x0000aaaa (mask 0x15554), read back 0x0000aaaa MATCH
+Navi48Bringup: sdma: vram_copy_test: SDMA0 bytes=4096 src.gpu_va=0x800270c000 (vram_off=0x270c000) dst.gpu_va=0x8002710000 (vram_off=0x2710000)
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270c000 -> 0x8002710000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 4)
+Navi48Bringup: sdma: SDMA0 kick: wptr=16 (byte 0x40) doorbell@BAR2+0x800; readback RB_WPTR=0x00000040 RB_RPTR=0x00000010 wb_rptr=0x00000010
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270c000 -> 0x8002710000 in ~0 us
+Navi48Bringup: sdma: vram_copy_test: result kr=0 mismatched=0/1024 first_bad_off=0
+Navi48Bringup: sdma: vram_copy_test: *** SDMA0 COPIED 4096 BYTES OF VRAM — the GPU executed a command buffer ***
+Navi48Bringup: init: SDMAInit: VRAM copy test PASSED — the GPU wrote VRAM on command (kr=0, 4096 bytes, 0 mismatched, 0 us)
+Navi48Bringup: sdma: copy_sweep: decoder self-test: pat(3,0x1234)=0xca301234 decodes=1 case=3 idx=0x1234 (want 1/3/0x1234); 0xdeadbeef decodes=0, 0x00ffffff decodes=0 (want 0/0)
+Navi48Bringup: sdma: copy_sweep: START 16 cases in ONE region: gpu_va 0x800270c000 vram_off 0x270c000 size 262144 (region+0x18000 = 0x2724000, region+0x28000 = 0x2734000 — the scanout pre-flight uses 0x2024000 -> 0x2034000)
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270c000 -> 0x8002710000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 16)
+Navi48Bringup: sdma: SDMA0 kick: wptr=28 (byte 0x70) doorbell@BAR2+0x800; readback RB_WPTR=0x00000070 RB_RPTR=0x00000040 wb_rptr=0x00000040
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270c000 -> 0x8002710000 in ~0 us
+Navi48Bringup: sdma: copy_sweep c=0 [CONTROL REPLICA 4K, 16K apart]: src vram_off 0x270c000 dst 0x2710000 bytes 4096 cpv 1 dist 0x4000 srcAlign 16384 dstAlign 65536 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270c000 -> 0x800272c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 28)
+Navi48Bringup: sdma: SDMA0 kick: wptr=40 (byte 0xa0) doorbell@BAR2+0x800; readback RB_WPTR=0x000000a0 RB_RPTR=0x00000070 wb_rptr=0x00000070
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270c000 -> 0x800272c000 in ~0 us
+Navi48Bringup: sdma: copy_sweep c=1 [SIZE axis 4K]: src vram_off 0x270c000 dst 0x272c000 bytes 4096 cpv 1 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 8192 bytes 0x800270c000 -> 0x800272c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 40)
+Navi48Bringup: sdma: SDMA0 kick: wptr=52 (byte 0xd0) doorbell@BAR2+0x800; readback RB_WPTR=0x000000d0 RB_RPTR=0x000000a0 wb_rptr=0x000000a0
+Navi48Bringup: sdma: copy_linear_test ok: 8192 bytes 0x800270c000 -> 0x800272c000 in ~0 us
+Navi48Bringup: sdma: copy_sweep c=2 [SIZE axis 8K]: src vram_off 0x270c000 dst 0x272c000 bytes 8192 cpv 1 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 2048, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 16384 bytes 0x800270c000 -> 0x800272c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 52)
+Navi48Bringup: sdma: SDMA0 kick: wptr=64 (byte 0x100) doorbell@BAR2+0x800; readback RB_WPTR=0x00000100 RB_RPTR=0x000000d0 wb_rptr=0x000000d0
+Navi48Bringup: sdma: copy_linear_test ok: 16384 bytes 0x800270c000 -> 0x800272c000 in ~0 us
+Navi48Bringup: sdma: copy_sweep c=3 [SIZE axis 16K]: src vram_off 0x270c000 dst 0x272c000 bytes 16384 cpv 1 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 4096, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 32768 bytes 0x800270c000 -> 0x800272c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 64)
+Navi48Bringup: sdma: SDMA0 kick: wptr=76 (byte 0x130) doorbell@BAR2+0x800; readback RB_WPTR=0x00000130 RB_RPTR=0x00000100 wb_rptr=0x00000100
+Navi48Bringup: sdma: copy_linear_test ok: 32768 bytes 0x800270c000 -> 0x800272c000 in ~0 us
+Navi48Bringup: sdma: copy_sweep c=4 [SIZE axis 32K]: src vram_off 0x270c000 dst 0x272c000 bytes 32768 cpv 1 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 8192, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 65536 bytes 0x800270c000 -> 0x800272c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 76)
+Navi48Bringup: sdma: SDMA0 kick: wptr=88 (byte 0x160) doorbell@BAR2+0x800; readback RB_WPTR=0x00000160 RB_RPTR=0x00000130 wb_rptr=0x00000130
+Navi48Bringup: sdma: copy_linear_test ok: 65536 bytes 0x800270c000 -> 0x800272c000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=5 [SIZE axis 64K -- DECISIVE]: src vram_off 0x270c000 dst 0x272c000 bytes 65536 cpv 1 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 16384, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270d000 -> 0x800272d000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 88)
+Navi48Bringup: sdma: SDMA0 kick: wptr=100 (byte 0x190) doorbell@BAR2+0x800; readback RB_WPTR=0x00000190 RB_RPTR=0x00000160 wb_rptr=0x00000160
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270d000 -> 0x800272d000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=6 [ADDR axis 4K-aligned only]: src vram_off 0x270d000 dst 0x272d000 bytes 4096 cpv 1 dist 0x20000 srcAlign 4096 dstAlign 4096 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270e000 -> 0x800272e000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 100)
+Navi48Bringup: sdma: SDMA0 kick: wptr=112 (byte 0x1c0) doorbell@BAR2+0x800; readback RB_WPTR=0x000001c0 RB_RPTR=0x00000190 wb_rptr=0x00000190
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270e000 -> 0x800272e000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=7 [ADDR axis 8K-aligned only]: src vram_off 0x270e000 dst 0x272e000 bytes 4096 cpv 1 dist 0x20000 srcAlign 8192 dstAlign 8192 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x8002724000 -> 0x8002734000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 112)
+Navi48Bringup: sdma: SDMA0 kick: wptr=124 (byte 0x1f0) doorbell@BAR2+0x800; readback RB_WPTR=0x000001f0 RB_RPTR=0x000001c0 wb_rptr=0x000001c0
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x8002724000 -> 0x8002734000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=8 [PRE-FLIGHT address pair, 4K]: src vram_off 0x2724000 dst 0x2734000 bytes 4096 cpv 1 dist 0x10000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 65536 bytes 0x8002724000 -> 0x8002734000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 124)
+Navi48Bringup: sdma: SDMA0 kick: wptr=136 (byte 0x220) doorbell@BAR2+0x800; readback RB_WPTR=0x00000220 RB_RPTR=0x000001f0 wb_rptr=0x000001f0
+Navi48Bringup: sdma: copy_linear_test ok: 65536 bytes 0x8002724000 -> 0x8002734000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=9 [PRE-FLIGHT exact geometry -- DECISIVE]: src vram_off 0x2724000 dst 0x2734000 bytes 65536 cpv 1 dist 0x10000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 16384, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 65536 bytes 0x800270c000 -> 0x800271c000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 136)
+Navi48Bringup: sdma: SDMA0 kick: wptr=148 (byte 0x250) doorbell@BAR2+0x800; readback RB_WPTR=0x00000250 RB_RPTR=0x00000220 wb_rptr=0x00000220
+Navi48Bringup: sdma: copy_linear_test ok: 65536 bytes 0x800270c000 -> 0x800271c000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=10 [64K adjacent, different address]: src vram_off 0x270c000 dst 0x271c000 bytes 65536 cpv 1 dist 0x10000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 16384, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 65536 bytes 0x800270c000 -> 0x800272c000, cpv 0, header 0x00000001, fence 0xdec0ffee -> mc 0x8400026080 (11 dwords at ring wptr 148)
+Navi48Bringup: sdma: SDMA0 kick: wptr=159 (byte 0x27c) doorbell@BAR2+0x800; readback RB_WPTR=0x0000027c RB_RPTR=0x00000250 wb_rptr=0x00000250
+Navi48Bringup: sdma: copy_linear_test ok: 65536 bytes 0x800270c000 -> 0x800272c000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=11 [SIZE axis 64K, CPV=0]: src vram_off 0x270c000 dst 0x272c000 bytes 65536 cpv 0 dist 0x20000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 16384, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 65536 bytes 0x8002724000 -> 0x8002734000, cpv 0, header 0x00000001, fence 0xdec0ffee -> mc 0x8400026080 (11 dwords at ring wptr 159)
+Navi48Bringup: sdma: SDMA0 kick: wptr=170 (byte 0x2a8) doorbell@BAR2+0x800; readback RB_WPTR=0x000002a8 RB_RPTR=0x0000027c wb_rptr=0x0000027c
+Navi48Bringup: sdma: copy_linear_test ok: 65536 bytes 0x8002724000 -> 0x8002734000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=12 [PRE-FLIGHT geometry, CPV=0]: src vram_off 0x2724000 dst 0x2734000 bytes 65536 cpv 0 dist 0x10000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 16384, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x8002724000 -> 0x8002734000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 170)
+Navi48Bringup: sdma: SDMA0 kick: wptr=182 (byte 0x2d8) doorbell@BAR2+0x800; readback RB_WPTR=0x000002d8 RB_RPTR=0x000002a8 wb_rptr=0x000002a8
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x8002724000 -> 0x8002734000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=13 [REPEAT of c=8 (pre-flight pair 4K)]: src vram_off 0x2724000 dst 0x2734000 bytes 4096 cpv 1 dist 0x10000 srcAlign 16384 dstAlign 16384 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270e000 -> 0x800272e000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 182)
+Navi48Bringup: sdma: SDMA0 kick: wptr=194 (byte 0x308) doorbell@BAR2+0x800; readback RB_WPTR=0x00000308 RB_RPTR=0x000002d8 wb_rptr=0x000002d8
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270e000 -> 0x800272e000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=14 [REPEAT of c=7 (the persistently bad region)]: src vram_off 0x270e000 dst 0x272e000 bytes 4096 cpv 1 dist 0x20000 srcAlign 8192 dstAlign 8192 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: instance 0: copy_linear 4096 bytes 0x800270c000 -> 0x8002710000, cpv 1, header 0x10000001, fence 0xdec0ffee -> mc 0x8400026080 (12 dwords at ring wptr 194)
+Navi48Bringup: sdma: SDMA0 kick: wptr=206 (byte 0x338) doorbell@BAR2+0x800; readback RB_WPTR=0x00000338 RB_RPTR=0x00000308 wb_rptr=0x00000308
+Navi48Bringup: sdma: copy_linear_test ok: 4096 bytes 0x800270c000 -> 0x8002710000 in ~30 us
+Navi48Bringup: sdma: copy_sweep c=15 [REPEAT of c=0 (control replica, LAST)]: src vram_off 0x270c000 dst 0x2710000 bytes 4096 cpv 1 dist 0x4000 srcAlign 16384 dstAlign 65536 -> kr=0 | MM bad 0 of 1024, BAR0 bad 0, BAR0 bad after hdp_flush 0 | zeros 0 poisonLeft 0 alien 0 fromOtherCase 0 displaced 0 | first bad vram_off 0 last 0 | controls: srcStaged bad 0 (BAR0) / 0 (MM WINDOW, of which 0 read as zero), poisonLanded bad 0, srcAfterCopy bad 0
+Navi48Bringup: sdma: copy_sweep: END — 0 of 16 cases wrong. Freeing the region (vram_off 0x270c000, 262144 bytes); every later VRAM address is unchanged.
+Navi48Bringup: init: SDMAInit: VRAM copy SWEEP every case matched (kr=0) — see the `copy_sweep` lines
+Navi48Bringup: init: stage 15 (SDMAInit) done
+Navi48Bringup: init: running stage 16 (PM4Test)
+Navi48Bringup: init: --- pre-PM4Test snapshot (faults/IVs left by earlier stages) ---
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00040b53 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=1 walker_err=1 perm=0x5 mapping_err=1 cid=5 rw=write
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: ih: iv[0] @000000 client=0x0a src=0000 ring=169 vmid=0 pasid=000000 ts=0x201404681 data=00000000 00000020 00000000 00000000
+Navi48Bringup: ih: iv[1] @0x0020 client=0x0a src=0000 ring=153 vmid=0 pasid=000000 ts=0x2043f5f73 data=00000000 00000040 00000000 00000000
+Navi48Bringup: ih: iv[2] @0x0040 client=0x0a src=0000 ring=169 vmid=0 pasid=000000 ts=0x2043f606a data=00000000 00000020 00000000 00000000
+Navi48Bringup: init: IH ring (PM4Test): 3 pending entries
+Navi48Bringup: init:   iv[0]: client 10 src 0 ring 169 vmid 0 pasid 0 data 00000000 00000020 00000000 00000000
+Navi48Bringup: init:       -> VM FAULT (client 0xa GFX/gfxhub) va=0 vmid=0 WRITE
+Navi48Bringup: init:   iv[1]: client 10 src 0 ring 153 vmid 0 pasid 0 data 00000000 00000040 00000000 00000000
+Navi48Bringup: init:       -> VM FAULT (client 0xa GFX/gfxhub) va=0 vmid=0 READ
+Navi48Bringup: init:   iv[2]: client 10 src 0 ring 169 vmid 0 pasid 0 data 00000000 00000020 00000000 00000000
+Navi48Bringup: init:       -> VM FAULT (client 0xa GFX/gfxhub) va=0 vmid=0 WRITE
+Navi48Bringup: gmc: faults: cleared L2 protection fault status (ip=0 CNTL@0x282c kept 0x3ffffffc)
+Navi48Bringup: gmc: faults: cleared L2 protection fault status (ip=9 CNTL@0x1a4ec kept 0x3ffffffc)
+Navi48Bringup: init: --- end pre-PM4Test snapshot ---
+Navi48Bringup: cp: gfx_mqd_init: v12_gfx_mqd @ mc=0x8400004000 (512 dwords) — mqd_base=00000084_00004000 mqd_control=0x00000100 hqd_base=00000000_84000000 (ring_mc=0x8400000000 >> 8) rptr_addr=00000084_00005000 wptr_poll=00000084_00005040 cntl=0x00f0090b (bufsz=11 blksz=9) doorbell_control=0x4000022c (idx 139) quantum=0x00000a01 prio=0000000000 vmid=0 active=1
+Navi48Bringup: cp: --- GFX HQD block me0/pipe0/queue0 (before MES ADD_QUEUE(map_legacy_kq)) ---
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_ACTIVE [dw 0x30e0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_MAPPED [dw 0x30f4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR [dw 0x30de] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR_HI [dw 0x30df] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_CONTROL [dw 0x30fa] = 0x00000100
+Navi48Bringup: cp:   CP_GFX_HQD_VMID [dw 0x30e1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUEUE_PRIORITY [dw 0x30e4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUANTUM [dw 0x30e5] = 0x00000a01
+Navi48Bringup: cp:   CP_GFX_HQD_BASE [dw 0x30e6] = 0xfedcbaef
+Navi48Bringup: cp:   CP_GFX_HQD_BASE_HI [dw 0x30e7] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CNTL [dw 0x30ef] = 0x00f00080
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR [dw 0x30e8] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR [dw 0x30e9] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR_HI [dw 0x30ea] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR [dw 0x30f1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR_HI [dw 0x30f2] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_OFFSET [dw 0x30ee] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CSMD_RPTR [dw 0x30f0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUE_MGR_CONTROL [dw 0x30f5] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_STATUS0 [dw 0x30f8] = 0x40000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_CONTROL0 [dw 0x30f9] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_LO [dw 0x30eb] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_HI [dw 0x30ec] = 0000000000
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0000000000
+Navi48Bringup: cp: --- end GFX HQD block (before MES ADD_QUEUE(map_legacy_kq)) ---
+Navi48Bringup: cp: map_gfx_kgq_mes: MES ADD_QUEUE type=GFX pipe=0 queue=0 doorbell=139 mqd_mc=0x8400004000 wptr_mc=0x8400005040 flags=map_legacy_kq — mes_v12_0_map_legacy_queue, uni_mes -> SCHED pipe
+Navi48Bringup: mes: add_hw_queue: type=0 pipe=0 queue=0 doorbell=0x8b mqd_mc=0x8400004000 wptr_mc=0x8400005040 pt_base=0 flags=0x2000 prio=0/0
+Navi48Bringup: mes: submit_pkt: pipe 0 header=0x40021 api_status@dw38 fence_addr=0x840001f0c0 fence_value=4
+Navi48Bringup: mes: kick_doorbell: BAR2+0x2c <= 0x200 (sw_wptr 512 dw)
+Navi48Bringup: mes: submit_pkt: pipe 0 ok in ~100 us (status=0x4, chained query slot=0)
+Navi48Bringup: cp: map_gfx_kgq_mes: ACKED. MQD now: active=1 mapped=0 rptr=0 wptr=0/0 offset=0 csmd_rptr=0 hq_status0=0000000000 que_mgr_control=0000000000
+Navi48Bringup: cp: --- GFX HQD block me0/pipe0/queue0 (after MES ADD_QUEUE(map_legacy_kq)) ---
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_ACTIVE [dw 0x30e0] = 0x00000001
+Navi48Bringup: cp:   CP_GFX_HQD_MAPPED [dw 0x30f4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR [dw 0x30de] = 0x00004000
+Navi48Bringup: cp:   CP_GFX_MQD_BASE_ADDR_HI [dw 0x30df] = 0x00000084
+Navi48Bringup: cp:   CP_GFX_MQD_CONTROL [dw 0x30fa] = 0x00000100
+Navi48Bringup: cp:   CP_GFX_HQD_VMID [dw 0x30e1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUEUE_PRIORITY [dw 0x30e4] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUANTUM [dw 0x30e5] = 0x00000a01
+Navi48Bringup: cp:   CP_GFX_HQD_BASE [dw 0x30e6] = 0x84000000
+Navi48Bringup: cp:   CP_GFX_HQD_BASE_HI [dw 0x30e7] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CNTL [dw 0x30ef] = 0x00f0098b
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR [dw 0x30e8] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR [dw 0x30e9] = 0x00005000
+Navi48Bringup: cp:   CP_GFX_HQD_RPTR_ADDR_HI [dw 0x30ea] = 0x00000084
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR [dw 0x30f1] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_WPTR_HI [dw 0x30f2] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_OFFSET [dw 0x30ee] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_CSMD_RPTR [dw 0x30f0] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_QUE_MGR_CONTROL [dw 0x30f5] = 0000000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_STATUS0 [dw 0x30f8] = 0x40000000
+Navi48Bringup: cp:   CP_GFX_HQD_HQ_CONTROL0 [dw 0x30f9] = 0000000000
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_LO [dw 0x30eb] = 0x00005040
+Navi48Bringup: cp:   CP_RB_WPTR_POLL_ADDR_HI [dw 0x30ec] = 0x00000084
+Navi48Bringup: cp:   CP_RB_DOORBELL_CONTROL [dw 0x30ed] = 0x4000022c
+Navi48Bringup: cp: --- end GFX HQD block (after MES ADD_QUEUE(map_legacy_kq)) ---
+Navi48Bringup: init: PM4Test: MES ADD_QUEUE(map_legacy_kq) for the GFX ring ACKED — the scheduler mapped our queue (kr=0)
+Navi48Bringup: cp: cp_gfx_start: CP_MAX_CONTEXT / CP_DEVICE_ID (async_gfx_ring path: CP already running, queue mapped by the MES — gfx_v12_0_cp_async_gfx_ring_resume)
+Navi48Bringup: cp:   CP_MAX_CONTEXT [dw 0x30ae]: before=0x00000007 wrote=0x00000007 after=0x00000007
+Navi48Bringup: cp:   CP_DEVICE_ID [dw 0x304b]: before=0000000000 wrote=0x00000001 after=0x00000001
+Navi48Bringup: cp: cp_gfx_start: done (CP_RB0_RPTR=0000000000 CP_STAT=0000000000 CP_ME_CNTL=0x0100a000)
+Navi48Bringup: cp: ring_fetch_probe: BEFORE — CP_RB0_RPTR=0000000000 wb_rptr=0 sw_wptr=0 CP_STAT=0000000000 CP_ME_CNTL=0x0100a000
+Navi48Bringup: cp: ring_fetch_probe: staged 16 NOP dwords (0xffff1000) — wptr 0 -> 16
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=16 (64-bit store, readback=0xffffffff)
+Navi48Bringup: cp: ring_fetch_probe: AFTER — THE CP FETCHES. CP_RB0_RPTR 0000000000 -> 0x00000010, wb_rptr 0 -> 16, target wptr=16, 100 us
+Navi48Bringup: init: PM4Test: ring fetch probe PASSED — the CP consumes the GFX ring (kr=0)
+Navi48Bringup: cp: ring_test: SCRATCH_REG0 [dw 0xc040] = 0xcafedead before; staged 0xc0017900 0x00000040 0xdeadbeef (SET_UCONFIG_REG reg 0x40 <- 0xDEADBEEF), wptr -> 19
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=19 (64-bit store, readback=0xffffffff)
+Navi48Bringup: cp: ring_test: PASSED — SCRATCH_REG0 = 0xdeadbeef after 20 us (CP_RB0_RPTR=0x00000013 wb_rptr=19 wptr=19). THE CP EXECUTES PM4.
+Navi48Bringup: init: PM4Test: ring test (SET_UCONFIG_REG SCRATCH_REG0) PASSED — the command processor executes our PM4 (kr=0 SCRATCH_REG0=0xdeadbeef)
+Navi48Bringup: cp: emitted EOP fence value 1 (wptr=28, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=28 (64-bit store, readback=0xffffffff)
+Navi48Bringup: cp: EOP fence 1 observed after 1000 us (rptr=28)
+Navi48Bringup: init: PM4Test: GFX ring EOP fence LANDED (kr=0 fence=1)
+Navi48Bringup: cp: emitted EOP fence value 2 (wptr=42, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=42 (64-bit store, readback=0xffffffff)
+Navi48Bringup: init: PM4Test: WRITE_DATA -> vram+0x270c000 (mc 0x800270c000): fence 2/2 after 1000 us, MM readback 0x4e34384f (poison 0xdeadbeef, want 0x4e34384f) => PASSED — the command processor executed our PM4 packet
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cf2b000 -> mc=0x840002e000 (4 PTEs @ 4KB stride starting at PT idx 46, PT vram_off=0x1600000)
+Navi48Bringup: cp: kcq ring: 16384 bytes cpu=0xffffffee81678000 bus=0x3cf2b000 -> gart_mc=0x840002e000
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x80cbe5000 -> mc=0x8400032000 (1 PTEs @ 4KB stride starting at PT idx 50, PT vram_off=0x1600000)
+Navi48Bringup: cp: kcq mqd: 4096 bytes cpu=0xffffffee81614000 bus=0x80cbe5000 -> gart_mc=0x8400032000
+Navi48Bringup: gmc: bind_existing: 4096 bytes @ bus=0x80cbe4000 -> mc=0x8400033000 (1 PTEs @ 4KB stride starting at PT idx 51, PT vram_off=0x1600000)
+Navi48Bringup: cp: kcq eop: 2048 bytes cpu=0xffffffee8161f000 bus=0x80cbe4000 -> gart_mc=0x8400033000
+Navi48Bringup: gmc: bind_existing: 16384 bytes @ bus=0x3cf2f000 -> mc=0x8400034000 (4 PTEs @ 4KB stride starting at PT idx 52, PT vram_off=0x1600000)
+Navi48Bringup: cp: kcq wb: 16384 bytes cpu=0xffffffee8164c000 bus=0x3cf2f000 -> gart_mc=0x8400034000
+Navi48Bringup: cp: compute queue: me=1 pipe=0 queue=0 doorbell=0x3 | ring_mc=0x840002e000 (4096 dw) mqd_mc=0x8400032000 eop_mc=0x8400033000 wb_mc=0x8400034000
+Navi48Bringup: cp: compute_mqd_init: mqd_mc=0x8400032000 pq_base=00000000_840002e0 (ring 0x840002e000 >> 8) pq_control=0xd030890b (qsize=11 rptr_blk=9) doorbell_ctrl=0x4000000c (idx 0x3) eop=00000000_84000330 eop_control=0x00000008 persistent=0x0be05501 ib_control=0x00300000 quantum=0x00000111
+Navi48Bringup: cp: --- compute HQD me1/pipe0/queue0 (before MES ADD_QUEUE(COMPUTE)) ---
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   CP_HQD_ACTIVE [dw 0x320b] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_BASE [dw 0x3211] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_CONTROL [dw 0x321a] = 0x00308509
+Navi48Bringup: cp:   CP_HQD_PQ_RPTR [dw 0x3213] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_WPTR_LO [dw 0x323f] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_DOORBELL_CONTROL [dw 0x3218] = 0000000000
+Navi48Bringup: cp:   CP_MQD_BASE_ADDR [dw 0x3209] = 0000000000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   sw wptr=0  wb rptr=0  wb fence=0
+Navi48Bringup: cp: --- end compute HQD (before MES ADD_QUEUE(COMPUTE)) ---
+Navi48Bringup: cp: compute_queue_map: MES ADD_QUEUE type=COMPUTE pipe=0 queue=0 doorbell=0x3 mqd_mc=0x8400032000 wptr_mc=0x8400034040
+Navi48Bringup: mes: add_hw_queue: type=1 pipe=0 queue=0 doorbell=0x3 mqd_mc=0x8400032000 wptr_mc=0x8400034040 pt_base=0 flags=0x2000 prio=0/0
+Navi48Bringup: mes: submit_pkt: pipe 0 header=0x40021 api_status@dw38 fence_addr=0x840001f0c0 fence_value=5
+Navi48Bringup: mes: kick_doorbell: BAR2+0x2c <= 0x280 (sw_wptr 640 dw)
+Navi48Bringup: mes: submit_pkt: pipe 0 ok in ~100 us (status=0x5, chained query slot=0)
+Navi48Bringup: cp: compute_queue_map: ACKED. MQD now: active=1 rptr=0 wptr=0/0 dequeue_req=0
+Navi48Bringup: init: PM4Test: MES ADD_QUEUE(COMPUTE) ACKED (kr=0)
+Navi48Bringup: cp: --- compute HQD me1/pipe0/queue0 (after MES ADD_QUEUE(COMPUTE)) ---
+Navi48Bringup: cp:   grbm_select(me=1 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0x00000004 after=0000000000
+Navi48Bringup: cp:   CP_HQD_ACTIVE [dw 0x320b] = 0x00000001
+Navi48Bringup: cp:   CP_HQD_PQ_BASE [dw 0x3211] = 0x840002e0
+Navi48Bringup: cp:   CP_HQD_PQ_CONTROL [dw 0x321a] = 0xd030890b
+Navi48Bringup: cp:   CP_HQD_PQ_RPTR [dw 0x3213] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_WPTR_LO [dw 0x323f] = 0000000000
+Navi48Bringup: cp:   CP_HQD_PQ_DOORBELL_CONTROL [dw 0x3218] = 0x6000000c
+Navi48Bringup: cp:   CP_MQD_BASE_ADDR [dw 0x3209] = 0x00032000
+Navi48Bringup: cp:   grbm_select(me=0 pipe=0 queue=0 vmid=0) [dw 0xa900] wrote=0000000000 after=0000000000
+Navi48Bringup: cp:   sw wptr=0  wb rptr=0  wb fence=0
+Navi48Bringup: cp: --- end compute HQD (after MES ADD_QUEUE(COMPUTE)) ---
+Navi48Bringup: init: PM4Test: compute-ring WRITE_DATA PASSED — the MEC executed our packet — kr=0 fence 1/1 after 48 us, readback 0x4b435121 (want 0x4b435121)
+Navi48Bringup: init: stage 16 (PM4Test) done
+Navi48Bringup: init: running stage 17 (ComputeDispatch)
+Navi48Bringup: init: --- pre-ComputeDispatch snapshot (faults/IVs left by earlier stages) ---
+Navi48Bringup: gmc: faults[GCVM (gfxhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: gmc: faults[MMVM (mmhub)]: STATUS_LO32=0x00000000 HI32=0x00000000 ADDR=0x0 (page<<12 = 0x0) | more=0 walker_err=0 perm=0x0 mapping_err=0 cid=0 rw=read
+Navi48Bringup: init: IH ring (ComputeDispatch): 0 pending entries
+Navi48Bringup: gmc: faults: cleared L2 protection fault status (ip=0 CNTL@0x282c kept 0x3ffffffc)
+Navi48Bringup: gmc: faults: cleared L2 protection fault status (ip=9 CNTL@0x1a4ec kept 0x3ffffffc)
+Navi48Bringup: init: --- end pre-ComputeDispatch snapshot ---
+Navi48Bringup: compute: shader: store_magic (hand-written) (56 bytes), RSRC1=0x600f0000 RSRC2=0x00000084 RSRC3=0000000000, s[0:1] = the result buffer address
+Navi48Bringup: compute: === compute dispatch test: GC[0]=0x1260 vram_start=0x8000000000 shader=56 bytes doorbell=139 ===
+Navi48Bringup: compute: shader staged at vram+0x2710000 (mc 0x8002710000, 14 dwords, PGM_LO=0x80027100 PGM_HI=0000000000) — GPU-side verify OK
+Navi48Bringup: compute: result buffer at vram+0x2714000 (mc 0x8002714000, 4096 bytes) poisoned with 0xdeadbeef — GPU-side readback 0xdeadbeef 0xdeadbeef OK
+Navi48Bringup: compute: IB test (WRITE_DATA inside an INDIRECT_BUFFER, vmid 0): 5 dwords
+Navi48Bringup: compute:   [00] c0033700 00100500 0271c000 00000080
+Navi48Bringup: compute:   [04] 1b7e57ed 00000000 00000000 00000000
+Navi48Bringup: compute: IB test (WRITE_DATA inside an INDIRECT_BUFFER, vmid 0): ring <- CONTEXT_CONTROL 0x80000000 0000000000 | INDIRECT_BUFFER mc=0x8002718000 len=5 vmid=0 control=0x00000005
+Navi48Bringup: cp: emitted EOP fence value 3 (wptr=58, fence slot mc=0x8400005080)
+Navi48Bringup: compute: IB test (WRITE_DATA inside an INDIRECT_BUFFER, vmid 0): submitting — wptr -> 58, fence=3 (slot mc=0x8400005080), doorbell 139
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=58 (64-bit store, readback=0xffffffff)
+Navi48Bringup: compute: IB test: PASSED — the CP executes indirect buffers under VMID 0 — fence landed (want 3, slot holds 0x3) after 35 us; target dword 0x1b7e57ed (want 0x1b7e57ed) after 35 us; ring rptr=58 wptr=58
+Navi48Bringup: compute: --- PM4 register writes (dispatch IB, compute-typed headers) ---
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_LO gc_off=0x1bac abs_dw=0x02e0c sh_idx=0x20c <- 0x80027100
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_HI gc_off=0x1bad abs_dw=0x02e0d sh_idx=0x20d <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC1 gc_off=0x1bb2 abs_dw=0x02e12 sh_idx=0x212 <- 0x600f0000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC2 gc_off=0x1bb3 abs_dw=0x02e13 sh_idx=0x213 <- 0x00000084
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_RESOURCE_LIMITS gc_off=0x1bb5 abs_dw=0x02e15 sh_idx=0x215 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE0 gc_off=0x1bb6 abs_dw=0x02e16 sh_idx=0x216 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE1 gc_off=0x1bb7 abs_dw=0x02e17 sh_idx=0x217 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_TMPRING_SIZE gc_off=0x1bb8 abs_dw=0x02e18 sh_idx=0x218 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE2 gc_off=0x1bb9 abs_dw=0x02e19 sh_idx=0x219 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE3 gc_off=0x1bba abs_dw=0x02e1a sh_idx=0x21a <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC3 gc_off=0x1bc8 abs_dw=0x02e28 sh_idx=0x228 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_X gc_off=0x1ba7 abs_dw=0x02e07 sh_idx=0x207 <- 0x00000020
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_Y gc_off=0x1ba8 abs_dw=0x02e08 sh_idx=0x208 <- 0x00000001
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_Z gc_off=0x1ba9 abs_dw=0x02e09 sh_idx=0x209 <- 0x00000001
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_USER_DATA_0 gc_off=0x1be0 abs_dw=0x02e40 sh_idx=0x240 <- 0x02714000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_USER_DATA_1 gc_off=0x1be1 abs_dw=0x02e41 sh_idx=0x241 <- 0x00000080
+Navi48Bringup: compute:   DISPATCH_DIRECT(cs)          dim=1,1,1 initiator=0x00008045 (COMPUTE_SHADER_EN|FORCE_START_AT_000|ORDER_MODE|CS_W32_EN)
+Navi48Bringup: compute:   EVENT_WRITE                  0x00000407 (EVENT_TYPE=CS_PARTIAL_FLUSH(7), EVENT_INDEX=4)
+Navi48Bringup: compute: SH register readback (before submit): PGM_LO=0x5444f2d6 PGM_HI=0x74a4a166 RSRC1=0x6c1a4d06 RSRC2=0x7627308a RSRC3=0x0ce6a256
+Navi48Bringup: compute: SH register readback (before submit): NUM_THREAD_X/Y/Z=639647864/418370803/2691850850 USER_DATA_0=0x37360033 USER_DATA_1=0x392c35e2 VMID=0x1e3620f2 DISPATCH_INITIATOR=0xb0446264
+Navi48Bringup: compute: dispatch IB: 41 dwords
+Navi48Bringup: compute:   [00] c0027602 0000020c 80027100 00000000
+Navi48Bringup: compute:   [04] c0027602 00000212 600f0000 00000084
+Navi48Bringup: compute:   [08] c0017602 00000215 00000000 c0029b02
+Navi48Bringup: compute:   [12] 30000216 ffffffff ffffffff c0017602
+Navi48Bringup: compute:   [16] 00000218 00000000 c0029b02 30000219
+Navi48Bringup: compute:   [20] ffffffff ffffffff c0017602 00000228
+Navi48Bringup: compute:   [24] 00000000 c0037602 00000207 00000020
+Navi48Bringup: compute:   [28] 00000001 00000001 c0027602 00000240
+Navi48Bringup: compute:   [32] 02714000 00000080 c0031502 00000001
+Navi48Bringup: compute:   [36] 00000001 00000001 00008045 c0004600
+Navi48Bringup: compute:   [40] 00000407 00000000 00000000 00000000
+Navi48Bringup: compute: dispatch IB: ring <- CONTEXT_CONTROL 0x80000000 0000000000 | INDIRECT_BUFFER mc=0x8002718000 len=41 vmid=0 control=0x00000029
+Navi48Bringup: cp: emitted EOP fence value 4 (wptr=74, fence slot mc=0x8400005080)
+Navi48Bringup: compute: dispatch IB: submitting — wptr -> 74, fence=4 (slot mc=0x8400005080), doorbell 139
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=74 (64-bit store, readback=0xffffffff)
+Navi48Bringup: compute: dispatch submitted: wptr 58 -> 74, fence=4
+Navi48Bringup: compute: wait done: fence LANDED (want 4, slot holds 0x4) after 33 us; result[0] appeared after 33 us; ring rptr=74 wptr=74
+Navi48Bringup: compute:   result[00..03] = ca11ed47 ca11ed48 ca11ed49 ca11ed4a   (want ca11ed47 ca11ed48 ca11ed49 ca11ed4a)
+Navi48Bringup: compute:   result[04..07] = ca11ed4b ca11ed4c ca11ed4d ca11ed4e   (want ca11ed4b ca11ed4c ca11ed4d ca11ed4e)
+Navi48Bringup: compute:   result[08..11] = ca11ed4f ca11ed50 ca11ed51 ca11ed52   (want ca11ed4f ca11ed50 ca11ed51 ca11ed52)
+Navi48Bringup: compute:   result[12..15] = ca11ed53 ca11ed54 ca11ed55 ca11ed56   (want ca11ed53 ca11ed54 ca11ed55 ca11ed56)
+Navi48Bringup: compute:   result[16..19] = ca11ed57 ca11ed58 ca11ed59 ca11ed5a   (want ca11ed57 ca11ed58 ca11ed59 ca11ed5a)
+Navi48Bringup: compute:   result[20..23] = ca11ed5b ca11ed5c ca11ed5d ca11ed5e   (want ca11ed5b ca11ed5c ca11ed5d ca11ed5e)
+Navi48Bringup: compute:   result[24..27] = ca11ed5f ca11ed60 ca11ed61 ca11ed62   (want ca11ed5f ca11ed60 ca11ed61 ca11ed62)
+Navi48Bringup: compute:   result[28..31] = ca11ed63 ca11ed64 ca11ed65 ca11ed66   (want ca11ed63 ca11ed64 ca11ed65 ca11ed66)
+Navi48Bringup: compute:   result[32] = deadbeef (must still be the poison 0xdeadbeef): PASS
+Navi48Bringup: compute: SH register readback (after submit): PGM_LO=0x80027100 PGM_HI=0000000000 RSRC1=0x600f0000 RSRC2=0x00000084 RSRC3=0000000000
+Navi48Bringup: compute: SH register readback (after submit): NUM_THREAD_X/Y/Z=32/1/1 USER_DATA_0=0x02714000 USER_DATA_1=0x00000080 VMID=0x1e3620f2 DISPATCH_INITIATOR=0x00008045
+Navi48Bringup: compute: === PASSED — the GPU's shader cores executed our code. 32/32 lanes wrote 0xca11ed47+lane into VRAM at mc 0x8002714000 in 33 us ===
+Navi48Bringup: compute: summary: kr=0 ib_test=1 fence_landed=1 elapsed=33 us ib_mc=0x8002718000 code_mc=0x8002710000 result_mc=0x8002714000 observed=ca11ed47 ca11ed48 ca11ed49 ca11ed4a expected=ca11ed47 ca11ed48 ca11ed49 ca11ed4a
+Navi48Bringup: init: ComputeDispatch: PASSED — a shader ran on the GPU and wrote VRAM — kr=0 IB test passed, fence landed (33 us), lanes 32/32 correct, observed ca11ed47 ca11ed48 ca11ed49 ca11ed4a expected ca11ed47 ca11ed48 ca11ed49 ca11ed4a
+Navi48Bringup: init: stage 17 (ComputeDispatch) done
+Navi48Bringup: init: reached stage 17 (ComputeDispatch)
+Navi48Bringup: smu: send msg=0x1d (GetMinDpmFreq) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x1d (GetMinDpmFreq) resp=0x01 (OK) ret=0x000001f4
+Navi48Bringup: smu: send msg=0x1e (GetMaxDpmFreq) param=0x00000000 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x1e (GetMaxDpmFreq) resp=0x01 (OK) ret=0x00000dac
+Navi48Bringup: smu: set_power_state: PMFW GFXCLK range 500..3500 MHz; low cap 500 MHz
+Navi48Bringup: smu: send msg=0x1a (SetSoftMaxByFreq) param=0x000001f4 [regs msg=0x16282 param=0x16292 resp=0x1629a]
+Navi48Bringup: smu: recv msg=0x1a (SetSoftMaxByFreq) resp=0x01 (OK)
+Navi48Bringup: smu: set_power_state: SetSoftMaxByFreq(GFXCLK,500) kr=0x0
+Navi48Bringup: smu: set_power_state: state=1 min=0 max=500 kr=0x0
+Navi48Bringup: init: idle clamp: GFXCLK -> low applied (0) — the GFX core is powered but ungated, so an unclamped idle burns full board power. `navi48test power 0` to unclamp.
+Navi48Bringup: sdmadcc: DEFAULT already handled earlier this boot (right after sdma_init_full, before the copy test) - no second write
+Navi48Bringup: native-s1b: GCVM_L2_PROTECTION_FAULT_CNTL = 0x3ffffffc (CRASH_ON_NO_RETRY_FAULT 0, CRASH_ON_RETRY_FAULT 0) -> fault leg ALLOWED; CP_DEBUG = 0x20408400 (CPG_UTCL1_ERROR_HALT_DISABLE 1: the CP will not halt on a page fault; this kext does not write it)
+Navi48Bringup: native-s1b: tables at mc 0x8002720000 (pa 0x2720000): root[0]=0x0000000002721001 root[256]=0x0000000002724001 | PDB1lo[0]=0x0000000002722001 PDB0lo[0]=0x0000000002723001 PTBlo[0x100]=0x8080000002728071 | PDB1hi[0]=0x0000000002725001 PDB0hi[0]=0x0000000002726001 PTBhi[0x100]=0x808000000272a071
+Navi48Bringup: gmc: flush_gpu_tlb(ip=0 vmid=8 type=0): req=0xf80100 acked
+Navi48Bringup: native-s1b: GFXHUB CONTEXT8 (VMID 8, outside MES mask 0xfe): CNTL@0x288c 0x03fffd73 -> 0x03fffc07 (want 0x03fffc07 = DEPTH 3 / BLOCK 0 / RETRY 0 on the hub_setup_vmid_config bits; RETRY reads 0) BASE 0000000000:0x02720001 START 0000000000 END 0x0000000f:0xffffffff; every other context untouched
+Navi48Bringup: cp: emitted EOP fence value 5 (wptr=90, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=90 (64-bit store, readback=0xffffffff)
+Navi48Bringup: native-s1b: leg lowwrite PASS IB VA 0x101000 (low half, fetched under VMID 8) -> 1 destination(s), 0 of 16 dwords wrong, fence landed in 43 us
+Navi48Bringup: native-s1b: leg lowwrite fault registers after the leg: STATUS_LO32 0000000000 (vmid 0 walker 0) ADDR_LO 0000000000
+Navi48Bringup: cp: emitted EOP fence value 6 (wptr=106, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=106 (64-bit store, readback=0xffffffff)
+Navi48Bringup: native-s1b: leg highwrite PASS IB VA 0xffff800000101000 (high half, fetched under VMID 8) -> 1 destination(s), 0 of 16 dwords wrong, fence landed in 15 us
+Navi48Bringup: native-s1b: leg highwrite fault registers after the leg: STATUS_LO32 0000000000 (vmid 0 walker 0) ADDR_LO 0000000000
+Navi48Bringup: cp: emitted EOP fence value 7 (wptr=122, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=122 (64-bit store, readback=0xffffffff)
+Navi48Bringup: native-s1b: leg mixed PASS IB VA 0x108000 (low half, fetched under VMID 8) -> 2 destination(s), 0 of 32 dwords wrong, fence landed in 38 us
+Navi48Bringup: native-s1b: leg mixed fault registers after the leg: STATUS_LO32 0000000000 (vmid 0 walker 0) ADDR_LO 0000000000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_LO gc_off=0x1bac abs_dw=0x02e0c sh_idx=0x20c <- 0x00001040
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_HI gc_off=0x1bad abs_dw=0x02e0d sh_idx=0x20d <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC1 gc_off=0x1bb2 abs_dw=0x02e12 sh_idx=0x212 <- 0x600f0000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC2 gc_off=0x1bb3 abs_dw=0x02e13 sh_idx=0x213 <- 0x00000084
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_RESOURCE_LIMITS gc_off=0x1bb5 abs_dw=0x02e15 sh_idx=0x215 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE0 gc_off=0x1bb6 abs_dw=0x02e16 sh_idx=0x216 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE1 gc_off=0x1bb7 abs_dw=0x02e17 sh_idx=0x217 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_TMPRING_SIZE gc_off=0x1bb8 abs_dw=0x02e18 sh_idx=0x218 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE2 gc_off=0x1bb9 abs_dw=0x02e19 sh_idx=0x219 <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG_INDEX(cs, idx 3) COMPUTE_STATIC_THREAD_MGMT_SE3 gc_off=0x1bba abs_dw=0x02e1a sh_idx=0x21a <- 0xffffffff
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_PGM_RSRC3 gc_off=0x1bc8 abs_dw=0x02e28 sh_idx=0x228 <- 0000000000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_X gc_off=0x1ba7 abs_dw=0x02e07 sh_idx=0x207 <- 0x00000020
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_Y gc_off=0x1ba8 abs_dw=0x02e08 sh_idx=0x208 <- 0x00000001
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_NUM_THREAD_Z gc_off=0x1ba9 abs_dw=0x02e09 sh_idx=0x209 <- 0x00000001
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_USER_DATA_0 gc_off=0x1be0 abs_dw=0x02e40 sh_idx=0x240 <- 0x00105000
+Navi48Bringup: compute:   SET_SH_REG(cs) COMPUTE_USER_DATA_1 gc_off=0x1be1 abs_dw=0x02e41 sh_idx=0x241 <- 0000000000
+Navi48Bringup: cp: emitted EOP fence value 8 (wptr=138, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=138 (64-bit store, readback=0xffffffff)
+Navi48Bringup: native-s1b: leg compute PASS dispatch IB VA 0x106000, shader VA 0x104000 (56 bytes), result VA 0x105000: 0 of 32 lanes wrong, fence landed in 0 us
+Navi48Bringup: native-s1b: leg compute result[0] 0xca11ed47 (want 0xca11ed47); fault registers: STATUS_LO32 0000000000 (vmid 0) ADDR_LO 0000000000
+Navi48Bringup: cp: emitted EOP fence value 9 (wptr=154, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=154 (64-bit store, readback=0xffffffff)
+Navi48Bringup: cp: emitted EOP fence value 10 (wptr=163, fence slot mc=0x8400005080)
+Navi48Bringup: cp: doorbell rung: slot=139 bar2_off=0x22c wptr=163 (64-bit store, readback=0xffffffff)
+Navi48Bringup: cp: EOP fence 10 observed after 0 us (rptr=163)
+Navi48Bringup: native-s1b: leg fault PASS WRITE_DATA to unmapped VA 0x200000000 under VMID 8: the latched fault is the one we asked for; NEXT fence LANDED (the ring survived) (kr=0)
+Navi48Bringup: native-s1b: leg fault own fence landed (0 us); latched STATUS_LO32 0x00840d5c HI32 0000000000 (vmid 8 walker 6 perm 0x5 mapping 1) fault VA 0x200000000
+Navi48Bringup: native-s1b: the tables and test pages (table mc 0x8002720000, data mc 0x8002728000) stay allocated for S1c
+Navi48Bringup: native-s1b: POSITIVE PASS (fault leg PASS)
+Navi48Bringup: native-s1b: RESULT PASS
+Navi48Bringup: native: published VRAM,totalMB = 16304 and VRAM,totalsize = 17095983104 on the IOPCIDevice (About This Mac)
+Navi48Bringup: stages: ladder complete — reached 17 (ComputeDispatch), result 0x0
+Navi48Bringup: dmubcmd: boot-arg navi48-dmubcmd REFUSED on Navi 44 (the DMUB command verbs address the Navi 48 PHY D / DIG3 monitor B): verbs 95-97 are OFF
+Navi48Bringup: disp2: boot-arg navi48-disp2 REFUSED on Navi 44 (the second display path is Navi 48 only: DIG3 / PHY D): verb 98 is OFF
+Navi48Bringup: dcn: read-only raster path BUILT (dcn41_dev_init 0; segs 00000012 000000c0 000034c0 00009000 02403c00; no register read or written here)
+Navi48Bringup: accel-gate: navi48-accel-gate=1 — self-test: LoadAccelerator only after the stage-17 compute dispatch passes
+Navi48Bringup: start: done (VRAM 16304 MiB, 42 IPs)

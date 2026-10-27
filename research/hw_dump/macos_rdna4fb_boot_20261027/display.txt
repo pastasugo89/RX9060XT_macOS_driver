@@ -1,0 +1,32 @@
+Graphics/Displays:
+
+    Display:
+
+      Type: GPU
+      Bus: PCIe
+      PCIe Lane Width: x16
+      Vendor: AMD (0x1002)
+      Device ID: 0x164e
+      Revision ID: 0x00c5
+      Kernel Extension Info: No Kext Loaded
+
+    AMD Radeon RX 9070 Series:
+
+      Chipset Model: AMD Radeon RX 9070 Series
+      Type: GPU
+      Bus: PCIe
+      PCIe Lane Width: x16
+      VRAM (Total): 16 GB
+      Vendor: AMD (0x1002)
+      Device ID: 0x7590
+      Revision ID: 0x00c0
+      Displays:
+        LG ULTRAGEAR:
+          Resolution: 2560 x 1440 (QHD/WQHD - Wide Quad High Definition)
+          UI Looks like: 2560 x 1440 @ 120.00Hz
+          Framebuffer Depth: 24-Bit Color (ARGB8888)
+          Display Serial Number: 502BOFT0B707
+          Main Display: Yes
+          Mirror: Off
+          Online: Yes
+

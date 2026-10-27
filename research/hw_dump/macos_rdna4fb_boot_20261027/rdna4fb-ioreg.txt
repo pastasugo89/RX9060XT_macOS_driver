@@ -1,0 +1,135 @@
++-o RDNA4FB  <class RDNA4FB, id 0x1000004ba, registered, matched, active, busy 0 (1049 ms), retain 21>
+  | {
+  |   "EDID,AUX0-Vendor" = "GSM"
+  |   "Console,Width" = 2560
+  |   "Console,Length" = 14745600
+  |   "AtomBIOS,FirmwareCapability" = 16384
+  |   "IOPMStrictTreeOrder" = Yes
+  |   "IOFBMemorySize" = 14745600
+  |   "IOFBUIScale" = <00000000>
+  |   "VRAM,TotalMB" = 16304
+  |   "Console,BaseAddress" = 36507222016
+  |   "IOFBBlueGammaScale" = 65536
+  |   "Console,Depth" = 32
+  |   "IOFBCurrentPixelCount" = 4148000
+  |   "Console,Height" = 1440
+  |   "IOFramebufferOpenGLIndex" = 0
+  |   "IODisplayParameters" = "IOFramebufferParameterHandler is not serializable"
+  |   "AtomBIOS,ConnectorCount" = 3
+  |   "IOAccelTypes" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0/Navi48Bringup/Navi48MetalNub/Navi48Accelerator"
+  |   "IOPersonalityPublisher" = "com.hackintosh.RDNA4FB"
+  |   "Console,RowBytes" = 10240
+  |   "AtomBIOS,Connectors" = "DisplayPort/ddc0/hpd1,HDMI-A/ddc1/hpd2,HDMI-A/ddc2/hpd3"
+  |   "Discovery,DCNVersion" = "4.1.0"
+  |   "IOPowerManagement" = {"ChildrenPowerState"=2,"MaxPowerState"=2,"CurrentPowerState"=2,"CapabilityFlags"=32784,"ChildProxyPowerState"=2,"DriverPowerState"=1}
+  |   "IOPCIPrimaryMatch" = "0x75501002 0x75511002 0x75901002"
+  |   "IOFBConfig" = {"IOFBmHz"=Yes,"IOFBModes"=({"ID"=18446744071562072064,"DM"=<000a0000a005000062ff7700000000000300100055025001000000000000000000000000>,"TM"=<00100080000000000000000000000000000000000000000000000000000000000000000001000000f00fab1d00000000f00fab1d00000000f00fab1d00000000000a0000a00000003000000020000000a005000055000000030000000a00000000000000000000000000000000000000010000000000000000000000000000000200000000000000010002000100010000000000000000000000000000000000>},{"ID"=1,"DM"=<000a0000a005000062ff7700000000000300100000000000000000000000000000000000>,"DF"=3,"TM"=<01000000000000000000000000000000000000000000000000000000000000000000000000000000f00fab1d0000000000000000000000000000000000000000000a0000a00000003000000020000000a005000055000000030000000a00000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000>}),"IOFBDetailedTimings"=(<00100080000000000000000000000000000000000000000000000000000000000000000001000000f00fab1d00000000f00fab1d00000000f00fab1d00000000000a0000a00000003000000020000000a005000055000000030000000a00000000000000000000000000000000000000010000000000000000000000000000000200000000000000010002000100010000000000000000000000000000000000>),"dims"=<000a0000a00500000002000007000000>,"IOFBtv"=Yes}
+  |   "model" = "AMD Radeon RX 9070 Series"
+  |   "IOFBCurrentPixelClock" = 497750000
+  |   "Discovery,GCVersion" = "12.0.0"
+  |   "IOFBWaitCursorFrames" = 29
+  |   "IOAccelIndex" = 0
+  |   "IOFBWaitCursorPeriod" = 33333333
+  |   "IOFBGreenGammaScale" = 65536
+  |   "device_type" = "display"
+  |   "MMIO,Verified" = Yes
+  |   "EDID,AUX0" = <00ffffffffffff001e6d875cc302000007230104b53c2278fce965a65549a2270b5054210800d1c0614001010101010101010101010109ec00a0a0a0675030203a0055502100001a000000fd0830b41e0a48000a202020202020000000fc004c4720554c545241474541520a000000ff00353032424f465430423730370a0256>
+  |   "CFBundleIdentifier" = "com.hackintosh.RDNA4FB"
+  |   "IOFBTransform" = 0
+  |   "IOCFPlugInTypes" = {"ACCF0000-0000-0000-0000-000a2789904e"="IOAccelerator2D.plugin"}
+  |   "IOProviderClass" = "IOPCIDevice"
+  |   "AtomBIOS,ImageName" = "NAVI44.bin"
+  |   "IOAccelRevision" = 2
+  |   "GPU,Variant" = "AMD Radeon RX 9060 XT"
+  |   "AtomBIOS,FirmwareRevision" = 386138180
+  |   "IOClass" = "RDNA4FB"
+  |   "CFBundleIdentifierKernel" = "com.hackintosh.RDNA4FB"
+  |   "IOFBTimingRange" = <0000000000000000020000000000000000000000000000000000000000000000d06ea31d0000000010b1b21d0000000020a10700010000000000000000000000770000007900000010ca0200a0cb0200a00a0000f5050000000000000000000001010101010101010101010101010000000a0000000a0000a0000000a000000030000000300000002000000020000000a0050000a0050000550000005500000003000000030000000a0000000a000000000000000000000000000000000000000000000000000000000000000000000000000000629607004a9a0700000000000000000001000200030001000000000000d0f3080600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000>
+  |   "IOFBRedGammaScale" = 65536
+  |   "IOGeneralInterest" = "IOCommand is not serializable"
+  |   "IOFBCurrentPixelCountReal" = 4148000
+  |   "IOMatchCategory" = "IOFramebuffer"
+  |   "IOProbeScore" = 220000
+  |   "Discovery,Source" = "on-die TMR"
+  | }
+  | 
+  +-o AppleMCCSControlModule  <class AppleMCCSControlModule, id 0x1000004d1, registered, matched, active, busy 0 (1023 ms), retain 7>
+  | | {
+  | |   "IOProbeScore" = 0
+  | |   "CFBundleIdentifier" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOMatchCategory" = "AppleMCCSControlFamily"
+  | |   "IOClass" = "AppleMCCSControlModule"
+  | |   "IOPersonalityPublisher" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOKitDebug" = 0
+  | |   "IOProviderClass" = "IOFramebuffer"
+  | |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOUserClientClass" = "AppleMCCSUserClient"
+  | |   "IOResourceMatch" = "IOKit"
+  | | }
+  | | 
+  | +-o AppleMCCSParameterHandler  <class AppleMCCSParameterHandler, id 0x1000004e2, registered, matched, active, busy 0 (1 ms), retain 5>
+  |     {
+  |       "IOProbeScore" = 0
+  |       "CFBundleIdentifier" = "com.apple.driver.AppleMCCSControl"
+  |       "IOMatchCategory" = "IODisplayParameters"
+  |       "IOClass" = "AppleMCCSParameterHandler"
+  |       "IOPersonalityPublisher" = "com.apple.driver.AppleMCCSControl"
+  |       "IOKitDebug" = 0
+  |       "AppleMCCSFeatures" = 1
+  |       "IOProviderClass" = "AppleMCCSControlFamily"
+  |       "CFBundleIdentifierKernel" = "com.apple.driver.AppleMCCSControl"
+  |       "IOResourceMatch" = "IOKit"
+  |     }
+  |     
+  +-o AppleUpstreamUserClientDriver  <class AppleUpstreamUserClientDriver, id 0x1000004d3, registered, matched, active, busy 0 (0 ms), retain 5>
+  |   {
+  |     "IOProbeScore" = 0
+  |     "CFBundleIdentifier" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOMatchCategory" = "AppleUpstreamUserClientDriver"
+  |     "IOClass" = "AppleUpstreamUserClientDriver"
+  |     "IOPersonalityPublisher" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOProviderClass" = "IOFramebuffer"
+  |     "CFBundleIdentifierKernel" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOUserClientClass" = "AppleUpstreamUserClient"
+  |     "IOResourceMatch" = "IOKit"
+  |   }
+  |   
+  +-o display0  <class IODisplayConnect, id 0x100000576, registered, matched, active, busy 0 (0 ms), retain 6>
+  | | {
+  | | }
+  | | 
+  | +-o AppleDisplay  <class AppleDisplay, id 0x100000578, registered, matched, active, busy 0 (0 ms), retain 8>
+  |     {
+  |       "IOClass" = "AppleDisplay"
+  |       "CFBundleIdentifier" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IOProviderClass" = "IODisplayConnect"
+  |       "DisplayProductID" = 23687
+  |       "IODisplayEDID" = <00ffffffffffff001e6d875cc302000007230104b53c2278fce965a65549a2270b5054210800d1c0614001010101010101010101010109ec00a0a0a0675030203a0055502100001a000000fd0830b41e0a48000a202020202020000000fc004c4720554c545241474541520a000000ff00353032424f465430423730370a02560203217423090607e2006ae305c000e606050153535046100403011f13830100006fc200a0a0a0555030203a0055502100001a565e00a0a0a029503020350055502100001a5aa000a0a0a0465030203a0055502100001800000000000000000000000000000000000000000000000000000000000000000000000000000000d3>
+  |       "IODisplayPrefsKeyOld" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0/RDNA4FB/display0/AppleDisplay-1e6d-5c87"
+  |       "IODisplayPrefsKey" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPP0@1,1/IOPP/SWUS@0/IOPP/SWDS@0/IOPP/VGA@0-1e6d-5c87-f9b3cb9c78545e88"
+  |       "IOProbeScore" = 2000
+  |       "IOPowerManagement" = {"CapabilityFlags"=49152,"MaxPowerState"=3,"CurrentPowerState"=3}
+  |       "IODisplayParameters" = {"bgsc"={"min"=0,"max"=65536,"value"=65536},"rgsc"={"min"=0,"max"=65536,"value"=65536},"vblm"={"min"=0,"max"=196608,"value"=65536},"ownr"=4294968506,"ggsc"={"min"=0,"max"=65536,"value"=65536}}
+  |       "IOMatchCategory" = "IODefaultMatchCategory"
+  |       "IOPersonalityPublisher" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IODisplayConnectFlags" = <00000000>
+  |       "CFBundleIdentifierKernel" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IODisplayAttributes" = {"IODisplayAttributes"=<676174760000000073676c6600000000726c6f63010000006364670080808000676c666401000000>}
+  |       "DisplayVendorID" = 7789
+  |       "DisplaySerialNumber" = 707
+  |     }
+  |     
+  +-o IOFramebufferUserClient  <class IOFramebufferUserClient, id 0x10000057a, !registered, !matched, active, busy 0, retain 5>
+  |   {
+  |     "IOUserClientCreator" = "pid 198, WindowServer"
+  |     "IOUserClientDefaultLocking" = Yes
+  |   }
+  |   
+  +-o IOFramebufferSharedUserClient  <class IOFramebufferSharedUserClient, id 0x10000062b, !registered, !matched, active, busy 0, retain 4>
+      {
+        "IOUserClientDefaultLocking" = Yes
+        "IOUserClientSharedInstance" = Yes
+        "IOUserClientCreator" = "pid 543, Spotlight"
+      }
+      
+

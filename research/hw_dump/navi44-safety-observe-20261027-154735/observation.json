@@ -1,0 +1,30 @@
+{
+  "boot_epoch": 1793111947,
+  "boot_args": {
+    "returncode": 0,
+    "stdout": "boot-args\t-v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0\n",
+    "stderr": ""
+  },
+  "driver": {
+    "returncode": 0,
+    "stdout": "+-o Navi48Bringup  <class Navi48Bringup, id 0x100000324, registered, matched, active, busy 0 (0 ms), retain 5>\n    {\n      \"IOClass\" = \"Navi48Bringup\"\n      \"Discovery,IPCount\" = 42\n      \"IP,IH\" = \"7.0.0\"\n      \"IP,MMHUB\" = \"4.1.0\"\n      \"IP,SMU\" = \"14.0.2\"\n      \"IP,HDP\" = \"7.0.0\"\n      \"IP,DCN\" = \"4.1.0\"\n      \"IOMatchedAtBoot\" = Yes\n      \"VRAM,TotalMB\" = 16304\n      \"IP,UMC\" = \"8.14.0\"\n      \"IOProviderClass\" = \"IOPCIDevice\"\n      \"IP,GC\" = \"12.0.0\"\n      \"IP,PSP\" = \"14.0.2\"\n      \"IOProbeScore\" = 10000\n      \"MMIO,Verified\" = Yes\n      \"IP,NBIF\" = \"6.3.1\"\n      \"IP,SDMA\" = \"7.0.0\"\n      \"Navi48,AccelGateMode\" = 1\n      \"Navi48,Stage\" = \"survey-readonly\"\n      \"CFBundleIdentifierKernel\" = \"com.navi48.bringup\"\n      \"IOPCIPrimaryMatch\" = \"0x75901002\"\n      \"IOMatchCategory\" = \"Navi48Bringup\"\n      \"CFBundleIdentifier\" = \"com.navi48.bringup\"\n      \"Discovery,Source\" = \"on-die TMR\"\n    }\n    \n\n",
+    "stderr": ""
+  },
+  "kernel_log": {
+    "returncode": 0,
+    "stdout": "Timestamp               Ty Process[PID:TID]\n2026-10-27 15:39:26.196 Df kernel[0:64e] \\^[[32mRecorded kext com.navi48.bringup as a candidate for inclusion in prelinked kernel.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:64e] \\^[[33mLoading kext com.navi48.bringup.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[32mKext com.navi48.bringup resolving dependencies.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.iokit.IOPCIFamily.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.kpi.bsd.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.kpi.iokit.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.kpi.libkern.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.kpi.mach.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[36mKext com.navi48.bringup added dependency com.apple.kpi.unsupported.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[32mKext com.navi48.bringup successfully resolved dependencies.\\^[[0m\n2026-10-27 15:39:26.196 Df kernel[0:658] \\^[[33mKext com.navi48.bringup executable loaded; 1930 pages at 0xffffff800423f000 (load tag 88).\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[36mKext com.navi48.bringup calling module start function.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[36mKext com.navi48.bringup registered class Navi48Bringup.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[33mKext com.navi48.bringup has IOService subclass Navi48Bringup; enabling autounload.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[36mKext com.navi48.bringup registered class Navi48UserClient.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[33mKext com.navi48.bringup has IOService subclass Navi48UserClient; enabling autounload.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[36mKext com.navi48.bringup registered class IOAccelNavi48NativeClient.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[33mKext com.navi48.bringup has IOService subclass IOAccelNavi48NativeClient; enabling autounload.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[36mKext com.navi48.bringup registered class Navi48MetalNub.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:658] \\^[[33mKext com.navi48.bringup has IOService subclass Navi48MetalNub; enabling autounload.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:583] \\^[[36mKext com.navi48.bringup registered class Navi48DisplayNub.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:583] \\^[[33mKext com.navi48.bringup has IOService subclass Navi48DisplayNub; enabling autounload.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:583] \\^[[33mKext com.navi48.bringup is now started.\\^[[0m\n2026-10-27 15:39:26.197 Df kernel[0:583] \\^[[33mKext com.navi48.bringup loaded.\\^[[0m\n2026-10-27 15:39:56.541 Df kernel[0:8d9] Boot args: -v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0\n2026-10-27 15:39:57.198 Df kernel[0:89b] Boot args: -v debug=0x100 keepsyms=1 -amd_no_dgpu_accel kextlog=0xffff acpi_layer=0xffffffff acpi_level=0x2087 msgbuf=1048576 navi48bringup=1 navi48-stage=1 navi48-interrupts=0\n",
+    "stderr": ""
+  },
+  "dmesg": {
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "sudo: a password is required\n"
+  },
+  "assessment": {
+    "watchdog_events": 0,
+    "heartbeat_count": 0,
+    "latest_heartbeat": null,
+    "sensor_validation": "UNKNOWN: compare with an independent reading; log presence does not prove safety",
+    "limitations": "N4X-SAFETY is not a shutdown mechanism; old messages within the current boot may be stale."
+  }
+}

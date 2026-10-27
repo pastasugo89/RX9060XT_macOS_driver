@@ -1,0 +1,29 @@
++-o Navi48Bringup  <class Navi48Bringup, id 0x100000324, registered, matched, active, busy 0 (0 ms), retain 5>
+    {
+      "IOClass" = "Navi48Bringup"
+      "Discovery,IPCount" = 42
+      "IP,IH" = "7.0.0"
+      "IP,MMHUB" = "4.1.0"
+      "IP,SMU" = "14.0.2"
+      "IP,HDP" = "7.0.0"
+      "IP,DCN" = "4.1.0"
+      "IOMatchedAtBoot" = Yes
+      "VRAM,TotalMB" = 16304
+      "IP,UMC" = "8.14.0"
+      "IOProviderClass" = "IOPCIDevice"
+      "IP,GC" = "12.0.0"
+      "IP,PSP" = "14.0.2"
+      "IOProbeScore" = 10000
+      "MMIO,Verified" = Yes
+      "IP,NBIF" = "6.3.1"
+      "IP,SDMA" = "7.0.0"
+      "Navi48,AccelGateMode" = 1
+      "Navi48,Stage" = "survey-readonly"
+      "CFBundleIdentifierKernel" = "com.navi48.bringup"
+      "IOPCIPrimaryMatch" = "0x75901002"
+      "IOMatchCategory" = "Navi48Bringup"
+      "CFBundleIdentifier" = "com.navi48.bringup"
+      "Discovery,Source" = "on-die TMR"
+    }
+    
+

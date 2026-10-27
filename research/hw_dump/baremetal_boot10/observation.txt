@@ -1,0 +1,7 @@
+Boot10: la variante diagnostica v2 viene avviata; il PC si riavvia spontaneamente durante il verbose.
+Nessuna foto o video acquisiti; ultimo punto visibile non noto. BIOS avvia GRUB e Linux.
+Non risulta raggiunta la GUI e non e stata avviata una installazione: riavvio non considerato normale avanzamento.
+Log opencore-2026-10-25-115613.txt: kernel 25.6.0, argomenti ACPI effettivi, patch temporale 26.4+ e hotplug AM5 applicate; ultima riga EXITBS:START.
+Config e 28 file coincidono con la variante diagnostica. debug=0x100, keepsyms=1, ApplePanic e DisableWatchDog gia attivi.
+Nessun file panic rilevato nella radice USB: assenza che non esclude un panic non salvato.
+Nessuna nuova modifica EFI; prossima prova una sola replica della stessa configurazione con video dall inizio del verbose.

@@ -1,0 +1,92 @@
+Timestamp                       (process)[PID]    
+2026-10-27 21:54:35.132601+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:577536 options:0x10
+2026-10-27 21:54:35.132616+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 577536 B at 0x1734e6000) = -1000072003
+2026-10-27 21:54:35.132628+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 577536 B at 0x1734e6000) = -1000072003
+2026-10-27 21:54:35.139882+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 21:54:35.140990+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000aa45a0: NO-COPY 4096 bytes at 0x10d3cc000 imported (host memory type 5)
+2026-10-27 21:54:35.147378+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:33177600 options:0x10
+2026-10-27 21:54:35.147417+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 33177600 B at 0x171542000) = -1000072003
+2026-10-27 21:54:35.147422+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 33177600 B at 0x171542000) = -1000072003
+2026-10-27 21:54:35.198975+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 21:54:35.200068+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000aa8b40: NO-COPY 4096 bytes at 0x10dfd0000 imported (host memory type 5)
+2026-10-27 21:54:35.240806+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:35.901856+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 21:54:35.903194+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000ab4000: NO-COPY 921600 bytes at 0x1740f2000 imported (host memory type 5)
+2026-10-27 21:54:35.928317+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:35.931019+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:35.961280+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:36.751934+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:36.757086+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:36.760058+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:37.763858+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 21:54:37.765094+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000ab4000: NO-COPY 921600 bytes at 0x174287000 imported (host memory type 5)
+2026-10-27 21:54:37.765297+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:37.765904+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 21:54:37.767066+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000ab8000: NO-COPY 921600 bytes at 0x1740f2000 imported (host memory type 5)
+2026-10-27 21:54:37.768292+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:14745600 options:0x10
+2026-10-27 21:54:37.768329+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 14745600 B at 0x17b89e000) = -1000072003
+2026-10-27 21:54:37.768337+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 14745600 B at 0x17b89e000) = -1000072003
+2026-10-27 21:54:38.110598+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 21:54:38.111733+0100  localhost WindowServer[517]: (Navi48Metal) Navi48Metal: N48Buffer 0x600000abc000: NO-COPY 921600 bytes at 0x1740f2000 imported (host memory type 5)
+2026-10-27 21:54:49.088243+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:577536 options:0x10
+2026-10-27 21:54:49.088262+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 577536 B at 0x173418000) = -1000072003
+2026-10-27 21:54:49.088274+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 577536 B at 0x173418000) = -1000072003
+2026-10-27 21:54:49.094330+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 21:54:49.095433+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001944c30: NO-COPY 4096 bytes at 0x1095c0000 imported (host memory type 5)
+2026-10-27 21:54:49.099240+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:33177600 options:0x10
+2026-10-27 21:54:49.099279+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 33177600 B at 0x16d8ec000) = -1000072003
+2026-10-27 21:54:49.099284+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 33177600 B at 0x16d8ec000) = -1000072003
+2026-10-27 21:54:49.146811+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 21:54:49.146853+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: N48Buffer 0x6000019482d0: NO-COPY 4096 bytes at 0x10a1cc000 imported (host memory type 5)
+2026-10-27 21:54:49.177087+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:49.525868+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 21:54:49.527219+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: N48Buffer 0x60000195c0f0: NO-COPY 921600 bytes at 0x1700bd000 imported (host memory type 5)
+2026-10-27 21:54:49.551363+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:49.553404+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 21:54:49.567033+0100  localhost WindowServer[909]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:27.693645+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 22:08:27.694748+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x6000017303c0: NO-COPY 4096 bytes at 0x10f2c6000 imported (host memory type 5)
+2026-10-27 22:08:27.700854+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:33177600 options:0x10
+2026-10-27 22:08:27.700891+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 33177600 B at 0x17356e000) = -1000072003
+2026-10-27 22:08:27.700905+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 33177600 B at 0x17356e000) = -1000072003
+2026-10-27 22:08:27.757798+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 22:08:27.758902+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001724690: NO-COPY 4096 bytes at 0x10ff08000 imported (host memory type 5)
+2026-10-27 22:08:27.797330+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:28.467371+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:28.468671+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001738000: NO-COPY 921600 bytes at 0x1762f1000 imported (host memory type 5)
+2026-10-27 22:08:28.488810+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:28.491698+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:28.517576+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:29.235101+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:29.240621+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:29.242594+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:29.252391+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 22:08:29.252491+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x6000017282d0: NO-COPY 4096 bytes at 0x114747000 imported (host memory type 5)
+2026-10-27 22:08:29.259500+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:29.806560+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:14745600 options:0x10
+2026-10-27 22:08:29.806598+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 14745600 B at 0x17c2dd000) = -1000072003
+2026-10-27 22:08:29.806605+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 14745600 B at 0x17c2dd000) = -1000072003
+2026-10-27 22:08:29.947580+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:29.948845+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001730690: NO-COPY 921600 bytes at 0x1763d2000 imported (host memory type 5)
+2026-10-27 22:08:29.974501+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:29.975657+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001738000: NO-COPY 921600 bytes at 0x1762f1000 imported (host memory type 5)
+2026-10-27 22:08:30.286168+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:30.287296+0100  localhost WindowServer[518]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001724870: NO-COPY 921600 bytes at 0x1763d2000 imported (host memory type 5)
+2026-10-27 22:08:40.532184+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 22:08:40.532228+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001b4cb40: NO-COPY 4096 bytes at 0x110a87000 imported (host memory type 5)
+2026-10-27 22:08:40.535186+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:33177600 options:0x10
+2026-10-27 22:08:40.535216+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: refused: vkAllocateMemory(import 33177600 B at 0x17962f000) = -1000072003
+2026-10-27 22:08:40.535222+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy: NIL: vkAllocateMemory(import 33177600 B at 0x17962f000) = -1000072003
+2026-10-27 22:08:40.581865+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:4096 options:0x10
+2026-10-27 22:08:40.583097+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001b4ce10: NO-COPY 4096 bytes at 0x110a88000 imported (host memory type 5)
+2026-10-27 22:08:40.615482+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:40.964063+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:40.965297+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001b70000: NO-COPY 921600 bytes at 0x17469a000 imported (host memory type 5)
+2026-10-27 22:08:40.984017+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:40.986080+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:40.998838+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:42.816281+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: newBufferWithBytesNoCopy:length:921600 options:0x0
+2026-10-27 22:08:42.816420+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: N48Buffer 0x600001b58000: NO-COPY 921600 bytes at 0x17469a000 imported (host memory type 5)
+2026-10-27 22:08:42.852425+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:42.855090+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0
+2026-10-27 22:08:42.855213+0100  localhost WindowServer[867]: (Navi48Metal) Navi48Metal: vkQueueSubmit = 0

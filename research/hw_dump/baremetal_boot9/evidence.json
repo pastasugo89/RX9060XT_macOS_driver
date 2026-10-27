@@ -1,0 +1,15 @@
+{
+  "log_sha256": "3b8a82e209adad14f8ef920df3c3ed7c2a64eda8d2a4e8f3093fc388cd951c0e",
+  "config_sha256": "1f8d43cf677eb2cce93fc792ebe13fd897760b4897126ae2d3988bf26b4cbc08",
+  "photo_sha256": "379d6996a7465e93680eeae689214c2f7f39e65cded938dbf0c21374dcc2c98a",
+  "serial_acpi_linux_status": "0",
+  "usb_read_only": true,
+  "user_observation": "Caps Lock LED does not respond after 2-3 minutes; screen remains frozen",
+  "visible_last_line": "ACPI: WSMT 0x000000008A5D8000 000028",
+  "opencore_log_nonpadding_lines": 642,
+  "kernel_version": "25.6.0",
+  "recovery_gui_reached": false,
+  "hardware_boot_tested": true,
+  "usb_payloads_verified": 28,
+  "freeze_cause_identified": false
+}

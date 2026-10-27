@@ -1,0 +1,15 @@
+{
+  "log_file": "opencore-2026-10-25-115613.txt",
+  "raw_log_sha256": "65043c1f6da4df3ca684fbb5565da3229a66997b905c2b48b96a68ab62adf77d",
+  "config_sha256": "8710fe3bb6f4b4e3b18399ad4749d5262c63987ddcf32b18bf02472e794f7551",
+  "user_observation": "Spontaneous reboot during verbose, no image or video captured; firmware boots GRUB then Linux",
+  "hardware_boot_tested": true,
+  "recovery_gui_reached": false,
+  "panic_file_found_in_usb_root": false,
+  "cause_identified": false,
+  "serial_acpi_linux_status": "0",
+  "usb_efi_files_verified": 28,
+  "diagnostic_arguments_confirmed_in_boot_efi_log": true,
+  "opencore_last_line": "EXITBS:START",
+  "capture_limit": "No kernel-phase video, panic report, or backtrace available; UEFI log cannot locate spontaneous restart"
+}

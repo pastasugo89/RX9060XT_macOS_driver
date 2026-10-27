@@ -1,0 +1,1 @@
+Boot8: utente riferisce stesso blocco, stessi verbose, nessuna differenza. Whitelist F7000000 provata, senza miglioramento visibile. Nessuna nuova foto richiesta.
