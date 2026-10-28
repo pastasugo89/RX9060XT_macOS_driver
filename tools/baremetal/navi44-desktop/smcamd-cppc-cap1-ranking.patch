@@ -1,0 +1,13 @@
+--- a/AMDRyzenCPUPowerManagement/AMDRyzenCPUPowerManagement.cpp
++++ b/AMDRyzenCPUPowerManagement/AMDRyzenCPUPowerManagement.cpp
+@@ -261,8 +261,8 @@
+                     bool msrSuccess = provider->read_msr(kMSR_AMD_CPPC_CAP1, &cppcCap);
+                     IOLog("AMDRyzenCPUPowerManagement::startWorkLoop Core %d CPPC CAP1 read: %d, value: 0x%llX\n", cpu_num, msrSuccess, cppcCap);
+                     if (msrSuccess) {
+-                        // AMD PPR states bits 7:0 are HighestPerformance
+-                        provider->cppcHighestPerf_perCore[cpu_num] = cppcCap & 0xFF;
++                        // CAP1 bits 31:24 are HighestPerformance; bits 7:0 are LowestPerformance.
++                        provider->cppcHighestPerf_perCore[cpu_num] = (cppcCap >> 24) & 0xFF;
+                         
+                         // For Vermeer baseline: do NOT enable CPPC by default
+                         // Keep cppcActiveMode=false to avoid writing CPPC_ENABLE/REQ
