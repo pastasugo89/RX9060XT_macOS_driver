@@ -17,5 +17,11 @@
 	<string>/private/var/tmp/navi44-accelerated-trial/launchd.log</string>
 	<key>StandardOutPath</key>
 	<string>/private/var/tmp/navi44-accelerated-trial/launchd.log</string>
+	<key>UserName</key>
+	<string>root</string>
+	<key>GroupName</key>
+	<string>wheel</string>
+	<key>KeepAlive</key>
+	<false/>
 </dict>
 </plist>

@@ -1,6 +1,6 @@
 #!/bin/bash
-# One-shot root LaunchDaemon: arm Navi48Metal at the next boot, then observe one
-# login. It mirrors Cobalt64's Core Image backstop and bounded WindowServer watcher.
+# Persistent root LaunchDaemon: activate once per boot and watch the login transition.
+# Failed/abandoned attempts latch software mode until a reviewed deployment resets state.
 set -Eeuo pipefail
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
 umask 022
@@ -12,11 +12,29 @@ NUB="$APP/n48nub"
 FLAG=/private/tmp/n48m-headless-no
 KILL=/private/tmp/n48m-off
 PLIST=/Library/LaunchDaemons/org.navi44.accelerated-trial.plist
-CONSUMED="$APP/consumed-stage22-unified.plist"
-mkdir -p "$LOGDIR"
-chmod 755 "$LOGDIR"
+STATE="$APP/boot-state.json"
+PROFILE=stage22-unified-v1
+state_started=0
+ordered_stop=0
+[[ $(id -u) == 0 ]] || { echo 'STOP root required'; exit 1; }
+if [[ ! -e "$LOGDIR" && ! -L "$LOGDIR" ]]; then mkdir -m 755 "$LOGDIR" || exit 1; fi
+[[ -d "$LOGDIR" && ! -L "$LOGDIR" && $(stat -f '%u:%g:%Lp' "$LOGDIR") == '0:0:755' ]] || { echo 'STOP unsafe log directory'; exit 1; }
+if [[ -e "$LOG" || -L "$LOG" ]]; then
+  logmeta=$(stat -f '%u:%g:%l:%Lp' "$LOG" 2>/dev/null || true)
+  [[ -f "$LOG" && ! -L "$LOG" && ( "$logmeta" == '0:0:1:644' || "$logmeta" == '0:0:1:600' ) ]] || { echo 'STOP unsafe log file'; exit 1; }
+fi
 exec >>"$LOG" 2>&1
 echo "START $(date -u)"
+
+root_flag_valid() {
+  [[ -f "$1" && ! -L "$1" && $(stat -f '%u:%g:%Lp:%z:%l' "$1" 2>/dev/null) == '0:0:644:0:1' ]]
+}
+make_root_flag() {
+  if [[ -e "$1" || -L "$1" ]]; then root_flag_valid "$1"; return; fi
+  # noclobber uses exclusive creation: a raced file/symlink is never followed.
+  (umask 022; set -C; : > "$1") || return 1
+  root_flag_valid "$1"
+}
 
 verify_fbname() {
   printf '%s\n' "$1" | grep -Eq 'armed[[:space:]]*:[[:space:]]*1[[:space:]]*\(status 0\)' &&
@@ -32,17 +50,22 @@ guard_checked=0
 rollback() {
   rc=$?
   trap - EXIT INT TERM
-  if (( guard_checked && rc != 0 )); then touch "$KILL" && chmod 644 "$KILL" || true; fi
+  if (( state_started && rc != 0 )); then
+    result=failed
+    (( ordered_stop )) && result=stopped
+    /usr/bin/python3 "$APP/boot-state.py" "$result" --state "$STATE" --profile "$PROFILE" --observation "activation-exit-$rc" || echo 'BOOT_STATE_FAILURE_RECORD_FAILED'
+  fi
+  if (( guard_checked && rc != 0 )); then make_root_flag "$KILL" || true; fi
   if (( active )); then
     echo "FAILSAFE_BEGIN rc=$rc $(date -u)"
     "$NT" accel pipearm 0 || true
-    touch "$KILL" && chmod 644 "$KILL" || true
+    make_root_flag "$KILL" || true
     if (( renamed )); then
       "$NT" accel fbname 0 || true
       rm -f "$FLAG"
       echo "FAILSAFE_FRAMEBUFFER_NAME_RESTORED"
     fi
-    if (( renamed )) || [[ -z $(who) ]]; then
+    if [[ -z $(who) ]]; then
       killall -9 WindowServer || true
       echo 'FAILSAFE_WINDOWSERVER_RESTARTED_SOFTWARE'
     else
@@ -56,22 +79,23 @@ rollback() {
 }
 trap rollback EXIT
 trap 'exit 130' INT
-trap 'exit 143' TERM
+trap 'ordered_stop=1; exit 143' TERM
 
 [[ $(id -u) == 0 && -x "$NT" && -x "$NUB" ]] || { echo 'STOP root/tools missing'; exit 1; }
+[[ -z $(who) ]] || { echo 'STOP refusing activation in an existing user session'; exit 1; }
+[[ ! -e "$APP/disabled" && ! -L "$APP/disabled" ]] || { echo 'STOP persistent activation disabled'; exit 1; }
 [[ $(sw_vers -productVersion) == 26.6.2 && $(sw_vers -buildVersion) == 25G83 ]] || { echo 'STOP unexpected macOS build'; exit 1; }
 args=$(nvram boot-args 2>/dev/null || true)
 for arg in navi48-stage=17 navi48-native=1 navi48-metal=1 navi48-metal-disp=1 navi48-metal-ws=1 navi48-agdc=1 rdna4-vbl=1 amfi_get_out_of_my_way=1 navi48-multisession=1 navi48-apps=1 navi48-g5=1; do
   [[ " $args " == *" $arg "* || " $args " == *" $arg" ]] || { echo "STOP required boot arg missing: $arg"; exit 1; }
 done
 [[ ! -e /private/tmp/n48m-noflip1 && ! -e /private/tmp/n48m-noflip2 ]] || { echo 'STOP Navi48 no-flip kill switch present'; exit 1; }
-# The previous one-shot deliberately left its root-owned empty L1 kill file for
-# this boot. Validate it read-only here; archive/clear it only after consuming
-# this one-shot plist, so a partial preflight cannot silently remove the guard.
+# Validate a previous root-owned empty L1 kill file read-only. Clear it only
+# after the persistent boot latch grants this new attempt; failed attempts are
+# never retried merely because the machine rebooted.
 stale_kill=0
 if [[ -e "$KILL" || -L "$KILL" ]]; then
-  killmeta=$(/usr/bin/stat -f '%Su:%Sg:%Lp:%z' "$KILL" 2>/dev/null || true)
-  [[ ! -L "$KILL" && "$killmeta" == 'root:wheel:644:0' ]] || { echo "STOP unrecognized Navi48 kill switch: $killmeta"; exit 1; }
+  root_flag_valid "$KILL" || { echo 'STOP unrecognized Navi48 kill switch'; exit 1; }
   stale_kill=1
 fi
 guard_checked=1
@@ -84,9 +108,11 @@ echo 'CANDIDATE=stage22-unified'
 [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib" | cut -d " " -f 1) == f6b2053d1b26731ff88c1def9ca2375cc7c0a9a34ebc8e7ab7e2533f6c30e155 ]] || { echo "STOP bundle component changed: Resources/libvulkan_radeon.dylib"; exit 1; }
 [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libn48xlate.dylib" | cut -d " " -f 1) == 194c80d8b7a9f0c209adffd031602c1f83a8fb14de43eec39f49e860259b5890 ]] || { echo "STOP bundle component changed: Resources/libn48xlate.dylib"; exit 1; }
 
-# Consume the boot job before doing GPU writes. It will not retry on a later boot.
-[[ -f "$PLIST" && ! -e "$CONSUMED" ]] || { echo 'STOP one-shot plist missing/already consumed'; exit 1; }
-mv "$PLIST" "$CONSUMED"
+# Keep the launchd job across boots, but latch an attempt BEFORE clearing guards
+# or changing GPU/display state. An unfinished/failed attempt blocks later boots.
+[[ -f "$PLIST" && ! -L "$PLIST" && -f "$APP/boot-state.py" ]] || { echo 'STOP boot job/state helper missing'; exit 1; }
+/usr/bin/python3 "$APP/boot-state.py" begin --state "$STATE" --profile "$PROFILE" || { echo 'STOP prior activation blocked or already attempted'; exit 1; }
+state_started=1
 if (( stale_kill )); then
   archive="$LOGDIR/n48m-off-pre-rearm-$(date -u +%Y%m%dT%H%M%SZ)"
   mv "$KILL" "$archive" || { echo 'STOP cannot archive previous Navi48 kill switch'; exit 1; }
@@ -165,10 +191,10 @@ echo "$stat"
 flags=$(printf '%s\n' "$stat" | sed -nE 's/.*flags[^:]*:[[:space:]]*(0x[0-9a-fA-F]+).*/\1/p')
 [[ -n "$flags" ]] && (( (flags & 2) != 0 && (flags & 4) == 0 )) || { echo 'STOP pipe not adopted or unexpectedly armed'; exit 1; }
 
-# One explicitly staged trial may reset the process-start counter; preserve it first.
+# One granted attempt per boot may reset the process-start counter; preserve it first.
 if [[ -e /private/tmp/n48m-starts || -L /private/tmp/n48m-starts ]]; then
   [[ -f /private/tmp/n48m-starts && ! -L /private/tmp/n48m-starts ]] || { echo 'STOP unexpected starts marker'; exit 1; }
-  cp -p /private/tmp/n48m-starts "$LOGDIR/starts-pre-stage19-$(date -u +%Y%m%dT%H%M%SZ)"
+  cp -p /private/tmp/n48m-starts "$LOGDIR/starts-pre-stage22-$(date -u +%Y%m%dT%H%M%SZ)"
   rm /private/tmp/n48m-starts
 fi
 # Cobalt64's AMD vendor selection, after AGDC publication and before arming.
@@ -183,7 +209,7 @@ echo "$fbout"
 fbregistry=$(ioreg -r -c RDNA4FB -d 1 2>/dev/null || true)
 verify_fbname "$fbout" "$fbregistry" || { echo "STOP framebuffer rename readback: $fbregistry"; exit 1; }
 echo 'FRAMEBUFFER_RENAME_VERIFIED=AMDRDNA4FB' 
-touch "$FLAG" && chmod 644 "$FLAG" || { echo 'STOP cannot set WindowServer headless override'; exit 1; }
+make_root_flag "$FLAG" || { echo 'STOP cannot set WindowServer headless override'; exit 1; }
 headless=1
 active=1
 arm=$("$NT" accel pipearm 1 2>&1) || { echo "STOP pipearm failed: $arm"; exit 1; }
@@ -229,27 +255,34 @@ for ((i=0;i<300;i++)); do
   if [[ -n $(who) ]]; then login_seen=1; break; fi
   sleep 1
 done
-(( login_seen == 1 )) || { echo 'STOP login did not occur within 5 minutes'; exit 1; }
-echo "LOGIN_SEEN pid=$newpid $(date -u)"
+observation=login-window-stable-300s
+if (( login_seen == 1 )); then
+  echo "LOGIN_SEEN pid=$newpid $(date -u)"
 
-for ((i=1;i<=120;i++)); do
-  sleep 1
-  pid=$(pgrep -x WindowServer | head -1 || true)
-  if [[ -z "$pid" ]]; then
-    echo "WINDOWSERVER_MISSING after_login_seconds=$i"
-    exit 1
-  fi
-  if [[ "$pid" != "$newpid" ]]; then
-    echo "WINDOWSERVER_RESTART old=$newpid new=$pid after_login_seconds=$i; restoring software compositor"
-    exit 1
-  fi
-  if (( i % 15 == 0 )); then
-    echo "SAMPLE=$((i/15)) $(date -u)"
-    "$NT" accel pipestat 0 || true
-    "$NT" accel pipestat 4 || true
-    tail -20 /private/var/tmp/n48m-translate-state/translate.log 2>/dev/null || true
-  fi
-done
-echo "TRIAL_STABLE_120S pid=$newpid; pipe left armed for user inspection"
+  for ((i=1;i<=120;i++)); do
+    sleep 1
+    pid=$(pgrep -x WindowServer | head -1 || true)
+    if [[ -z "$pid" ]]; then
+      echo "WINDOWSERVER_MISSING after_login_seconds=$i"
+      exit 1
+    fi
+    if [[ "$pid" != "$newpid" ]]; then
+      echo "WINDOWSERVER_RESTART old=$newpid new=$pid after_login_seconds=$i; restoring software compositor"
+      exit 1
+    fi
+    if (( i % 15 == 0 )); then
+      echo "SAMPLE=$((i/15)) $(date -u)"
+      "$NT" accel pipestat 0 || true
+      "$NT" accel pipestat 4 || true
+      tail -20 /private/var/tmp/n48m-translate-state/translate.log 2>/dev/null || true
+    fi
+  done
+  observation=desktop-stable-120s
+else
+  echo 'LOGIN_WINDOW_STABLE_ONLY; user transition has not been observed'
+fi
+/usr/bin/python3 "$APP/boot-state.py" stable --state "$STATE" --profile "$PROFILE" --observation "$observation" || { echo 'STOP cannot record verified startup state'; exit 1; }
+state_started=0
 active=0
+echo "GPU_BOOT_STABLE pid=$newpid observation=$observation; persistent job retained" || true
 exit 0
