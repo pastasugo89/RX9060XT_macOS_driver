@@ -12,7 +12,7 @@ NUB="$APP/n48nub"
 FLAG=/private/tmp/n48m-headless-no
 KILL=/private/tmp/n48m-off
 PLIST=/Library/LaunchDaemons/org.navi44.accelerated-trial.plist
-CONSUMED="$APP/consumed-stage21-shutdown-check.plist"
+CONSUMED="$APP/consumed-stage22-unified.plist"
 mkdir -p "$LOGDIR"
 chmod 755 "$LOGDIR"
 exec >>"$LOG" 2>&1
@@ -77,10 +77,10 @@ fi
 guard_checked=1
 [[ -x /Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal ]] || { echo 'STOP Metal bundle missing'; exit 1; }
 bundle_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' /Library/GPUBundles/Navi48Metal.bundle/Contents/Info.plist 2>/dev/null || true)
-[[ "$bundle_version" == 23 ]] || { echo "STOP expected Stage18 Metal bundle version 23, got: $bundle_version"; exit 1; }
-echo 'CANDIDATE=stage21-shutdown-check' 
+[[ "$bundle_version" == 24 ]] || { echo "STOP expected Stage22 Metal bundle version 24, got: $bundle_version"; exit 1; }
+echo 'CANDIDATE=stage22-unified' 
 
-[[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal" | cut -d " " -f 1) == edc7255882ae823299212cde384a0bb89047de62c993cc618766302087e6e0cb ]] || { echo "STOP bundle component changed: MacOS/Navi48Metal"; exit 1; }
+[[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal" | cut -d " " -f 1) == 664fdd194dfaaecb4cf25ef9e59c9f827c3267659db27708503fa19933cd5bd4 ]] || { echo "STOP bundle component changed: MacOS/Navi48Metal"; exit 1; }
 [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib" | cut -d " " -f 1) == f6b2053d1b26731ff88c1def9ca2375cc7c0a9a34ebc8e7ab7e2533f6c30e155 ]] || { echo "STOP bundle component changed: Resources/libvulkan_radeon.dylib"; exit 1; }
 [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libn48xlate.dylib" | cut -d " " -f 1) == 194c80d8b7a9f0c209adffd031602c1f83a8fb14de43eec39f49e860259b5890 ]] || { echo "STOP bundle component changed: Resources/libn48xlate.dylib"; exit 1; }
 
@@ -103,12 +103,19 @@ else
   echo 'CIKL_BACKSTOP=system-launchd-set-failed'
 fi
 
+translator_ready() {
+  local status pid
+  status=$(launchctl print system/com.navi48.translate 2>/dev/null) || return 1
+  printf '%s\n' "$status" | grep -Eq '^[[:space:]]*state = running$' || return 1
+  pid=$(printf '%s\n' "$status" | awk '$1 == "pid" && $2 == "=" { print $3; exit }')
+  [[ "$pid" =~ ^[0-9]+$ && "$pid" -gt 1 ]] && kill -0 "$pid" 2>/dev/null
+}
 for ((i=0;i<90;i++)); do
-  launchctl print system/com.navi48.translate >/dev/null 2>&1 && break
+  translator_ready && break
   [[ -z $(who) ]] || { echo 'STOP user session appeared while waiting for translator'; exit 1; }
   sleep 2
 done
-launchctl print system/com.navi48.translate >/dev/null 2>&1 || { echo 'STOP shader translator service is not running'; exit 1; }
+translator_ready || { echo 'STOP shader translator has no live running process'; exit 1; }
 
 # Wait for the login window while no user session exists. Never restart WS after login.
 for ((i=0;i<180;i++)); do
