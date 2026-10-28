@@ -61,7 +61,7 @@ trap 'exit 143' TERM
 [[ $(id -u) == 0 && -x "$NT" && -x "$NUB" ]] || { echo 'STOP root/tools missing'; exit 1; }
 [[ $(sw_vers -productVersion) == 26.6.2 && $(sw_vers -buildVersion) == 25G83 ]] || { echo 'STOP unexpected macOS build'; exit 1; }
 args=$(nvram boot-args 2>/dev/null || true)
-for arg in navi48-stage=17 navi48-native=1 navi48-metal=1 navi48-metal-disp=1 navi48-metal-ws=1 navi48-agdc=1 rdna4-vbl=1 amfi_get_out_of_my_way=1; do
+for arg in navi48-stage=17 navi48-native=1 navi48-metal=1 navi48-metal-disp=1 navi48-metal-ws=1 navi48-agdc=1 rdna4-vbl=1 amfi_get_out_of_my_way=1 navi48-multisession=1 navi48-apps=1 navi48-g5=1; do
   [[ " $args " == *" $arg "* || " $args " == *" $arg" ]] || { echo "STOP required boot arg missing: $arg"; exit 1; }
 done
 [[ ! -e /private/tmp/n48m-noflip1 && ! -e /private/tmp/n48m-noflip2 ]] || { echo 'STOP Navi48 no-flip kill switch present'; exit 1; }
@@ -149,6 +149,8 @@ for ((i=0;i<60;i++)); do
   sleep 1
 done
 (( ready == 1 )) || { echo "STOP registry readiness timed out; nub=$nubstat accelerator=$accelstat"; exit 1; }
+
+/usr/bin/python3 "$APP/seed-gpu-apps.py" --tool "$NT" --names "$APP/app-allowlist.json" || { echo 'STOP GPU application admission setup failed'; exit 1; }
 
 adopt=$("$NT" accel pipeadopt 2>&1) || { echo "STOP pipeadopt failed: $adopt"; exit 1; }
 echo "$adopt"
