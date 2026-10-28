@@ -56,3 +56,20 @@ le sette sezioni compilate di codice e dati con il binario installato; il
 controllo passa e rileva una modifica di prova al codice. Firma, UUID e debug
 non sono confrontati. Il candidato
 rimane privo di installazione e richiede verifiche ABI, integrazione e rollback.
+
+## Pacchetto combinato locale
+
+`prepare-eight-efi.py` ha creato una copia EFI con una sola entry attiva per
+0.0.665, conservando tutti gli 81 file della base (incluso il vecchio kext).
+Il config modificato supera `ocvalidate` 1.0.8. `prepare-eight-combined.py`
+verifica la base EFI corrente e il candidato Metal 25, quindi assembla insieme
+EFI, 230 coppie shader, guardia `stage24-eight-session-v1` e tool diagnostico
+aggiornato. Il manifest copre 551 file; firme, contenuti, entry e sintassi della
+guardia sono stati controllati. La creazione resta solo locale, senza deploy.
+
+Questo pacchetto è una base per una prova, non un fix completamente validato:
+non ha ancora un installer transazionale e non ha ripristino automatico se il
+nuovo kext impedisce l'avvio prima della guardia userspace. Il vecchio kext
+conservato da solo non attiva automaticamente il ritorno alla vecchia entry.
+Servono controlli di avvio e recupero e, dopo il riavvio concordato, prove di
+concorrenza, rendering Brave, latenza e video.
