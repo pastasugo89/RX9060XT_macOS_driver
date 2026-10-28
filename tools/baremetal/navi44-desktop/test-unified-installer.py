@@ -123,6 +123,22 @@ class Installation(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'after a reboot'):
                 m.restore_backup(t.work)
 
+    def test_fat_mount_requires_actual_uuid_type_and_mountpoint(self):
+        mount = self.efi.parent
+        good = {'MountPoint': str(mount), 'VolumeUUID': 'EXPECTED', 'FilesystemType': 'msdos', 'WritableVolume': True}
+        try:
+            with patch('subprocess.check_output', return_value=plistlib.dumps(good)):
+                m.verify_fat_mount(self.efi, 'expected')
+            self.assertEqual(m.VERIFIED_FAT_ROOT, mount)
+            for key, value in [('VolumeUUID', 'OTHER'), ('FilesystemType', 'apfs'),
+                               ('WritableVolume', False), ('MountPoint', '/wrong')]:
+                bad = dict(good, **{key: value})
+                with patch('subprocess.check_output', return_value=plistlib.dumps(bad)):
+                    with self.assertRaisesRegex(ValueError, 'FAT EFI mount'):
+                        m.verify_fat_mount(self.efi, 'expected')
+        finally:
+            m.VERIFIED_FAT_ROOT = None
+
     def test_symlinked_destination_parent_refused(self):
         actual = self.root / 'elsewhere'
         actual.mkdir()

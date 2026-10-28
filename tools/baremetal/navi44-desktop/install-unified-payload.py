@@ -17,6 +17,9 @@ spec = importlib.util.spec_from_file_location('payload_check', Path(__file__).wi
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
 
+# FAT exposes synthetic ownership; set only after verifying the mounted volume.
+VERIFIED_FAT_ROOT = None
+
 
 def copy_file(source, destination):
     if source.is_symlink() or not source.is_file():
@@ -33,7 +36,8 @@ def safe_parents(destination):
             raise ValueError('Unsafe destination ancestor: ' + str(parent))
         if os.geteuid() == 0 and parent.exists():
             metadata = parent.stat()
-            if metadata.st_uid != 0 or metadata.st_mode & 0o022:
+            synthetic_fat_owner = VERIFIED_FAT_ROOT is not None and (parent == VERIFIED_FAT_ROOT or parent.is_relative_to(VERIFIED_FAT_ROOT))
+            if (metadata.st_uid != 0 and not synthetic_fat_owner) or metadata.st_mode & 0o022:
                 raise ValueError('Untrusted root destination ancestor: ' + str(parent))
 
 
@@ -231,6 +235,20 @@ class Transaction:
             raise
 
 
+def verify_fat_mount(efi, expected_uuid):
+    import subprocess
+    import plistlib
+    global VERIFIED_FAT_ROOT
+    VERIFIED_FAT_ROOT = None
+    mount = efi.parent.absolute()
+    volume = plistlib.loads(subprocess.check_output(['diskutil', 'info', '-plist', str(mount)]))
+    if (mount.is_symlink() or str(mount) != volume.get('MountPoint') or
+            volume.get('VolumeUUID', '').upper() != expected_uuid.upper() or
+            volume.get('FilesystemType') != 'msdos' or not volume.get('WritableVolume')):
+        raise ValueError('Expected writable FAT EFI mount unavailable')
+    VERIFIED_FAT_ROOT = mount
+
+
 def restore_backup(work, apply=False):
     """Restore only a completed, unactivated transaction in its original boot."""
     work = work.absolute()
@@ -271,6 +289,7 @@ def restore_backup(work, apply=False):
         return {'restore_preflight': True, 'mutations': 0, 'backup': str(work)}
     if os.geteuid() != 0:
         raise ValueError('Restore requires root')
+    verify_fat_mount(efi, manifest['efi_volume_uuid'])
     t = Transaction.__new__(Transaction)
     t.work, t.efi, t.root = work, efi, Path('/')
     t.manifest, t.plan, t.system = manifest, plan, system
@@ -302,6 +321,7 @@ if __name__ == '__main__':
             if os.geteuid() != 0 or not report['efi_writable_now']:
                 raise SystemExit('Apply requires root and an already writable verified EFI; nothing installed')
             manifest, plan, _ = check.verify_payload(a.payload)
+            verify_fat_mount(a.efi, manifest['efi_volume_uuid'])
             transaction = Transaction(a.payload.resolve(), a.efi.resolve(), Path('/'), manifest, plan)
             backup = transaction.run()
             print(json.dumps({'installed': True, 'activated': False, 'rebooted': False, 'backup': str(backup)}, indent=2))
