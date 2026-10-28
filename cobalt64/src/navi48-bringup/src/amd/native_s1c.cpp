@@ -2006,7 +2006,7 @@ IOReturn n1c_g2_stat(uint64_t page, uint64_t *o) {
     using namespace n48native::g2;
     for (uint32_t i = 0; i < kOutN; i++) o[i] = 0;
     if (!multi_on()) { o[0] = kStatOff; return kIOReturnSuccess; }
-    if (page > (uint64_t)kStatGlobal) { o[0] = kStatBadArg; return kIOReturnBadArgument; }
+    if (!args_ok(kActSessStat, page)) { o[0] = kStatBadArg; return kIOReturnBadArgument; }
     if (gCliLock == nullptr || gCtx == nullptr) { o[0] = kStatOk; o[1] = page; return kIOReturnSuccess; }   // nothing ever opened this boot
     if (page == (uint64_t)kStatGlobal) {
         GlobalView g {};
@@ -2027,7 +2027,7 @@ IOReturn n1c_g2_stat(uint64_t page, uint64_t *o) {
         global_out(g, o);
         return kIOReturnSuccess;
     }
-    const uint32_t slot = (uint32_t)page;
+    const uint32_t slot = stat_page_slot(page);
     SessView v {};
     v.vmid = vmid_of_slot(slot);
     IOLockLock(gCliLock);

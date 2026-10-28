@@ -34,9 +34,14 @@ constexpr uint32_t latch_value(bool present, uint32_t value) { return (present &
 constexpr bool latch_is_on(uint32_t latch) { return latch == kLatchOn; }
 
 // ---- slots and VMIDs ------------------------------------------------------------------------------------------------------------------------------
-constexpr uint32_t kMaxSessions = 4u;
+// The eight-session profile is opt-in at build time until hardware validation.
+#ifndef N48_MAX_NATIVE_SESSIONS
+#define N48_MAX_NATIVE_SESSIONS 4
+#endif
+constexpr uint32_t kMaxSessions = N48_MAX_NATIVE_SESSIONS;
+static_assert(kMaxSessions == 4u || kMaxSessions == 8u, "supported session profiles");
 constexpr uint32_t vmid_of_slot(uint32_t slot) { return kNativeVmid + slot; }
-static_assert(vmid_of_slot(0) == 8u && vmid_of_slot(kMaxSessions - 1u) == 11u, "VMID 8 for slot 0, 9..11 for the others");
+static_assert(vmid_of_slot(0) == 8u && vmid_of_slot(kMaxSessions - 1u) <= 15u, "native VMIDs must remain in 8..15");
 static_assert(vmid_ok(vmid_of_slot(0)) && vmid_ok(vmid_of_slot(1)) && vmid_ok(vmid_of_slot(2)) && vmid_ok(vmid_of_slot(3)), "every session VMID is outside the MES mask (8..15)");
 // How many slots a boot may use: 1 with the switch OFF (exactly the 0.0.626 single session), kMaxSessions with it ON.
 constexpr uint32_t slots_in_use(bool multi) { return multi ? kMaxSessions : 1u; }
@@ -169,8 +174,12 @@ template <class S> inline void sess_wipe_keep_lock(S *s) {
 constexpr uint32_t kActSessStat = 103u;
 constexpr bool is_g2_action(uint32_t a) { return a == kActSessStat; }
 constexpr bool action_admitted(bool latchOn, uint32_t a) { return latchOn && is_g2_action(a); }
-constexpr uint32_t kStatGlobal = kMaxSessions;    // page 4: the global page; 0..3: one session each
-constexpr bool args_ok(uint32_t a, uint64_t arg) { return a == kActSessStat && arg <= (uint64_t)kStatGlobal; }
+constexpr uint32_t kStatGlobal = 4u;    // page 4: the global page; 0..3: one session each
+// 0..3 and global 4 retain the original ABI; 5 remains G5. Extra slots
+// 4..7 use pages 6..9 so existing clients see the same meanings.
+constexpr bool extra_stat_page(uint64_t page) { return kMaxSessions == 8u && page >= 6u && page <= 9u; }
+constexpr uint32_t stat_page_slot(uint64_t page) { return page <= 3u ? (uint32_t)page : extra_stat_page(page) ? (uint32_t)(page - 2u) : kNoSlot; }
+constexpr bool args_ok(uint32_t a, uint64_t arg) { return a == kActSessStat && (arg <= (uint64_t)kStatGlobal || extra_stat_page(arg)); }
 constexpr bool native_exempt(bool latchOn, uint32_t a, uint64_t arg) { return action_admitted(latchOn, a) && args_ok(a, arg); }
 constexpr uint32_t kOutN = 13u;
 enum StatCode : uint32_t { kStatOk = 0u, kStatOff = 1u, kStatBadArg = 2u };
