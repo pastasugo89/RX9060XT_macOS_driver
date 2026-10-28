@@ -17,6 +17,13 @@ int main(void) {
            vendor, family, model, a & 15, (c >> 31) & 1);
     unsigned max = __get_cpuid_max(0x80000000, NULL);
     if (max < 0x80000008 || strcmp(vendor, "AuthenticAMD")) return 1;
+    char brand[49] = {0};
+    for (unsigned i = 0; i < 3; i++) {
+        __cpuid_count(0x80000002 + i, 0, a, b, c, d);
+        const uint32_t words[] = { a, b, c, d };
+        memcpy(brand + i * 16, words, 16);
+    }
+    printf("brand=\"%s\"\n", brand);
     __cpuid_count(0x80000008, 0, a, b, c, d);
     printf("CPUID.80000008.EBX=0x%08x cppc_msr=%u\n", b, (b >> 27) & 1);
     __cpuid_count(0x80000007, 0, a, b, c, d);
