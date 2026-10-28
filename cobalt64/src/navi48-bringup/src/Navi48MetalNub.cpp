@@ -14,6 +14,7 @@
 #include "amd/native_disp.h"         // 0.0.613: the display pipe glue (behind boot-arg navi48-metal-disp=1)
 #include "amd/native_disp_pure.h"
 #include "amd/amdgpu_log.h"
+#include "amd/asic_profile.h"
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
@@ -236,7 +237,9 @@ IOReturn Navi48MetalNub::selectorPublish(Navi48Bringup *owner, uint64_t flags, u
 	OSDictionary *props = OSDictionary::withCapacity(4);
 	IOReturn rc = kIOReturnNoMemory;
 	if (nub && props && nub->init(props)) {
-		OSString *model = OSString::withCString("AMD Radeon RX 9070 XT");
+		IOPCIDevice *pci = OSDynamicCast(IOPCIDevice, owner->getProvider());
+		const uint16_t deviceID = pci ? pci->configRead16(kIOPCIConfigDeviceID) : N4X_ASIC_DEV0;
+		OSString *model = OSString::withCString(N4X_ASIC_MODEL(deviceID));
 		const n48disp::OpsShape shape = n48disp::ops_shape(n48disp_latched_on());   // 0.0.613: OFF reports what 0.0.612 did (ABI 1, 120 bytes)
 		OSNumber *abi = OSNumber::withNumber((uint64_t)shape.abi, 32);
 		OSNumber *va = OSNumber::withNumber((uint64_t)n48metal::kTaskVaSize, 64);

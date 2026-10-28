@@ -19,6 +19,7 @@
 #define N4X_ASIC_DEV0            0x7550
 #define N4X_ASIC_DEV1            0x7551
 #define N4X_ASIC_MARKETING(dev)  ((dev) == 0x7550 ? "RX 9070/XT" : "R9700")
+#define N4X_ASIC_MODEL(dev)      ((dev) == 0x7551 ? "AMD Radeon AI PRO R9700" : "AMD Radeon RX 9070 XT")
 #define N4X_ASIC_GC_MINOR_REV    1     // GC 12.0.1, gfx1201
 #define N4X_ASIC_MAX_SE          4
 #define N4X_ASIC_MAX_SA_PER_SE   2
@@ -78,6 +79,8 @@
 #define N4X_ASIC_DEV0            0x7590
 #define N4X_ASIC_DEV1            0x7590
 #define N4X_ASIC_MARKETING(dev)  ((void)(dev), "RX 9060 XT/9060/9050")
+// This port's validated Navi 44 board is the RX 9060 XT.
+#define N4X_ASIC_MODEL(dev)      ((void)(dev), "AMD Radeon RX 9060 XT")
 #define N4X_ASIC_GC_MINOR_REV    0     // GC 12.0.0, gfx1200
 #define N4X_ASIC_MAX_SE          2
 #define N4X_ASIC_MAX_SA_PER_SE   2
