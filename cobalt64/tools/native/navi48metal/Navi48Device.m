@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <mach-o/loader.h>
 #include <sys/stat.h>
 #include <sys/sysctl.h>
 #include <crt_externs.h>
@@ -54,6 +55,7 @@
 #include "n48_crc.h"        // native #12: opt-in per-frame CRC diagnostic (row sampling, accounting; host test: test-crc.c)
 #include "n48_cblog.h"      // native #12 Stage 0b: pure cross-queue RAW-inversion bookkeeping (host test: test-cblog.c)
 #include "n48_t1.h"        // native #12: T1 timing histograms + T2 pipeline-cache file format (host test: test-t1.c)
+#include "n48_btcache.h"
 #include "n48_impcache.h"  // P4 import cache + classify cache decisions; build 16: F2 default-on, F1 fallback decision, failure-injection hook (host test: test-impcache.c)
 #include "n48_ledger.h"    // build 16 (P5): live-import ledger (Step 0) + the F3 use-count policy (host test: test-ledger.c)
 #include "n48_ioalias.h"   // build 16 (P1): per-command-buffer aliasing of IOSurface wrappers (host test: test-ioalias.c)
@@ -1255,13 +1257,25 @@ static void n48s_bind_locked(void) {
 // Caller backtrace test (once per texture creation): any frame resolving (dladdr) to a symbol with both "DisplaySurface" and "GetMTLTexture" (CoreDisplay's
 // DisplaySurface::GetMTLTexture). The first few candidates log their frames so a miss can be diagnosed.
 static BOOL n48s_bt_signal(BOOL logframes) {
+    static n48bt_cache cache;   // serialized by n48s_classify holding N48S.mu
     NSArray<NSNumber *> *a = [NSThread callStackReturnAddresses];
     BOOL hit = NO; char line[1600]; size_t o = 0; line[0] = 0;
     for (NSUInteger i = 0; i < a.count; i++) {
         Dl_info di; void *p = (void *)(uintptr_t)a[i].unsignedLongLongValue;
+        int cached = 0;
+        if (!logframes && n48bt_lookup(&cache, (uintptr_t)p, &cached)) {
+            if (cached) return YES;
+            continue;
+        }
         if (!dladdr(p, &di)) continue;
         const char *sn = di.dli_sname ? di.dli_sname : "";
-        if (strstr(sn, "DisplaySurface") && strstr(sn, "GetMTLTexture")) hit = YES;
+        BOOL signal = strstr(sn, "DisplaySurface") && strstr(sn, "GetMTLTexture");
+        // Only shared-cache images have process-lifetime immutable PC meanings.
+        // Ordinary dylibs may unload/reuse addresses: their results stay uncached.
+        const struct mach_header *mh = (const struct mach_header *)di.dli_fbase;
+        BOOL shared = mh && (mh->magic == MH_MAGIC || mh->magic == MH_MAGIC_64) && (mh->flags & MH_DYLIB_IN_CACHE);
+        n48bt_put(&cache, (uintptr_t)p, shared, signal);
+        if (signal) { hit = YES; if (!logframes) return YES; }
         if (logframes && i < 16 && o + 200 < sizeof line) { const char *im = di.dli_fname ? strrchr(di.dli_fname, '/') : NULL; o += (size_t)snprintf(line + o, sizeof line - o, " [%lu]%s:%.70s", (unsigned long)i, im ? im + 1 : "?", sn); }
     }
     if (logframes) N48LOG("scanout: caller backtrace:%s", line);
@@ -1269,7 +1283,9 @@ static BOOL n48s_bt_signal(BOOL logframes) {
 }
 
 // Called at the end of -initWithDevice:descriptor:iosurface:plane: (RADV is open). YES = this texture is one of CoreDisplay's display surfaces.
-// P4: the verdict (positive and negative) is cached per IOSurface id (key id + base + size + pitch + alloc, 64 entries, LRU) so the backtrace test (dladdr per frame) runs once per surface.
+// Positive surface verdicts alone are cached by IOSurface identity. Negative
+// surfaces must be reconsidered for later CoreDisplay calls. Symbol predicates
+// for immutable shared-cache return PCs are cached separately in n48s_bt_signal.
 static void n48_scan_cc_counters(uint64_t *h, uint64_t *m, uint64_t *mm) {
     pthread_mutex_lock(&N48S.mu); *h = N48S.cc.hits; *m = N48S.cc.misses; *mm = N48S.cc.mismatches; pthread_mutex_unlock(&N48S.mu);
 }
@@ -1288,7 +1304,7 @@ static BOOL n48s_classify(size_t w, size_t h, uint32_t spf, NSUInteger usage, si
             // Reviewer: the backtrace only when the geometry can match, and only POSITIVE verdicts are cached: a display surface whose first texture came from
             // another caller must still be found when CoreDisplay's GetMTLTexture asks for it later (a cached NO would freeze the screen on that surface).
             BOOL bt = (size && pitch) ? n48s_bt_signal(N48S.ncand++ < 3) : NO, test = n48s_testmode();
-            if (size && pitch) N48LOG("scanout: display-surface candidate: IOSurface id %u %zux%zu bpr %zu, signals: format_BGRA=1 size_eq_plane=%d usage_RenderTarget=1 pitch_eq_plane=%d caller_DisplaySurface_GetMTLTexture=%d%s",
+            if (size && pitch) N48LOGR("scanout: display-surface candidate: IOSurface id %u %zux%zu bpr %zu, signals: format_BGRA=1 size_eq_plane=%d usage_RenderTarget=1 pitch_eq_plane=%d caller_DisplaySurface_GetMTLTexture=%d%s",
                    sid, w, h, bpr, size, pitch, bt, test ? " (N48M_TEST_DISPFLIP: backtrace signal waived)" : "");
             ok = size && pitch && (bt || test);
             if (ok) n48cc_put(&N48S.cc, sid, (uint64_t)(uintptr_t)base, w, h, bpr, alloc, 1);
@@ -5938,7 +5954,7 @@ N48_ENCODER_NOOPS
     if (_ended) return;
     _ended = YES;
     n48_full_barrier([_cb vk]);
-    N48LOG("N48BlitEncoder endEncoding");
+    N48LOGR("N48BlitEncoder endEncoding");
     [super endEncoding];
 }
 @end
@@ -6029,7 +6045,7 @@ static void n48_census_log(void) {
 
 // ---- 10a: buffers ----
 - (id)newBufferWithLength:(NSUInteger)length options:(MTLResourceOptions)options {
-    N48LOG("newBufferWithLength:%lu options:0x%lx", (unsigned long)length, (unsigned long)options);
+    N48LOGR("newBufferWithLength:%lu options:0x%lx", (unsigned long)length, (unsigned long)options);
     if (length == 0 || length > N48_MAX_BUFFER_LENGTH) { N48LOG("newBuffer: refused length"); return nil; }
     if (((options >> 4) & 0xF) > 2) {   // 11e: Shared, Managed, Private
         N48LOG("newBuffer: storage mode %lu not supported (Memoryless)", (unsigned long)((options >> 4) & 0xF));
@@ -6042,7 +6058,7 @@ static void n48_census_log(void) {
 }
 
 - (id)newBufferWithBytes:(const void *)bytes length:(NSUInteger)length options:(MTLResourceOptions)options {
-    N48LOG("newBufferWithBytes:length:%lu options:0x%lx", (unsigned long)length, (unsigned long)options);
+    N48LOGR("newBufferWithBytes:length:%lu options:0x%lx", (unsigned long)length, (unsigned long)options);
     N48Buffer *b = [self newBufferWithLength:length options:options];
     if (b && [b contents] && bytes) memcpy([b contents], bytes, length);
     else if (b && bytes) N48LOG("newBufferWithBytes: buffer has no CPU mapping (Private): contents NOT copied");
@@ -6147,7 +6163,7 @@ static void n48_census_log(void) {
 
 // ---- 12: client-memory buffers and textures (QuartzCore: -newTiledTextureWithBytesNoCopy:length:descriptor:offset:bytesPerRow:, 4 per second at the login screen) ----
 - (id)newBufferWithBytesNoCopy:(void *)p length:(NSUInteger)len options:(MTLResourceOptions)o deallocator:(void (^)(void *, NSUInteger))d {
-    N48LOG("newBufferWithBytesNoCopy:length:%lu options:0x%lx", (unsigned long)len, (unsigned long)o);
+    N48LOGR("newBufferWithBytesNoCopy:length:%lu options:0x%lx", (unsigned long)len, (unsigned long)o);
     NSError *e = nil; N48Buffer *b = [[N48Buffer alloc] initWithDevice:self bytesNoCopy:p length:len options:o deallocator:d error:&e];
     if (!b) N48LOG("newBufferWithBytesNoCopy: NIL: %s", e.localizedDescription.UTF8String);   // a refused buffer never owned the memory: the deallocator is NOT called
     return b;
@@ -6182,7 +6198,7 @@ static void n48_census_log(void) {
 
 // ---- gap census: depth/stencil state, fences, limits ----
 - (id)newDepthStencilStateWithDescriptor:(MTLDepthStencilDescriptor *)d {
-    N48LOG("newDepthStencilStateWithDescriptor:");
+    N48LOGR("newDepthStencilStateWithDescriptor:");
     return [[N48DepthStencilState alloc] initWithDevice:self descriptor:d];
 }
 // MTLIOAccelDevice -newFence SEGVs on this device (measured: -[MTLIOAccelDevice newFence] -> _dispatch_sync_f on a NULL queue).
