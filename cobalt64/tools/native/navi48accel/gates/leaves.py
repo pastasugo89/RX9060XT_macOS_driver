@@ -4,7 +4,7 @@
 FB_EXTRA = [184, 310, 311, 319, 322, 325, 326, 330, 331, 332, 344, 345]
 FB_PURE = [309, 312, 313, 314, 315, 316, 317, 318]
 LEAVES = [
-    ('Navi48Accelerator',   'IOGraphicsAccelerator2',   [183, 184, 18, 322, 348, 329, 239]),   # IOService::probe, ::start, ::free, newSharedUserClient, newCommandQueue, newDisplayPipe (aux 0.0.3), newUserClient (aux 0.0.5, G6: 'N48N' on the accelerator)
+    ('Navi48Accelerator',   'IOGraphicsAccelerator2',   [183, 184, 18, 322, 348, 329, 239, 238]),   # IOService::probe, ::start, ::free, newSharedUserClient, newCommandQueue, newDisplayPipe (aux 0.0.3), newUserClient (239/238, aux 0.0.8: 'N48N' on the accelerator)
     ('Navi48EventMachine',  'IOAccelEventMachineFast2', [35]),             # init (the hooked slots are added from TRAMP)
     ('Navi48Task',          'IOAccelTask',              []),
     ('Navi48DisplayMachine','IOAccelDisplayMachine',    [267]),            # start(IOPCIDevice*) (aux 0.0.3: the framebuffer walk starts at the GPU's PCI device when display is on)

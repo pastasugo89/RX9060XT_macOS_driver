@@ -1,5 +1,5 @@
 //
-//  Navi48Accel.cpp - the Aux-KC accelerator kext (com.navi48.accelprobe 0.0.7, display name Navi48Accel) of milestone #9, route A; 0.0.5 (G6) overrides Navi48Accelerator::newUserClient (slot 239) so that a type 'N48N' open reaches the bring-up kext's native client through the ops table's ABI-3 native_open (an internal design note "G6 design"); 0.0.3 adds the display pipe of #11; 0.0.4 adds the monitor B framebuffer of M5
+//  Navi48Accel.cpp - the Aux-KC accelerator kext (com.navi48.accelprobe 0.0.8, display name Navi48Accel) of milestone #9, route A; 0.0.5 (G6) overrides Navi48Accelerator::newUserClient (slot 239) so that a type 'N48N' open reaches the bring-up kext's native client through the ops table's ABI-3 native_open (an internal design note "G6 design"); 0.0.3 adds the display pipe of #11; 0.0.4 adds the monitor B framebuffer of M5
 //  (Navi48Framebuffer : IOFramebuffer, an internal design note "M5 build spec": matches ONLY a Navi48DisplayNub with Navi48DisplayIndex 1 (the monitor B) or, since 0.0.6, 2 (the monitor A; two personalities, one class),
 //  published on demand by the bring-up kext's `fbpublish 2` / `fbpublish 1`, never at boot; it answers from the immutable snapshot of Navi48DisplayOps.h (ABI 2: the per-index geometry) and touches no register).
 //  (Navi48DisplayPipe : IOAccelDisplayPipe, an internal design note section 3.4 + the binding "11h.1 RE facts" section), OFF unless the bring-up kext's ops
@@ -142,7 +142,8 @@ public:
 	N48_R_IOGraphicsAccelerator2_322 newSharedUserClient() override;
 	N48_R_IOGraphicsAccelerator2_348 newCommandQueue() override;
 	N48_R_IOGraphicsAccelerator2_329 newDisplayPipe() override;
-	IOReturn newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **handler) override;   // aux 0.0.5 (G6): slot 239, the 4-argument form (the 5-argument slot 238 is IOService's and reaches this one)
+	IOReturn newUserClient(task_t owningTask, void *securityID, UInt32 type, OSDictionary *properties, IOUserClient **handler) override; // slot 238: preserve native refusal codes
+	IOReturn newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **handler) override;   // slot 239: native open policy and hook
 };
 
 class Navi48EventMachine : public IOAccelEventMachineFast2 {
@@ -502,6 +503,15 @@ IOAccelDisplayPipe *Navi48Accelerator::newDisplayPipe() {
 // sandboxed application (whose profile admits user clients on an IOAccelerator service) can open it. It is decided HERE, before the family's per-PID client limits and its 0x9bc bookkeeping, and an 'N48N' open NEVER reaches the
 // family (the family would hand an unknown type to newContext and give the caller a generic IOAccelContext2): kill switch off, gate not passed, no usable hook = kIOReturnUnsupported. Every other type is the family's, untouched.
 // The hook returns an IOReturn: it is compared with kIoSuccess (nuc_result), never read as a bool (vhook's "1 = handled" convention does not apply).
+// IOService's five-argument wrapper falls back to IOUserClientClass after ANY
+// four-argument failure, replacing ExclusiveAccess/NotPrivileged with Unsupported.
+// Preserve native errors so user space can distinguish saturation from absence.
+// Other client types retain the original IOService wrapper and property handling.
+IOReturn Navi48Accelerator::newUserClient(task_t owningTask, void *securityID, UInt32 type, OSDictionary *properties, IOUserClient **handler) {
+	N48_AUX_ENTER(type == N48_METAL_UC_N48N ? kIOReturnUnsupported : IOService::newUserClient(owningTask, securityID, type, properties, handler));
+	if (type == N48_METAL_UC_N48N) return newUserClient(owningTask, securityID, type, handler);
+	return IOService::newUserClient(owningTask, securityID, type, properties, handler);
+}
 IOReturn Navi48Accelerator::newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **handler) {
 	N48_AUX_ENTER(type == N48_METAL_UC_N48N ? kIOReturnUnsupported : IOGraphicsAccelerator2::newUserClient(owningTask, securityID, type, handler));
 	const NucPlan plan = nuc_plan(type, true, gGateState == 1, gOps, ctx != nullptr && ctx == gCtx);

@@ -146,9 +146,9 @@ plant 42 Info.plist "an IOResources personality (runs at every boot)" '<key>IOPr
 			<string>IOKit</string>
 			<key>IOProbeScore</key>'
 plant 43 Info.plist "the version is not bumped (one field)" '<key>CFBundleVersion</key>
-	<string>0.0.7</string>' '<key>CFBundleVersion</key>
+	<string>0.0.8</string>' '<key>CFBundleVersion</key>
 	<string>0.0.3</string>'
-plant 44 src/kmod_info.c "kmod version differs from the plist" 'KMOD_EXPLICIT_DECL(com.navi48.accelprobe, "0.0.7", _start, _stop)' 'KMOD_EXPLICIT_DECL(com.navi48.accelprobe, "0.0.3", _start, _stop)'
+plant 44 src/kmod_info.c "kmod version differs from the plist" 'KMOD_EXPLICIT_DECL(com.navi48.accelprobe, "0.0.8", _start, _stop)' 'KMOD_EXPLICIT_DECL(com.navi48.accelprobe, "0.0.3", _start, _stop)'
 plant 45 Info.plist "another bundle id (would need a new Allow approval)" '<string>com.navi48.accelprobe</string>
 	<key>CFBundleInfoDictionaryVersion</key>' '<string>com.navi48.accelprobe2</string>
 	<key>CFBundleInfoDictionaryVersion</key>'
@@ -306,10 +306,10 @@ plant 139 $S "the hook is called although the layout gate did not pass" 'nuc_pla
 plant 140 $S "the hook gets no accelerator identity" 'gOps->native_open(ctx, this, (void *)owningTask' 'gOps->native_open(ctx, nullptr, (void *)owningTask'
 plant 141 $S "*handler is written on a refusal" '	if (out == kIoSuccess) *handler = uc;
 	else if (uc) { uc->release(); uc = nullptr; }' '	*handler = uc;'
-plant 142 $L "slot 239 is not in the expected override list" "[183, 184, 18, 322, 348, 329, 239])" "[183, 184, 18, 322, 348, 329])"
+plant 142 $L "slot 239 is not in the expected override list" "[183, 184, 18, 322, 348, 329, 239, 238])" "[183, 184, 18, 322, 348, 329])"
 plant 143 $P "the type constant is not N48N" 'if (type != N48_METAL_UC_N48N) return kNucFamily;' 'if (type != 0x4E34384Fu) return kNucFamily;'
 plant 144 Info.plist "the short version stays 0.0.4" '<key>CFBundleShortVersionString</key>
-	<string>0.0.7</string>' '<key>CFBundleShortVersionString</key>
+	<string>0.0.8</string>' '<key>CFBundleShortVersionString</key>
 	<string>0.0.4</string>'
 plant 145 INSTALL.md "the install path is the old one" '/Library/Extensions/Navi48Accel-0.0.5.kext && sudo chown' '/Library/Extensions/Navi48Accel-0.0.4.kext && sudo chown'
 plant 146 INSTALL.md "the 0.0.5 section suggests kmutil install --update-all" '    Kill switch at any time: boot-arg `navi48-aux=0` (an '"'"'N48N'"'"' open on the accelerator then returns kIOReturnUnsupported).' '    sudo kmutil install --update-all'
@@ -361,10 +361,15 @@ plant 171 $S 'start never refuses on metal-ws (latch or not)' 'const bool metalW
 plant 172 $S 'the M6 latch is read under a wrong name' 'PE_parse_boot_argn("navi48-m6", &m6v, sizeof(m6v))' 'PE_parse_boot_argn("navi48-m6x", &m6v, sizeof(m6v))'
 plant 173 src/n48accel_pure.h 'the metal-ws refusal is inverted under the latch' 'return metalWsPresent && !m6On; }' 'return metalWsPresent && m6On; }'
 plant 174 INSTALL.md 'the 0.0.7 install path is the old one' '/Library/Extensions/Navi48Accel-0.0.7.kext && sudo chown' '/Library/Extensions/Navi48Accel-0.0.6.kext && sudo chown'
-plant 175 src/kmod_info.c 'kmod_info still says 0.0.6' '"0.0.7"' '"0.0.6"'
+plant 175 src/kmod_info.c 'kmod_info still says 0.0.6' '"0.0.8"' '"0.0.6"'
 plant 176 $S 'the M6 latch is read twice in start' 'const bool metalWs = fb_metal_ws_blocks(metalWsArg, m6On);' 'const bool metalWs = fb_metal_ws_blocks(metalWsArg, m6On); uint32_t m6w = 0; (void)PE_parse_boot_argn("navi48-m6", &m6w, sizeof(m6w));'
 plant 177 INSTALL.md 'the 0.0.7 section suggests kmutil install --update-all' '    Kill switch at any time: boot-arg `navi48-aux=0` (both framebuffers refuse to start). With navi48-m6=1 they START' '    sudo kmutil install --update-all
     Kill switch at any time: boot-arg `navi48-aux=0` (both framebuffers refuse to start). With navi48-m6=1 they START'
+
+
+# Native five-argument wrapper: failed opens must not fall through IOService.
+plant 178 $S 'native saturation is masked by the IOService fallback' 'if (type == N48_METAL_UC_N48N) return newUserClient(owningTask, securityID, type, handler);' 'if (type == N48_METAL_UC_N48N) return IOService::newUserClient(owningTask, securityID, type, properties, handler);'
+plant 179 $L 'five-argument native entry is missing from the layout gate' '[183, 184, 18, 322, 348, 329, 239, 238])' '[183, 184, 18, 322, 348, 329, 239])'
 
 echo "plants: $total run, $escaped escaped/failed"
 [ "$escaped" -eq 0 ]

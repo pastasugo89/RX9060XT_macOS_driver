@@ -284,9 +284,9 @@ static void a5_thin(const std::string &root) {
 static void a6_plist(const std::string &root, const std::string &bringRoot) {
     const std::string plist = slurp(root + "/Info.plist"), kmod = slurp(root + "/src/kmod_info.c"), mk = slurp(root + "/Makefile");
     expect(plist.find("<key>CFBundleIdentifier</key>\n\t<string>com.navi48.accelprobe</string>") != std::string::npos, "the approved id com.navi48.accelprobe is reused");
-    expect_u("version 0.0.7 (short and bundle)", count_of(plist, "<string>0.0.7</string>"), 2);
+    expect_u("version 0.0.8 (short and bundle)", count_of(plist, "<string>0.0.8</string>"), 2);
     expect(plist.find("0.0.2") == std::string::npos && plist.find("<string>0.0.3</string>") == std::string::npos, "no 0.0.2 / 0.0.3 left in the plist");
-    expect(kmod.find("KMOD_EXPLICIT_DECL(com.navi48.accelprobe, \"0.0.7\", _start, _stop)") != std::string::npos, "kmod_info carries the same id and version");
+    expect(kmod.find("KMOD_EXPLICIT_DECL(com.navi48.accelprobe, \"0.0.8\", _start, _stop)") != std::string::npos, "kmod_info carries the same id and version");
     expect(plist.find("<key>CFBundleName</key>\n\t<string>Navi48Accel</string>") != std::string::npos, "display name Navi48Accel");
     expect(plist.find("<key>com.apple.iokit.IOAcceleratorFamily2</key>\n\t\t<string>2.0.0</string>") != std::string::npos, "links IOAcceleratorFamily2 2.0.0");
     expect(plist.find("com.apple.iokit.IOGraphicsFamily") != std::string::npos && plist.find("com.apple.kpi.iokit") != std::string::npos && plist.find("com.apple.kpi.libkern") != std::string::npos, "links IOGraphicsFamily and the kpis");
@@ -364,7 +364,7 @@ static void a7_display(const std::string &root) {
         expect(src.find("__attribute__((naked)) void Navi48DisplayPipe::_vslot277() { __asm__(\"jmp _n48_dp_perform\"); }") != std::string::npos, "slot 277 is a bare tail jump (rdi/rsi untouched)"); }
     expect(src.find("N48_TR_DEFS_Navi48DisplayPipe(Navi48DisplayPipe)") != std::string::npos && src.find("N48_META(Navi48DisplayPipe, IOAccelDisplayPipe)") != std::string::npos, "the display pipe class is defined and its trampolines instantiated");
     expect(lv.find("'Navi48DisplayPipe':       ('N48_VC_DISPLAYPIPE',  {267: 'base', 278: 'base', 279: 'base'}, 'n48_disp_vhook')") != std::string::npos, "leaves: 267 / 278 / 279 hooked through n48_disp_vhook, the family's own slot by default");
-    expect(lv.find("('Navi48DisplayPipe',   'IOAccelDisplayPipe',       [277])") != std::string::npos && lv.find("[183, 184, 18, 322, 348, 329, 239])") != std::string::npos && lv.find("('Navi48DisplayMachine','IOAccelDisplayMachine',    [267])") != std::string::npos,
+    expect(lv.find("('Navi48DisplayPipe',   'IOAccelDisplayPipe',       [277])") != std::string::npos && lv.find("[183, 184, 18, 322, 348, 329, 239, 238])") != std::string::npos && lv.find("('Navi48DisplayMachine','IOAccelDisplayMachine',    [267])") != std::string::npos,
            "leaves: the hand overrides 277 (pipe), 329 (newDisplayPipe), 267 (display-machine start)");
     expect(lv.find("HAND = {'Navi48EventMachine': [35], 'Navi48DisplayPipe': [277]}") != std::string::npos, "leaves: slot 277 of the display pipe is hand written (HAND), never generated from its placeholder declaration");
     expect(lv.find("EXPECT_CLASSES = 13") != std::string::npos && lv.find("EXPECT_SLOTS = 2720") != std::string::npos, "the expected gate totals are 13 classes / 2720 slots (0.0.4: + Navi48Framebuffer vs IOFramebuffer, 350 slots)");
@@ -632,10 +632,13 @@ static void a9_native_open(const std::string &root, const std::string &bring) {
     expect(kIoSuccess == 0 && kIoUnsupported == (int32_t)0xE00002C7 && kIoBadArgument == (int32_t)0xE00002C2 && kIoInternalError == (int32_t)0xE00002C9, "the IOReturn constants");
     // the source: slot 239 and the wiring
     const std::string src = slurp(root + "/src/Navi48Accel.cpp"), lv = slurp(root + "/gates/leaves.py"), plist = slurp(root + "/Info.plist"), inst = slurp(root + "/INSTALL.md"), kmod = slurp(root + "/src/kmod_info.c");
-    expect(lv.find("('Navi48Accelerator',   'IOGraphicsAccelerator2',   [183, 184, 18, 322, 348, 329, 239])") != std::string::npos, "leaves: slot 239 (newUserClient) is an override of Navi48Accelerator");
+    expect(lv.find("('Navi48Accelerator',   'IOGraphicsAccelerator2',   [183, 184, 18, 322, 348, 329, 239, 238])") != std::string::npos, "leaves: slot 239 (newUserClient) is an override of Navi48Accelerator");
     expect(lv.find("EXPECT_CLASSES = 13") != std::string::npos && lv.find("EXPECT_SLOTS = 2720") != std::string::npos, "the layout gate stays at 13 classes / 2720 slots (no new class, no new slot)");
     expect(src.find("IOReturn newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **handler) override;") != std::string::npos, "the class declares the 4-argument newUserClient override");
-    const std::string b = body_of(src, "IOReturn Navi48Accelerator::newUserClient(");
+    const std::string wrapper = body_of(src, "IOReturn Navi48Accelerator::newUserClient(task_t owningTask, void *securityID, UInt32 type, OSDictionary *properties, IOUserClient **handler)");
+    expect(wrapper.find("if (type == N48_METAL_UC_N48N) return newUserClient(owningTask, securityID, type, handler);") != std::string::npos, "five-argument native open preserves the four-argument IOReturn unchanged");
+    expect(wrapper.find("return IOService::newUserClient(owningTask, securityID, type, properties, handler);") != std::string::npos, "other types retain IOService property fallback");
+    const std::string b = body_of(src, "IOReturn Navi48Accelerator::newUserClient(task_t owningTask, void *securityID, UInt32 type, IOUserClient **handler)");
     expect(!b.empty(), "newUserClient is defined");
     expect(b.find("N48_AUX_ENTER(type == N48_METAL_UC_N48N ? kIOReturnUnsupported : IOGraphicsAccelerator2::newUserClient(owningTask, securityID, type, handler));") != std::string::npos, "the kill switch is first: off = Unsupported for 'N48N', the family's own call for every other type");
     { const size_t ks = b.find("N48_AUX_ENTER"), pl = b.find("nuc_plan("), fam = b.find("if (plan == kNucFamily) return IOGraphicsAccelerator2::newUserClient("), uns = b.find("if (plan != kNucNative) return kIOReturnUnsupported;"), hook = b.find("gOps->native_open("), res = b.find("nuc_result(rc, uc != nullptr)");
@@ -649,8 +652,8 @@ static void a9_native_open(const std::string &root, const std::string &bring) {
     expect(src.find("N48_TR_NATIVE_OPEN") != std::string::npos, "the open is traced");
     // the layout lists agree in gate_link / gen_gate (they read leaves.py): nothing else names slot 239
     // versions and the install path
-    expect(plist.find("<string>0.0.7</string>") != std::string::npos && count_of(plist, "<string>0.0.7</string>") == 2 && plist.find("0.0.4") == std::string::npos && plist.find("<string>0.0.5</string>") == std::string::npos && plist.find("<string>0.0.6</string>") == std::string::npos, "Info.plist says 0.0.7 (carried twice)");
-    expect(kmod.find("KMOD_EXPLICIT_DECL(com.navi48.accelprobe, \"0.0.7\", _start, _stop)") != std::string::npos, "kmod_info says 0.0.7");
+    expect(plist.find("<string>0.0.8</string>") != std::string::npos && count_of(plist, "<string>0.0.8</string>") == 2 && plist.find("0.0.4") == std::string::npos && plist.find("<string>0.0.5</string>") == std::string::npos && plist.find("<string>0.0.6</string>") == std::string::npos, "Info.plist says 0.0.8 (carried twice)");
+    expect(kmod.find("KMOD_EXPLICIT_DECL(com.navi48.accelprobe, \"0.0.8\", _start, _stop)") != std::string::npos, "kmod_info says 0.0.8");
     expect(inst.find("/Library/Extensions/Navi48Accel-0.0.5.kext") != std::string::npos && inst.find("Step 4b") != std::string::npos, "INSTALL.md documents the new install path /Library/Extensions/Navi48Accel-0.0.5.kext (step 4b)");
     { const size_t a = inst.find("## 0.0.5 (G6"), e = inst.find("## 0.0.4 (M5", a); const std::string sec = (a == std::string::npos || e == std::string::npos) ? "" : inst.substr(a, e - a);
       expect_u("the 0.0.5 section uses the NEW path in every step (cp, chown, chmod, xattr, libraries, load)", count_of(sec, "/Library/Extensions/Navi48Accel-0.0.5.kext"), 7u);

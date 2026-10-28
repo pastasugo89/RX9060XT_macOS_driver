@@ -111,3 +111,16 @@ l'avviso: NEVER `kmutil install --update-all`. Step 4b.
 
 NEVER `kmutil install --update-all` (see step 4b). Il comando ricostruisce l'intera collection e non è mai il
 passo di installazione di questo kext.
+
+## 0.0.8 native refusal propagation (staging only)
+
+The five-argument N48N open now returns the four-argument native hook result
+unchanged. On 25G83 the inherited IOService wrapper masks failed native opens
+with its IOUserClientClass fallback, ultimately returning Unsupported instead of
+ExclusiveAccess or NotPrivileged. Other client types retain that wrapper and
+its original properties. Both entry points keep the auxiliary kill switch.
+
+This fixes error propagation, not session capacity. The current bring-up engine
+still supports four simultaneous native sessions. Build and layout checks do
+not establish runtime success. Do not replace or unload the active accelerator;
+this candidate requires a coordinated AuxKC deployment and a separate boot test.
