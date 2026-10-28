@@ -77,3 +77,26 @@ Candidate: ignored `research/builds/macos-20261028/unified/stage22-compile-wait/
 ### Correct CPPC telemetry ranking patch
 
 Prepared `smcamd-cppc-cap1-ranking.patch` against the exact audited c214eed5f1239df19e6c547c61931536fdf14db6 source. It corrects both the CAP1 HighestPerformance extraction and its incorrect comment from bits7:0 to bits31:24, matching independently checked Linux and FreeBSD register definitions. This prevents reporting lowest performance as the preferred-core ranking. It does not enable CPPC policy writes or establish CPU frequency scaling. No CPU kext binary was built/installed for this isolated source correction.
+
+## B840 USB S5 wake-disable candidate (prepared, not installed)
+
+A complete recursive live IORegistry PCI walk (the earlier shallow query missed nested endpoints) identifies the actual active controller paths and acpi-pmcap-offset values:
+
+| BDF | ACPI path | Device | PM capability offset |
+|---|---|---|---|
+| 5:0:0 | \_SB.PCI0.GPP7.XH00 | 1022:43ef | 78h |
+| 10:0:3 | \_SB.PCI0.GP17.XHC0 | 1022:15b6 | 50h |
+| 10:0:4 | \_SB.PCI0.GP17.XHC1 | 1022:15b7 | 50h |
+| 11:0:0 | \_SB.PCI0.GP19.XHC2 | 1022:15b8 | 50h |
+
+This is the active firmware branch: the chipset's XH00 path is directly under GPP7, unlike the longer UP00/DP60 path also present in conditional DSDT code. The previously examined DSDT _PRW *methods* were not the complete set: XH00 also has a named _PRW package. Therefore the earlier limited method search cannot exclude USB wake handling. No pre-existing PMEE field was found; this candidate defines a new PCI_Config field for the standard PMCSR PME_Enable bit8 at the observed capability+4 register, not an Intel-specific MMIO address.
+
+`SSDT-B840-USB-S5.dsl` first calls the original root _PTS, renamed ZPTS with a DSDT-only patch, retaining TPM/MPTS/SPTS/GPTS/NPTS behavior. Extra action runs only for Darwin with Arg0=5. Each controller checks exact vendor/device IDs and capability ID1 before clearing only PME_Enable using a ByteAcc Preserve field. S3 and other OS behavior are unchanged. This implements the intent of the [Dortania/Rehabman USB shutdown recipe](https://raw.githubusercontent.com/dortania/OpenCore-Post-Install/master/extra-files/FixShutdown-USB-SSDT.dsl) using this board's observed PCI paths/registers; it does not prove USB is the source of its physical power-on event. Network/RTC/firmware wake can still remain.
+
+The production SSDT compiles with ACPICA20260930:801bytes, zero errors/warnings/remarks. `test-usb-s5.py` runs only synthetic AML in acpiexec simulated operation regions, never this machine's firmware or physical PCI registers. All19cases pass: valid/wrong-device/wrong-capability/wrong-vendor cases for all4controllers, neighboring register bits preserved, original _PTS call retained, S3 unchanged, Darwin-only S5. Changing the production action to enable PME instead of clearing it makes5cases fail, confirming the tests catch the intended defect. Default acpiexec allocator accounting emitted outstanding-cache diagnostics despite successful AML evaluations; the reproducible runner uses its documented -dt allocator-tracking-off mode, retaining region simulation and failing on AML errors/return-code mismatches.
+
+`prepare-usb-s5-efi.py` requires the exact inspected firmware DSDT SHA71643c459b246e35bd1ca9defe32c1422cf98574250a459796344f02dfc23447, valid table checksums, and exactly one _PTS+one-argument method signature. It scopes the rename by DSDT signature, OEM table ID, exact450765-byte table length and Count1. It rejects an existing conflicting _PTS patch or output directory. Ran it against the combined local GPU-name/USB/wireless-visibility candidate; resulting local `efi-s5-candidate/EFI` passes OpenCore1.0.8 ocvalidate. Actual OCBOOT config remains baseline SHA b8351af96eda59bdb278b48ed70a96fa0a02f6906dbbeb527c20a21112a9701d and was not written. Physical S5 testing is still required.
+
+## Full scanout-slot CRC sample
+
+A second bounded15s observation read actual scanout slots every256rows, including rows0and256in the reported upper-fifth area. Three summaries cover483frames: zero source instability, slot/source differences, changes before present or outside-command-buffer changes. BAR slot reads averaged about3.78ms and reached4.25ms; this diagnostic adds overhead and was removed immediately after the window. The sampled rows/time window do not prove all frame content or the visible black-band event was correct, but do not support changing slot-copy geometry based on current evidence. WindowServer remained517 and the CRC flag is absent.
