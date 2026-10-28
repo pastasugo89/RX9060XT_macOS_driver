@@ -391,7 +391,7 @@ static void m5_pins(const std::string &root, const std::string &auxroot) {
     }
     expect(mk.find("src/Navi48MetalNub.cpp") != std::string::npos, "the Makefile builds Navi48MetalNub.cpp");
     expect(abi.find("N48N_SEL_METAL_NUB_PUBLISH") != std::string::npos && abi.find("Never done at boot") != std::string::npos, "the ABI header documents the publish selector");
-    { const std::string doc = slurp(root + "/an internal design note");
+    { const std::string doc = slurp(root + "/docs/NATIVE-S1C-ABI.md");
       expect(doc.find("ABI 1.8 addendum") != std::string::npos && doc.find("N48N_SEL_METAL_NUB_PUBLISH") != std::string::npos && doc.find("N48N_SEL_METAL_NUB_WITHDRAW") != std::string::npos && doc.find("navi48-metal") != std::string::npos,
              "NATIVE-S1C-ABI.md carries the ABI 1.8 addendum"); }
     // -- the ops header: identical to the aux kext's copy --
