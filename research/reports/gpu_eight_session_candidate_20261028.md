@@ -34,3 +34,23 @@ Il risultato è specifico alla configurazione e al processo al momento del test:
 non prova che l'hardware non possa decodificare né che aumentare gli slot attivi
 una pipeline VideoToolbox. Dopo l'avvio del candidato occorre ripetere il test
 e misurare codec, frame persi, CPU e decoder durante la riproduzione YouTube.
+
+## Ulteriore verifica VCN
+
+Il solo aumento delle sessioni non implementa un decoder hardware. Il codice
+corrente dichiara esplicitamente che le doorbell VCN/VPE non sono portate
+(`amd/nbif_v6_3_1.h`); riferimenti VCN nel percorso Apple non provano che il
+percorso nativo le inizializzi o registri un decoder. AMD/Linux descrive VCN
+come motore separato di codifica/decodifica, collegato a MMHUB
+([documentazione del driver AMDGPU](https://docs.kernel.org/gpu/amdgpu/driver-core.html)).
+La disponibilità di un decoder VideoToolbox dipende anche dal formato e dalle
+risorse ([Apple: richiesta decodifica hardware](https://developer.apple.com/documentation/videotoolbox/kvtvideodecoderspecification_requirehardwareacceleratedvideodecoder)).
+Un risultato negativo attuale non autorizza ad annunciare che YouTube userà VCN
+solo perché Brave ottiene un contesto Metal.
+
+Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
+base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
+quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la
+firma. Questo controllo identifica il binario base ma non prova da solo che
+ogni file sorgente locale riproduca senza differenze quel binario. Il candidato
+rimane privo di installazione e richiede verifiche ABI, integrazione e rollback.
