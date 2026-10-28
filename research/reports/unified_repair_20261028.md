@@ -14,3 +14,9 @@ Candidate outputs:
 
 - RDNA4FB SHA-256: `ce5f700af0433b595625b348a53204191ce4abea232b2df730a3b72cdd1907af`
 - Navi48Bringup SHA-256: `ab6e1f7aa0f61c7e38019342d8c9a6e68266d7a069a59fa9b758f593cd52f722`
+
+## USB and wireless prerequisites (local EFI only)
+
+Revalidated live PCI parent BDFs: XH00 5:0:0, XHC0 10:0:3, XHC1 10:0:4, XHC2 11:0:0. All four running XHCI services have 14 merged port entries and port-count 1; the baseline plist correctly has distinct controller port counts 14/4/4/1. The staged correction changes only the four IOParentMatch dictionaries to exact pcidebug property matching. Every IOProviderMergeProperties dictionary, including all port data and connector types, remains byte-for-byte semantically identical. Runtime enumeration still needs a boot test.
+
+`prepare-wireless-efi.py` now reproduces this change from the exact inspected config hash, rejects an existing destination, preserves the source EFI, and disables only the SSDT that masks the Qualcomm PCI function. It ran against the saved baseline; OpenCore 1.0.8 ocvalidate reports no issues. The combined local candidate additionally contains the GPU identity kexts. Nothing has been written to the boot USB. Restoring PCI/USB enumeration does not implement Qualcomm firmware loading or the Wi-Fi/Bluetooth driver; these requirements remain unresolved.
