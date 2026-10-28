@@ -529,13 +529,13 @@ int main(int argc, char **argv) {
             const char *r2 = ri ? strstr(ri, "(void)n48_dump_pipeline(d);") : NULL;
             const char *r3 = ri ? strstr(ri, "n48_sync_wait(\"render\"") : NULL;
             CHECK("G: render miss: the in-process translation runs before the AIR dump and the daemon wait, which are skipped when it applies",
-                  before(r1, r2) && before(r2, r3) && r3 < riEnd && has(ri, riEnd, "if (!inproc) (void)n48_dump_pipeline(d);") && has(ri, riEnd, "if (!inproc && n48g_syncwait_applies(") && has(ri, riEnd, "(e.code == 41 && !nofb && n48x_active())"));
+                  before(r1, r2) && before(r2, r3) && r3 < riEnd && has(ri, riEnd, "if (!inproc) (void)n48_dump_pipeline(d);") && has(ri, riEnd, "if (!inproc && n48_compile_wait_applies(") && has(ri, riEnd, "(e.code == 41 && !nofb && n48x_active())"));
             const char *np = fn_start(src, "- (id)n48NewComputePipeline:(id)fn error:(NSError **)error {");
             const char *npEnd = np ? strstr(np, "\n}\n") : NULL;
             const char *c1 = np ? strstr(np, "n48x_translate_fn(fn, \"kernel\"") : NULL;
             const char *c2 = np ? strstr(np, "n48_sync_wait(\"kernel\"") : NULL;
             CHECK("G: compute miss: in-process first, then (only if not in process) the dump + wait; the placeholder stays the last resort",
-                  before(c1, c2) && c2 < npEnd && has(np, npEnd, "if (!inproc && e.code == 41 && n48_fallback_ok() && n48g_syncwait_applies(") && has(np, npEnd, "initPlaceholderWithDevice:self function:fn"));
+                  before(c1, c2) && c2 < npEnd && has(np, npEnd, "if (!inproc && e.code == 41 && n48_fallback_ok() && n48_compile_wait_applies(") && has(np, npEnd, "initPlaceholderWithDevice:self function:fn"));
             const char *nn = fn_start(src, "- (id)n48NewPipeline:(MTLRenderPipelineDescriptor *)d error:(NSError **)error {");
             const char *nnEnd = nn ? strstr(nn, "\n}\n") : NULL;
             CHECK("G: n48NewPipeline logs LINKAGE IGNORED first and does not dump after an in-process attempt", has(nn, nnEnd, "n48x_linkage_render(d);") && has(nn, nnEnd, "NSError *dump = n48x_active() ? e : n48_dump_pipeline(d);"));

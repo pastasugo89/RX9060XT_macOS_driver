@@ -3759,12 +3759,19 @@ static void n48hs_register(id obj, NSArray<NSString *> *shas, BOOL metaRequired,
 }
 
 // ---- C1 (bundle build 6): the bounded synchronous wait on a spvcache miss (n48_gate.h n48g_sync_*) ----
-// Only for a process the kernel admitted as an application (n48g_syncwait_applies): WindowServer, the root test switches and the force switch never wait. The caller has ALREADY dumped the AIR
+// Applications retain the original rule; WindowServer may wait only on the exact
+// Core Animation compilation queue, never on its main/render/unknown queues.
+// The caller has ALREADY dumped the AIR
 // (the daemon cannot translate what it has not been given). Polls the lookup directories every N48G_SYNC_POLL_MS for every <sha>.spv (and, for a kernel, its .meta.json) for up to N48G_SYNC_WAIT_MS;
 // N48G_SYNC_STRIKES consecutive timeouts switch the wait off for the process (a daemon that is not running must not cost 3 s per pipeline); a key that timed out once is never waited on again.
 static pthread_mutex_t n48_sw_mu = PTHREAD_MUTEX_INITIALIZER; static n48g_sync n48_sw_state; static NSMutableSet<NSString *> *n48_sw_timedout;
+static BOOL n48_compile_wait_applies(void) {
+    return n48g_compilewait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws(),
+                                    pthread_main_np() != 0, dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) ? YES : NO;
+}
 static BOOL n48_sync_wait(const char *what, NSArray<NSString *> *shas, BOOL needMeta) {
-    if (!n48g_syncwait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws()) || !shas.count) return NO;
+    if (!n48_compile_wait_applies() || !shas.count) return NO;
+    const int budgetMs = n48_is_ws() ? N48G_WS_COMPILE_WAIT_MS : N48G_SYNC_WAIT_MS;
     NSString *key = [shas componentsJoinedByString:@"+"];
     pthread_mutex_lock(&n48_sw_mu);
     const int allowed = n48g_sync_allowed(&n48_sw_state) && ![n48_sw_timedout containsObject:key];
@@ -3776,7 +3783,7 @@ static BOOL n48_sync_wait(const char *what, NSArray<NSString *> *shas, BOOL need
         for (NSString *sha in shas) { if (!n48hs_stat(sha, ".spv", YES).present || (needMeta && !n48hs_stat(sha, ".meta.json", NO).present)) { all = NO; break; } }
         found = all;
         const int el = (int)((n48_now() - t0) / 1000000ull);
-        step = n48g_sync_step(el, found);
+        step = n48g_sync_step_budget(el, found, budgetMs);
         if (step <= 0) break;
         usleep((useconds_t)step * 1000u);
     }
@@ -3787,7 +3794,7 @@ static BOOL n48_sync_wait(const char *what, NSArray<NSString *> *shas, BOOL need
     const int strikes = n48_sw_state.strikes;
     pthread_mutex_unlock(&n48_sw_mu);
     if (found) N48LOG("SYNC-WAIT %s: translation arrived after %.0f ms (no fallback)", what, ms);
-    else N48LOG("SYNC-WAIT %s: no translation within %d ms (strike %d of %d); the hot-swap fallback is used%s", what, N48G_SYNC_WAIT_MS, strikes, N48G_SYNC_STRIKES, strikes >= N48G_SYNC_STRIKES ? "; waiting is now OFF for this process" : "");
+    else N48LOG("SYNC-WAIT %s: no translation within %d ms (strike %d of %d); the hot-swap fallback is used%s", what, budgetMs, strikes, N48G_SYNC_STRIKES, strikes >= N48G_SYNC_STRIKES ? "; waiting is now OFF for this process" : "");
     return found;
 }
 
@@ -3910,7 +3917,7 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         const BOOL inproc = (e.code == 41 && !nofb && n48x_active()) ? YES : NO;
         if (e.code == 41 && n48_fallback_ok() && !nofb) {
             if (!inproc) (void)n48_dump_pipeline(d);   // C1: dump FIRST (the daemon translates what it is given), then (applications only) wait up to 3 s for it; bundle 14: not when this process translates in process
-            if (!inproc && n48g_syncwait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws())) {
+            if (!inproc && n48_compile_wait_applies()) {
                 NSMutableArray<NSString *> *want = [NSMutableArray array];
                 NSString *sv_ = n48_fn_sha(d.vertexFunction), *sf_ = n48_fn_sha(d.fragmentFunction);
                 if (sv_) [want addObject:sv_];
@@ -6068,8 +6075,8 @@ static void n48_census_log(void) {
         if (p3) return p3;
         N48LOG("compute pipeline creation failed after the in-process translation: %s", e3.localizedDescription.UTF8String);
     }
-    if (!inproc && e.code == 41 && n48_fallback_ok() && n48g_syncwait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws())) {
-        // C1 (build 6): an admitted application dumps the kernel's AIR, then waits up to 3 s for the daemon's translation before it settles for the no-op placeholder below.
+    if (!inproc && e.code == 41 && n48_fallback_ok() && n48_compile_wait_applies()) {
+        // Dump before waiting. Applications get 3 s; the WS compilation queue gets 1.5 s. Other WS queues never enter this branch.
         NSMutableArray *dp = [NSMutableArray array], *dn = [NSMutableArray array];
         n48_dump_function(fn, "kernel", dp, dn);
         NSString *ksha = n48_fn_sha(fn);

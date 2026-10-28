@@ -173,23 +173,32 @@ static inline size_t n48g_dumpsub_path(char *out, size_t n, uint32_t uid) {
 
 // ---- the bounded synchronous wait on a spvcache miss (bundle build 6, C1) ----
 // An ADMITTED APPLICATION (the kernel admitted it; never WindowServer, never a root test switch) that misses the spvcache dumps the AIR and then waits up to N48G_SYNC_WAIT_MS for the translate
-// daemon to install the .spv (polling the same lookup directories) before it settles for the hot-swap FALLBACK pipeline. WindowServer keeps today's immediate fallback: its render thread must
-// never block. A daemon that is not running must not stall an app for 3 s on EVERY pipeline: after N48G_SYNC_STRIKES consecutive timeouts in a process the wait is switched off for that process
+// daemon to install the .spv (polling the same lookup directories) before it settles for the hot-swap FALLBACK pipeline. WindowServer
+// uses a separate compilation-queue exception below; its main/render threads never wait here. A daemon that is not running must not stall an app for 3 s on EVERY pipeline: after N48G_SYNC_STRIKES consecutive timeouts in a process the wait is switched off for that process
 // (any hit re-arms it).
 #define N48G_SYNC_WAIT_MS 3000
 #define N48G_SYNC_POLL_MS 50
 #define N48G_SYNC_STRIKES 3
+#define N48G_WS_COMPILE_WAIT_MS 1500
 typedef struct { int strikes; } n48g_sync;
 static inline int n48g_syncwait_applies(int isWs, int appAdmitted, int force, int testAsWs) { return appAdmitted && !isWs && !force && !testAsWs; }
+// The captured Tahoe stack compiles CA pipelines on this background queue.
+// Its synchronous Metal creation call may wait for compilation; render/main/unknown
+// queues retain immediate fallback. No translator library is loaded in WindowServer.
+static inline int n48g_compilewait_applies(int isWs, int appAdmitted, int force, int testAsWs, int isMainThread, const char *queue) {
+    if (!isWs) return n48g_syncwait_applies(isWs, appAdmitted, force, testAsWs);
+    return !force && !testAsWs && !isMainThread && queue && !strcmp(queue, "com.apple.coreanimation.pipelines");
+}
 static inline int n48g_sync_allowed(const n48g_sync *s) { return s->strikes < N48G_SYNC_STRIKES; }
 static inline void n48g_sync_result(n48g_sync *s, int found) { if (found) s->strikes = 0; else if (s->strikes < 1000) s->strikes++; }
 // One step of the wait loop: elapsedMs since the wait began, found = the lookup now succeeds. Returns -1 = found (stop, use it), 0 = timed out (stop, fall back), >0 = sleep that many ms and look again.
-static inline int n48g_sync_step(int elapsedMs, int found) {
+static inline int n48g_sync_step_budget(int elapsedMs, int found, int budgetMs) {
     if (found) return -1;
-    if (elapsedMs >= N48G_SYNC_WAIT_MS) return 0;
-    const int left = N48G_SYNC_WAIT_MS - elapsedMs;
+    if (elapsedMs >= budgetMs) return 0;
+    const int left = budgetMs - elapsedMs;
     return left < N48G_SYNC_POLL_MS ? left : N48G_SYNC_POLL_MS;
 }
+static inline int n48g_sync_step(int elapsedMs, int found) { return n48g_sync_step_budget(elapsedMs, found, N48G_SYNC_WAIT_MS); }
 
 // ---- the GPU family claim (bundle build 6, C1 finding B) ----
 // Metal 3 implies argument buffers / bindless resources / MTLBuffer.gpuAddress; this bundle has none of them (gpuAddress returns 0, "argument buffers / pointers are not implemented"). So Metal3 is NOT claimed.

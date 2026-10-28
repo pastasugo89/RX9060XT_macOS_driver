@@ -247,8 +247,8 @@ int main(int argc, char **argv) {
         const char *sw_end = sw ? strstr(sw, "\n// ---------------------------------------------------------------------------------------------------------------\n// N48RenderPipelineState (10d/11e)") : NULL;
         CHECK("G13: n48_sync_wait is found", sw && sw_end);
         if (sw && sw_end) {
-            CHECK("G13: the wait is gated by the pure rule with the admitted flag (WindowServer returns at once)", has(sw, sw_end, "n48g_syncwait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws())"));
-            CHECK("G13: the loop is driven by n48g_sync_step and the strike / timed-out bookkeeping by n48g_sync_result", has(sw, sw_end, "n48g_sync_step(el, found)") && has(sw, sw_end, "n48g_sync_result(&n48_sw_state, found ? 1 : 0)") && has(sw, sw_end, "n48g_sync_allowed(&n48_sw_state)"));
+            CHECK("G13: the wait is gated before any lookup/sleep", has(sw, sw_end, "if (!n48_compile_wait_applies() || !shas.count) return NO;"));
+            CHECK("G13: the loop is driven by n48g_sync_step and the strike / timed-out bookkeeping by n48g_sync_result", has(sw, sw_end, "n48g_sync_step_budget(el, found, budgetMs)") && has(sw, sw_end, "n48g_sync_result(&n48_sw_state, found ? 1 : 0)") && has(sw, sw_end, "n48g_sync_allowed(&n48_sw_state)"));
             CHECK("G13: the timed-out set is keyed by the function hashes of the pipeline", has(sw, sw_end, "NSString *key = [shas componentsJoinedByString:@\"+\"];") && has(sw, sw_end, "[n48_sw_timedout containsObject:key]") && has(sw, sw_end, "[n48_sw_timedout addObject:key]"));
             CHECK("G13: the wait looks at the lookup directories (n48hs_stat), spv with the sanity check", has(sw, sw_end, "n48hs_stat(sha, \".spv\", YES)"));
         }
@@ -259,15 +259,36 @@ int main(int argc, char **argv) {
             const char *dm = strstr(ri, "(void)n48_dump_pipeline(d);"), *wt = strstr(ri, "n48_sync_wait(\"render\", want, NO)"), *fbk = strstr(ri, "fb = YES; _fallback = YES;"), *rl = strstr(ri, "vsd = n48_spv_lookup(d.vertexFunction, \"vertex\", &e1, &vname, &mv_);\n                    fsd");
             CHECK("G13: render: dump FIRST, then the wait, then (only if still missing) the fallback", dm && wt && fbk && before(dm, wt) && before(wt, fbk));
             CHECK("G13: render: after a successful wait both stages are looked up again before deciding", rl && before(wt, rl) && before(rl, fbk));
-            CHECK("G13: render: WindowServer never reaches the wait (the branch is guarded by the pure rule)", has(ri, ri_end, "if (!inproc && n48g_syncwait_applies(n48_is_ws(), atomic_load(&n48_app_admitted), n48_force_fallback(), n48_test_fb_as_ws())) {"));
+            CHECK("G13: render wait uses the compile-context gate", has(ri, ri_end, "if (!inproc && n48_compile_wait_applies()) {"));
         }
         const char *cp = fn_start(m2, "- (id)n48NewComputePipeline:(id)fn error:(NSError **)error {");
         const char *cp_end = cp ? strstr(cp, "- (id)newComputePipelineStateWithFunction:(id)fn error:") : NULL;
         CHECK("G13: the compute miss branch is found", cp && cp_end);
         if (cp && cp_end) {
-            const char *gd = strstr(cp, "if (!inproc && e.code == 41 && n48_fallback_ok() && n48g_syncwait_applies("), *dm = strstr(cp, "n48_dump_function(fn, \"kernel\", dp, dn);"), *wt = strstr(cp, "n48_sync_wait(\"kernel\", @[ ksha ], YES)"), *rt = strstr(cp, "initWithDevice:self function:fn error:&e2"), *ph = strstr(cp, "initPlaceholderWithDevice:self function:fn");
+            const char *gd = strstr(cp, "if (!inproc && e.code == 41 && n48_fallback_ok() && n48_compile_wait_applies("), *dm = strstr(cp, "n48_dump_function(fn, \"kernel\", dp, dn);"), *wt = strstr(cp, "n48_sync_wait(\"kernel\", @[ ksha ], YES)"), *rt = strstr(cp, "initWithDevice:self function:fn error:&e2"), *ph = strstr(cp, "initPlaceholderWithDevice:self function:fn");
             CHECK("G13: compute: dump, wait (spv + meta), retry the real pipeline, THEN the no-op placeholder", gd && dm && wt && rt && ph && before(gd, dm) && before(dm, wt) && before(wt, rt) && before(rt, ph));
         }
+    }
+    // Compile-context regression: main/render/unknown queues must never wait in WS.
+    { const char *queues[] = { NULL, "", "com.apple.main-thread", "com.apple.coreanimation.render-server",
+          "com.apple.coreanimation.pipelines", "com.apple.coreanimation.pipelines.extra", "com.apple.root.default-qos" };
+      for (int ws = 0; ws < 2; ws++) for (int app = 0; app < 2; app++)
+      for (int force = 0; force < 2; force++) for (int test = 0; test < 2; test++)
+      for (int mainThread = 0; mainThread < 2; mainThread++) for (unsigned q = 0; q < sizeof queues / sizeof queues[0]; q++) {
+          const int expected = ws ? (!mainThread && q == 4 && !force && !test) : (app && !force && !test);
+          CHECK("compile wait context matrix", n48g_compilewait_applies(ws, app, force, test, mainThread, queues[q]) == expected);
+      }
+      CHECK("WS compilation timeout is bounded separately", N48G_WS_COMPILE_WAIT_MS == 1500 &&
+          n48g_sync_step_budget(1499, 0, N48G_WS_COMPILE_WAIT_MS) == 1 &&
+          n48g_sync_step_budget(1500, 0, N48G_WS_COMPILE_WAIT_MS) == 0 &&
+          n48g_sync_step_budget(1500, 1, N48G_WS_COMPILE_WAIT_MS) == -1);
+      if (m2) {
+          const char *gate = fn_start(m2, "static BOOL n48_compile_wait_applies(void) {");
+          const char *end = gate ? strstr(gate, "static BOOL n48_sync_wait(") : NULL;
+          CHECK("real gate passes actual thread and queue to the pure policy", gate && end &&
+              has(gate, end, "pthread_main_np() != 0, dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)") &&
+              has(gate, end, "n48g_compilewait_applies(n48_is_ws(), atomic_load(&n48_app_admitted)"));
+      }
     }
     // ---- G14 (build 6, C1 finding B): the GPU family claim ----
     CHECK("G14: Metal3 (5001) is NOT claimed for apps, kept for WindowServer", !n48g_supports_family(N48G_FAMILY_METAL3, 0) && n48g_supports_family(N48G_FAMILY_METAL3, 1) && N48G_FAMILY_METAL3 == 5001);
