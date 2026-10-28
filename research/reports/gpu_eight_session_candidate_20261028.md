@@ -51,6 +51,8 @@ solo perché Brave ottiene un contesto Metal.
 Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
 base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
 quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la
-firma. Questo controllo identifica il binario base ma non prova da solo che
-ogni file sorgente locale riproduca senza differenze quel binario. Il candidato
+firma. Il processo ricompila anche la base in una cartella isolata e confronta tutte
+le sette sezioni compilate di codice e dati con il binario installato; il
+controllo passa e rileva una modifica di prova al codice. Firma, UUID e debug
+non sono confrontati. Il candidato
 rimane privo di installazione e richiede verifiche ABI, integrazione e rollback.

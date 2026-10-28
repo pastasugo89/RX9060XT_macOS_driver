@@ -10,6 +10,7 @@ import json
 import plistlib
 import shutil
 import subprocess
+import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -23,6 +24,36 @@ BUILD_ROOT = (ROOT / 'research/builds').resolve()
 
 def sha(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
+
+def mach_sections(path):
+    """Compare real linked section contents, excluding UUID, debug and signature."""
+    data = path.read_bytes()
+    magic, _, _, _, ncmds, _, _, _ = struct.unpack_from('<IiiIIIII', data)
+    if magic != 0xfeedfacf:
+        raise ValueError('Expected 64-bit Mach-O')
+    pos, result = 32, {}
+    for _ in range(ncmds):
+        cmd, length = struct.unpack_from('<II', data, pos)
+        if cmd == 0x19:
+            nsects = struct.unpack_from('<I', data, pos + 64)[0]
+            for index in range(nsects):
+                q = pos + 72 + index * 80
+                sect, seg = struct.unpack_from('<16s16s', data, q)
+                size = struct.unpack_from('<Q', data, q + 40)[0]
+                offset = struct.unpack_from('<I', data, q + 48)[0]
+                if offset and size:
+                    if offset + size > len(data):
+                        raise ValueError('Truncated Mach-O section')
+                    name = (seg.rstrip(b'\0'), sect.rstrip(b'\0'))
+                    if name in result:
+                        raise ValueError('Duplicate section')
+                    result[name] = hashlib.sha256(data[offset:offset + size]).hexdigest()
+        if length < 8 or pos + length > len(data):
+            raise ValueError('Malformed Mach-O load command')
+        pos += length
+    if (b'__TEXT', b'__text') not in result:
+        raise ValueError('No text section')
+    return result
 
 def replace_once(path, old, new, count=1):
     s = path.read_text()
@@ -48,6 +79,22 @@ def main():
     if sha(current) != BASE_SHA:
         raise ValueError('Active EFI baseline differs; stop')
     out.mkdir(parents=True)
+    baseline = out / 'baseline-source'
+    baseline.mkdir()
+    for name in ('src', 'firmware', 'shaders', 'tools'):
+        shutil.copytree(BASE / name, baseline / name, symlinks=False)
+    shutil.copyfile(BASE / 'Info.plist', baseline / 'Info.plist')
+    shutil.copyfile(BASE / 'Makefile', baseline / 'Makefile')
+    common = ['make', '-j4', 'BUILD=build-verify', 'MKSDK=' + str(SDK),
+              'XLAT12_DIR=' + str(ROOT / 'cobalt64/src/xlat12'),
+              'SHADERCACHE_DIR=' + str(ROOT / 'cobalt64/src/shadercache'),
+              'DCN41_DIR=' + str(ROOT / 'cobalt64/src/dcn41')]
+    with (out / 'baseline-build.log').open('w') as log:
+        subprocess.run(common, cwd=baseline, stdout=log, stderr=subprocess.STDOUT, check=True)
+    rebuilt = baseline / 'build-verify/Navi48Bringup.kext/Contents/MacOS/Navi48Bringup'
+    original_sections = mach_sections(BASE_BINARY)
+    if mach_sections(rebuilt) != original_sections:
+        raise ValueError('Rebuilt baseline sections differ from active binary')
     for name in ('src', 'firmware', 'shaders', 'tools'):
         shutil.copytree(BASE / name, out / name, symlinks=False)
     shutil.copyfile(BASE / 'Info.plist', out / 'Info.plist')
@@ -72,7 +119,7 @@ def main():
                 'baseline_kernel_sha256': BASE_SHA, 'baseline_config_sha256':sha(EFI / 'config.plist'),
                 'baseline_bundle_path':e['BundlePath'], 'candidate_version':'0.0.665',
                 'candidate_sha256':sha(bundle / 'Contents/MacOS/Navi48Bringup'),
-                'hardware_validation':'not performed', 'build_command':cmd}
+                'hardware_validation':'not performed', 'baseline_sections_verified':len(original_sections), 'build_command':cmd}
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps(manifest, indent=2))
 
