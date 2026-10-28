@@ -150,6 +150,10 @@ for ((i=0;i<60;i++)); do
 done
 (( ready == 1 )) || { echo "STOP registry readiness timed out; nub=$nubstat accelerator=$accelstat"; exit 1; }
 
+fbidentity=$(ioreg -r -c RDNA4FB -d 1 -w 0 2>/dev/null || true)
+printf '%s\n' "$fbidentity" | grep -Fq '"model" = "AMD Radeon RX 9060 XT"' || { echo 'STOP framebuffer identity correction not verified'; exit 1; }
+echo 'FRAMEBUFFER_MODEL_VERIFIED=AMD Radeon RX 9060 XT'
+
 /usr/bin/python3 "$APP/seed-gpu-apps.py" --tool "$NT" --names "$APP/app-allowlist.json" || { echo 'STOP GPU application admission setup failed'; exit 1; }
 
 adopt=$("$NT" accel pipeadopt 2>&1) || { echo "STOP pipeadopt failed: $adopt"; exit 1; }

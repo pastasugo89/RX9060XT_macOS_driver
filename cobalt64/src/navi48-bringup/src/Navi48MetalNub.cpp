@@ -3,6 +3,7 @@
 //
 //  What this file WRITES: nothing on the hardware. It allocates one 4 KiB physically-contiguous system-memory page (the stamp page, on the aux kext's
 //  device_open hook), one nub object and its property dictionary. It registers the nub in the IORegistry under Navi48Bringup.
+//  On Navi44 it also corrects the model property of the RDNA4FB sibling on this exact PCI provider; no framebuffer code/collection or hardware register is changed.
 //
 #include "Navi48MetalNub.hpp"
 #include "Navi48Bringup.hpp"
@@ -19,6 +20,7 @@
 #include <IOKit/IOLib.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
 #include <libkern/OSAtomic.h>
+#include <libkern/c++/OSIterator.h>
 #include <pexpert/pexpert.h>
 
 #define MNLOG(fmt, ...) AMDGPU_LOG("metal", fmt, ##__VA_ARGS__)
@@ -219,6 +221,40 @@ n48metal::GateIn gate_now(uint64_t flags, bool wantBootArg) {
 
 bool n48metal_nub_published(void) { return __atomic_load_n(&gEverPublished, __ATOMIC_ACQUIRE) != 0u; }   // 0.0.653
 
+// The running RDNA4FB may come from the already-approved AuxKC, rather than the
+// disabled EFI copy. Correct its stale Navi48 personality name on THIS Navi44
+// provider after publish, without replacing/reloading a working framebuffer.
+#if !defined(N4X_ASIC_NAVI48)
+static bool correct_navi44_framebuffer_identity(Navi48Bringup *owner) {
+    IOPCIDevice *pci = owner ? OSDynamicCast(IOPCIDevice, owner->getProvider()) : nullptr;
+    if (!pci || pci->configRead16(kIOPCIConfigVendorID) != 0x1002u ||
+        pci->configRead16(kIOPCIConfigDeviceID) != N4X_ASIC_DEV0) return false;
+    OSIterator *it = pci->getChildIterator(gIOServicePlane);
+    if (!it) return false;
+    IOService *fb = nullptr;
+    unsigned matches = 0;
+    while (OSObject *object = it->getNextObject()) {
+        IOService *child = OSDynamicCast(IOService, object);
+        OSString *kind = child ? OSDynamicCast(OSString, child->getProperty("IOClass")) : nullptr;
+        if (kind && kind->isEqualTo("RDNA4FB")) {
+            matches++;
+            if (!fb) { fb = child; fb->retain(); }
+        }
+    }
+    it->release();
+    bool ok = false;
+    if (fb && matches == 1u) {
+        const char *model = N4X_ASIC_MODEL(N4X_ASIC_DEV0);
+        ok = fb->setProperty("model", model);
+        OSString *readback = OSDynamicCast(OSString, fb->getProperty("model"));
+        ok = ok && readback && readback->isEqualTo(model);
+    }
+    if (fb) fb->release();
+    MNLOG("Navi44 framebuffer identity: %s (matching siblings %u)", ok ? "RX9060XT verified" : "not updated", matches);
+    return ok;
+}
+#endif
+
 // ---- the selectors --------------------------------------------------------------------------------------------------------------------------------------
 IOReturn Navi48MetalNub::selectorPublish(Navi48Bringup *owner, uint64_t flags, uint64_t out[4]) {
 	if (!owner || !out) return kIOReturnBadArgument;
@@ -276,6 +312,9 @@ IOReturn Navi48MetalNub::selectorPublish(Navi48Bringup *owner, uint64_t flags, u
 	nub->retain();                                                                // held across registerService(): a racing withdraw must not free the nub under it
 	IOLockUnlock(gLock);
 	MNLOG("nub published (id %llu, ops ABI %u, %u bytes): the aux kext may now match it", (unsigned long long)out[1], (unsigned)out[2], (unsigned)out[3]);
+#if !defined(N4X_ASIC_NAVI48)
+	nub->setProperty("Navi44,FramebufferIdentityVerified", correct_navi44_framebuffer_identity(owner));
+#endif
 	nub->registerService();                                                       // outside the lock: matching may run the aux kext's probe, which calls back into the ops
 	nub->release();                                                               // the extra reference taken under the lock
 	return kIOReturnSuccess;
