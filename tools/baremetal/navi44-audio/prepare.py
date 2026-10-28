@@ -44,6 +44,11 @@ profile['MixerValues']['PCM'] = 75
 # Only the real integrated controller; no AMD GPU HDMI personality, no rename.
 d['IOKitPersonalities'] = {'Navi44-Rear-Analog': profile}
 info.write_bytes(plistlib.dumps(d, sort_keys=False))
+# zipfile does not preserve executable modes; kext discovery needs them.
+for entry in bundle.rglob('*'):
+    entry.chmod(0o755 if entry.is_dir() else 0o644)
+bundle.chmod(0o755)
+(bundle / 'Contents/MacOS/VoodooHDA').chmod(0o755)
 subprocess.run(['codesign', '--force', '--sign', '-', str(bundle)], check=True)
 subprocess.run(['codesign', '--verify', '--deep', '--strict', str(bundle)], check=True)
 manifest = {'status': 'prepared-not-installed', 'upstream_url': URL,

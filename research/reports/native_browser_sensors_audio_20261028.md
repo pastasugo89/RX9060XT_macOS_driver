@@ -110,20 +110,23 @@ rimane da leggere. AppleHDA è assente da questa installazione, in accordo con
 la [nota ufficiale AppleALC per Tahoe](https://github.com/acidanthera/AppleALC).
 Aggiungere solo alcid/AppleALC non risolve la dipendenza mancante.
 
-Preparato `audio-trial-v1` con il binario ufficiale
+Preparato `audio-trial-v2` con il binario ufficiale
 [VoodooHDA Release368](https://github.com/CloverHackyColor/VoodooHDA/releases/tag/Release368),
 archivio SHA-256 verificato rispetto al digest GitHub
 `9aaa01b245f4827b2de5edfdc028700b9bc8823f03bfb1daf280b8571f88adb0`.
 Il tool `tools/baremetal/navi44-audio/prepare.py` ricrea la prova in staging:
 unica personality per controller/subsystem reali, nessuna personality HDMI GPU,
-nessuna rinomina ACPI, boost 0 e PCM iniziale 75. Firma ad hoc verificata.
+nessuna rinomina ACPI, boost 0 e PCM iniziale 75. Firma ad hoc e permessi del bundle verificati. `kmutil libraries` risolve gli
+import del candidato nelle collezioni effettive 25G83, inclusa IOAudioFamily 740.1;
+questo non è una verifica della compatibilità completa del driver.
 Non imposta pin del codec a tentativi e non seleziona automaticamente un'uscita.
 
 È un candidato **non installato e non testato nel kernel**, che richiede una
 prova AuxKC coordinata: questa versione dipende da IOAudioFamily, quindi non va
 semplicemente copiata nell'EFI. La variante upstream 3.7 incorpora IOAudioFamily
-ma non è lo stesso binario della release 3.6.8 qui verificata. Il tentativo di costruire una AuxKC di sola prova, con copie locali di BootKC e
-SystemKC e output nel workspace, termina con codice 31 (`No binaries or codeless
+ma non è lo stesso binario della release 3.6.8 qui verificata. I tentativi di costruire una AuxKC di sola prova, anche come root e con i permessi
+del bundle corretti, con copie locali di BootKC e
+SystemKC e output nel workspace, terminano con codice 31 (`No binaries or codeless
 kexts were provided`). Non è una cache installabile verificata. La presenza di
 IOAudioFamily nella SystemKC è stata verificata con kmutil inspect; non basta a
 superare il problema di costruzione. Nessuna collezione di sistema modificata.
