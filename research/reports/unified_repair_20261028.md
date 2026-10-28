@@ -38,3 +38,20 @@ The existing pc-translate.sh scans every0.5s and executes up to two grep childre
 Validation: dedicated cache regression checks pass on the actual system Bash3; existing daemon suite33checks pass; suite with sandbox35checks pass using three distinct real local CoreAnimation AIR modules under fixture filenames expected by the test. A deliberately broken cache that ignores translator version keys makes8of33checks fail, proving invalidation regression coverage. The corresponding planted-defect selector was updated for the new implementation.
 
 After confirming no metal2vulkan job was running, installed only pc-translate.sh and restarted com.navi48.translate. The installed source SHA-256 is `5e532880520c46e49bdb33c91b175dc6c003b048704aabc22fcce62666cac9db`. Backup: `/Library/Application Support/Navi44/accelerated-trial/pc-translate.pre-decided-cache-20261028.sh`. launchctl reports running with PID21878; WindowServer remains PID517. No GPU reset, logout or reboot occurred. The actual service is now the optimized implementation; graphics correctness and elimination of residual stutter remain unproven.
+
+## Requirement audit at this checkpoint — full goal remains active
+
+| Requirement | Authoritative result | Remaining evidence/work |
+|---|---|---|
+| Commit prior work and each change | Prior work preserved; this checkpoint commits67650bb,2d202bc,9725d5b,358fc74 | Keep subsequent changes committed; no push requested |
+| RX9060XT name | Corrected kernel sources; two compiled/signed/import-resolved local candidates | Deploy combined EFI and verify IORegistry/System Information after boot |
+| Wi-Fi | Exact Qualcomm PCI visibility change prepared and ocvalidate passes | Compatible17cb:1107 macOS driver remains missing; enumeration alone is insufficient |
+| Bluetooth | Exact USB parent matchers prepared; original port dictionaries preserved | Boot enumeration of0489:e10a, firmware/transport support, pairing test missing |
+| CPU power management | Actual19h/61h confirmed; current Tahoe fork CPPC controls are no-ops | Implement/identify a supported actual policy and verify frequency/power behavior |
+| GPU responsiveness | Resident translation overhead correction installed;35checks pass | Desktop stutter/frame-time comparison still needed |
+| No magenta | First-use shader placeholders still exist; daemon index optimization preserves translations | General first-use behavior still unresolved; cache warmup cannot prove elimination |
+| No black band | Native presents continue without GPU failures; no timestamp-correlated event | Correlate an actual visible event before selecting a presentation/resource fix |
+| No shutdown power-on | Actual ACPI callback chain audited, OS network wake mitigations verified | Firmware wake source and physical S5 test unresolved |
+| Ready for one reboot | Combined EFI exists only in local staging; boot USB mounted read-only, unchanged | Not ready; the prior one-shot was consumed by this morning's boot, no replacement staged |
+
+Fresh capture `current-scanout.log` shows native presents increasing, zero GPU failures/refusals/watchdog restores and both GPUPass/composite presentations. PID517 is the present WindowServer, rather than the previous evening's PID516. The original stage21-shutdown-check one-shot has been consumed. This checkpoint does not authorize describing the combined repair as finished or asking the user to reboot. The actual staged kernel changes are model properties only; no black-band patch has been smuggled into them.
