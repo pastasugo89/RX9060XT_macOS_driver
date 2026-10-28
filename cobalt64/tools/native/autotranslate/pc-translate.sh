@@ -34,9 +34,24 @@ log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 log "start (src=$SRC out=$OUT state=$STATE key=$KEY validator=$VAL sandbox=$([ -n "$N48_NO_SANDBOX" ] && echo OFF || echo on) uid=$(id -u))"
 
 # stat -f (lstat semantics): %u owner, %z size; [ -L ] / [ -d ] / [ -f ] reject symlinks and other types
+decided_load() {  # one read per scan; no child processes for already-decided AIRs
+  local sha key verdict
+  DECIDED=$'\n'
+  while read -r sha key verdict; do
+    case "$sha" in *[!0-9a-f]*|"") continue;; esac
+    [ ${#sha} -eq 64 ] || continue
+    if { [ "$key" = bundle ] && [ -z "$verdict" ]; } ||
+       { [ "$key" = "$KEY" ] && [ -n "$verdict" ]; }; then
+      DECIDED="$DECIDED$sha"$'\n'
+    fi
+  done < "$DONE"
+}
+decided_record() {  # persist first; same-scan duplicate AIRs then see the decision
+  printf '%s\n' "$*" >> "$DONE" || return 1
+  DECIDED="$DECIDED$1"$'\n'
+}
 decided() {  # $1 sha: 0 = nothing to do
-  grep -q "^$1 bundle\$" "$DONE" && return 0
-  grep -q "^$1 $KEY " "$DONE" && return 0
+  case "$DECIDED" in *$'\n'"$1"$'\n'*) return 0;; esac
   # (an ok under an OLD key, or a legacy "<sha> ok", is NOT decided: it is re-translated while the AIR exists)
   return 1
 }
@@ -93,6 +108,7 @@ translate_one() {  # $1 file $2 sha ; prints "OK ..." / "FAIL ..."
 }
 scan_once() {
   local d uid f sha o sz msg had
+  decided_load
   for d in "$SRC"/[0-9]*; do
     [ -d "$d" ] || continue
     uid=${d##*/}
@@ -110,12 +126,12 @@ scan_once() {
       [ -f "$f" ] && [ ! -L "$f" ] || continue
       read -r o sz <<<"$(stat -f '%u %z' "$f" 2>/dev/null)"
       if [ -z "$N48_SKIP_OWNER" ] && [ "$o" != "$uid" ]; then continue; fi
-      if [ -f "$BUNDLE/$sha.spv" ]; then echo "$sha bundle" >> "$DONE"; continue; fi
-      if [ "$sz" -lt 1 ] || [ "$sz" -gt $MAXBYTES ]; then log "$sha uid=$uid REJECT size $sz"; backup_old "$sha" && drop_old "$sha"; echo "$sha $KEY FAIL" >> "$DONE"; continue; fi
+      if [ -f "$BUNDLE/$sha.spv" ]; then decided_record "$sha" bundle; continue; fi
+      if [ "$sz" -lt 1 ] || [ "$sz" -gt $MAXBYTES ]; then log "$sha uid=$uid REJECT size $sz"; backup_old "$sha" && drop_old "$sha"; decided_record "$sha" "$KEY" FAIL; continue; fi
       had=; backup_old "$sha" && had=1
       msg=$(translate_one "$f" "$sha")
       log "$sha uid=$uid $msg"
-      case "$msg" in OK*) echo "$sha $KEY ok" >> "$DONE";; *) [ -n "$had" ] && drop_old "$sha"; echo "$sha $KEY FAIL" >> "$DONE";; esac
+      case "$msg" in OK*) decided_record "$sha" "$KEY" ok;; *) [ -n "$had" ] && drop_old "$sha"; decided_record "$sha" "$KEY" FAIL;; esac
     done
   done
 }

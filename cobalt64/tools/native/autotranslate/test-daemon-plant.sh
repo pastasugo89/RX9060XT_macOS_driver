@@ -19,7 +19,7 @@ PY
 plant pc-translate.sh '[ -f "$f" ] && [ ! -L "$f" ] || continue' '[ -f "$f" ] || continue' "a symlinked .air is followed"
 plant pc-translate.sh 'POLL=${N48_POLL:-0.5}' 'POLL=${N48_POLL:-0.5}; N48_SKIP_OWNER=1' "both uid-ownership rules (directory and file) are off"
 plant pc-translate.sh '[ -d "$d" ] && [ ! -L "$d" ] || continue' '[ -d "$d" ] || continue' "a symlinked subdirectory is followed"
-plant pc-translate.sh '  grep -q "^$1 $KEY " "$DONE" && return 0' '  grep -q "^$1 " "$DONE" && return 0' "the done-list ignores the translator key (old FAILs never retried)"
+plant pc-translate.sh '[ "$key" = "$KEY" ] && [ -n "$verdict" ]' '[ -n "$key" ] && [ -n "$verdict" ]' "the done-list ignores the translator key (old FAILs never retried)"
 plant pc-translate.sh 'if [ "$sz" -lt 1 ] || [ "$sz" -gt $MAXBYTES ]' 'if false' "no input size cap in the daemon"
 plant pc-translate.py 'if sz.st_size < 1 or sz.st_size > maxb:' 'if False:' "no size cap in the translator"
 plant pc-translate.py 'if data[:4] != b"BC\xc0\xde" and data[:4] != b"\xde\xc0\x17\x0b":' 'if False:' "no bitcode magic check"
