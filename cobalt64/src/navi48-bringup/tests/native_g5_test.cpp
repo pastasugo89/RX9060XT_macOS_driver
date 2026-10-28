@@ -500,7 +500,7 @@ static void t10_pins(const std::string &root) {
     expect(in_order(eng, { "if (s->ws) __atomic_store_n(&gSessWs, 0u, __ATOMIC_SEQ_CST);", "if (s->ws) __atomic_store_n(&gWsId, 0u, __ATOMIC_SEQ_CST);" }), "T10: n1c_close clears it");
     expect_u("T10: gWsId is written in exactly those two places", count_of(eng, "__atomic_store_n(&gWsId,"), 2);
     // the CLI
-    expect(cli.find("hangstat [0..8]|sessstat [0..5]|") != std::string::npos && cli.find("} else if (c == 0 && out[4] == 5) {") != std::string::npos && cli.find("amdgpu::n1c_g5_stat") != std::string::npos
+    expect(cli.find("hangstat [0..8]|sessstat [0..9]|") != std::string::npos && cli.find("} else if (c == 0 && in2[1] == 5) {") != std::string::npos && cli.find("amdgpu::n1c_g5_stat") != std::string::npos
            && cli.find("credit-wait timeouts") != std::string::npos && cli.find("WindowServer ring reserve") != std::string::npos, "T10: navi48test: sessstat 5 is accepted and printed");
     // the lock map still stands; the stack rule
     expect(eng.find("// THE LOCK MAP (0.0.627, G2). Order: a session's own lock -> gCliLock -> gRingLock -> gHangLock; gTlbLock is a leaf") != std::string::npos, "T10: the lock map comment is intact");

@@ -31,5 +31,23 @@ int main() {
     assert(!args_ok(kActSessStat, 5));
     assert(n48native::g5::args_ok(true, kActSessStat, 5));
     assert(!args_ok(kActSessStat, 10));
-    puts("eight-session admission and stat ABI: PASS");
+    // Explore mixed live/dead/free states, including WindowServer replacement.
+    uint32_t seed = 0x21c5u;
+    for (unsigned run = 0; run < 30000; ++run) {
+        seed = seed * 1664525u + 1013904223u;
+        uint32_t open = 0, free = 0, first = kNoSlot;
+        for (unsigned i = 0; i < kMaxSessions; ++i) {
+            seed = seed * 1664525u + 1013904223u;
+            state[i] = (seed >> 16) % 3u;
+            if (state[i] == kSlotOpen) ++open;
+            if (state[i] == kSlotFree) { ++free; if (first == kNoSlot) first = i; }
+        }
+        for (unsigned ws = 0; ws < 2; ++ws) for (unsigned wsOpen = 0; wsOpen < 2; ++wsOpen) {
+            auto p = open_pick(true, state, open, ws, false, true, wsOpen);
+            const bool allowed = free && (ws ? !wsOpen : (wsOpen || free > 1));
+            assert((p.rc == kOk) == allowed);
+            if (allowed) assert(p.slot == first && state[p.slot] == kSlotFree);
+        }
+    }
+    puts("eight-session admission and stat ABI: PASS (30000 state samples)");
 }
