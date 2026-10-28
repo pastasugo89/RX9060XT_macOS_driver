@@ -1,0 +1,23 @@
+# Integrated Qualcomm WCN785x — B840 / Tahoe 25G83
+
+User requirement: retain the integrated Qualcomm, PCI17cb:1107 / subsystem105b:e0f7 and USB0489:e10a. The earlier statement that no suitable macOS driver had been found is superseded by this source audit. Candidates are prepared locally; none has been installed, loaded, or tested on this machine's radio.
+
+Selected Wi-Fi source: [f0xeri/qwz-macos](https://github.com/f0xeri/qwz-macos), commit `3e2841227669e6c91ff39c4e7636c56d4d1dc8a2`. QwzWifi0.0.26 plus QwzAirport0.3.16; OpenBSD source pin `9d744686b24f92bf6b45ab8178191c31ccb26da5`. Firmware remains the project's SHA-checked20260309 images; no regulatory/board/power modifications. The native front's eight class layouts match the actual25G83 kernel. The return-type review passes its automated comparison, with unresolved/unknown inferred returns still reported by upstream. Only after these checks does prepare-efi.py restrict BOTH native personality allowlists to25G83. Ordinary upstream build emits conversion/availability/linker warnings; it is not a warning-free build. Compat tests165checks pass with ASan; all five native scan/power/join/BSS/link suites pass. The KPI checker passes for OpenCore injection, identifying thread_call_isactive as the sole non-KPI-export dependency in each Wi-Fi bundle. Direct kmutil load is not supported or attempted.
+
+The alternative [razvanccr/AirportWCN7850](https://github.com/razvanccr/AirportWCN7850), commit `c3f75e49deaeabeeb43ca1f456f4271d4cd33121`, compiles but its header comparison reports69IO80211Controller mismatches on25G83 (465vs463slots). It was excluded from the combined candidate. This finding applies to that exact source/check configuration; no claim about all releases or its author's tested system.
+
+Bluetooth source: [razvanccr/BluetoothWCN7850](https://github.com/razvanccr/BluetoothWCN7850), commit `f23937f5c24a2a0cffca7ce50a85bb808d5faf19`, built1.0.0. All12embedded RAM/NVM images pass the project's pinned hashes. The prepared plist retains ONLY the observed0489:e10a personality. Its firmware loader must actually enumerate and report success after boot; USB mapping alone is insufficient. The physical ROM revision and selected NVM remain to be observed; unknown firmware must not be replaced by a guessed variant.
+
+Companions are built from unmodified official sources against the actual installed Lilu1.7.3 source ABI:
+
+- BrcmPatchRAM/BlueToolFixup2.7.3 `65389020769837e92e9fb939bac34bd9a3e25bb2`.
+- IntelBluetoothFirmware/IntelBTPatcher2.5.0 `a414375505fa3b014be32f8fca31b5bbfdf9f10f`.
+- Lilu `0249c3a918c68a43891350f35fded615b1575776`.
+
+The Bluetooth project's MacPro6,1 board-string substitution for its later Tahoe build is NOT applied blindly: the original Mac-F60DEB81FF30ACF6 string is present in this25G83 bluetoothd and BlueTool (2/4raw occurrences, respectively); the substitute iMac string is present too. The standard -btlfxboardid path is retained. Presence does not prove its runtime patch succeeded; check transport/logs after boot. IntelBTPatcher is the generic HCI random-address setup companion, not a Qualcomm firmware provider.307/306/304imports respectively for firmware loader/BlueToolFixup/IntelBTPatcher are accounted for by the actual kernel and Lilu; none is unresolved. Upstream compiler warnings are retained in staging logs.
+
+prepare-efi.py requires the USB parent-match and disabled Wi-Fi-masking SSDT prerequisites. It appends the five modules after the existing Lilu, adds -qwzon/-btlfxboardid, seeds the two documented Bluetooth NVRAM fields and deletes stale values before seeding. It never changes the boot volume. Both new scripts reject existing output directories. License/firmware notices are copied into built artifacts; complete matching source clones remain in ignored research/ext. No SSID, network password or pairing key is put in the EFI.
+
+Current combined local candidate: `research/builds/macos-20261028/unified/efi-combined-candidate/EFI`. It also includes the prior GPU-name, USB/S5 and CPPC candidates and passes ocvalidate1.0.8. It has not been distributed to OCBOOT. The userspace GPU24 deployment/boot guard and remaining graphics behavior still need work before the unified reboot package is ready.
+
+After boot, verify real PCI/USB IDs, QwzWifi firmware state and QwzAirport interface, then scan/join/DHCP/traffic with Wi-Fi and actual Bluetooth pairing/audio. No loaded-kext count substitutes for these tests. The selected Wi-Fi port has documented WPA3/6GHz/AWDL limitations; full Wi-Fi7 or Continuity is not promised. Sleep/wake and shutdown require this machine's hardware results.

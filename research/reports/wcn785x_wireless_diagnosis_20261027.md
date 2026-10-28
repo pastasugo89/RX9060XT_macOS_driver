@@ -1,5 +1,7 @@
 # WCN785x su macOS Tahoe: indagine iniziale — 2026-10-27
 
+> Aggiornamento28ottobre: la conclusione iniziale sulla disponibilità è superata. Individuati e compilati driver specifici; vedere tools/baremetal/qualcomm-wcn785x/README.md e unified_repair_20261028.md. Sul PC non sono ancora installati né provati.
+
 ## Hardware e osservazioni
 
 - L'inventario Linux `research/hw_dump/baremetal_inventory/lspci_nnk.txt` identifica il Wi-Fi Qualcomm WCN785x `17cb:1107`, sottosistema `105b:e0f7`.
