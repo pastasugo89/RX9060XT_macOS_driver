@@ -40,14 +40,22 @@ def main():
     candidate = EFI / 'EFI/OC/Kexts' / e['new_kext'] / 'Contents/MacOS/Navi48Bringup'
     if sha(candidate) != e['candidate_sha256']:
         raise ValueError('EFI driver differs from build')
-    tool = WORK / 'gpu-eight-repro-v1/navi48test'
     installed_tool = Path('/') / APP / 'navi48test'
-    if not tool.is_file() or not installed_tool.is_file(): raise ValueError('Missing diagnostic tool')
+    if not installed_tool.is_file(): raise ValueError('Missing diagnostic tool')
     output.mkdir(parents=True)
     shutil.copytree(EFI / 'EFI', output / 'EFI')
     shutil.copytree(PERF / 'system', output / 'system')
     tool_target = output / 'system' / APP / 'navi48test'
-    shutil.copyfile(tool, tool_target); tool_target.chmod(0o755)
+    subprocess.run(['clang', '-arch', 'x86_64', '-mmacosx-version-min=12.0', '-O2', '-Wall', '-Wextra',
+                    '-I', str(ROOT / 'cobalt64/src/navi48-bringup/src/apple'), '-framework', 'IOKit',
+                    '-framework', 'CoreFoundation', '-o', str(tool_target),
+                    str(ROOT / 'cobalt64/tools/pc/navi48test.c')], check=True)
+    tool_target.chmod(0o755)
+    job = Path('/Library/LaunchDaemons/org.navi44.accelerated-trial.plist')
+    if job.is_symlink() or not job.is_file(): raise ValueError('Missing boot job')
+    job_target = output / 'system/Library/LaunchDaemons/org.navi44.accelerated-trial.plist'
+    job_target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(job, job_target); job_target.chmod(0o644)
     boot = output / 'system' / SHELL
     content = boot.read_text()
     if content.count('stage23-performance-v1') != 1:
@@ -57,9 +65,33 @@ def main():
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(output / 'system/Library/GPUBundles/Navi48Metal.bundle')], check=True)
     baseline_system = json.loads((PERF / 'manifest.json').read_text())['baseline_system_files']
     baseline_system[APP + '/navi48test'] = sha(installed_tool)
-    data = {'status':'prepared-not-installed', 'profile':'stage24-eight-session-v1',
-            'files':tree(output), 'baseline_system_files':baseline_system,
-            'baseline_efi_files':e['baseline_efi_files'], 'candidate_kext_sha256':sha(candidate),
+    job_rel = 'Library/LaunchDaemons/org.navi44.accelerated-trial.plist'
+    baseline_system[job_rel] = sha(job)
+    modes = {}
+    for rel, expected in baseline_system.items():
+        target = Path('/') / rel
+        if target.is_symlink() or (target.exists() and not target.is_file()):
+            raise ValueError('Unexpected system target type: ' + rel)
+        if (sha(target) if target.is_file() else None) != expected:
+            raise ValueError('System baseline changed: ' + rel)
+        modes[rel] = target.stat().st_mode & 0o777 if target.exists() else None
+    config_rel = 'OC/config.plist'
+    old_efi, new_efi = e['baseline_efi_files'], e['candidate_efi_files']
+    if set(old_efi) - set(new_efi): raise ValueError('EFI candidate removed files')
+    additions = {k:v for k,v in new_efi.items() if k not in old_efi}
+    if any(not k.startswith('OC/Kexts/' + e['new_kext'] + '/') for k in additions):
+        raise ValueError('Unexpected EFI addition')
+    plan = {'baseline_config_sha256':old_efi[config_rel], 'config_sha256':new_efi[config_rel],
+            'add_files':additions, 'all_files':new_efi}
+    (output / 'efi-install-plan.json').write_text(json.dumps(plan, indent=2, sort_keys=True) + '\n')
+    files = tree(output)
+    data = {'schema':1, 'status':'prepared-not-installed', 'profile':'stage24-eight-session-v1',
+            'files':files, 'file_modes':{k:(output/k).stat().st_mode & 0o777 for k in files},
+            'prepared_boot_uuid':subprocess.check_output(['sysctl','-n','kern.bootsessionuuid'], text=True).strip(),
+            'efi_volume_uuid':'7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3',
+            'baseline_system_files':baseline_system, 'baseline_system_modes':modes,
+            'working_metal_files':tree(Path('/Library/GPUBundles/Navi48Metal.bundle')),
+            'baseline_efi_files':old_efi, 'candidate_kext_sha256':sha(candidate),
             'hardware_validation':'not performed', 'installation_and_automatic_rollback':'not implemented'}
     (output / 'manifest.json').write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
     print('Combined candidate staged:', len(data['files']), 'files. No live changes.')

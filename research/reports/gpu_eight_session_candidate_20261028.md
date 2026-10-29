@@ -73,3 +73,20 @@ nuovo kext impedisce l'avvio prima della guardia userspace. Il vecchio kext
 conservato da solo non attiva automaticamente il ritorno alla vecchia entry.
 Servono controlli di avvio e recupero e, dopo il riavvio concordato, prove di
 concorrenza, rendering Brave, latenza e video.
+
+## Verifica transazione dopo il riavvio del 29 ottobre
+
+La sessione è cambiata: il candidato combinato è stato rigenerato per la nuova
+boot UUID dopo che il processo della guardia stage22 ha terminato con successo.
+Il controllo root ha verificato EFI e Metal attivi, tutti i 553 file del
+pacchetto, versione macOS, permessi, stato stabile della guardia e identità della
+sessione. Il config modificato cambia esclusivamente il percorso del kext GPU.
+
+L'installer transazionale esistente è stato esercitato su copie temporanee
+complete del pacchetto e degli attuali file, senza scrivere destinazioni live:
+installazione e rollback esplicito sono passati; guasti simulati dopo lo scambio
+Metal e dopo il cambio config hanno ripristinato i file precedenti. Un config
+modificato nel pacchetto è stato rifiutato dalla preflight. Questi test non
+verificano un guasto prima dell'avvio di macOS e non installano un recupero
+UEFI automatico. Il vecchio helper di ripristino richiede adattamento allo stato
+`stable` persistente attuale; non deve cancellare o azzerare la guardia.
