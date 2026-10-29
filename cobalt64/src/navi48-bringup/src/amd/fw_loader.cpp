@@ -1,5 +1,6 @@
 #include "fw_loader.h"
 #include "amdgpu_ucode_extract.h"
+#include "native_vcn_firmware_pure.h"
 #include "amdgpu_log.h"
 #include "../fw/fw_table.h"
 
@@ -57,6 +58,19 @@ kern_return_t fw_loader_prepare(DeviceContext &dev, PSPContext &psp, FwLoaderSta
 const FwLoaderState::Entry *fw_loader_find(const FwLoaderState &st, uint32_t fw_type) {
     for (uint32_t i = 0; i < st.count; i++) if (st.entries[i].fw_type == fw_type) return &st.entries[i];
     return nullptr;
+}
+
+kern_return_t fw_loader_add_vcn(FwLoaderState &st, const uint8_t *data, uint64_t bytes) {
+    if (!st.dev || !st.psp || bytes > SIZE_MAX || st.count > FwLoaderState::kMaxEntries)
+        return kIOReturnBadArgument;
+    const auto plan = n48vcn::firmware_plan(data, static_cast<size_t>(bytes));
+    if (!plan.valid || (plan.payloadOffset & 3u)) return kIOReturnBadArgument;
+    if (fw_loader_find(st, PSPGfxFwType::VCN)) return kIOReturnExclusiveAccess;
+    if (st.count == FwLoaderState::kMaxEntries) return kIOReturnNoResources;
+    FwLoaderState::Entry &e=st.entries[st.count++];
+    e.fw_type=PSPGfxFwType::VCN; e.src=data+plan.payloadOffset; e.size=plan.payloadSize;
+    e.mc=0; e.staged=false; e.blob="vcn_5_0_0";
+    return kIOReturnSuccess;
 }
 
 static kern_return_t get_payload(void *ctx, uint32_t fw_type, uint64_t &out_bus_addr, uint32_t &out_size) {

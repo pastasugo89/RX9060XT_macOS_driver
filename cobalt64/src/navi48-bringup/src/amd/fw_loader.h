@@ -31,6 +31,9 @@ struct FwLoaderState {
 
 // Decode every embedded blob into payload entries (no hardware access).
 kern_return_t  fw_loader_prepare(DeviceContext &dev, PSPContext &psp, FwLoaderState &st);
+// Explicit experimental registration only. The caller retains `data` for the
+// lifetime of the loader; no staging, PSP command or GPU action happens here.
+kern_return_t fw_loader_add_vcn(FwLoaderState &st, const uint8_t *data, uint64_t bytes);
 FirmwareLoader fw_loader_make(FwLoaderState &st);
 const FwLoaderState::Entry *fw_loader_find(const FwLoaderState &st, uint32_t fw_type);
 

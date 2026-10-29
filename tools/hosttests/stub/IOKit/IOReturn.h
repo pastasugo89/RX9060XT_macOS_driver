@@ -8,6 +8,7 @@ typedef kern_return_t IOReturn;
 #define kIOReturnError          ((IOReturn)0xe00002bc)
 #define kIOReturnNoMemory       ((IOReturn)0xe00002bd)
 #define kIOReturnBadArgument    ((IOReturn)0xe00002c2)
+#define kIOReturnExclusiveAccess ((IOReturn)0xe00002c5)
 #define kIOReturnNotReady       ((IOReturn)0xe00002d8)
 #define kIOReturnTimeout        ((IOReturn)0xe00002d6)
 #define kIOReturnUnsupported    ((IOReturn)0xe00002c7)

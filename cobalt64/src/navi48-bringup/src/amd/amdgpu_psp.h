@@ -307,6 +307,7 @@ constexpr uint32_t kPSPGfxRespUrespOffset     = kPSPGfxRespOffset + 64;
 
 // Subset of psp_gfx_fw_type — full enum in upstream psp_gfx_if.h:208.
 namespace PSPGfxFwType {
+    constexpr uint32_t VCN       = 13;   // GFX_FW_TYPE_VCN, VCN instance 0
     constexpr uint32_t SMU       = 18;   // PMFW
     // Legacy SDMA instances (sdma_v4-style packaging). RDNA4 uses
     // SDMA_UCODE_TH0 instead — see below.

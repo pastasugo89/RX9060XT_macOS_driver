@@ -115,6 +115,18 @@ formato non implica che il loader attuale includa o carichi VCN: occorrono
 ancora l'integrazione del file, lo spazio di staging, la chiamata PSP, le code,
 il controllo di alimentazione e un'interfaccia di decodifica su macOS.
 
+Il log di avvio precedente mostra il buffer PSP di staging da 8.388.608 byte
+occupato fino a 2.961.408 byte dopo il caricamento dei firmware esistenti.
+Il payload VCN analizzato richiederebbe 438.272 byte allineati: in quel singolo
+avvio resterebbero 4.988.928 byte. È una verifica di capacità su un log, non una
+garanzia del layout TMR o dell'accettazione PSP. È stata aggiunta una funzione
+esplicita `fw_loader_add_vcn`: valida e registra l'intervallo nel caricatore
+esistente, rifiutando doppioni, tabella piena e dati non validi. Il test esegue
+il vero codice del caricatore con il blob AMD e un PSP simulato che fallirebbe
+se chiamato; la build completa del kext compila. Nessun percorso di avvio chiama
+questa funzione, il blob deve rimanere valido per la durata del caricatore e
+non è stato eseguito nessun comando PSP o caricamento sulla GPU.
+
 La struttura `native_vcn_shared_pure.h` riproduce gli offset VCN 5 della coda
 unificata, logging, ring e interfaccia SMU; la struttura occupa 532 byte e il
 suo spazio allocato è arrotondato a 4.096 byte. L'inizializzazione di prova
