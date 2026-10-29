@@ -48,6 +48,20 @@ risorse ([Apple: richiesta decodifica hardware](https://developer.apple.com/docu
 Un risultato negativo attuale non autorizza ad annunciare che YouTube userà VCN
 solo perché Brave ottiene un contesto Metal.
 
+Il censimento IP precedente identifica sul dispositivo VCN 5.0.0. Linux usa
+un percorso dedicato per inizializzare il motore, predisporre la coda e il
+firmware ([sorgente upstream VCN 5.0.0](https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/amd/amdgpu/vcn_v5_0_0.c));
+questo è un riferimento per il porting, non prova un'integrazione VideoToolbox.
+La sonda `video-codec-probe.c` verifica ora anche la creazione di sessioni con
+accelerazione consentita o obbligatoria e interroga la proprietà ufficiale
+`UsingHardwareAcceleratedVideoDecoder`. Il 29 ottobre, con quattro sessioni
+GPU occupate e processo non ammesso, la descrizione generica 1080p H.264 ha
+creato una sessione consentita ma la proprietà è risultata non disponibile;
+le sessioni obbligatorie sono state rifiutate per tutti e quattro i codec.
+La sonda non contiene parametri del codec e non decodifica fotogrammi: questi
+esiti non identificano da soli il motivo del rifiuto o il percorso di YouTube.
+Va rieseguita con un contesto ammesso e sessioni libere dopo la prova GPU.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo

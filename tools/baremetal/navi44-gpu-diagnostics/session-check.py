@@ -57,11 +57,14 @@ def assess(before, after, slots):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--interval',type=float,default=2.0)
+    p.add_argument('--slots',type=int,choices=(4,8),default=8,
+                   help='Use 4 for the currently installed four-session driver, 8 for the experimental profile')
     args=p.parse_args()
     if os.geteuid()!=0: p.error('Requires root to query the admin diagnostics')
     if not 0.1<=args.interval<=10: p.error('interval must be between 0.1 and 10 seconds')
     def query(page): return capture([str(TOOL),'accel','sessstat',str(page)])
-    before=parse_global(query(4));slots=[parse_slot(p,query(p)) for p in (0,1,2,3,6,7,8,9)]
+    pages=(0,1,2,3) if args.slots==4 else (0,1,2,3,6,7,8,9)
+    before=parse_global(query(4));slots=[parse_slot(page,query(page)) for page in pages]
     time.sleep(args.interval);after=parse_global(query(4))
     print(json.dumps({'before':before,'after':after,'slots':slots,'assessment':assess(before,after,slots)},indent=2))
 
