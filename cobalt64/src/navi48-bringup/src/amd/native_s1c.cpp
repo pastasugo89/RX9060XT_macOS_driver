@@ -825,7 +825,16 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
             __atomic_store_n(&gEmitted, 0ull, __ATOMIC_RELEASE);
             gHang.lastRetired = 0; gHang.tProgress = now_ns();
         }
-        if (program_root(vmid, s->rootPa) != kOk) { rc = kIOReturnNotReady; break; }
+        if (program_root(vmid, s->rootPa) != kOk) {
+            // The root was already published to hardware before the flush.
+            // A timeout cannot prove that the GPU stopped referencing it.
+            // Quarantine both the VMID and its table blocks for this boot.
+            gSlotState[slot] = kSlotDead;
+            N1C_LOG("open failed after publishing VMID %u root: slot and page tables quarantined until reboot", vmid);
+            s = nullptr;  // retain its blocks; the generic failure cleanup must not recycle them
+            rc = kIOReturnNotReady;
+            break;
+        }
         __atomic_store_n(&s->id, ++gSessSeqCounter, __ATOMIC_SEQ_CST);   // 0.0.609
         __atomic_store_n(&s->open, true, __ATOMIC_RELEASE);
         gSlotState[slot] = kSlotOpen;
