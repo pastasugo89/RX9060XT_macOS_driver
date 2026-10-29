@@ -12,7 +12,7 @@ ROOT = HERE.parents[2]
 spec = importlib.util.spec_from_file_location('recovery', HERE / 'install-eight-combined.py')
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
-payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v6'
+payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v7'
 manifest = json.loads((payload/'manifest.json').read_text())
 plan = json.loads((payload/'efi-install-plan.json').read_text())
 old_boot = manifest['prepared_boot_uuid'].lower()

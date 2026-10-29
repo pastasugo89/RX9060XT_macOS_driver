@@ -423,8 +423,13 @@ static void t11_pins(const std::string &root) {
            "accelExperiment: 103 is gated by its latch and sits before the native refusal");
     expect(ucl.find("!n48native::g2::action_admitted(amdgpu::n1c_multi_latched_on(), action)) {") != std::string::npos, "the user client: 103 skips the old bound only with the latch");
     expect(hdr.find("IOReturn n1c_g2_stat(uint64_t page, uint64_t *o);") != std::string::npos && hdr.find("bool n1c_multi_latched_on();") != std::string::npos, "declared");
-    expect(cli.find("else if (what && !strcmp(what, \"sessstat\")) in = 103;") != std::string::npos && cli.find("in == 103 ? \"sessstat\"") != std::string::npos && cli.find("hangstat sessstat scdcread appallow fbpublish m6stat m6xstat vramstat\\n") != std::string::npos && cli.find("|sessstat [0..5]|scdcread <line 2|3> <off 0..0x5f> [len 1..16]|appallow add") != std::string::npos,
+    expect(cli.find("else if (what && !strcmp(what, \"sessstat\")) in = 103;") != std::string::npos && cli.find("in == 103 ? \"sessstat\"") != std::string::npos && cli.find("hangstat sessstat scdcread appallow fbpublish m6stat m6xstat vramstat\\n") != std::string::npos && cli.find("|sessstat [0..9]|scdcread <line 2|3> <off 0..0x5f> [len 1..16]|appallow add") != std::string::npos,
            "navi48test: the verb, its name, the known list and the usage");
+    const std::string stall = fn_body(eng, "static bool stall_handle(uint64_t em, uint64_t re) {");
+    expect(in_order(stall, {"IOLockLock(gCliLock);", "Session *gs =", "const bool user =", "IOLockUnlock(gCliLock);", "g2_recover(g, gs)"}),
+           "recovery snapshots session identity under client lock and releases it before GPU recovery");
+    expect(in_order(op, {"IOLockLock(gCliLock);", "__atomic_load_n(&gRecovering, __ATOMIC_SEQ_CST)", "open_pick("}),
+           "open checks recovery under client lock before slot selection");
     // no single-session leftovers, the stack rule
     expect(eng.find("static Session *gS;") == std::string::npos && eng.find("gS->") == std::string::npos && eng.find("&gS,") == std::string::npos, "no global single-session pointer is left");
     expect(eng.find("Session tmp") == std::string::npos && eng.find("Session copy") == std::string::npos && eng.find("OwnerLog l") == std::string::npos, "no Session / OwnerLog on the stack (static or heap only)");

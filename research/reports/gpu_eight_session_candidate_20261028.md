@@ -106,6 +106,18 @@ questa interazione. Prima di dichiarare sicuro il candidato a otto sessioni
 occorre dimostrare l'invariante di identità o correggere il percorso, includendo
 chiusura, riapertura, rilettura del progresso e ordine dei lock.
 
+Nel sorgente candidato è ora presente una difesa mirata: mentre `gRecovering`
+è attivo, `n1c_open` rifiuta nuove sessioni sotto `gCliLock`; il recupero
+acquisisce lo stesso lock per verificare puntatore e identità, poi lo rilascia
+prima delle attese GPU. Così un'apertura già iniziata termina prima della
+verifica, mentre una successiva non può riutilizzare lo slot fino al termine
+del recupero. Il test sorgente verifica ordine di lock e controlli; i 252
+controlli G2 e 30.000 casi di ammissione a otto sessioni passano con i
+sanitizer. Questo non dimostra tutte le interazioni concorrenti né impedisce
+di per sé un recupero non più necessario se il ring riprende dopo il campione;
+servono ulteriori prove e una valutazione del progresso tardivo. Il binario
+ricostruito e il pacchetto `gpu-eight-combined-v7` restano non installati.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in

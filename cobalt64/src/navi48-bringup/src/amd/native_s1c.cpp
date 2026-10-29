@@ -551,10 +551,15 @@ static bool g2_recover(const n48native::g2::Guilty &g, Session *gs) {
 static bool stall_handle(uint64_t em, uint64_t re) {
     using namespace n48native::g2;
     const Guilty g = guilty_of(gOwners, re, em);
+    // A pre-existing open may have entered before gRecovering was set. Wait
+    // for its slot publication before deciding which session owns this work.
+    // Later opens are refused under this same lock until recovery finishes.
+    IOLockLock(gCliLock);
     Session *gs = (g.known && g.slot < kMaxSessions) ? slot_ptr(g.slot) : nullptr;
     const bool user = gs != nullptr && __atomic_load_n(&gs->open, __ATOMIC_ACQUIRE) && __atomic_load_n(&gs->id, __ATOMIC_ACQUIRE) == g.sessId &&
                       __atomic_load_n(&gs->hello, __ATOMIC_ACQUIRE);
     const bool ws = user && __atomic_load_n(&gs->ws, __ATOMIC_ACQUIRE);
+    IOLockUnlock(gCliLock); // never hold the client lock across MES or GPU waits
     const uint64_t tried = gG2.recoveries + gG2.failed;   // 0.0.629 (R3): attempts this boot (gRecovering, held by this call, serialises the counters)
     const uint32_t act = stall_action_budgeted(multi_on(), g.known, g.slot, user, ws, mes_timeout_seen(), g1_holds(), tried);
     N1C_LOG("stall: seq emitted %llu retired %llu; the oldest unretired seq %llu belongs to %s (slot %u, session %u%s): %s", (unsigned long long)em, (unsigned long long)re,
@@ -744,6 +749,12 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
     IOReturn rc = kIOReturnSuccess;
     Session *s = nullptr;
     do {
+        // Synchronize with stall_handle's identity snapshot. A closed slot
+        // cannot be reused while a recovery still holds its old pointer.
+        if (__atomic_load_n(&gRecovering, __ATOMIC_SEQ_CST) != 0u || hung_now()) {
+            rc = kIOReturnNotReady;
+            break;
+        }
         CPContext &cp = ctx.cp;
         const uint32_t openNow = multi ? __atomic_load_n(&gOpenFlag, __ATOMIC_SEQ_CST) : 0u;
         const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;   // 0.0.641: apps ON = a WindowServer slot is always available and the last free slot is its
