@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 EFI = Path('/Volumes/OCBOOT/EFI')
-BUILD = ROOT / 'research/builds/macos-20261028/gpu-eight-repro-v5'
+BUILD = ROOT / 'research/builds/macos-20261028/gpu-eight-repro-v6'
 OUTPUT_ROOT = (ROOT / 'research/builds').resolve()
 NEW = 'Navi48Bringup-eight-0.0.665.kext'
 RECOVERY = 'RECOVERY/pre-eight-config.plist'

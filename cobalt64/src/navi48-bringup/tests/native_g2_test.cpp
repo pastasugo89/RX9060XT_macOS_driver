@@ -428,6 +428,8 @@ static void t11_pins(const std::string &root) {
     expect(cli.find("else if (what && !strcmp(what, \"sessstat\")) in = 103;") != std::string::npos && cli.find("in == 103 ? \"sessstat\"") != std::string::npos && cli.find("hangstat sessstat scdcread appallow fbpublish m6stat m6xstat vramstat\\n") != std::string::npos && cli.find("|sessstat [0..9]|scdcread <line 2|3> <off 0..0x5f> [len 1..16]|appallow add") != std::string::npos,
            "navi48test: the verb, its name, the known list and the usage");
     const std::string stall = fn_body(eng, "static bool stall_handle(uint64_t em, uint64_t re) {");
+    expect(in_order(stall, {"IOLockLock(gRingLock);", "const Guilty g = guilty_of(gOwners, re, em);", "IOLockUnlock(gRingLock);", "IOLockLock(gCliLock);"}),
+           "recovery snapshots ring ownership under its writer lock, releasing it before client lock");
     expect(in_order(stall, {"IOLockLock(gCliLock);", "Session *gs =", "const bool user =", "IOLockUnlock(gCliLock);", "g2_recover(g, gs)"}),
            "recovery snapshots session identity under client lock and releases it before GPU recovery");
     expect(in_order(op, {"IOLockLock(gCliLock);", "__atomic_load_n(&gRecovering, __ATOMIC_SEQ_CST)", "open_pick("}),

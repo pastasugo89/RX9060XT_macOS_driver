@@ -570,7 +570,11 @@ static bool stall_cancel_if_progress(uint64_t observed) {
 static bool stall_handle(uint64_t em, uint64_t re) {
     using namespace n48native::g2;
     if (stall_cancel_if_progress(re)) return false;
+    // owner_note mutates this ring buffer under gRingLock. Snapshot the whole
+    // entry under the same lock, including its slot, ID and start pointer.
+    IOLockLock(gRingLock);
     const Guilty g = guilty_of(gOwners, re, em);
+    IOLockUnlock(gRingLock);
     // A pre-existing open may have entered before gRecovering was set. Wait
     // for its slot publication before deciding which session owns this work.
     // Later opens are refused under this same lock until recovery finishes.

@@ -127,6 +127,13 @@ simulano MES o l'hardware. Il candidato `gpu-eight-combined-v8` compila e passa
 253 controlli G2, 11.011 G4, i casi a otto sessioni e le prove di transazione
 su copie; non è installato.
 
+L'audit ha rilevato anche che la ricerca del proprietario leggeva `gOwners`
+senza il lock usato per scriverlo. Nel candidato successivo la copia della voce
+avviene sotto `gRingLock`, rilasciato prima di acquisire `gCliLock`: non vengono
+annidati nell'ordine inverso. Build e controlli host passano, inclusi 254 G2 e
+11.011 G4; il pacchetto locale `gpu-eight-combined-v9` ha superato i controlli
+e la transazione su copie. Non è un test di concorrenza kernel su hardware.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in
