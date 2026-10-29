@@ -73,6 +73,15 @@ o meno con sessioni libere, né una misura delle prestazioni YouTube. La prova
 costituisce un confronto funzionale più forte della sola descrizione generica,
 ma copre soltanto H.264 e un frame 64×64.
 
+Come primo componente isolato del porting VCN è stato aggiunto un calcolo puro
+per il registro di instradamento doorbell dell'istanza 0 NBIF 6.3.1, basato
+sulla [routine Linux AMD](https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/amd/amdgpu/nbif_v6_3_1.c)
+e sugli header dei registri. I test coprono tutti i valori dell'offset e campioni
+di bit riservati, con controlli dei limiti; non scrivono registri. L'istanza 1
+non è trattata perché la voce 5 è condivisa con VPE e serve un audit della sua
+proprietà. Il calcolo non è collegato al kext e non implementa firmware, MMHUB,
+code o integrazione VideoToolbox: non abilita ancora la decodifica hardware.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo
