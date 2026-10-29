@@ -90,6 +90,22 @@ né stato di caricamento e non consente un confronto rigoroso. La sonda ora salv
 questi dati e rifiuta una pagina non completamente caricata. Occorrono più
 campioni comparabili prima e dopo, con visibilità e carico controllati.
 
+## Audit aggiuntivo del recupero concorrente
+
+Nel sorgente G2, `stall_handle` legge senza `gCliLock` puntatore, apertura e
+identità della sessione responsabile; `g2_recover` acquisisce successivamente
+il lock del ring e scrive `poisoned` sul puntatore. La chiusura può rilasciare
+uno slot e l'apertura successiva riutilizza la stessa struttura; `gRecovering`
+serializza i recuperi ma non compare nel percorso `n1c_open`. Un possibile
+interleaving è: identificazione del vecchio proprietario, avanzamento tardivo
+del ring, chiusura e riapertura dello slot, quindi scrittura del flag sul nuovo
+proprietario. L'effettiva raggiungibilità richiede ulteriori verifiche delle
+temporizzazioni e dei lock; non è stata osservata in esecuzione e non va
+presentata come causa dello stutter. I test puri di ammissione non coprono
+questa interazione. Prima di dichiarare sicuro il candidato a otto sessioni
+occorre dimostrare l'invariante di identità o correggere il percorso, includendo
+chiusura, riapertura, rilettura del progresso e ordine dei lock.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in
