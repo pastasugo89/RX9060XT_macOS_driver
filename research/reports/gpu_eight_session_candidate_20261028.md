@@ -99,6 +99,14 @@ questo controllo non autentica il firmware. Non sono stati verificati firma,
 compatibilità o caricamento PSP. Il
 componente non è collegato al driver e il blob rimane nei dati locali ignorati.
 
+In modalità PSP, Linux colloca stack (128 KiB), contesto (512 KiB) e area
+condivisa in una BO, mentre la finestra firmware punta alla memoria TMR gestita
+dal PSP. `native_vcn_memory_pure.h` modella i primi tre intervalli con controlli
+di allineamento e overflow; riceve la dimensione condivisa come dato esplicito,
+senza inventare la dimensione ABI. I test host sono passati, ma non verificano
+allocazione, gestione TMR, registri o comunicazione col firmware. Anche questo
+calcolo è isolato e non attiva VCN.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo
