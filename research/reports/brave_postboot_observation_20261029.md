@@ -1,0 +1,11 @@
+# Prova reale dopo l'avvio del driver 0.0.665
+
+Il 29 ottobre il sistema è stato avviato con boot UUID 10528AC1-8DD5-4A4D-B61D-8F1610CA3DCF e Navi48Bringup 0.0.665. L'utente riferisce desktop e trasparenze funzionanti, ma banda nera durante l'uso e sito vorssaint.com ancora inutilizzabile. Il monitor risulta a 120 Hz: non è stata effettuata la prova a 60 Hz.
+
+Brave segnala software compositing, WebGL disabilitato e disattivazione GPU dopo crash. Il video YouTube mostrato dall'utente era VP9 3840x2160 a 30 fps con 287 fotogrammi persi su 1627. Non prova da solo dove avvengano le perdite.
+
+Il campionamento diagnostico root alle 15:06 ha letto tutte e otto le sessioni aperte (VMID 8–15), nessuna marcata poisoned, nessun hung e contatori submit in progresso. È un'istantanea, non prova la causa dei crash né il comportamento precedente. La lista strike è vuota. I crash report di Brave Helper alle 15:04 e 15:05 mostrano SIGTRAP sul thread CrGpuMain, simboli Chromium non risolti. Alle 15:05:22 il processo principale Brave è stato ammesso dal kernel; un precedente tentativo era stato rifiutato.
+
+Un secondo avvio diagnostico con profilo temporaneo separato e `--enable-logging=stderr`, pagina about:blank, ha mostrato che i processi Brave Browser Helper sono stati rifiutati all'apertura N48N con 0xe00002c7; seguono `Initialization of all (1) EGL display types failed`, `GLDisplayEGL::Initialize failed` e uscita del processo GPU. Il messaggio generico Navi48Metal elenca più possibili motivi e non distingue il rifiuto di policy da altre condizioni. L'ispezione del sorgente mostra che `IOAccelNavi48NativeClient::create` traduce un fallimento di `initWithTask` in `kIOReturnNotPrivileged`; la pressione sulle sessioni va comunque verificata separatamente. I log vanno correlati con identità reale del processo, allow-list, UID e eventuali crash precedenti prima di modificare la policy. L'istanza temporanea è stata chiusa; nessuna modifica al profilo Brave dell'utente.
+
+Non sono stati installati nuovi fix dopo questa prova e non è richiesto riavvio. L'inizializzazione EGL fallita è coerente con il comportamento Chromium documentato in [gpu_init.cc](https://chromium.googlesource.com/chromium/src/%2B/dfdf012e4180d57e55db8ae7d47a81fb37e56795/gpu/ipc/service/gpu_init.cc); tale sorgente non identifica la causa specifica di questo sistema.
