@@ -72,6 +72,16 @@ vanno affiancati alle informazioni GPU del browser e alla verifica VideoToolbox.
 Il conteggio è stato esercitato con un ambiente JavaScript simulato, non ancora
 su YouTube durante questa sessione.
 
+Il 29 ottobre `brave-probe.py` ha avviato una finestra Brave con profilo
+temporaneo su `https://vorssaint.com` e raccolto 15,1 secondi in primo piano:
+216 callback, 14,3 callback/s, intervallo p95 133,4 ms, 112 intervalli sopra
+50 ms. Chromium segnalava compositing e rasterizzazione software, WebGL
+disattivato e decodifica video software. Questa singola misura documenta il
+carico della pagina nello stato attuale, non prova un FPS universale né attribuisce
+con certezza ogni ritardo alla GPU. Il processo e il profilo di prova sono stati
+chiusi; il profilo personale non è stato modificato. Ripetere lo stesso comando
+dopo il candidato, con condizioni di visibilità e durata comparabili.
+
 Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
 base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
 quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la
