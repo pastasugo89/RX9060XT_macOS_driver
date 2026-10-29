@@ -186,8 +186,11 @@ registrata, lo stato del candidato o quello stabile originale e un config EFI
 esattamente uguale all'originale o al candidato. Dopo il ripristino confronta
 i file e i permessi originali e archivia lo stato del tentativo prima di
 ripristinare la guardia precedente. I controlli di identità dello stato sono
-stati testati; il ripristino dopo riavvio completo non è ancora stato esercitato
-in un ambiente di prova e non deve essere considerato verificato su hardware.
+stati testati. Il test `test-eight-postboot-restore.py` esegue installazione e
+ripristino su copie reali dei file, simulando un nuovo UUID di avvio e provando
+sia il config candidato sia quello già ripristinato; una modifica a un file
+interessato viene rifiutata dalla preflight. Il test non avvia UEFI o macOS e
+non prova il recupero su hardware o guasti durante il ripristino stesso.
 
 ## Compatibilità del RADV installato con VMID diversi da 8
 

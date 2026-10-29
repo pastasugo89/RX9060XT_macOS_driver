@@ -94,6 +94,28 @@ def restore(work,apply,after_reboot=False):
         system={p[7:]:v for p,v in manifest['files'].items() if p.startswith('system/')}
         if any(not installer.check.system_allowed(p) for p in system) or any(p not in system for p in journal['changed_system_files']):
             raise ValueError('Unexpected rollback targets')
+        metal=installer.check.METAL
+        metal_new={p[len(metal)+1:]:v for p,v in system.items() if p.startswith(metal+'/')}
+        if not journal['metal_swapped'] or installer.check.hashes(SYSTEM_ROOT/metal)!=metal_new or \
+           installer.check.hashes(work/'metal-exchange.bundle')!=manifest['working_metal_files']:
+            raise ValueError('Metal target or original backup differs')
+        for name in journal['changed_system_files']:
+            target=SYSTEM_ROOT/name
+            old=manifest['baseline_system_files'][name]
+            backup=work/'original-system'/name
+            if target.is_symlink() or not target.is_file() or installer.check.digest(target)!=system[name]:
+                raise ValueError('Changed target differs: '+name)
+            if old is not None and (backup.is_symlink() or not backup.is_file() or installer.check.digest(backup)!=old):
+                raise ValueError('Original backup differs: '+name)
+        for name,old in manifest['baseline_system_files'].items():
+            if name.startswith(metal+'/') or name in journal['changed_system_files']: continue
+            target=SYSTEM_ROOT/name
+            if target.is_symlink() or (target.exists() and not target.is_file()):
+                raise ValueError('Unexpected unchanged target type: '+name)
+            actual=installer.check.digest(target) if target.is_file() else None
+            mode=target.stat().st_mode & 0o777 if actual is not None else None
+            if actual!=old or mode!=manifest['baseline_system_modes'][name]:
+                raise ValueError('Unchanged target differs: '+name)
         config_hash=installer.check.digest(EFI/'OC/config.plist')
         if config_hash not in (plan['baseline_config_sha256'],plan['config_sha256']):
             raise ValueError('Live EFI config is neither the candidate nor baseline')
