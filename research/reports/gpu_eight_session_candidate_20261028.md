@@ -125,3 +125,16 @@ rollback automatico. Un eventuale loader di prova che consumi una richiesta una
 sola volta prima del caricamento del kernel richiede un proprio test UEFI e una
 verifica della modalità di avvio effettiva della scheda. Non modificare
 BootOrder, BootNext o il loader sulla base di questa sola analisi.
+
+## Compatibilità del RADV installato con VMID diversi da 8
+
+La libreria attiva `libvulkan_radeon.dylib` ha SHA-256
+`f6b2053d1b26731ff88c1def9ca2375cc7c0a9a34ebc8e7ab7e2533f6c30e155`.
+Il sorgente Darwin RADV controlla la versione ABI e confronta il VMID con 8,
+ma un valore diverso produce soltanto una riga diagnostica prima di proseguire
+con `QueryInfo`. È stato controllato anche il binario installato: nel percorso
+`acd_device_initialize` il confronto con 8 e 64 porta a `fprintf` e poi converge
+sulla chiamata `acd_kext_query_info`; non esce dal ramo per il solo VMID diverso.
+Questo elimina quel controllo specifico come causa certa di rifiuto dei VMID
+9–15. Non prova che l'intera libreria o ogni shader siano privi di altri limiti,
+né che i contesti 12–15 funzionino realmente sulla GPU.
