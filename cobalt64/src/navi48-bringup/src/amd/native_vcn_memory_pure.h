@@ -1,5 +1,6 @@
 // VCN 5.0 PSP-mode allocation layout, based on Linux amdgpu_vcn_sw_init and
 // vcn_v5_0_0_mc_resume. Arithmetic only: no allocation, MMIO, PSP or mappings.
+// AMD copyright and permission notice: VCN-AMD-LICENSE.txt in this directory.
 #pragma once
 #include <stdint.h>
 #include <limits.h>

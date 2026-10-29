@@ -1,5 +1,6 @@
 // Experimental VCN 5.0 doorbell planner for NBIF 6.3.1. No MMIO operations.
 // Field definitions and behaviour: AMD's Linux nbif_v6_3_1_vcn_doorbell_range.
+// AMD copyright and permission notice: VCN-AMD-LICENSE.txt in this directory.
 // This only prepares an entry-4 value; VCN firmware, MMHUB, queues, lifecycle,
 // collision checks against the full doorbell map, and macOS integration are absent.
 #pragma once

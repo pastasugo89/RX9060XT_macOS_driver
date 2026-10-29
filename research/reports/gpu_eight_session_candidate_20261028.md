@@ -107,6 +107,13 @@ senza inventare la dimensione ABI. I test host sono passati, ma non verificano
 allocazione, gestione TMR, registri o comunicazione col firmware. Anche questo
 calcolo è isolato e non attiva VCN.
 
+La struttura `native_vcn_shared_pure.h` riproduce gli offset VCN 5 della coda
+unificata, logging, ring e interfaccia SMU; la struttura occupa 532 byte e il
+suo spazio allocato è arrotondato a 4.096 byte. L'inizializzazione di prova
+imposta i flag della coda e dell'interfaccia per GPU discreta; il test verifica
+ogni byte nel modello e la compatibilità col calcolo della BO. Non dimostra la
+comunicazione col firmware: è ancora codice offline senza registri o allocazioni.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo

@@ -1,5 +1,6 @@
 // VCN common firmware header validation and size calculations, no PSP/MMIO.
 // Based on Linux amdgpu common_firmware_header and VCN 5.0 cache setup.
+// AMD copyright and permission notice: VCN-AMD-LICENSE.txt in this directory.
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
