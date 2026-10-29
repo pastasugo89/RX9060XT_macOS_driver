@@ -151,3 +151,16 @@ credito G5 pari a 1, 349 submit ritardate su 24.694 ammesse, 368 ms totali,
 massimo 6 ms e nessun timeout. È un dato cumulativo di quella sessione, non una
 misura sincronizzata con YouTube; non dimostra che G5 causi o risolva lo stutter.
 Il limite di credito è condiviso e resta invariato nel candidato a otto sessioni.
+
+## Controllo dopo la prova
+
+`tools/baremetal/navi44-gpu-diagnostics/session-check.py` campiona le pagine
+statistiche 0–3 e 6–9, verifica slot e VMID 8–15, identità uniche delle sessioni
+attive e campiona il progresso della coda. Segnala gli slot aggiuntivi attivi,
+HUNG e sessioni avvelenate. Le letture sono sequenziali: cambiamenti di sessione
+possono rendere incoerenti i conteggi e vengono segnalati come tali. Il check
+non apre una nuova sessione GPU e non dimostra la correttezza del rendering;
+la lettura diagnostica aggiorna il riferimento interno dell'ultimo fault.
+Il parser ha test per VMID errato, ID duplicato, contatori inconsistenti e
+assenza di progresso. Deve essere eseguito con il tool aggiornato dopo l'avvio
+del candidato e con più applicazioni effettivamente in uso.
