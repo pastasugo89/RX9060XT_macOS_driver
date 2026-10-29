@@ -103,3 +103,25 @@ il lock; la preflight root sul sistema attuale passa. Non è stato eseguito appl
 
 Il ripristino proposto è circoscritto alla stessa sessione di avvio. Non è un
 meccanismo di recupero automatico UEFI da un errore del kernel al riavvio.
+
+## Analisi del recupero prima di macOS
+
+Il 29 ottobre la EFI verificata è montata in sola lettura, UUID
+`7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3`. Il config usa OpenCore 1.0.8 con
+`RequestBootVarRouting=true`, picker attivo, timeout 5 secondi e una voce
+OpenShell di recupero. La lettura NVRAM con il GUID UEFI restituisce `BootOrder`
+0x0080; `BootNext` e `BootCurrent` non risultano leggibili/presenti attraverso
+quella richiesta. Non è stata scritta alcuna variabile.
+
+Il sorgente OpenCore installato spiega che `RequestBootVarRouting` reindirizza
+le variabili Boot dal GUID UEFI al namespace OpenCore (`OCBt*`). Quindi leggere
+`BootOrder` da macOS non prova quale entry usi direttamente il firmware, né che
+scrivere `BootNext` possa selezionare una seconda EFI a prova di errore. La
+[documentazione OpenCore](https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/Configuration.tex)
+distingue inoltre scelta della voce primaria e avvio tramite picker.
+
+Una voce di ripristino manuale o il vecchio kext mantenuto sul disco non sono
+rollback automatico. Un eventuale loader di prova che consumi una richiesta una
+sola volta prima del caricamento del kernel richiede un proprio test UEFI e una
+verifica della modalità di avvio effettiva della scheda. Non modificare
+BootOrder, BootNext o il loader sulla base di questa sola analisi.
