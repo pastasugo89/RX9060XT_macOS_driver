@@ -90,3 +90,16 @@ modificato nel pacchetto è stato rifiutato dalla preflight. Questi test non
 verificano un guasto prima dell'avvio di macOS e non installano un recupero
 UEFI automatico. Il vecchio helper di ripristino richiede adattamento allo stato
 `stable` persistente attuale; non deve cancellare o azzerare la guardia.
+
+## Installer e ripristino nello stesso avvio
+
+`install-eight-combined.py` usa la transazione già esercitata sulle copie del
+pacchetto, serializzata con il lock della guardia di boot. Registra una copia
+privata dello stato stabile originale; il ripristino automatico è ammesso solo
+se boot UUID e stato restano identici, la EFI ha lo stesso UUID e i file non sono
+cambiati esternamente. Non cancella né reimposta la guardia. I test verificano
+che uno stato pending o failed blocchi l'operazione e che la preflight acquisisca
+il lock; la preflight root sul sistema attuale passa. Non è stato eseguito apply.
+
+Il ripristino proposto è circoscritto alla stessa sessione di avvio. Non è un
+meccanismo di recupero automatico UEFI da un errore del kernel al riavvio.
