@@ -82,6 +82,15 @@ non è trattata perché la voce 5 è condivisa con VPE e serve un audit della su
 proprietà. Il calcolo non è collegato al kext e non implementa firmware, MMHUB,
 code o integrazione VideoToolbox: non abilita ancora la decodifica hardware.
 
+Il successivo componente sperimentale `native_vcn_firmware_pure.h` verifica la
+struttura comune v1.0 del firmware e calcola separatamente l'allineamento PSP
+e la dimensione della finestra cache VCN (payload più otto byte), seguendo
+`amdgpu_vcn_setup_ucode` e `vcn_v5_0_0_mc_resume` del sorgente Linux locale.
+Sono stati provati intestazioni sintetiche valide, troncamenti, intervalli
+invalidi e limiti di allineamento sotto ASan/UBSan. Il blob reale non era
+disponibile nella verifica corrente: non sono stati controllati firma, CRC,
+compatibilità o caricamento PSP. Il componente non è collegato al driver.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo
