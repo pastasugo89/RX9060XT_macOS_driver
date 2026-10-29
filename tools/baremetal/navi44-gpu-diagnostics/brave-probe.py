@@ -96,6 +96,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--url', default='https://vorssaint.com')
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--disable-graphite', action='store_true', help='Disable Skia Graphite only for this isolated test')
     args = p.parse_args()
     if urllib.parse.urlsplit(args.url).scheme not in ('http', 'https'): p.error('Use an HTTP(S) URL')
     if args.output.exists(): p.error('Output already exists')
@@ -104,7 +105,7 @@ def main():
         with log.open('wb') as stderr:
             proc = subprocess.Popen([BRAVE, '--user-data-dir='+profile, '--no-first-run',
                 '--no-default-browser-check', '--remote-debugging-address=127.0.0.1',
-                '--remote-debugging-port=0', args.url], stdout=subprocess.DEVNULL, stderr=stderr)
+                '--remote-debugging-port=0'] + (['--disable-features=SkiaGraphite'] if args.disable_graphite else []) + [args.url], stdout=subprocess.DEVNULL, stderr=stderr)
             browser = page = None
             try:
                 deadline = time.monotonic() + 25
@@ -141,7 +142,7 @@ def main():
                 result = {'url': args.url, 'page': page_state,
                           'gpu_feature_status_before': info.get('gpu',{}).get('featureStatus',{}),
                           'gpu_feature_status_after': info_after.get('gpu',{}).get('featureStatus',{}),
-                          'frame_probe': frame, 'note':'Isolated profile; session contention can differ from normal use.'}
+                          'frame_probe': frame, 'disable_graphite': args.disable_graphite, 'note':'Isolated profile; session contention can differ from normal use.'}
                 args.output.write_text(json.dumps(result, indent=2)+'\n')
                 print(json.dumps(result, indent=2))
             finally:

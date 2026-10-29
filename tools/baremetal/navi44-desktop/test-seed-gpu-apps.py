@@ -101,9 +101,11 @@ class SeedTests(unittest.TestCase):
 
     def test_actual_manifest(self):
         names = m.load_names(Path(__file__).with_name('app-allowlist.json'))
-        self.assertEqual(len(names), 30)
+        self.assertEqual(len(names), 25)
+        self.assertTrue({"stable", "Brave Browser Helper (GPU)", "ControlCenter"}.issubset(names))
+        self.assertTrue({"VTDecoderXPCService", "WallpaperSequoiaExtension", "mediaanalysisd", "Brave Browser"}.isdisjoint(names))
         self.seed(names)
-        self.assertEqual(len(self.keys), 31)
+        self.assertEqual(len(self.keys), 26)
 
     def test_duplicate_truncation_rejected(self):
         import json
