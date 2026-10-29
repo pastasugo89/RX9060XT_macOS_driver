@@ -11,7 +11,7 @@ ROOT = HERE.parents[2]
 spec = importlib.util.spec_from_file_location('installer', HERE / 'install-unified-payload.py')
 installer = importlib.util.module_from_spec(spec); spec.loader.exec_module(installer)
 check = installer.check
-payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v7'
+payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v8'
 manifest = json.loads((payload / 'manifest.json').read_text())
 plan = json.loads((payload / 'efi-install-plan.json').read_text())
 assert manifest['status'] == 'prepared-not-installed'

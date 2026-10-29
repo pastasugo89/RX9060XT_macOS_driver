@@ -74,6 +74,8 @@ constexpr uint8_t slot_after_close(bool parked, bool ownIdle) { return (parked &
 // ---- per-session waits -------------------------------------------------------------------------------------------------------------------------------
 // The ring runs in order: once the global retired seqno reaches this session's own last seqno, every submission of this session has retired.
 constexpr bool own_idle(uint64_t retired, uint64_t ownLast) { return retired >= ownLast; }
+// A fresh retirement beyond the stall snapshot invalidates that attribution.
+constexpr bool stall_progressed(uint64_t observedRetired, uint64_t retiredNow) { return retiredNow > observedRetired; }
 // WaitSeq's target. LAST = this session's own last seqno (0.0.626: the global emitted count, which with one session is the same number). A seqno above the
 // global emitted count was never issued: BadArg. Any issued seqno is accepted (in-order retirement makes another session's seqno a harmless target).
 inline uint32_t own_wait_resolve(uint64_t target, uint64_t globalEmitted, uint64_t ownLast, uint64_t *resolved) {

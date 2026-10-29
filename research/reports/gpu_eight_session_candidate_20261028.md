@@ -118,6 +118,15 @@ di per sé un recupero non più necessario se il ring riprende dopo il campione;
 servono ulteriori prove e una valutazione del progresso tardivo. Il binario
 ricostruito e il pacchetto `gpu-eight-combined-v7` restano non installati.
 
+Una revisione successiva controlla il progresso dopo il rilevamento e dopo la
+verifica dell'identità; per un recupero attribuito a un'app controlla ancora,
+sotto il lock del ring, se la sequenza sospetta è già terminata. In tal caso
+evita scrub, penalità e reset. Il completamento GPU può comunque avvenire dopo
+l'ultimo controllo: i test host non eliminano questa finestra temporale né
+simulano MES o l'hardware. Il candidato `gpu-eight-combined-v8` compila e passa
+253 controlli G2, 11.011 G4, i casi a otto sessioni e le prove di transazione
+su copie; non è installato.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in

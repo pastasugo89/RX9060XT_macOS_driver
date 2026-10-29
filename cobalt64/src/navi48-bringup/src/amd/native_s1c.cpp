@@ -508,13 +508,23 @@ static void g2_scrub_locked(uint64_t liveStart) {
 // The G1 recovery (MES RESET reset_legacy_gfx, proven by G1 on this firmware: notes), run on the kernel's own initiative for a
 // guilty NON-WindowServer session, then proven by a kernel-only probe fence (one RELEASE_MEM of the next seqno: no IB, no VMID). gRingLock is held for the
 // whole run, so no session emits meanwhile. The guilty session is poisoned BEFORE the RESET (its seqno can retire only after it, so its waiter sees the
-// poison first). Returns recovery_ok.
+// poison first). Returns true if recovery succeeds or the stalled work already retired.
 static bool g2_recover(const n48native::g2::Guilty &g, Session *gs) {
     using namespace n48native::g2;
     DeviceContext &dev = *gCtx->dev;
     CPContext &cp = gCtx->cp;
     IOLockLock(gRingLock);
     const uint64_t emAt = emitted_now();
+    if (retired_now(emAt) >= g.seq) {
+        IOLockUnlock(gRingLock);
+        N1C_LOG("g2 recovery: sequence %llu retired before reset; no reset or strike", (unsigned long long)g.seq);
+        return true;
+    }
+    if (__atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)) {
+        const uint32_t strikes = n48native::g4::strike_add(gStrikes, gs->appKey);
+        N1C_LOG("stall: strike %u of %u for the application key %#llx (session %u)%s", strikes, n48native::g4::kStrikeLimit, (unsigned long long)gs->appKey, g.sessId,
+                n48native::g4::strike_refused(strikes) ? ": that name is now REFUSED at open for the rest of this boot" : "");
+    }
     g2_scrub_locked(g.startWc);
     __atomic_store_n(&gs->poisoned, 1u, __ATOMIC_SEQ_CST);
     const uint64_t t0 = now_ns();
@@ -548,8 +558,18 @@ static bool g2_recover(const n48native::g2::Guilty &g, Session *gs) {
 // A stall was detected and THIS call owns it (it set gRecovering). The owner of the oldest unretired seqno is the guilty session; a non-WindowServer user
 // session is recovered (switch ON), everything else latches HUNG exactly as before. Clears gRecovering. Returns true when THIS call latched HUNG.
 // Called with at most the caller's own session lock (never gCliLock / gRingLock).
+static bool stall_cancel_if_progress(uint64_t observed) {
+    const uint64_t emitted = emitted_now(), retired = retired_now(emitted);
+    if (!n48native::g2::stall_progressed(observed, retired)) return false;
+    IOLockLock(gHangLock);
+    gHang.lastRetired = retired; gHang.tProgress = now_ns();
+    __atomic_store_n(&gRecovering, 0u, __ATOMIC_SEQ_CST);
+    IOLockUnlock(gHangLock);
+    return true;
+}
 static bool stall_handle(uint64_t em, uint64_t re) {
     using namespace n48native::g2;
+    if (stall_cancel_if_progress(re)) return false;
     const Guilty g = guilty_of(gOwners, re, em);
     // A pre-existing open may have entered before gRecovering was set. Wait
     // for its slot publication before deciding which session owns this work.
@@ -560,16 +580,12 @@ static bool stall_handle(uint64_t em, uint64_t re) {
                       __atomic_load_n(&gs->hello, __ATOMIC_ACQUIRE);
     const bool ws = user && __atomic_load_n(&gs->ws, __ATOMIC_ACQUIRE);
     IOLockUnlock(gCliLock); // never hold the client lock across MES or GPU waits
+    if (stall_cancel_if_progress(re)) return false;
     const uint64_t tried = gG2.recoveries + gG2.failed;   // 0.0.629 (R3): attempts this boot (gRecovering, held by this call, serialises the counters)
     const uint32_t act = stall_action_budgeted(multi_on(), g.known, g.slot, user, ws, mes_timeout_seen(), g1_holds(), tried);
     N1C_LOG("stall: seq emitted %llu retired %llu; the oldest unretired seq %llu belongs to %s (slot %u, session %u%s): %s", (unsigned long long)em, (unsigned long long)re,
             (unsigned long long)g.seq, !g.known ? "an unknown owner" : g.slot == kOwnerKernel ? "the kernel" : user ? "a user session" : "a non-user context", g.slot, g.sessId,
             ws ? ", WindowServer" : "", act == kStallRecover ? "recovering that session alone" : !recovery_budget_left(tried) ? "latching HUNG (the automatic-recovery budget of this boot is spent)" : "latching HUNG (today's behaviour)");
-    if (act == kStallRecover && __atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)) {   // 0.0.641: one strike against the executable name of an APP session an automatic recovery is blamed on (gs->app is set only with apps ON)
-        const uint32_t strikes = n48native::g4::strike_add(gStrikes, gs->appKey);
-        N1C_LOG("stall: strike %u of %u for the application key %#llx (session %u)%s", strikes, n48native::g4::kStrikeLimit, (unsigned long long)gs->appKey, g.sessId,
-                n48native::g4::strike_refused(strikes) ? ": that name is now REFUSED at open for the rest of this boot" : "");
-    }
     if (act == kStallRecover && g2_recover(g, gs)) {
         const uint64_t em2 = emitted_now(), re2 = retired_now(em2);
         IOLockLock(gHangLock);

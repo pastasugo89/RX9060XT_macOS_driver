@@ -391,9 +391,11 @@ static void t8_pins(const std::string &root) {
     expect(qi.find("o->reserved[2] = N48N_ABI_MINOR;") != std::string::npos, "T8: the minor is still reserved[2]");
     // R6 on close
     { const std::string sh = fn_body(eng, "static bool stall_handle(uint64_t em, uint64_t re) {");
-      expect(sh.find("const bool ws = user && __atomic_load_n(&gs->ws, __ATOMIC_ACQUIRE);") != std::string::npos && count_of(sh, "&gs->app,") == 1 &&
-             in_order(sh, { "const uint32_t act = stall_action_budgeted(", "if (act == kStallRecover && __atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)) {", "n48native::g4::strike_add(gStrikes, gs->appKey)", "if (act == kStallRecover && g2_recover(g, gs)) {" }),
-             "T8: the recovery decision keys on WindowServer's flag only (an APP session is recovered like any other non-WindowServer user session); the APP flag is read once, only to COUNT the strike, after the decision and before the recovery runs"); }
+      const std::string rec = fn_body(eng, "static bool g2_recover(");
+      expect(sh.find("const bool ws = user && __atomic_load_n(&gs->ws, __ATOMIC_ACQUIRE);") != std::string::npos &&
+             in_order(sh, { "const uint32_t act = stall_action_budgeted(", "if (act == kStallRecover && g2_recover(g, gs)) {" }) &&
+             in_order(rec, {"retired_now(emAt) >= g.seq", "__atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)", "n48native::g4::strike_add(gStrikes, gs->appKey)"}),
+             "T8: the recovery decision uses the WindowServer flag and records APP strikes only after rechecking progress"); }
     const std::string rl = fn_body(eng, "static void bo_release(Session *s, uint32_t h, RelMode mode) {");
     const size_t ck = rl.find("if (mode == kRelClosing) {"), nk = rl.find("} else if (mode == kRelNormal) {");
     expect(ck != std::string::npos && nk != std::string::npos, "T8: bo_release's closing branch is found");
@@ -700,8 +702,9 @@ static void t13_strikes(const std::string &root) {
     const std::string K = root + "/src/navi48-bringup/";
     const std::string eng = slurp(K + "src/amd/native_s1c.cpp"), cli = slurp(K + "src/Navi48NativeClient.cpp"), cmd = slurp(root + "/tools/pc/navi48test.c");
     const std::string sh = fn_body(eng, "static bool stall_handle(uint64_t em, uint64_t re) {");
-    expect(in_order(sh, { "if (act == kStallRecover && __atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)) {", "n48native::g4::strike_add(gStrikes, gs->appKey)", "N1C_LOG(\"stall: strike %u of %u", "if (act == kStallRecover && g2_recover(g, gs)) {" }),
-           "T13: REACHABLE: an automatic recovery blamed on an APP session adds a strike for its name before the recovery runs");
+    expect(sh.find("if (act == kStallRecover && g2_recover(g, gs)) {") != std::string::npos &&
+           in_order(fn_body(eng, "static bool g2_recover("), {"retired_now(emAt) >= g.seq", "n48native::g4::strike_add(gStrikes, gs->appKey)", "N1C_LOG(\"stall: strike %u of %u", "mes_reset_legacy_gfx_queue("}),
+           "T13: APP strike occurs only after rechecking retirement and before the reset");
     expect(in_order(fn_body(eng, "IOReturn n1c_mark_app(const N1cRef &ref, uint64_t key) {"), { "s->appKey = key;", "__atomic_store_n(&s->app, true, __ATOMIC_RELEASE);" }), "T13: the session's name key is recorded before the APP flag is published");
     expect(in_order(fn_body(cli, "bool IOAccelNavi48NativeClient::initWithTask("), { "onAllow = amdgpu::n1c_app_allowed(comm, &struckOut);", "appKey = n48a_comm_key(comm);", "struckOut ? \"REFUSED: 3 strikes", "uid, appsOn, onAllow);" }),
            "T13: REACHABLE: a struck-out name reaches app_refine as 'not allowed' (kReasonAppNotAllowed) and is logged by name");

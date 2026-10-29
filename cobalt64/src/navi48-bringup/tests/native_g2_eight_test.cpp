@@ -7,6 +7,9 @@
 using namespace n48native::g2;
 int main() {
     static_assert(kMaxSessions == 8 && kStatGlobal == 4);
+    assert(!stall_progressed(7, 7));
+    assert(stall_progressed(7, 8));
+    assert(!stall_progressed(7, 6));
     uint8_t state[kMaxSessions] = {};
     for (unsigned i = 0; i < kMaxSessions; ++i) {
         assert(n48native::vmid_ok(vmid_of_slot(i)));

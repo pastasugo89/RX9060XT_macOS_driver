@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 WORK = ROOT / 'research/builds/macos-20261028'
-EFI = WORK / 'gpu-eight-efi-v4'
+EFI = WORK / 'gpu-eight-efi-v5'
 PERF = WORK / 'performance-fix-v2'
 APP = 'Library/Application Support/Navi44/accelerated-trial'
 SHELL = APP + '/accelerated-reboot-trial.sh'

@@ -383,6 +383,8 @@ static void t11_pins(const std::string &root) {
     expect(in_order(hp, { "if (multi_on()) {", "hang_note(gHang, re, em, now);", "expired = hang_expired(gHang, re, em, now);", "return expired ? stall_handle(em, re) : false;", "const bool det = hang_detect(gHang, re, em, now);" }),
            "hang_poll: ON goes to stall_handle (one owner: gRecovering), OFF is the 0.0.626 hang_detect");
     const std::string rc = fn_body(eng, "static bool g2_recover(");
+    expect(in_order(rc, {"IOLockLock(gRingLock);", "retired_now(emAt) >= g.seq", "IOLockUnlock(gRingLock);", "return true;", "g2_scrub_locked(g.startWc);"}),
+           "already-retired work exits before scrub, poisoning and reset");
     expect(in_order(rc, { "IOLockLock(gRingLock);", "g2_scrub_locked(g.startWc);", "__atomic_store_n(&gs->poisoned, 1u, __ATOMIC_SEQ_CST);", "mes_reset_legacy_gfx_queue(dev, gCtx->mes, 0u, 0u, gs->vmid, cp.mqd_bus, cp.doorbell_index, cp.wptr_gpu_addr);",
                           "if (r == kIOReturnSuccess) {", "put = ring_put_locked(dw, 8u, probe, kOwnerKernel, 0u, nullptr) == kOk;", "IOLockUnlock(gRingLock);", "const bool ok = recovery_ok(r == kIOReturnSuccess, put, ret);" }),
            "g2_recover: emission frozen, scrub, POISON before the RESET, one MES RESET of the guilty VMID, the probe only after an ack, verdict by recovery_ok");
