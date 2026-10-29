@@ -168,6 +168,18 @@ sola volta prima del caricamento del kernel richiede un proprio test UEFI e una
 verifica della modalità di avvio effettiva della scheda. Non modificare
 BootOrder, BootNext o il loader sulla base di questa sola analisi.
 
+Il pacchetto successivo `gpu-eight-combined-v6` include in aggiunta la copia
+byte per byte del config attualmente attivo in `EFI/RECOVERY/pre-eight-config.plist`.
+Il controllo confronta il suo SHA-256 con l'originale e rifiuta alterazioni;
+la prova transazionale su copie verifica che il file arrivi sulla EFI simulata
+prima della sostituzione del config. Il vecchio kext resta anch'esso sulla EFI.
+Questo consente, con accesso fisico e una shell UEFI o un altro sistema che
+monti la stessa partizione, di ripristinare il vecchio config. Non ripristina
+da solo il bundle Metal, lo script o lo stato di boot di macOS e non è un
+rollback automatico. Nessun percorso UEFI di recupero è stato ancora provato
+sulla scheda: la copia è un mezzo di recupero aggiuntivo, non una garanzia di
+avvio o una ragione per riavviare senza poter intervenire fisicamente.
+
 ## Compatibilità del RADV installato con VMID diversi da 8
 
 La libreria attiva `libvulkan_radeon.dylib` ha SHA-256

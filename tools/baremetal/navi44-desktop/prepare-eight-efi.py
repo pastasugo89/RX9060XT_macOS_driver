@@ -13,6 +13,7 @@ EFI = Path('/Volumes/OCBOOT/EFI')
 BUILD = ROOT / 'research/builds/macos-20261028/gpu-eight-repro-v3'
 OUTPUT_ROOT = (ROOT / 'research/builds').resolve()
 NEW = 'Navi48Bringup-eight-0.0.665.kext'
+RECOVERY = 'RECOVERY/pre-eight-config.plist'
 EXPECTED_CONFIG = '8968c7e8f6a96670b374a39678b2ed9fb044848fe80e3c578313572287287d71'
 
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -52,6 +53,11 @@ def main():
     out.mkdir(parents=True)
     shutil.copytree(EFI, out / 'EFI', symlinks=False)
     shutil.copytree(bundle, out / 'EFI/OC/Kexts' / NEW, symlinks=False)
+    recovery = out / 'EFI' / RECOVERY
+    if recovery.exists(): raise ValueError('Recovery config already exists')
+    recovery.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(config_path, recovery)
+    if sha(recovery) != EXPECTED_CONFIG: raise ValueError('Recovery config differs from active config')
     matches[0]['BundlePath'] = NEW
     dest = out / 'EFI/OC/config.plist'
     dest.write_bytes(plistlib.dumps(config, sort_keys=False))

@@ -44,8 +44,10 @@ def check(payload, live):
     if tree(payload/'EFI') != plan['all_files'] or plan['all_files']['OC/config.plist'] != plan['config_sha256']:
         raise ValueError('EFI plan differs')
     base = m['baseline_efi_files']; additions = {k:v for k,v in plan['all_files'].items() if k not in base}
-    if additions != plan['add_files'] or any(not k.startswith('OC/Kexts/'+NEW+'/') for k in additions):
+    if additions != plan['add_files'] or any(not (k.startswith('OC/Kexts/'+NEW+'/') or k == 'RECOVERY/pre-eight-config.plist') for k in additions):
         raise ValueError('Unexpected EFI additions')
+    if additions.get('RECOVERY/pre-eight-config.plist') != base['OC/config.plist']:
+        raise ValueError('Recovery config is not the exact baseline')
     for k,v in base.items():
         if k != 'OC/config.plist' and plan['all_files'].get(k) != v: raise ValueError('EFI baseline changed: '+k)
     if plan['baseline_config_sha256'] != base['OC/config.plist']: raise ValueError('Bad original config')

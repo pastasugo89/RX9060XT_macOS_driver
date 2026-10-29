@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 WORK = ROOT / 'research/builds/macos-20261028'
-EFI = WORK / 'gpu-eight-efi-v2'
+EFI = WORK / 'gpu-eight-efi-v3'
 PERF = WORK / 'performance-fix-v2'
 APP = 'Library/Application Support/Navi44/accelerated-trial'
 SHELL = APP + '/accelerated-reboot-trial.sh'
@@ -79,8 +79,10 @@ def main():
     old_efi, new_efi = e['baseline_efi_files'], e['candidate_efi_files']
     if set(old_efi) - set(new_efi): raise ValueError('EFI candidate removed files')
     additions = {k:v for k,v in new_efi.items() if k not in old_efi}
-    if any(not k.startswith('OC/Kexts/' + e['new_kext'] + '/') for k in additions):
+    if any(not (k.startswith('OC/Kexts/' + e['new_kext'] + '/') or k == 'RECOVERY/pre-eight-config.plist') for k in additions):
         raise ValueError('Unexpected EFI addition')
+    if additions.get('RECOVERY/pre-eight-config.plist') != old_efi[config_rel]:
+        raise ValueError('Recovery config is not the exact baseline')
     plan = {'baseline_config_sha256':old_efi[config_rel], 'config_sha256':new_efi[config_rel],
             'add_files':additions, 'all_files':new_efi}
     (output / 'efi-install-plan.json').write_text(json.dumps(plan, indent=2, sort_keys=True) + '\n')

@@ -11,7 +11,7 @@ ROOT = HERE.parents[2]
 spec = importlib.util.spec_from_file_location('installer', HERE / 'install-unified-payload.py')
 installer = importlib.util.module_from_spec(spec); spec.loader.exec_module(installer)
 check = installer.check
-payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v5'
+payload = ROOT / 'research/builds/macos-20261028/gpu-eight-combined-v6'
 manifest = json.loads((payload / 'manifest.json').read_text())
 plan = json.loads((payload / 'efi-install-plan.json').read_text())
 assert manifest['status'] == 'prepared-not-installed'
@@ -47,6 +47,8 @@ for fail_at in (None, 'metal-swapped', 'config-written'):
         else:
             tx.run()
             assert check.hashes(efi) == plan['all_files']
+            backup_config = efi / 'RECOVERY/pre-eight-config.plist'
+            assert check.digest(backup_config) == plan['baseline_config_sha256']
             for rel in manifest['baseline_system_files']:
                 assert check.digest(system / rel) == manifest['files']['system/' + rel], rel
             tx.rollback()
