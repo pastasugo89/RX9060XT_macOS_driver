@@ -134,6 +134,13 @@ annidati nell'ordine inverso. Build e controlli host passano, inclusi 254 G2 e
 11.011 G4; il pacchetto locale `gpu-eight-combined-v9` ha superato i controlli
 e la transazione su copie. Non è un test di concorrenza kernel su hardware.
 
+Il modello `test_recovery_interleavings.py` esplora 40 sequenze valide di
+apertura, chiusura, identificazione e recupero con il protocollo di lock:
+nessuna applica il recupero a una nuova identità; senza la guardia il modello
+trova un interleaving in cui accade. Il modello astrae esplicitamente il
+completamento GPU, MES e l'implementazione reale dei lock: è una verifica della
+logica del protocollo, non una riproduzione del difetto sul dispositivo.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in
