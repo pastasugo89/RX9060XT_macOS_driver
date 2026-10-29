@@ -213,6 +213,18 @@ trova un interleaving in cui accade. Il modello astrae esplicitamente il
 completamento GPU, MES e l'implementazione reale dei lock: è una verifica della
 logica del protocollo, non una riproduzione del difetto sul dispositivo.
 
+## Installazione della prova del 29 ottobre
+
+Su richiesta dell'utente, il pacchetto `gpu-eight-combined-v9` è stato installato
+con `install-eight-combined.py --apply` dopo preflight completa sulla sessione
+`B41B0955-DBFD-4F9B-A26B-894513EDDDF1`. Il backup è
+`/Library/Application Support/Navi44/accelerated-trial/deployment-yptt3_cb`;
+la preflight del ripristino nello stesso avvio è passata. La EFI è stata
+sincronizzata e smontata. Nessun riavvio è stato eseguito: il kext candidato
+sarà verificabile solo dopo avvio; VCN e modalità 60 Hz non sono parte della
+prova. Il recupero UEFI richiede accesso fisico e non è stato provato sulla
+macchina; il successo della transazione non dimostra rendering o stabilità.
+
 Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
 le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
 1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in
