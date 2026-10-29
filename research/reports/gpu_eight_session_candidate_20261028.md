@@ -180,6 +180,15 @@ rollback automatico. Nessun percorso UEFI di recupero è stato ancora provato
 sulla scheda: la copia è un mezzo di recupero aggiuntivo, non una garanzia di
 avvio o una ragione per riavviare senza poter intervenire fisicamente.
 
+L'installer dispone ora anche di un percorso esplicito `--restore-backup ...
+--after-reboot`, con preflight senza `--apply`: accetta solo la transazione
+registrata, lo stato del candidato o quello stabile originale e un config EFI
+esattamente uguale all'originale o al candidato. Dopo il ripristino confronta
+i file e i permessi originali e archivia lo stato del tentativo prima di
+ripristinare la guardia precedente. I controlli di identità dello stato sono
+stati testati; il ripristino dopo riavvio completo non è ancora stato esercitato
+in un ambiente di prova e non deve essere considerato verificato su hardware.
+
 ## Compatibilità del RADV installato con VMID diversi da 8
 
 La libreria attiva `libvulkan_radeon.dylib` ha SHA-256

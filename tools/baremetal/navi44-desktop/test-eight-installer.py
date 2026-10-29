@@ -12,6 +12,20 @@ BOOT='11111111-1111-1111-1111-111111111111'
 STABLE={'schema':1,'phase':'stable','boot':BOOT,'profile':'existing'}
 
 class GuardTests(unittest.TestCase):
+    def test_cross_boot_state_identity(self):
+        current='22222222-2222-2222-2222-222222222222'
+        m.recovery_state_ok(STABLE,STABLE,current,BOOT)
+        candidate={'schema':1,'profile':'stage24-eight-session-v1','boot':current,'phase':'failed'}
+        for phase in ('pending','failed','stable','stopped'):
+            m.recovery_state_ok({**candidate,'phase':phase},STABLE,current,BOOT)
+        m.recovery_state_ok(candidate,STABLE,'33333333-3333-3333-3333-333333333333',BOOT)
+        for state,saved,now in [(candidate,STABLE,BOOT),
+                ({**candidate,'boot':BOOT},STABLE,current),
+                ({**candidate,'profile':'other'},STABLE,current),
+                (candidate,{**STABLE,'phase':'pending'},current),
+                (None,STABLE,current)]:
+            with self.assertRaises(ValueError): m.recovery_state_ok(state,saved,now,BOOT)
+
     def test_accepts_only_current_stable_state(self):
         self.assertEqual(m.validate_stable(STABLE,BOOT),STABLE)
         for value,boot in [(None,BOOT),({**STABLE,'phase':'pending'},BOOT),({**STABLE,'phase':'failed'},BOOT),
