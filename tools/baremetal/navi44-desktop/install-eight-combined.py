@@ -64,6 +64,8 @@ def recovery_state_ok(state, saved, current, prepared):
         raise ValueError('State is not a candidate attempt after this deployment')
     if state.get('phase') not in ('pending', 'failed', 'stopped', 'stable'):
         raise ValueError('Unexpected candidate state')
+    if state.get('phase') == 'pending' and state.get('boot', '').lower() == current:
+        raise ValueError('Candidate activation may still be running in this boot')
 
 def restore(work,apply,after_reboot=False):
     if os.geteuid()!=0: raise ValueError('Root is required to verify persistent boot state')

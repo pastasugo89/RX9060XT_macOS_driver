@@ -90,6 +90,14 @@ né stato di caricamento e non consente un confronto rigoroso. La sonda ora salv
 questi dati e rifiuta una pagina non completamente caricata. Occorrono più
 campioni comparabili prima e dopo, con visibilità e carico controllati.
 
+Il driver limita inoltre a 64 MiB complessivi la VRAM visibile alla CPU per
+le sessioni diverse da WindowServer. Nel campione live del 29 ottobre risultano
+1.080 KiB occupati e quattro sessioni aperte: il limite non era raggiunto in
+quel momento. Il campione non include Brave accelerato, che non ha ottenuto una
+sessione; non consente quindi di escludere pressione sul limite dopo il cambio.
+La sonda sessioni salva ora questi valori per confrontarli durante la prova,
+senza cambiare il limite protettivo di WindowServer.
+
 Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
 base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
 quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la

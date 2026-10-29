@@ -4,6 +4,10 @@ import unittest
 from pathlib import Path
 s=importlib.util.spec_from_file_location('probe',Path(__file__).with_name('session-check.py'));m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
 class Parsing(unittest.TestCase):
+    def test_visible_memory_is_captured_when_reported(self):
+        x=m.parse_global('open / DEAD slots / HUNG: 4 / 0 / 0\nseq emitted / retired: 8 / 8\n'
+                         '  non-WS visible VRAM : 1080 KiB held of a 64 MiB cap (boot-arg)\n')
+        self.assertEqual(x['non_ws_visible_vram'],{'held_kib':1080,'cap_mib':64})
     def test_extra_slot_page_is_not_global(self):
         x=m.parse_slot(6,'  slot / VMID / session   : 4 / 12 / 33\n  state                   : OPEN, hello\n')
         self.assertEqual((x['slot'],x['vmid'],x['status']),(4,12,'open'))

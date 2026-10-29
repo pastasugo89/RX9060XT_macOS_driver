@@ -28,7 +28,10 @@ def parse_global(text):
     emitted, retired = fields(r'^\s*seq emitted / retired\s*:\s*(\d+)\s*/\s*(\d+)\s*$')
     if opened > 8 or dead > 8 or hung > 1 or retired > emitted:
         raise ValueError('Invalid global counters')
-    return {'open':opened, 'dead':dead, 'hung':bool(hung), 'emitted':emitted, 'retired':retired}
+    match=re.search(r'^\s*non-WS visible VRAM\s*:\s*(\d+) KiB held of a (\d+) MiB cap',text,re.M)
+    visible = {'held_kib':int(match.group(1)), 'cap_mib':int(match.group(2))} if match else None
+    return {'open':opened, 'dead':dead, 'hung':bool(hung), 'emitted':emitted, 'retired':retired,
+            'non_ws_visible_vram':visible}
 
 def parse_slot(page, text):
     match = re.search(r'^\s*slot / VMID / session\s*:\s*(\d+)\s*/\s*(\d+)\s*/\s*(\d+)\s*$',text,re.M)
