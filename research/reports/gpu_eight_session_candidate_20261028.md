@@ -62,6 +62,17 @@ La sonda non contiene parametri del codec e non decodifica fotogrammi: questi
 esiti non identificano da soli il motivo del rifiuto o il percorso di YouTube.
 Va rieseguita con un contesto ammesso e sessioni libere dopo la prova GPU.
 
+La sonda `video-h264-roundtrip.c` genera ora un fotogramma H.264 sintetico con
+encoder software e lo decodifica usando la descrizione effettiva prodotta,
+senza aprire file personali. Il 29 ottobre la sessione con accelerazione
+consentita ha decodificato un'immagine (callback riuscita); la richiesta che
+impone l'hardware ha fallito con -12906. La proprietà che indica il percorso
+hardware non era disponibile (-12900). Il processo di test non era ammesso a
+N48N e le quattro sessioni erano occupate: non è una prova che VCN funzionerebbe
+o meno con sessioni libere, né una misura delle prestazioni YouTube. La prova
+costituisce un confronto funzionale più forte della sola descrizione generica,
+ma copre soltanto H.264 e un frame 64×64.
+
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
 il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo
