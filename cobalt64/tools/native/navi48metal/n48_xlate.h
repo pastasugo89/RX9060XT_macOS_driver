@@ -255,6 +255,20 @@ static inline int n48x_prepare_dirs(const char *parent, const char *dir, const c
     return 0;
 }
 
+// Test actual data creation, not just mkdir(EEXIST): sandbox rules may allow
+// inspecting a pre-existing cache directory while denying every new marker.
+static inline int n48x_cache_writable(const char *dir) {
+    char path[N48X_PATH_MAX + 32];
+    if (snprintf(path, sizeof path, "%s/.write-check.XXXXXX", dir) >= (int)sizeof path) return 0;
+    const int fd = mkstemp(path);
+    if (fd < 0) return 0;
+    const char byte = 0;
+    const int wrote = write(fd, &byte, 1) == 1;
+    const int closed = close(fd) == 0;
+    const int removed = unlink(path) == 0;
+    return wrote && closed && removed;
+}
+
 // ======================================================================================================================================================================
 // 4. Size caps (section 1.5)
 // ======================================================================================================================================================================
@@ -457,7 +471,14 @@ static inline int n48x_write_atomic(const char *path, const void *data, size_t n
     if (fd < 0) return -1;
     const char *p = (const char *)data; size_t left = n; int ok = 1;
     while (left) { const ssize_t w = write(fd, p, left); if (w <= 0) { ok = 0; break; } p += w; left -= (size_t)w; }
-    if (ok && fchmod(fd, 0644) != 0) ok = 0;
+    if (ok && fchmod(fd, 0644) != 0) {
+        // A sandbox may deny changing modes although data writes are allowed.
+        // Keep a private, caller-owned file; never accept group/world writes.
+        struct stat st;
+        if ((errno != EPERM && errno != EACCES) || fstat(fd, &st) != 0 ||
+            !S_ISREG(st.st_mode) || st.st_uid != geteuid() ||
+            (st.st_mode & 0022) != 0 || (st.st_mode & 0600) != 0600) ok = 0;
+    }
     if (close(fd) != 0) ok = 0;
     if (!ok || rename(tmp, path) != 0) { (void)unlink(tmp); return -1; }
     return 0;

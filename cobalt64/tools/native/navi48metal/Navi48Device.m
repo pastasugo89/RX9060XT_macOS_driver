@@ -3377,6 +3377,23 @@ static void n48x_setup_locked(void) {
     char parent[N48X_PATH_MAX];
     if (!n48x_parent_path(parent, sizeof parent, ucd) || !n48x_dir_path(N48XL.dir, sizeof N48XL.dir, ucd, key)) { N48XL.dirState = -1; N48LOG("inproc: no user cache directory: in-process translation is unavailable"); return; }
     if (n48x_prepare_dirs(parent, N48XL.dir, key) != 0) { N48XL.dirState = -1; N48LOG("inproc: cannot use the cache directory %s (not a real directory of ours?): in-process translation is unavailable", N48XL.dir); return; }
+    if (!n48x_cache_writable(N48XL.dir)) {
+        // Chromium restricts the shared Darwin cache. Its GPU profile permits
+        // private data under Darwin temp/TemporaryItems. Check the real sandbox
+        // operations before choosing this process-local translation cache.
+        char temp[1024] = "", base[N48X_PATH_MAX];
+        const size_t tn = confstr(_CS_DARWIN_USER_TEMP_DIR, temp, sizeof temp);
+        const int bn = tn && tn <= sizeof temp ? snprintf(base, sizeof base, "%s%sTemporaryItems", temp, temp[strlen(temp)-1] == '/' ? "" : "/") : -1;
+        if (bn < 0 || (size_t)bn >= sizeof base || n48x_mkdir_checked(base) != 0 ||
+            !n48x_parent_path(parent, sizeof parent, base) ||
+            !n48x_dir_path(N48XL.dir, sizeof N48XL.dir, base, key) ||
+            n48x_prepare_dirs(parent, N48XL.dir, key) != 0 || !n48x_cache_writable(N48XL.dir)) {
+            N48XL.dirState = -1;
+            N48LOG("inproc: no writable shader cache permitted for this process");
+            return;
+        }
+        N48LOG("inproc: selected writable temporary shader cache %s", N48XL.dir);
+    }
     N48XL.dirNS = [NSString stringWithUTF8String:N48XL.dir];
     N48XL.dirState = 1;
     N48LOG("inproc: enabled for %s (%s); cache %s (key %s); reader: the OS's GPUCompiler libLLVM, loaded on the first miss", getprogname(), n48_is_ws() ? "WindowServer?!" : n48_allow() ? "root test" : "application", N48XL.dir, key);
@@ -3617,7 +3634,7 @@ static BOOL n48_static_cfg(NSDictionary *ss, N48SampCfg *c, NSError **err) {
 }
 
 // One descriptor binding of a stage, from SPIR-V reflection (+ the meta sidecar for static samplers).
-typedef struct { uint32_t binding; VkDescriptorType type; uint32_t count; VkSampler stat; } N48PB;
+typedef struct { uint32_t binding; VkDescriptorType type; uint32_t count; VkSampler stat; BOOL multisampled; } N48PB;
 
 // Rewrites every `OpDecorate <id> DescriptorSet 0` of a module to `set` (see the binding-model comment above).
 static NSData *n48_spv_set(NSData *spv, uint32_t set) {
@@ -3640,7 +3657,7 @@ static BOOL n48_stage_dsl(const N48sRefl *r, int set, VkShaderStageFlags stage, 
         for (int b = 0; b < N48S_MAXBIND; b++) {
             const N48sBind *a = &r->bind[set][b]; if (!a->used) continue;
             bnd[nb] = (VkDescriptorSetLayoutBinding){ (uint32_t)b, a->type, a->count, stage, NULL };
-            pb[nb] = (N48PB){ (uint32_t)b, a->type, a->count, VK_NULL_HANDLE };
+            pb[nb] = (N48PB){ (uint32_t)b, a->type, a->count, VK_NULL_HANDLE, a->multisampled != 0 };
             nb++;
         }
     }
@@ -5049,7 +5066,7 @@ N48_DNR(N48CommandBuffer)
                 uint32_t ix = p->binding - 32 + k; N48Texture *t = ix < 128 ? st->tex[ix] : nil;
                 if (!t) { N48LOG("WARN %s texture(%u) is used by the shader but was never bound: 1x1 dummy", nm, ix); t = n48_dummy_texture(dev); }
                 if (!t) { [self n48Fail:@"no dummy texture"]; return NO; }
-                if ([t n48Samples] > 1) { [self n48Fail:[NSString stringWithFormat:@"%s texture(%u): a %lu-sample texture is bound to a sampled-image slot; sampling a multisample texture (texture2d_ms) is not supported - resolve it first", nm, ix, (unsigned long)[t n48Samples]]]; return NO; }   // bundle 10
+                if (([t n48Samples] > 1) != p->multisampled) { [self n48Fail:[NSString stringWithFormat:@"%s texture(%u): sample count %lu does not match the shader image type (multisampled=%d)", nm, ix, (unsigned long)[t n48Samples], p->multisampled]]; return NO; }
                 [self n48Retain:t];
                 ii[nii++] = (VkDescriptorImageInfo){ VK_NULL_HANDLE, [t vkView], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
             }

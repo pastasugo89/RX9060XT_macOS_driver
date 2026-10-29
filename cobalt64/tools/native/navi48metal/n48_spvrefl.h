@@ -14,7 +14,7 @@ typedef struct {
    uint32_t width, n;  /* int/float width; vector/matrix/struct member count; array length id */
    uint32_t elem;      /* element / pointee / sampled type */
    uint32_t sc;        /* storage class (variable, pointer) */
-   uint32_t dim, sampled;
+   uint32_t dim, sampled, multisampled;
    uint32_t cval;      /* OpConstant low word */
    uint32_t *mem;      /* struct members */
    uint32_t *moff, *mstride; /* member Offset / MatrixStride decorations (0xffffffff = none) */
@@ -76,7 +76,7 @@ static int n48s_parse(const uint32_t *w, size_t nw, N48sMod *m, char *why, size_
       case 22: { N48sId *t = ID(a[0]); t->op = op; t->width = a[1]; break; }
       case 20: { N48sId *t = ID(a[0]); t->op = op; t->width = 32; break; }
       case 23: case 24: { N48sId *t = ID(a[0]); t->op = op; t->elem = a[1]; t->n = a[2]; break; }
-      case 25: { N48sId *t = ID(a[0]); t->op = op; t->elem = a[1]; t->dim = a[2]; t->sampled = a[6]; break; }
+      case 25: { N48sId *t = ID(a[0]); t->op = op; t->elem = a[1]; t->dim = a[2]; t->multisampled = a[5]; t->sampled = a[6]; break; }
       case 26: { N48sId *t = ID(a[0]); t->op = op; break; }
       case 27: { N48sId *t = ID(a[0]); t->op = op; t->elem = a[1]; break; }
       case 28: { N48sId *t = ID(a[0]); t->op = op; t->elem = a[1]; t->n = a[2]; break; }
@@ -122,7 +122,7 @@ static uint32_t n48s_tsize(N48sMod *m, uint32_t t, int depth)
 /* ------------------------------------------------------------------------------------------------ layout */
 #define N48S_MAXSET 32
 #define N48S_MAXBIND 1024
-typedef struct { int used; VkDescriptorType type; uint32_t count; } N48sBind;
+typedef struct { int used; VkDescriptorType type; uint32_t count; uint32_t multisampled; } N48sBind;
 typedef struct {
    N48sBind bind[N48S_MAXSET][N48S_MAXBIND]; int maxset;
    uint32_t pc_size;
@@ -184,7 +184,7 @@ static int n48s_reflect(N48sMod *m, int stage /* 0 v, 1 f, 2 k */, N48sRefl *r)
          N48sBind *bd = &r->bind[set][b];
          if (bd->used && bd->type != dt) { snprintf(r->why, sizeof r->why, "set %d binding %d used as two descriptor types", set, b); return 1; }
          if (!bd->used || count > bd->count) bd->count = count;
-         bd->used = 1; bd->type = dt;
+         bd->used = 1; bd->type = dt; bd->multisampled = x->op == 25 ? x->multisampled : 0;
          if (set > r->maxset) r->maxset = set;
       } else if (v->sc == 1 && v->builtin < 0) { /* Input */
          if (stage != 0) continue;

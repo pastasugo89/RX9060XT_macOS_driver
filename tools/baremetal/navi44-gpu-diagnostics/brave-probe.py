@@ -96,16 +96,18 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--url', default='https://vorssaint.com')
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--diagnostic-log', type=Path, help='Keep stderr from this isolated profile for diagnosis')
     p.add_argument('--disable-graphite', action='store_true', help='Disable Skia Graphite only for this isolated test')
     args = p.parse_args()
     if urllib.parse.urlsplit(args.url).scheme not in ('http', 'https'): p.error('Use an HTTP(S) URL')
     if args.output.exists(): p.error('Output already exists')
+    if args.diagnostic_log and args.diagnostic_log.exists(): p.error('Diagnostic log already exists')
     with tempfile.TemporaryDirectory(prefix='navi44-brave-probe-') as profile:
         log = Path(profile) / 'brave.log'
         with log.open('wb') as stderr:
             proc = subprocess.Popen([BRAVE, '--user-data-dir='+profile, '--no-first-run',
                 '--no-default-browser-check', '--remote-debugging-address=127.0.0.1',
-                '--remote-debugging-port=0'] + (['--disable-features=SkiaGraphite'] if args.disable_graphite else []) + [args.url], stdout=subprocess.DEVNULL, stderr=stderr)
+                '--remote-debugging-port=0'] + (['--enable-logging=stderr'] if args.diagnostic_log else []) + (['--disable-features=SkiaGraphite'] if args.disable_graphite else []) + [args.url], stdout=subprocess.DEVNULL, stderr=stderr)
             browser = page = None
             try:
                 deadline = time.monotonic() + 25
@@ -156,6 +158,9 @@ def main():
                     proc.terminate()
                     try: proc.wait(timeout=5)
                     except subprocess.TimeoutExpired: proc.kill(); proc.wait()
+                if args.diagnostic_log:
+                    stderr.flush()
+                    args.diagnostic_log.write_bytes(log.read_bytes())
 
 
 if __name__ == '__main__': main()
