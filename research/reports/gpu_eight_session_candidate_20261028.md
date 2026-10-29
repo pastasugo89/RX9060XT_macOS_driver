@@ -48,6 +48,16 @@ risorse ([Apple: richiesta decodifica hardware](https://developer.apple.com/docu
 Un risultato negativo attuale non autorizza ad annunciare che YouTube userà VCN
 solo perché Brave ottiene un contesto Metal.
 
+Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
+campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
+il delta dei fotogrammi video prodotti e persi. Si esegue nella console di sviluppo
+con video già in riproduzione; va confrontato sullo stesso video, qualità e durata.
+Registra il tempo in background e segnala i task lunghi quando l'API è disponibile.
+I valori non identificano da soli né l'uso della GPU né il decoder; per questo
+vanno affiancati alle informazioni GPU del browser e alla verifica VideoToolbox.
+Il conteggio è stato esercitato con un ambiente JavaScript simulato, non ancora
+su YouTube durante questa sessione.
+
 Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
 base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
 quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la
