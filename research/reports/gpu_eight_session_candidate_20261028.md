@@ -138,3 +138,16 @@ sulla chiamata `acd_kext_query_info`; non esce dal ramo per il solo VMID diverso
 Questo elimina quel controllo specifico come causa certa di rifiuto dei VMID
 9–15. Non prova che l'intera libreria o ogni shader siano privi di altri limiti,
 né che i contesti 12–15 funzionino realmente sulla GPU.
+
+## Scheduler con otto sessioni
+
+Il test host del profilo otto copre anche sette sessioni applicative in attesa:
+l'ordine cronologico, la rimozione progressiva dalla coda e l'identificazione
+del proprietario delle submission più vecchie. La verifica usa ASan/UBSan e
+non simula le temporizzazioni reali della GPU.
+
+Una lettura `sessstat 5` sul sistema attuale con quattro sessioni ha rilevato
+credito G5 pari a 1, 349 submit ritardate su 24.694 ammesse, 368 ms totali,
+massimo 6 ms e nessun timeout. È un dato cumulativo di quella sessione, non una
+misura sincronizzata con YouTube; non dimostra che G5 causi o risolva lo stutter.
+Il limite di credito è condiviso e resta invariato nel candidato a otto sessioni.

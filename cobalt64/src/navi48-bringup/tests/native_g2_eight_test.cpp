@@ -49,5 +49,24 @@ int main() {
             if (allowed) assert(p.slot == first && state[p.slot] == kSlotFree);
         }
     }
+    // Seven app waiters share one ring: lower-priority waiters cannot pass
+    // an older live waiter, while clearing a completed waiter makes progress.
+    uint64_t since[kMaxSessions] = {};
+    constexpr uint64_t now = 1000, stale = 1000;
+    for (unsigned i = 1; i < kMaxSessions; ++i)
+        n48native::g5::since_mark(since, i, 100 + i);
+    for (unsigned i = 1; i < kMaxSessions; ++i) {
+        assert(!n48native::g5::older_waiter(since, i, now, stale));
+        for (unsigned j = i + 1; j < kMaxSessions; ++j)
+            assert(n48native::g5::older_waiter(since, j, now, stale));
+        n48native::g5::since_clear(since, i);
+    }
+    OwnerLog log {};
+    owner_note(log, 1, 0, 100, 0); // WindowServer
+    for (unsigned i = 1; i < kMaxSessions; ++i)
+        owner_note(log, i + 1, i, 100 + i, 0);
+    assert(n48native::g5::app_in_flight(log, 0, 8, 100, 8) == 7);
+    assert(n48native::g5::ws_outstanding(log, 0, 8, 100) == 1);
+    assert(guilty_of(log, 4, 8).known && guilty_of(log, 4, 8).slot == 4);
     puts("eight-session admission and stat ABI: PASS (30000 state samples)");
 }
