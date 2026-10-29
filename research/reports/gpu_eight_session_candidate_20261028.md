@@ -82,6 +82,14 @@ con certezza ogni ritardo alla GPU. Il processo e il profilo di prova sono stati
 chiusi; il profilo personale non è stato modificato. Ripetere lo stesso comando
 dopo il candidato, con condizioni di visibilità e durata comparabili.
 
+Una seconda esecuzione ha verificato URL finale, caricamento completo e viewport
+1200×1162 a DPR 1; ha misurato 8,1 callback/s e p95 135,1 ms su 15,1 secondi.
+Resta compositing software. La differenza rispetto a 14,3 callback/s nella prima
+prova mostra variabilità sostanziale; il primo campione non registrava viewport
+né stato di caricamento e non consente un confronto rigoroso. La sonda ora salva
+questi dati e rifiuta una pagina non completamente caricata. Occorrono più
+campioni comparabili prima e dopo, con visibilità e carico controllati.
+
 Il candidato riproducibile `build-eight-sessions.py` controlla che il binario
 base nella EFI corrente corrisponda a quello della build sorgente 0.0.664,
 quindi costruisce separatamente una 0.0.665 con otto sessioni e verifica la

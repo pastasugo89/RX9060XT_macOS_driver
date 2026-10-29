@@ -122,14 +122,25 @@ def main():
                 page = CDP(target['webSocketDebuggerUrl'])
                 # Let navigation and site initialization settle before measuring.
                 time.sleep(8)
+                page_state = page.call('Runtime.evaluate',
+                    expression='({url: location.href, ready: document.readyState, '
+                               'width: innerWidth, height: innerHeight, dpr: devicePixelRatio})',
+                    returnByValue=True).get('result', {}).get('value')
+                if not isinstance(page_state, dict) or page_state.get('ready') != 'complete':
+                    raise RuntimeError('Page did not finish loading; measurement is not comparable')
+                if urllib.parse.urlsplit(page_state.get('url', '')).scheme not in ('http', 'https'):
+                    raise RuntimeError('Browser is not displaying an HTTP(S) page')
                 value = page.call('Runtime.evaluate', expression=PROBE.read_text(), awaitPromise=True,
                                   returnByValue=True, timeout=25000)
                 if value.get('exceptionDetails'): raise RuntimeError(str(value['exceptionDetails']))
                 frame = value.get('result', {}).get('value')
                 if not isinstance(frame, dict): raise RuntimeError('Frame probe returned no value')
+                info_after = browser.call('SystemInfo.getInfo')
                 # The full CDP response contains command-line/profile details. Retain
                 # only the GPU status and timing metrics needed for this comparison.
-                result = {'url': args.url, 'gpu_feature_status': info.get('gpu',{}).get('featureStatus',{}),
+                result = {'url': args.url, 'page': page_state,
+                          'gpu_feature_status_before': info.get('gpu',{}).get('featureStatus',{}),
+                          'gpu_feature_status_after': info_after.get('gpu',{}).get('featureStatus',{}),
                           'frame_probe': frame, 'note':'Isolated profile; session contention can differ from normal use.'}
                 args.output.write_text(json.dumps(result, indent=2)+'\n')
                 print(json.dumps(result, indent=2))
