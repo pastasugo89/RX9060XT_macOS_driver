@@ -14,8 +14,10 @@ inline FirmwarePlan firmware_plan(const uint8_t *data, size_t bytes) {
     if (!data || bytes < 32u) return bad;
     const uint32_t total=le32(data), header=le32(data+4), major=(uint32_t)data[8] | ((uint32_t)data[9] << 8);
     const uint32_t minor=(uint32_t)data[10] | ((uint32_t)data[11] << 8);
+    const uint32_t ipMajor=(uint32_t)data[12] | ((uint32_t)data[13] << 8);
+    const uint32_t ipMinor=(uint32_t)data[14] | ((uint32_t)data[15] << 8);
     const uint32_t version=le32(data+16), size=le32(data+20), offset=le32(data+24);
-    if (major != 1 || minor != 0 || total > bytes || total < 32u || header < 32u || header > total ||
+    if (major != 1 || minor != 0 || ipMajor != 5 || ipMinor != 0 || total > bytes || total < 32u || header < 32u || header > total ||
         offset < header || offset > total || !size || (uint64_t)offset + size > total) return bad;
     const uint64_t alignedPsp = ((uint64_t)size + 4095u) & ~4095ull;
     const uint64_t alignedCache = ((uint64_t)size + 8u + 4095u) & ~4095ull;

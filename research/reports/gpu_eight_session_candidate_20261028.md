@@ -87,9 +87,17 @@ struttura comune v1.0 del firmware e calcola separatamente l'allineamento PSP
 e la dimensione della finestra cache VCN (payload più otto byte), seguendo
 `amdgpu_vcn_setup_ucode` e `vcn_v5_0_0_mc_resume` del sorgente Linux locale.
 Sono stati provati intestazioni sintetiche valide, troncamenti, intervalli
-invalidi e limiti di allineamento sotto ASan/UBSan. Il blob reale non era
-disponibile nella verifica corrente: non sono stati controllati firma, CRC,
-compatibilità o caricamento PSP. Il componente non è collegato al driver.
+invalidi e limiti di allineamento sotto ASan/UBSan. È stata inoltre acquisita
+localmente la versione del firmware pubblicata da AMD nel repository Linux
+Firmware al [commit 8669af2](https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/8669af2dd952e36a5473d4b0335e343704e8a42f):
+437.712 byte, SHA-256 `cc6c564316b5c0e216defd1b551d7cd9a4f950e5e172af2302a3235f47b40171`,
+versione `0x0910c00f`, payload 437.456 byte a offset 256. Il parser lo accetta
+e calcola 438.272 byte per ciascun allineamento PSP e cache. Questa versione
+non è necessariamente quella usata nel precedente rilievo Linux (438.288 byte).
+Il CRC32 del payload coincide con quello nell'intestazione (`0xb6b60552`):
+questo controllo non autentica il firmware. Non sono stati verificati firma,
+compatibilità o caricamento PSP. Il
+componente non è collegato al driver e il blob rimane nei dati locali ignorati.
 
 Per misurare lo stutter reale, `tools/baremetal/navi44-gpu-diagnostics/browser-frame-probe.js`
 campiona per 15 secondi i tempi di animazione della scheda visibile e, se presente,
