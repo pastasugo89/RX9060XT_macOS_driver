@@ -107,6 +107,14 @@ senza inventare la dimensione ABI. I test host sono passati, ma non verificano
 allocazione, gestione TMR, registri o comunicazione col firmware. Anche questo
 calcolo è isolato e non attiva VCN.
 
+L'estrattore firmware già presente nel progetto accetta il codice host `0x10d`
+per VCN e, sul blob reale AMD, restituisce il tipo PSP 13 e lo stesso intervallo
+verificato dal nuovo parser: offset 256, 437.456 byte. Il percorso PSP esistente
+memorizza anche l'indirizzo TMR restituito per tipo 13. Questa compatibilità di
+formato non implica che il loader attuale includa o carichi VCN: occorrono
+ancora l'integrazione del file, lo spazio di staging, la chiamata PSP, le code,
+il controllo di alimentazione e un'interfaccia di decodifica su macOS.
+
 La struttura `native_vcn_shared_pure.h` riproduce gli offset VCN 5 della coda
 unificata, logging, ring e interfaccia SMU; la struttura occupa 532 byte e il
 suo spazio allocato è arrotondato a 4.096 byte. L'inizializzazione di prova
