@@ -13,6 +13,8 @@ Quadro sintetico in [`STATO.md`](STATO.md); fasi in [`FASI.md`](FASI.md); bare m
 
 ## Da dove partire
 
+- [`DRIVER_PRODUZIONE.md`](DRIVER_PRODUZIONE.md): passaggio avviato allo stack per uso generale, gestione dei contesti e stato delle prime implementazioni (30/10/2026).
+- [`COMPLETEZZA_DRIVER_GPU.md`](COMPLETEZZA_DRIVER_GPU.md): requisiti per uno stack generale completo, distinzione fra Metal/Vulkan/API web/compute, checklist e criteri di verifica (29/10/2026).
 - [`PIANO_DRIVER_METAL_RX9060XT.md`](PIANO_DRIVER_METAL_RX9060XT.md): il piano di sviluppo (architettura, strategia,
   ambiente, milestone, test, rischi, licenze, prime azioni).
 - [`STATO.md`](STATO.md): dove siamo arrivati, cosa funziona e dove siamo bloccati, in una pagina.
