@@ -48,6 +48,7 @@
 #include "native_g2_pure.h"   // 0.0.627 (G2): several sessions (boot-arg navi48-multisession=1, default OFF)
 #include "native_g5_pure.h"   // 0.0.650 (G5 Stage 1): the application credit (boot-arg navi48-g5=1, default OFF)
 #include "native_g4_pure.h"   // 0.0.640 (G4): the APP role, the allow-list, the budget report, the close-path mapping rule (boot-arg navi48-apps=1, default OFF)
+#include "production_context_retire.h"
 #include <pexpert/pexpert.h>  // 0.0.623: PE_parse_boot_argn (navi48-g1)
 
 #define N1C_LOG(fmt, ...) AMDGPU_LOG("native-s1c", fmt, ##__VA_ARGS__)
@@ -941,6 +942,29 @@ static bool scan_unpinx(uint32_t inst, uint32_t h, Bo &b, RelMode mode) {
 static bool scan_unpin1(uint32_t h, Bo &b, RelMode mode) { return scan_unpinx(1u, h, b, mode); }
 static bool scan_unpin2(uint32_t h, Bo &b, RelMode mode) { return scan_unpinx(2u, h, b, mode); }
 
+struct ContextRetireEnv {
+    Session *s;
+    bool park_root() { return program_root(s->vmid, gPark.pa) == kOk; }
+    bool clear_fence_ptes() {
+        const FenceWindow &win = gWin[s->slot];
+        bool cleared = false;
+        for (uint32_t i = 0; i < N48N_FENCE_SLOTS; ++i) {
+            if (!s->fslot[i].used) continue;
+            const uint64_t zero = 0;
+            bar0_memcpy_to_vram(*gCtx->dev, gCtx->gmc.gart_pt_vram_offset + (win.gartOff / kPage + i) * 8ull, &zero, sizeof(zero));
+            cleared = true;
+        }
+        return cleared;
+    }
+    bool flush_fence_tlb() {
+        amdgpu_hdp_flush(*gCtx->dev);
+        return flush_vmid(0) == kOk;
+    }
+    void forget_fences() {
+        for (uint32_t i = 0; i < N48N_FENCE_SLOTS; ++i) s->fslot[i] = FenceSlot{0, 0, 0};
+    }
+};
+
 void n1c_close(const N1cRef &ref, const char *how) {
     if (gCliLock == nullptr) return;
     Session *s = sess_lock(ref, false);
@@ -948,7 +972,6 @@ void n1c_close(const N1cRef &ref, const char *how) {
     IOLock *const sl = s->lock;   // 0.0.629 (G2 review fix R1): the lock this thread holds, kept LOCAL: after the last gCliLock below the record may be re-opened
     using namespace n48native::g2;
     const bool multi = multi_on();
-    DeviceContext &dev = *gCtx->dev;
     IOLockLock(gCliLock);
     // 0.0.603: the console plane FIRST - before the own wait, before the HUNG decision, before anything is freed or leaked. 0.0.627 (G2): with the switch ON only the
     // session that holds the plane restores it (another client's close never takes WindowServer's plane away).
@@ -969,22 +992,12 @@ void n1c_close(const N1cRef &ref, const char *how) {
     const uint64_t seqs = s->emitted;
     const uint32_t ptPages = s->ptPages;
     IOLockLock(gCliLock);
-    bool parked = false;
-    if (!leak) {
-        // No client owns this tree from here: park the context on the kernel's zeroed page, then free everything.
-        if (program_root(s->vmid, gPark.pa) != kOk) leak = true; else parked = true;
-    }
+    ContextRetireEnv retireEnv{s};
+    const auto retired = n48production::retire_context_bindings(retireEnv, !leak);
+    const bool parked = retired.verdict == n48production::RetireVerdict::Retired;
+    if (!parked) leak = true;
     if (!leak) {
         for (uint32_t h = 1; h < N48N_MAX_BOS; h++) if (s->boUsed[h]) bo_release(s, h, kRelClosing);
-        bool slots = false;
-        const FenceWindow &win = gWin[s->slot];
-        for (uint32_t i = 0; i < N48N_FENCE_SLOTS; i++) {
-            if (!s->fslot[i].used) continue;
-            const uint64_t zero = 0;
-            bar0_memcpy_to_vram(dev, gCtx->gmc.gart_pt_vram_offset + (win.gartOff / kPage + i) * 8ull, &zero, sizeof(zero));
-            s->fslot[i].used = 0; slots = true;
-        }
-        if (slots) { amdgpu_hdp_flush(dev); (void)flush_vmid(0); }
         pt_release_blocks(s);   // into the reserve, not vram_alloc
         N1C_LOG("client closed (%s): slot %u VMID %u: %u BOs (%llu MiB VRAM, %llu MiB GTT), %u PT pages, %llu seqs, freed", how, s->slot, s->vmid, nBos,
                 (unsigned long long)(vramB >> 20), (unsigned long long)(gttB >> 20), ptPages, (unsigned long long)seqs);
@@ -1030,8 +1043,8 @@ static void bo_release(Session *s, uint32_t h, RelMode mode) {
     if (b.pinLeak != 0u) mode = kRelLeak;             // a restore that did not verify: keep the memory and the PTEs, like HUNG
     const FenceWindow &win = gWin[s->slot];
     if (mode == kRelClosing) {
-        // The whole tree is being discarded (the context is parked, the arena is freed by the caller) and the fence-window PTEs are cleared
-        // by the caller in one pass: only the memory goes.
+        // The private root is parked and the VMID-0 fence PTEs were cleared and
+        // acknowledged before entering this path. Only the BO memory goes.
         // 0.0.640 (G4), R6 on the CLOSE path: read the descriptor's references BEFORE this record drops its own. A visible-VRAM BO that a process still has CPU-mapped (a reference
         // beyond the record's) must not go back to the shared pool: the mapping could read and write whoever is handed that range next. 0.0.641: keyed on apps_on() (BOTH latches); without
         // navi48-apps: as 0.0.632 (always freed). By now the client's close has already removed the mappings it could (n1c_unmap_for_close): what is still counted here is the fallback.

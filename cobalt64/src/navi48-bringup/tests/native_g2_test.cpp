@@ -350,8 +350,14 @@ static void t11_pins(const std::string &root) {
     // close: the own wait, the park of the session's own VMID, the slot's next state
     const std::string cl = fn_body(eng, "void n1c_close(const N1cRef &ref, const char *how) {");
     expect(in_order(cl, { "Session *s = sess_lock(ref, false);", "bool leak = hung_now();", "if (!leak && !own_wait(s)) leak = true;", "const bool ownIdle = !leak;", "IOLockLock(gCliLock);",
-                          "if (program_root(s->vmid, gPark.pa) != kOk) leak = true; else parked = true;", "bo_release(s, h, kRelClosing)", "gSlotState[s->slot] = slot_after_close(parked, ownIdle);",
-                          "IOLockUnlock(gCliLock);", "IOLockUnlock(sl);" }), "close: own wait (session lock only), park THIS VMID, free, then the slot state from slot_after_close");
+                          "retire_context_bindings(retireEnv, !leak)", "const bool parked = retired.verdict == n48production::RetireVerdict::Retired;", "if (!parked) leak = true;",
+                          "bo_release(s, h, kRelClosing)", "gSlotState[s->slot] = slot_after_close(parked, ownIdle);",
+                          "IOLockUnlock(gCliLock);", "IOLockUnlock(sl);" }), "close: own wait outside registry lock, both address spaces retired before free, then slot state");
+    const std::string retire = slurp(K + "src/amd/production_context_retire.h");
+    expect(in_order(retire, { "if (!ownWorkRetired)", "if (!env.park_root())", "env.clear_fence_ptes()", "if (hadFences && !env.flush_fence_tlb())", "env.forget_fences()", "RetireVerdict::Retired" }),
+           "retirement refuses pending work and requires private root plus fence-window ACK before success");
+    expect(eng.find("return program_root(s->vmid, gPark.pa) == kOk;") != std::string::npos && eng.find("return flush_vmid(0) == kOk;") != std::string::npos,
+           "retirement callbacks use THIS VMID and check VMID-0 invalidation");
     expect(cl.find("own_wait(s)") < cl.find("IOLockLock(gCliLock);", cl.find("bool leak = hung_now();")), "close: the own wait runs WITHOUT gCliLock");
     expect(in_order(cl, { "if (!multi || __atomic_load_n(&gScanOwner, __ATOMIC_ACQUIRE) == s->id) { uint64_t tr[2]; scan_teardown(s, how, tr);" }), "close: with the switch ON only the scanout owner restores the console (OFF: always, as before)");
     // the own wait: THIS session's last seqno, never the global count

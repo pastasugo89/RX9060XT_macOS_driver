@@ -370,8 +370,10 @@ static void h5_pins(const std::string &root) {
     // close
     const std::string cl = fn_body(eng, "void n1c_close(const N1cRef &ref, const char *how) {");
     expect(!cl.empty(), "n1c_close is found");
-    expect(at(cl, "program_root(s->vmid, gPark.pa)") < at(cl, "bo_release(s, h, kRelClosing)"), "close: the session's context is parked (and the TLB flushed) BEFORE any BO is released (unmap before complete)");
-    expect(at(cl, "bool leak = hung_now();") < at(cl, "program_root(s->vmid, gPark.pa)") && cl.find("if (!leak) {\n        for (uint32_t h = 1; h < N48N_MAX_BOS; h++) if (s->boUsed[h]) bo_release(s, h, kRelClosing);") != std::string::npos, "close: the release loop runs only when not leaking (HUNG)");
+    expect(in_order(cl, { "retire_context_bindings(retireEnv, !leak)", "const bool parked = retired.verdict == n48production::RetireVerdict::Retired;", "if (!parked) leak = true;", "bo_release(s, h, kRelClosing)" }),
+           "close: both address spaces must retire successfully BEFORE any BO is released");
+    expect(in_order(cl, { "bool leak = hung_now();", "retire_context_bindings(retireEnv, !leak)", "if (!parked) leak = true;", "if (!leak) {\n        for (uint32_t h = 1; h < N48N_MAX_BOS; h++) if (s->boUsed[h]) bo_release(s, h, kRelClosing);" }),
+           "close: hung, pending work or failed invalidation keeps the release loop unreachable");
     expect(cl.find("LEAKED (HUNG): pages stay wired, never completed or released") != std::string::npos, "close under HUNG says host imports are leaked");
     expect_u("close releases BOs in exactly one place", count_of(cl, "bo_release(s, h, kRelClosing)"), 1);
     // free

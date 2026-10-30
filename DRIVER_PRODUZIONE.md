@@ -34,6 +34,12 @@ Il test `production_vm_lease_test.cpp` passa con ASan/UBSan: mille identità log
 
 Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autenticato, usare un contatore delle identità unico per il boot, mantenere il lock comune registro/lease e ordinare l'accounting del submit con la pubblicazione sul ring. La politica non sostituisce questi obblighi con dati ricevuti dall'ioctl.
 
+### Chiusura dei contesti collegata al percorso kernel
+
+`production_context_retire.h` è usato da `native_s1c.cpp` nella chiusura effettiva. Prima della modifica il percorso liberava i BO, poi cancellava le PTE della finestra fence condivisa di VMID 0 e ignorava il risultato della relativa invalidazione. Ora, dopo il retirement del lavoro del client, parcheggia la root privata, cancella le PTE fence e verifica l'ACK di VMID 0 **prima** di rilasciare i BO e le page table. Un fallimento conserva risorse e record delle fence e rende non riutilizzabile lo slot.
+
+`test-kernel-context-close.py` esegue il vero corpo di `n1c_close` e i callback `ContextRetireEnv` con IO controllato: 32 percorsi, ruoli e profili legacy/multisessione, fence presenti/assenti, errori di retirement e ACK, chiusura ripetuta. ASan/UBSan passano; ogni free richiede il retirement e gli ACK pertinenti. I test esistenti G2 e host import sono aggiornati al nuovo ordine senza rimuovere il vincolo di invalidazione. Il kext completo x86_64 a otto sessioni compila e la firma ad hoc si verifica in `build-production-contexts`; è solo un artefatto locale, non installato. Il registro logico e l'assegnazione dinamica dei VMID restano da collegare: questa chiusura è un prerequisito per il loro riuso sicuro.
+
 ### Integrazione kernel da completare prima del rilascio
 
 - [ ] Separare `N1cRef`/registro logico da indice hardware e VMID. Definire la compatibilità della versione ABI; Hello/QueryInfo non devono fingere un VMID permanente.
