@@ -137,7 +137,8 @@ constexpr uint32_t kHostRelNormal = 0u, kHostRelLeak = 1u, kHostRelClosing = 2u;
 // n1c_close leaks); in Normal only after the PTEs are cleared and the TLB flushed; in Closing only after CONTEXT8 is parked (program_root(park) flushes the TLB).
 constexpr bool host_may_release(uint32_t mode) { return mode == kHostRelNormal || mode == kHostRelClosing; }
 // 0.0.612 review item D: a TLB flush that did not acknowledge (flush_vmid returned non-zero: it latched HUNG) means the GPU may still translate through the entries just cleared, so
-// the memory of that BO (the imported host pages, and the GTT pages) is LEAKED, never completed / released / freed.
+// the memory of that BO (imported host pages, GTT pages and either VRAM pool) is
+// retained, never completed / released / returned to an allocator.
 constexpr bool memory_may_free_after_flush(uint32_t flushRc) { return flushRc == 0u; }
 
 } // namespace s1c

@@ -1081,8 +1081,8 @@ static void bo_release(Session *s, uint32_t h, RelMode mode) {
         if (slotCleared) { amdgpu_hdp_flush(*gCtx->dev); memOk = memory_may_free_after_flush(flush_vmid(0)) && memOk; }
         if (b.vmd != nullptr) { b.vmd->release(); b.vmd = nullptr; }   // the descriptor is released once, before the range it names is freed
         if (b.kind == kBoGtt) { if (memOk) { sysmem_free(b.sm); sys_release(b); } }   // review item D: a flush that did not acknowledge leaks the GTT pages (they stay counted, R4)
-        else if (b.kind == kBoHi) { gCtx->gmc.vram_alloc_hi.free(b.a); budget_release(b); }
-        else if (b.kind == kBoVis) { gCtx->gmc.vram_alloc.free(b.a); budget_release(b); }
+        else if (b.kind == kBoHi) { if (memOk) { gCtx->gmc.vram_alloc_hi.free(b.a); budget_release(b); } }
+        else if (b.kind == kBoVis) { if (memOk) { gCtx->gmc.vram_alloc.free(b.a); budget_release(b); } }
         else if (b.kind == kBoHost && host_may_release(kHostRelNormal) && memOk) { host_release(b); sys_release(b); }   // 0.0.612: AFTER pt_unmap and flush_vmid above (unmap before complete)
     } else {
         // Leak: the memory, the PTEs and any fence-slot PTE stay; only the software records go.

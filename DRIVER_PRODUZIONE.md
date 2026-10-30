@@ -40,6 +40,8 @@ Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autent
 
 `test-kernel-context-close.py` esegue il vero corpo di `n1c_close` e i callback `ContextRetireEnv` con IO controllato: 32 percorsi, ruoli e profili legacy/multisessione, fence presenti/assenti, errori di retirement e ACK, chiusura ripetuta. ASan/UBSan passano; ogni free richiede il retirement e gli ACK pertinenti. I test esistenti G2 e host import sono aggiornati al nuovo ordine senza rimuovere il vincolo di invalidazione. Il kext completo x86_64 a otto sessioni compila e la firma ad hoc si verifica in `build-production-contexts`; è solo un artefatto locale, non installato. Il registro logico e l'assegnazione dinamica dei VMID restano da collegare: questa chiusura è un prerequisito per il loro riuso sicuro.
 
+Anche `bo_release` in modalità Normal richiede ora gli ACK prima di restituire memoria a entrambi i pool VRAM. Il vecchio controllo conservava GTT/import host ma restituiva ugualmente VRAM dopo un'invalidazione fallita. `test-kernel-bo-release.py` esegue il blocco reale con 40 combinazioni di mapping, fence e ACK: memoria e budget rimangono trattenuti quando una traduzione è incerta. Non è un meccanismo di recupero della memoria in quarantena; il percorso attuale la conserva fino al reboot. Test ASan/UBSan e compilazione kernel passano, verifica hardware ancora aperta.
+
 ### Integrazione kernel da completare prima del rilascio
 
 - [ ] Separare `N1cRef`/registro logico da indice hardware e VMID. Definire la compatibilità della versione ABI; Hello/QueryInfo non devono fingere un VMID permanente.
