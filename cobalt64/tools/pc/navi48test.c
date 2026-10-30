@@ -2368,7 +2368,7 @@ static int cmd_accel(const char *what, const char *arg, const char *arg2, const 
         } else if (c == 0) {
             const unsigned long long st = out[5] & 0xff;
             printf("  slot / VMID / session   : %llu / %llu / %llu\n", out[4], out[6], out[7]);
-            printf("  state                   : %s%s%s%s\n", st == 0 ? "free" : st == 1 ? "OPEN" : st == 2 ? "DEAD (its VMID is never reused this boot)" : "?",
+            printf("  state                   : %s%s%s%s\n", st == 0 ? "free" : st == 1 ? "OPEN" : st == 2 ? "DEAD (record cannot be reused this boot)" : "?",
                    (out[5] & 0x100) ? ", WindowServer" : "", (out[5] & 0x200) ? ", hello" : "", (out[5] & 0x400) ? ", POISONED (guilty of a recovered hang)" : "");
             if (out[5] & 0x800) printf("  role                    : APP (an allow-listed user application: no ReadRegs, no scanout, the 25%% VRAM budget; 0.0.640)\n");
             printf("  VRAM / GTT / imported   : %llu / %llu / %llu KiB\n", out[8] >> 10, out[9] >> 10, out[10] >> 10);

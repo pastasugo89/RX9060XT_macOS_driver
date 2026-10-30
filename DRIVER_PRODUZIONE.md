@@ -24,13 +24,13 @@ La nuova struttura deve avere:
 
 `cobalt64/src/navi48-bringup/src/amd/production_vm_lease_pure.h` contiene la politica di assegnazione, priva di MMIO e chiamate del sistema. Il componente riserva il primo slot al compositor, trova slot vuoti o ritirati per le applicazioni, attende una sequenza quando necessario e usa ticket con generazione per rifiutare operazioni vecchie. L'assegnazione passa per uno stato Binding prima delle scritture hardware; un ACK fallito conserva vecchia e nuova root in quarantena.
 
-Il test `production_vm_lease_test.cpp` passa con ASan/UBSan: mille identità logiche alternate, ticket obsoleti, acquisizioni concorrenti simulate, attese di retirement, riserva del compositor e chiusura subordinata all'ACK. **Non prova mille applicazioni sul kernel attuale. Il modulo non è ancora collegato a native_s1c.cpp.**
+Il test `production_vm_lease_test.cpp` passa con ASan/UBSan: mille identità logiche alternate, ticket obsoleti, acquisizioni concorrenti simulate, attese di retirement, riserva del compositor e chiusura subordinata all'ACK. **Non prova mille applicazioni sul kernel attuale.** La politica è ora collegata al profilo kernel a contesti virtuali descritto sotto; non è ancora installata sul sistema avviato.
 
 ### Registro dei contesti implementato
 
 `production_context_pure.h` aggiunge il ciclo di vita dei contesti logici su una tabella fornita dal chiamante, senza derivarne la capacità dagli otto VMID. Ogni record ha identità monotona, proprietario, root, ultima sequenza e riferimenti alle operazioni CPU in corso. Una chiusura impedisce nuove operazioni ma conserva le risorse fino al rilascio degli ultimi riferimenti, al retirement e alla scomparsa delle root da tutte le assegnazioni hardware, comprese quelle in Binding e Quarantined. Lo stato Destroying impedisce di riciclare il record prima che il kernel abbia realmente distrutto le risorse.
 
-`production_context_test.cpp` mantiene **mille record applicazione aperti contemporaneamente**, più il compositor, e ne esegue il lavoro simulato riutilizzando sette VMID applicazione. ASan/UBSan verificano anche riferimenti obsoleti con il medesimo proprietario, rifiuto di ticket appartenenti ad altri contesti, race fra close e operazione CPU, fallimento del cambio root con conservazione di entrambe le page table, e mancato riuso delle identità dopo overflow. Il test controlla le politiche CPU: **non apre mille client IOAccel e non esegue comandi sulla GPU**. Registro e lease attendono ancora l'integrazione kernel descritta sotto.
+`production_context_test.cpp` mantiene **mille record applicazione aperti contemporaneamente**, più il compositor, e ne esegue il lavoro simulato riutilizzando sette VMID applicazione. ASan/UBSan verificano anche riferimenti obsoleti con il medesimo proprietario, rifiuto di ticket appartenenti ad altri contesti, race fra close e operazione CPU, fallimento del cambio root con conservazione di entrambe le page table, e mancato riuso delle identità dopo overflow. Il test controlla le politiche CPU: **non apre mille client IOAccel e non esegue comandi sulla GPU**. Questo modulo rimane un modello isolato del ciclo di vita; il percorso kernel conserva i record `Session` stabili e i riferimenti `N1cRef` autenticati dall'IOUserClient.
 
 Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autenticato, usare un contatore delle identità unico per il boot, mantenere il lock comune registro/lease e ordinare l'accounting del submit con la pubblicazione sul ring. La politica non sostituisce questi obblighi con dati ricevuti dall'ioctl.
 
@@ -42,7 +42,25 @@ Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autent
 
 Anche `bo_release` in modalità Normal richiede ora gli ACK prima di restituire memoria a entrambi i pool VRAM. Il vecchio controllo conservava GTT/import host ma restituiva ugualmente VRAM dopo un'invalidazione fallita. `test-kernel-bo-release.py` esegue il blocco reale con 40 combinazioni di mapping, fence e ACK: memoria e budget rimangono trattenuti quando una traduzione è incerta. Non è un meccanismo di recupero della memoria in quarantena; il percorso attuale la conserva fino al reboot. Test ASan/UBSan e compilazione kernel passano, verifica hardware ancora aperta.
 
+### Profilo kernel con 64 contesti logici e otto VMID
+
+Il profilo di build `NATIVE_SESSIONS=8 LOGICAL_CONTEXTS=64`, con i ruoli applicativi/multisessione già attivi, usa ora la politica di lease nel percorso effettivo di `native_s1c.cpp`:
+
+- `n1c_open` alloca il record e la root senza assegnare un VMID né programmare CONTEXT; l'esaurimento del contatore identità a 32 bit rifiuta nuovi open, senza wrap/ABA.
+- `ring_submit_production` prende i lock nell'ordine registro → ring. Controlla spazio, fairness e retirement; assegna o riusa un VMID soltanto per eseguire lavoro. Le attese rilasciano entrambi i lock.
+- `session_bind_locked` verifica la geometria del contesto hardware, programma la root e richiede l'ACK TLB prima di pubblicare il ticket. `ring_put_locked` aggiorna l'ultima sequenza del lease prima di scrivere e notificare il ring.
+- `session_flush_locked` invalida soltanto un VMID attualmente appartenente alla root chiamante. Una root espulsa non invalida il VMID passato ad altri; il suo prossimo bind farà l'invalidazione. La chiusura parcheggia solo l'assegnazione ancora posseduta, oppure conferma che la root non è più referenziata. Binding incerti conservano entrambe le root.
+- Il budget globale delle page table è 256 MiB, separato sia dai 64 record sia dagli otto VMID; rimane anche il limite per-client. I blocchi fisici sono allocati al bisogno. Le finestre fence rimangono per record logico, con invalidazione prima del riuso; l'allocatore dinamico indipendente dei loro indirizzi resta da realizzare.
+- Hello/QueryInfo riportano `N48N_VMID_DYNAMIC` e il flag `N48N_INFO_DYNAMIC_VMID`, senza dichiarare un VMID permanente. Layout e major ABI restano invariati. Le pagine diagnostiche 0–9 conservano il significato storico; 32–95 espongono tutti i record del profilo 64. Il VMID diagnostico è una fotografia dell'assegnazione corrente o il sentinel non assegnato.
+- Le identità del log delle sequenze e le code di fairness usano l'indice logico. Il primo slot hardware resta riservato al compositor anche se un'app occupa il primo record software. Le vecchie prove G1 che scrivono direttamente VMID 8 sono rifiutate in questo profilo; le statistiche restano disponibili.
+
+`test-kernel-vmid-leases.py` esegue i veri binder, scheduler, writer del ring, flush e park con MMIO simulato, usando i veri builder PM4 e le politiche G2/G5. Verifica 64 record, riuso dopo retirement, VMID codificato nell'IB, proprietario/sequenza prima di ogni doorbell, attese senza lock, ticket obsoleti, fairness, timeout, quarantena, overflow delle sequenze, app prima del compositor e sostituzione del compositor con altri client vivi. ASan/UBSan passano. I cinque test esistenti G2/G4/G5/host import/S1c passano; il kext completo del profilo 64 compila su macOS x86_64. **Non è una prova di 64 open IOAccel reali, isolamento sulla GPU o stabilità del desktop.** Il profilo è locale e non installato; il numero 64 è un limite di metadata configurato, non la capacità hardware né una dichiarazione di supporto illimitato.
+
+Il confronto hardware è tracciato contro Linux commit `d89e1d186ec9271bf78e62771779e9fc03bf0fc3`: [gestione dei VMID](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/amdgpu_ids.c), [flush VM](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/amdgpu_vm.c), [GFX12](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/gfx_v12_0.c). Linux ordina il flush sul ring e sincronizza PFP/ME; il nostro cambio attende il retirement sulla CPU e programma/invalida prima della nuova doorbell. La correttezza di questa sequenza sul dispositivo va ancora provata con indirizzi virtuali uguali in root diverse, dati e shader distinti, ricambio ripetuto, concorrenza e fault. Il confronto del sorgente e i test CPU non sostituiscono quelle prove.
+
 ### Integrazione kernel da completare prima del rilascio
+
+Assegnazione al submit, accounting prima della doorbell, invalidazioni legate al proprietario corrente, chiusura e log delle identità sono implementati nel profilo 64. Le caselle sotto restano aperte finché l'integrazione e le prove complete corrispondenti non le qualificano; non sono il conteggio dei soli file scritti.
 
 - [ ] Separare `N1cRef`/registro logico da indice hardware e VMID. Definire la compatibilità della versione ABI; Hello/QueryInfo non devono fingere un VMID permanente.
 - [ ] Separare i budget globali/per-client dal numero di slot hardware. Una nuova sessione logica non deve riservare inutilmente tutta la capacità di page table.
@@ -54,6 +72,7 @@ Anche `bo_release` in modalità Normal richiede ora gli ACK prima di restituire 
 - [ ] Adeguare fairness, timeout, recovery, statistiche e chiusura ai contesti logici; nessun indice di client usato per accedere a un array hardware di otto elementi.
 - [ ] Verificare la gestione del compositor e della presentazione prima di abilitare il nuovo percorso sul desktop.
 - [ ] Eseguire test kernel/memoria/ABI e poi carichi reali con più di otto processi, crash/riavvii dei client, pressione di memoria e confronto dei risultati grafici.
+- [ ] Verificare l'identità delle chiamate WaitSeq concorrenti a close/riapertura del record, oltre ai percorsi di submit e import già coperti; completare la prova del ciclo di vita IOAccel reale.
 
 Questa sostituzione riguarda gestione della memoria e scheduling; alzare una costante da otto a un numero maggiore non realizza il progetto. Riferimento architetturale: [AMDGPU, VM e code](https://docs.kernel.org/gpu/amdgpu/driver-core.html).
 

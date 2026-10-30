@@ -358,7 +358,7 @@ static void h5_pins(const std::string &root) {
         const size_t nrm = at(rel, "} else if (mode == kRelNormal) {"), lk = at(rel, "} else {\n        // Leak:");
         expect(nrm != std::string::npos && lk != std::string::npos, "bo_release has Closing / Normal / Leak branches");
         const std::string normal = rel.substr(nrm, lk - nrm), closing = rel.substr(0, nrm), leak = rel.substr(lk);
-        expect(at(normal, "pt_unmap(s->rootPa") < at(normal, "flush_vmid(s->vmid)") && at(normal, "flush_vmid(s->vmid)") < at(normal, "host_release(b)"), "BoFree (Normal): unmap the PTEs, flush the TLB, THEN complete + release");
+        expect(at(normal, "pt_unmap(s->rootPa") < at(normal, "session_flush_locked(s)") && at(normal, "session_flush_locked(s)") < at(normal, "host_release(b)"), "BoFree (Normal): unmap the PTEs, flush the TLB, THEN complete + release");
         expect(normal.find("else if (b.kind == kBoHost && host_may_release(kHostRelNormal) && memOk) { host_release(b); sys_release(b); }") != std::string::npos, "Normal releases through host_may_release (not negated) and only when the flushes acknowledged (0.0.612 review item D)");
         expect(closing.find("else if (b.kind == kBoHost && host_may_release(kHostRelClosing)) { host_release(b); sys_release(b); }") != std::string::npos, "Closing releases through host_may_release (not negated)");
         expect(leak.find("host_release") == std::string::npos && leak.find("complete") == std::string::npos && leak.find("release()") == std::string::npos, "the HUNG leak branch never completes or releases");
@@ -549,10 +549,10 @@ static void h5_pins2(const std::string &root) {
         expect(nrm != std::string::npos && lk != std::string::npos, "D: bo_release branches are found");
         const std::string normal = rel.substr(nrm, lk - nrm);
         expect(normal.find("bool memOk = true;") != std::string::npos, "D: a memOk flag starts true");
-        expect(normal.find("memOk = memory_may_free_after_flush(flush_vmid(s->vmid)) && memOk;") != std::string::npos && normal.find("memOk = memory_may_free_after_flush(flush_vmid(0)) && memOk;") != std::string::npos, "D: both flushes (the VMID-8 TLB after the unmap, the GART TLB after a fence slot) feed memOk");
+        expect(normal.find("memOk = memory_may_free_after_flush(session_flush_locked(s)) && memOk;") != std::string::npos && normal.find("memOk = memory_may_free_after_flush(flush_vmid(0)) && memOk;") != std::string::npos, "D: both flushes (the VMID-8 TLB after the unmap, the GART TLB after a fence slot) feed memOk");
         expect(normal.find("else if (b.kind == kBoHost && host_may_release(kHostRelNormal) && memOk) { host_release(b); sys_release(b); }") != std::string::npos, "D: the host pages are completed and released only when memOk");
         expect(normal.find("if (b.kind == kBoGtt) { if (memOk) { sysmem_free(b.sm); sys_release(b); } }") != std::string::npos, "D: the GTT pages are freed only when memOk");
-        expect(at(normal, "memOk = memory_may_free_after_flush(flush_vmid(s->vmid))") < at(normal, "host_release(b)") && at(normal, "memOk = memory_may_free_after_flush(flush_vmid(0))") < at(normal, "host_release(b)"), "D: the flush verdicts are taken BEFORE the memory is released");
+        expect(at(normal, "memOk = memory_may_free_after_flush(session_flush_locked(s))") < at(normal, "host_release(b)") && at(normal, "memOk = memory_may_free_after_flush(flush_vmid(0))") < at(normal, "host_release(b)"), "D: the flush verdicts are taken BEFORE the memory is released");
         expect(normal.find("(void)flush_vmid") == std::string::npos, "D: no flush result is ignored in the Normal branch");
     }
 }

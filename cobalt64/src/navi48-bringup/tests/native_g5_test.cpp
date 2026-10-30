@@ -438,9 +438,15 @@ static void t10_pins(const std::string &root) {
     expect_u("T10: the app path is reached only after !g5_on() and s->ws were both false (an else-if chain)", count_of(sub, "else er = ring_submit_app_g5("), 1);
     expect_u("T10: ring_submit call sites: the definition, two in n1c_submit, the two G1 kernel paths", count_of(eng, "ring_submit("), 5);
     expect_u("T10: the G1 kernel paths still call ring_submit on gSess", count_of(eng, "ring_submit(&gSess, &va, &by, 1u, false, 0ull, &seq)"), 2);
-    expect_u("T10: gWsLastNs is stored in exactly one place (WindowServer's branch)", count_of(eng, "__atomic_store_n(&gWsLastNs,"), 1);
+    expect_u("T10: gWsLastNs is stored by WindowServer in the legacy and production dispatch paths", count_of(eng, "__atomic_store_n(&gWsLastNs,"), 2);
     expect_u("T10: gG5Since is written only through since_mark / since_clear", count_of(eng, "gG5Since[s->slot] ="), 0);
-    expect_u("T10: the OFF path writes nothing: the only users of gG5 are the app path, the stat page", count_of(eng, "stat_admit(gG5") + count_of(eng, "stat_timeout(gG5") + count_of(eng, "v.st = gG5;"), 3);
+    expect_u("T10: G5 statistics are updated by the legacy/production app paths and read by the stat page", count_of(eng, "stat_admit(gG5") + count_of(eng, "stat_timeout(gG5") + count_of(eng, "v.st = gG5;"), 5);
+    const std::string production = fn_body(eng, "static uint32_t ring_submit_production(");
+    expect(in_order(sub, { "if (production_on()) er = ring_submit_production(", "else if (!g5_on()) er = ring_submit(" }) &&
+           production.find("const bool fair = g5_on() && !s->ws;") != std::string::npos &&
+           production.find("if (fair) n48native::g5::stat_admit(") != std::string::npos &&
+           production.find("if (rc == n48native::g2::kBusy && fair)") != std::string::npos,
+           "production dispatch is explicit and only G5-enabled applications update fairness state");
     // the app path
     const std::string ap = fn_body(eng, "static uint32_t ring_submit_app_g5(");
     expect(!ap.empty(), "T10: ring_submit_app_g5 exists");

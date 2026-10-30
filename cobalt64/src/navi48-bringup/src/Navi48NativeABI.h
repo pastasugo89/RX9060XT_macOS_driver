@@ -196,6 +196,8 @@ struct n48n_info {                 /* 192 B */
 #define N48N_INFO_HUNG          (1u << 0)
 #define N48N_INFO_S1B_POSITIVE  (1u << 1)
 #define N48N_INFO_NATIVE_BOOT   (1u << 2)
+#define N48N_INFO_DYNAMIC_VMID  (1u << 3) /* VMID is assigned at submit; Hello/info report N48N_VMID_DYNAMIC. */
+#define N48N_VMID_DYNAMIC       UINT32_MAX
 /* ABI 1.10 (kext 0.0.640): n48n_info.reserved[] words (an older kext leaves them 0, which reads as "no budget reported").
  *   reserved[0],[1] = native write counter (diagnostic)   reserved[2] = ABI minor (1.1)
  *   reserved[3] = N48N_BUDGET_* flags

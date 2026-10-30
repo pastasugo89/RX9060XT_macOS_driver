@@ -136,8 +136,9 @@ OBJS := $(patsubst %.cpp,$(BUILD)/%.o,$(CXX_SRCS)) $(patsubst %.c,$(BUILD)/%.o,$
         $(if $(strip $(SHADERCACHE_BLOB)),$(BUILD)/fwalt/fw_shadercache.o)
 
 NATIVE_SESSIONS ?= 4
+LOGICAL_CONTEXTS ?= $(NATIVE_SESSIONS)
 
-COMMON := -DN48_MAX_NATIVE_SESSIONS=$(NATIVE_SESSIONS) -arch $(ARCH) -target $(ARCH)-apple-macos$(DEPLOY) -isysroot $(SDK) \
+COMMON := -DN48_MAX_NATIVE_SESSIONS=$(NATIVE_SESSIONS) -DN48_MAX_LOGICAL_CONTEXTS=$(LOGICAL_CONTEXTS) -arch $(ARCH) -target $(ARCH)-apple-macos$(DEPLOY) -isysroot $(SDK) \
   -I$(MKSDK)/Headers -Isrc -Isrc/amd -I$(XLAT12_DIR) -I$(SHADERCACHE_DIR) -I$(DCN41_DIR) -mmacosx-version-min=$(DEPLOY) \
   -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT $(ASIC_DEFINE) $(ROUTE_DEFINE) \
   -D_FORTIFY_SOURCE=0 -nostdinc -fno-builtin -fno-common -fno-stack-protector \

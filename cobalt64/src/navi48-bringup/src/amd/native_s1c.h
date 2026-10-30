@@ -32,7 +32,8 @@ enum N1cLegacySite : uint32_t { kN1cSiteSelfTest = 2, kN1cSiteAllocVRAM = 3, kN1
 bool n1c_refuse_legacy(uint32_t site);
 
 // 0.0.627 (GPU-apps G2): the caller's session. The client keeps the reference n1c_open filled in and passes it to every call; a stale reference (its
-// session closed, or the slot re-opened by another client: a different id) is refused with NotReady. slot 0..3 = VMID 8..11; id 0 = none.
+// session closed, or the slot re-opened by another client: a different id) is refused with NotReady. The slot indexes a logical record;
+// production builds lease VMIDs 8..15 at submit. Legacy builds retain the fixed assignment. id 0 = none; exhaustion refuses new opens.
 struct N1cRef { uint32_t slot; uint32_t id; };
 // Open: gate checks, exclusivity, and the fresh tree. Returns kIOReturnSuccess, NotReady (gate / S1b / HUNG / device not ready),
 // ExclusiveAccess (a client is open; 0.0.627 with boot-arg navi48-multisession=1: no free slot, a G1 test holds the GPU, or a WindowServer open while

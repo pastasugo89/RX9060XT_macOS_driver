@@ -335,9 +335,10 @@ static void t11_pins(const std::string &root) {
     const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {");
     expect(!op.empty(), "n1c_open found");
     expect(in_order(op, { "if (gHang.hung) {", "const bool multi = multi_on();", "if (!multi && !OSCompareAndSwap(0, 1, &gOpenFlag)) {", "IOLockLock(gCliLock);",
-                          "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen);", "if (pk.rc != kOk) {", "const uint32_t slot = pk.slot, vmid = vmid_of_slot(slot);",
-                          "const uint32_t cntl = ctx_prepare(slot, vmid, &ctxOk);", "if (!ctxOk) { rc = kIOReturnNotReady; break; }", "if (program_root(vmid, s->rootPa) != kOk)", "gSlotState[slot] = kSlotOpen;", "IOLockUnlock(gCliLock);" }),
-           "n1c_open: HUNG gate, the OFF compare-and-swap, the lock, open_pick, the slot's VMID for the context and the root, the slot marked open");
+                          "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());", "if (pk.rc != kOk) {", "if (gSessSeqCounter == UINT32_MAX)",
+                          "const uint32_t slot = pk.slot, vmid = production_on() ? N48N_VMID_DYNAMIC : vmid_of_slot(slot);",
+                          "if (!production_on()) {", "cntl = ctx_prepare(slot, vmid, &ctxOk);", "if (!ctxOk) { rc = kIOReturnNotReady; break; }", "if (!production_on() && program_root(vmid, s->rootPa) != kOk)", "gSlotState[slot] = kSlotOpen;", "IOLockUnlock(gCliLock);" }),
+           "n1c_open: unchanged legacy hardware setup, logical production open skips VMID assignment, identities cannot wrap");
     expect(op.find("const uint32_t openNow = multi ? __atomic_load_n(&gOpenFlag, __ATOMIC_SEQ_CST) : 0u;") != std::string::npos, "OFF feeds open_pick an open count of 0 (the CAS already made it exclusive)");
     { const std::string cp = fn_body(eng, "static __attribute__((noinline)) uint32_t ctx_prepare(uint32_t slot, uint32_t vmid, bool *ok) {");
       expect(in_order(cp, { "const CtxRegs r = ctx_regs(vmid);", "if (slot != 0u && !ctx_geometry_ok(cntl)) {", "WREG32(dev, r.cntl, cntl_native(before));", "cntl = RREG32(dev, r.cntl);", "*ok = ctx_geometry_ok(cntl);" }),

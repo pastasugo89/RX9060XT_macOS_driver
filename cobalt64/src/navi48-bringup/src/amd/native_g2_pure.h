@@ -38,13 +38,19 @@ constexpr bool latch_is_on(uint32_t latch) { return latch == kLatchOn; }
 #ifndef N48_MAX_NATIVE_SESSIONS
 #define N48_MAX_NATIVE_SESSIONS 4
 #endif
-constexpr uint32_t kMaxSessions = N48_MAX_NATIVE_SESSIONS;
-static_assert(kMaxSessions == 4u || kMaxSessions == 8u, "supported session profiles");
-constexpr uint32_t vmid_of_slot(uint32_t slot) { return kNativeVmid + slot; }
-static_assert(vmid_of_slot(0) == 8u && vmid_of_slot(kMaxSessions - 1u) <= 15u, "native VMIDs must remain in 8..15");
+#ifndef N48_MAX_LOGICAL_CONTEXTS
+#define N48_MAX_LOGICAL_CONTEXTS N48_MAX_NATIVE_SESSIONS
+#endif
+constexpr uint32_t kHardwareSessions = N48_MAX_NATIVE_SESSIONS;
+constexpr uint32_t kMaxSessions = N48_MAX_LOGICAL_CONTEXTS;
+static_assert(kHardwareSessions == 4u || kHardwareSessions == 8u, "supported hardware profiles");
+static_assert(kMaxSessions >= kHardwareSessions && kMaxSessions <= 128u, "logical contexts fit internal owner records");
+static_assert(kMaxSessions == kHardwareSessions || kHardwareSessions == 8u, "virtual contexts require the eight-VMID profile");
+constexpr uint32_t vmid_of_slot(uint32_t slot) { return slot < kHardwareSessions ? kNativeVmid + slot : UINT32_MAX; }
+static_assert(vmid_of_slot(0) == 8u && vmid_of_slot(kHardwareSessions - 1u) <= 15u, "native VMIDs must remain in 8..15");
 static_assert(vmid_ok(vmid_of_slot(0)) && vmid_ok(vmid_of_slot(1)) && vmid_ok(vmid_of_slot(2)) && vmid_ok(vmid_of_slot(3)), "every session VMID is outside the MES mask (8..15)");
 // How many slots a boot may use: 1 with the switch OFF (exactly the 0.0.626 single session), kMaxSessions with it ON.
-constexpr uint32_t slots_in_use(bool multi) { return multi ? kMaxSessions : 1u; }
+constexpr uint32_t slots_in_use(bool multi, bool virtualized = false) { return multi ? (virtualized ? kMaxSessions : kHardwareSessions) : 1u; }
 
 enum SlotState : uint8_t { kSlotFree = 0u, kSlotOpen = 1u, kSlotDead = 2u };
 constexpr uint32_t kNoSlot = 0xFFFFFFFFu;
@@ -56,14 +62,15 @@ struct OpenPick { uint32_t rc; uint32_t slot; };
 // 0.0.641 (G4 review): with the user-application role ON (apps = navi48-apps AND navi48-multisession) a WindowServer open is admitted whenever a slot is free and no WindowServer session is
 // open (wsOpen), whatever else is open (an app that outlives a WindowServer restart no longer denies WindowServer its device), and the LAST free slot is reserved for it: a non-WindowServer
 // open (apps, root tools, a G1 test context) is refused while no WindowServer session is open and only one free slot is left. apps = false (the default): exactly the 0.0.640 / 0.0.632 rule above.
-inline uint32_t free_slots(const uint8_t *state) { uint32_t n = 0; for (uint32_t i = 0; i < kMaxSessions; i++) if (state[i] == kSlotFree) n++; return n; }
-inline OpenPick open_pick(bool multi, const uint8_t *state, uint32_t openCount, bool ws, bool g1Holds, bool apps = false, bool wsOpen = false) {
+inline uint32_t free_slots(const uint8_t *state, uint32_t count = kHardwareSessions) { uint32_t n = 0; for (uint32_t i = 0; i < count; i++) if (state[i] == kSlotFree) n++; return n; }
+inline OpenPick open_pick(bool multi, const uint8_t *state, uint32_t openCount, bool ws, bool g1Holds, bool apps = false, bool wsOpen = false, bool virtualized = false) {
     if (!multi) return (openCount == 0u && state[0] == kSlotFree) ? OpenPick{ kOk, 0u } : OpenPick{ kExclusive, kNoSlot };
     if (g1Holds) return OpenPick{ kExclusive, kNoSlot };
+    const uint32_t count = virtualized && apps ? kMaxSessions : kHardwareSessions;
     if (apps) {
-        if (ws ? wsOpen : (!wsOpen && free_slots(state) <= 1u)) return OpenPick{ kExclusive, kNoSlot };
+        if (ws ? wsOpen : (!wsOpen && free_slots(state, count) <= 1u)) return OpenPick{ kExclusive, kNoSlot };
     } else if (ws && openCount != 0u) return OpenPick{ kExclusive, kNoSlot };
-    for (uint32_t i = 0; i < kMaxSessions; i++) if (state[i] == kSlotFree) return OpenPick{ kOk, i };
+    for (uint32_t i = 0; i < count; i++) if (state[i] == kSlotFree) return OpenPick{ kOk, i };
     return OpenPick{ kExclusive, kNoSlot };
 }
 // The open policy's "a WindowServer client is already open" input (native_open_policy_pure.h open_decision's alreadyOpen). OFF: any native client (as 0.0.640). apps ON: only a WindowServer session.
@@ -179,9 +186,11 @@ constexpr bool action_admitted(bool latchOn, uint32_t a) { return latchOn && is_
 constexpr uint32_t kStatGlobal = 4u;    // page 4: the global page; 0..3: one session each
 // 0..3 and global 4 retain the original ABI; 5 remains G5. Extra slots
 // 4..7 use pages 6..9 so existing clients see the same meanings.
-constexpr bool extra_stat_page(uint64_t page) { return kMaxSessions == 8u && page >= 6u && page <= 9u; }
-constexpr uint32_t stat_page_slot(uint64_t page) { return page <= 3u ? (uint32_t)page : extra_stat_page(page) ? (uint32_t)(page - 2u) : kNoSlot; }
-constexpr bool args_ok(uint32_t a, uint64_t arg) { return a == kActSessStat && (arg <= (uint64_t)kStatGlobal || extra_stat_page(arg)); }
+constexpr bool extra_stat_page(uint64_t page) { return kHardwareSessions == 8u && page >= 6u && page <= 9u; }
+constexpr uint32_t kLogicalStatFirst = 32u;
+constexpr bool logical_stat_page(uint64_t page) { return kMaxSessions > kHardwareSessions && page >= kLogicalStatFirst && page - kLogicalStatFirst < kMaxSessions; }
+constexpr uint32_t stat_page_slot(uint64_t page) { return page <= 3u ? (uint32_t)page : extra_stat_page(page) ? (uint32_t)(page - 2u) : logical_stat_page(page) ? (uint32_t)(page - kLogicalStatFirst) : kNoSlot; }
+constexpr bool args_ok(uint32_t a, uint64_t arg) { return a == kActSessStat && (arg <= (uint64_t)kStatGlobal || extra_stat_page(arg) || logical_stat_page(arg)); }
 constexpr bool native_exempt(bool latchOn, uint32_t a, uint64_t arg) { return action_admitted(latchOn, a) && args_ok(a, arg); }
 constexpr uint32_t kOutN = 13u;
 enum StatCode : uint32_t { kStatOk = 0u, kStatOff = 1u, kStatBadArg = 2u };

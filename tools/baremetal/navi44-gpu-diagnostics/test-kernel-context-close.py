@@ -64,6 +64,7 @@ static uint32_t program_root(uint32_t vmid,uint64_t root) {
  assert(vmid==session.vmid && root==gPark.pa); ++privateCalls; events.push_back(PARK);
  if(!rootAck) { isHung=true; return kTimeout; } privateParked=true; return kOk;
 }
+static bool session_park_locked(Session *s) { return program_root(s->vmid,gPark.pa)==kOk; }
 static void bar0_memcpy_to_vram(Device &,uint64_t offset,const void *data,size_t size) {
  assert(privateParked && rootAck && sessionLock.held && registryLock.held);
  assert(offset>=context.gmc.gart_pt_vram_offset && size==8 && *static_cast<const uint64_t *>(data)==0);

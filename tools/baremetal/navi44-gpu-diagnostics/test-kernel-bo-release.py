@@ -44,6 +44,7 @@ static uint32_t flush_vmid(unsigned vmid) {
  if(!vmid) { assert(cleared); ++fenceFlush; return fenceAck?kOk:kTimeout; }
  assert(vmid==8 && unmapped); ++privateFlush; return privateAck?kOk:kTimeout;
 }
+static uint32_t session_flush_locked(Session *s) { return flush_vmid(s->vmid); }
 static void bar0_memcpy_to_vram(Device &,uint64_t,const void *p,size_t size) { assert(size==8 && !*static_cast<const uint64_t *>(p)); ++cleared; }
 static void budget_release(Bo &) { ++budgetFreed; }
 static void sys_release(Bo &) { ++sysFreed; }

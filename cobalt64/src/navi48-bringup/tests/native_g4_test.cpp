@@ -660,11 +660,11 @@ static void t12_slots(const std::string &root) {
     const std::string K = root + "/src/navi48-bringup/";
     const std::string eng = slurp(K + "src/amd/native_s1c.cpp"), cli = slurp(K + "src/Navi48NativeClient.cpp"), g2p = slurp(K + "src/amd/native_g2_pure.h");
     expect(in_order(fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {"), { "const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;",
-                          "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen);", "if (pk.rc != kOk) {", "if (ws) __atomic_store_n(&gSessWs, 1u, __ATOMIC_SEQ_CST);" }),
+                          "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());", "if (pk.rc != kOk) {", "if (ws) __atomic_store_n(&gSessWs, 1u, __ATOMIC_SEQ_CST);" }),
            "T12: REACHABLE: n1c_open hands open_pick the live apps flag and the live WindowServer flag (gSessWs, written with the open itself) under gCliLock");
     expect(in_order(fn_body(cli, "bool IOAccelNavi48NativeClient::initWithTask("), { "const bool appsOn = amdgpu::n1c_apps_enabled();", "n48native::g2::ws_already_open(appsOn, amdgpu::n1c_is_open(), amdgpu::n1c_ws_is_open())", "uid, appsOn, onAllow);" }),
            "T12: REACHABLE: the open policy's alreadyOpen input is ws_already_open(apps, any open, WindowServer open)");
-    expect(g2p.find("inline OpenPick open_pick(bool multi, const uint8_t *state, uint32_t openCount, bool ws, bool g1Holds, bool apps = false, bool wsOpen = false) {") != std::string::npos, "T12: open_pick keeps its old five arguments first, the new ones default to OFF");
+    expect(g2p.find("inline OpenPick open_pick(bool multi, const uint8_t *state, uint32_t openCount, bool ws, bool g1Holds, bool apps = false, bool wsOpen = false, bool virtualized = false) {") != std::string::npos, "T12: open_pick keeps its original arguments and defaults virtualization to OFF");
 }
 
 // ---- T13 (0.0.641, review MEDIUM): the strike count --------------------------------------------------------------------------------------------------------------

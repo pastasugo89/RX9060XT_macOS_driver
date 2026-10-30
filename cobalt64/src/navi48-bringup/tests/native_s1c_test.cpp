@@ -612,8 +612,10 @@ static void u12_pins(const std::string &root) {
       expect(!rs.empty() && in_order(rs, { "IOLockLock(gRingLock);", "const uint64_t seq = emitted_now() + 1ull;", "build_submit(gSubmitBuf,", "ring_put_locked(gSubmitBuf, n, seq,", "IOLockUnlock(gRingLock);", "if (er == kTimeout) { (void)stall_from_wait(); return kTimeout; }" }),
              "ring_submit: the ring lock is held over the seqno, the build and the put (incl. the space check); a 2 s space wait goes to the stall path AFTER the lock is dropped"); }
     expect(eng.find("return kTimeout;", sp) < wr, "a space wait that reaches 2 s returns before anything is written");
-    expect_u("ring_put_locked is called by ring_submit, the recovery probe and (0.0.650, G5, ON only) ring_submit_app_g5 only", count_of(eng, "ring_put_locked("), 4);
-    expect_u("ONE builder call and ONE put of a built Submit in each of the two submit paths: ring_submit and (0.0.650, G5) ring_submit_app_g5 (0.0.627: G1's hang IB and probe IB go through ring_submit too)", count_of(eng, "build_submit(gSubmitBuf") + count_of(eng, "ring_put_locked(gSubmitBuf, n, seq,"), 4);
+    expect_u("ring_put_locked serves the legacy, G5, production and recovery paths through one writer", count_of(eng, "ring_put_locked("), 5);
+    expect_u("one builder call and one put per legacy, G5 and production Submit path", count_of(eng, "build_submit(gSubmitBuf") + count_of(eng, "ring_put_locked(gSubmitBuf, n, seq,"), 6);
+    expect(in_order(fn_body(eng, "static uint32_t ring_put_locked("), { "n48production::submitted(gHardwareBindings, owner->lease, seq)", "ring[ring_idx(wc, mask)] = dw[i]", "owner_note(gOwners", "__atomic_store_n(&gEmitted", "WDOORBELL64(" }),
+           "production lease ownership is recorded before ring writes and sequence/doorbell publication");
     expect_u("ring_submit callers: Submit (0.0.650: the OFF branch and WindowServer's branch) + G1's hang IB + G1's probe IB", count_of(eng, "ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut)") + count_of(eng, "ring_submit(&gSess, &va, &by, 1u, false, 0ull, &seq)"), 4);
     expect(eng.find("resolve_fence(s, v.fenceHandle") < eng.find("ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut)"), "the fence target is resolved BEFORE the ring is touched");
     expect(eng.find("va_exec_covered(s->maps") < eng.find("ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut)"), "the IB coverage check is BEFORE the ring is touched");

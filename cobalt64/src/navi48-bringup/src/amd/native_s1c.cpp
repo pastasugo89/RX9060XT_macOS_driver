@@ -49,6 +49,7 @@
 #include "native_g5_pure.h"   // 0.0.650 (G5 Stage 1): the application credit (boot-arg navi48-g5=1, default OFF)
 #include "native_g4_pure.h"   // 0.0.640 (G4): the APP role, the allow-list, the budget report, the close-path mapping rule (boot-arg navi48-apps=1, default OFF)
 #include "production_context_retire.h"
+#include "production_vm_lease_pure.h"
 #include <pexpert/pexpert.h>  // 0.0.623: PE_parse_boot_argn (navi48-g1)
 
 #define N1C_LOG(fmt, ...) AMDGPU_LOG("native-s1c", fmt, ##__VA_ARGS__)
@@ -102,7 +103,8 @@ struct Bo {
 using n48native::g2::kMaxSessions;
 constexpr uint32_t kArenaBlocks = (uint32_t)(kPtCap / 16384ull);   // 2048 blocks of 16 KiB (the pool's minimum allocation): one session's page-table cap
 constexpr uint32_t kArenaBlockBytes = 16384u;
-constexpr uint32_t kArenaReserve = kArenaBlocks * kMaxSessions;    // 0.0.627 (G2): the per-boot reserve can hold every session's cap (with the switch OFF only kArenaBlocks are ever used)
+constexpr uint64_t kGlobalPtBudget = 256ull << 20;
+constexpr uint32_t kArenaReserve = (uint32_t)(kGlobalPtBudget / kArenaBlockBytes);
 static_assert(kArenaReserve <= 0xFFFFu, "page-table block indices fit the uint16_t lists");
 struct Session {
     bool      hello;
@@ -121,9 +123,12 @@ struct Session {
     uint64_t  importedBytes;   // 0.0.612: host-import bytes held (cap kImportCap, separate from the GTT cap)
     uint32_t  nBos;
     uint64_t  emitted;         // seqno of THIS session's last Submit (0.0.627: the global count is gEmitted). Written under gRingLock; atomics
-    // 0.0.627 (G2): identity. lock / slot / vmid never change once the slot exists; id / open / ws are written under gCliLock at open and close.
+    // lock and logical slot persist. Identity/open/role are published under
+    // gCliLock. In production vmid is the last binding, not an ownership token;
+    // only the generation-checked hardware table authorizes its current use.
     IOLock   *lock;            // THIS session's lock: its tables and counters (the old client lock's job for one session). Allocated with the slot, never freed
-    uint32_t  slot, vmid, id;  // id: unique per open (1, 2, 3 ...), the client's N1cRef carries it; 0 = never opened
+    uint32_t  slot, vmid, id;  // logical record, last hardware VMID, unique per-open identity (never wraps)
+    n48production::Ticket lease; // valid only while the hardware table still names this identity/generation
     bool      open, ws;        // ws: admitted by the uid-88 (WindowServer) rule
     bool      app;             // 0.0.640 (G4): admitted by the allow-list rule (an ordinary user application); set once by n1c_mark_app right after the open, never ReadRegs / scanout
     uint64_t  appKey;          // 0.0.641: the executable-name key (Navi48AppKey.h) of an APP session, for the strike count; written once with `app`
@@ -133,7 +138,8 @@ struct Session {
 static Session gSess;          // slot 0 (VMID 8): STATIC and never freed: a selector racing a close can never touch freed memory
 // 0.0.627 (G2): the session slots. Slot 0 is gSess; slots 1..3 (switch ON only) are allocated on first use and NEVER freed, for the same reason.
 static Session *gSlot[kMaxSessions] = { &gSess, nullptr, nullptr, nullptr };
-static uint8_t gSlotState[kMaxSessions];   // n48native::g2::SlotState; written under gCliLock. A DEAD slot's VMID is never handed out again this boot
+static uint8_t gSlotState[kMaxSessions];   // logical record state under gCliLock; DEAD records are not reused this boot
+static n48production::Slot gHardwareBindings[n48production::kHardwareSlots]; // gCliLock, plus gRingLock for bind/submit/park
 // The per-boot page-table reserve: blocks taken from vram_alloc for page tables are NEVER returned to it (a user CPU mapping kept
 // after BoFree can therefore never alias a page table); a closing client returns its blocks to this list and the next client reuses them.
 static VRAMAllocation gPt[kArenaReserve];
@@ -150,7 +156,7 @@ static Hang gHang;             // boot-wide: hung survives the client
 // THE LOCK MAP (0.0.627, G2). Order: a session's own lock -> gCliLock -> gRingLock -> gHangLock; gTlbLock is a leaf (nothing is taken under it).
 //   Session::lock  one per session: that session's BO / map / ctx / fence-slot tables, its counters and hello. Held for a whole selector body, INCLUDING
 //                  its own-seqno waits (own_wait), and NEVER while another session's lock is wanted.
-//   gCliLock       the SHARED state, never held across a GPU wait: the slot table (open / close, VMID hand-out, gOpenFlag with the switch ON, gSessWs),
+//   gCliLock       the SHARED state, never held across a GPU fence wait: the record table (open / close, gOpenFlag, gSessWs),
 //                  the page-table reserve (gPt / gPtFree, PtMem::alloc_page), the VRAM pools (vram_alloc / vram_alloc_hi alloc and free) and the VRAM
 //                  budget, the GART fence windows (reservation and PTE writes), CONTEXTn programming and the park root, the scanout pins and owner.
 //                  The G1 block (a kernel-owned test context, exclusive by construction) still uses it as before.
@@ -158,6 +164,8 @@ static Hang gHang;             // boot-wide: hung survives the client
 //                  wait (2 s) runs under it, as before. An automatic recovery holds it for its whole bounded run (emission frozen).
 //   gHangLock      gHang and gRecovering.
 //   gTlbLock       gmc_flush_gpu_tlb (one invalidation engine for every VMID; 0.0.626 only ever flushed under the one client lock).
+//   Production binding/park also takes gRingLock under gCliLock; the hardware
+//   lease remains stable until ring publication. TLB ACK polling is a leaf.
 // A GPU-dependent check that may RUN a recovery (gpu_gate, hang_poll, own_wait, stall_from_wait) is called with at most the caller's own session lock:
 // never with gCliLock or gRingLock held.
 static IOLock *gCliLock, *gRingLock, *gHangLock, *gTlbLock;
@@ -174,7 +182,7 @@ static bool gLegacyLogged[8];
 static uint32_t gSubmitBuf[280];   // one Submit's dwords; 0.0.627: used only under gRingLock (ring_submit)
 
 struct FenceWindow { bool reserved; uint64_t gartOff; uint64_t mc; };
-static FenceWindow gWin[kMaxSessions];   // 0.0.627 (G2): one 16-page window per slot (slot 0's is the 0.0.626 window)
+static FenceWindow gWin[kMaxSessions];   // one 16-page fence window per logical record, independent of its current VMID
 struct ParkRoot { bool have; VRAMAllocation a; uint64_t pa; };
 static ParkRoot gPark;
 // 0.0.627 (G2) state.
@@ -232,6 +240,10 @@ static bool multi_on();   // boot-arg navi48-multisession=1 (latched once; below
 static bool g5_on();      // 0.0.650 (G5 Stage 1): navi48-g5=1 AND navi48-multisession=1 (latched once; below)
 static uint32_t g5_credit();   // 0.0.650: K, navi48-g5credit (1..4, default 1; latched once; below)
 static bool apps_on();    // 0.0.640 (G4): navi48-apps=1 AND navi48-multisession=1 (latched once; below)
+static bool production_on() { return kMaxSessions > n48native::g2::kHardwareSessions && apps_on(); }
+static uint32_t session_bind_locked(Session *s, uint64_t retired); // registry and ring locks held
+static uint32_t session_flush_locked(Session *s); // registry lock held
+static bool session_park_locked(Session *s); // session and registry locks held; takes ring lock
 static uint64_t appvis_cap();   // 0.0.641: the non-WindowServer visible-pool cap in bytes (boot-arg navi48-appvis, latched once; below)
 static bool g1_holds();   // a G1 test context holds the GPU (the G1 block)
 static inline Session *slot_ptr(uint32_t slot) { return slot < kMaxSessions ? __atomic_load_n(&gSlot[slot], __ATOMIC_ACQUIRE) : nullptr; }
@@ -390,6 +402,7 @@ static uint32_t ring_put_locked(const uint32_t *dw, uint32_t n, uint64_t seq, ui
         }
         if (el < 5000000ull) IODelay(1); else IOSleep(1);
     }
+    if (production_on() && owner != nullptr && !n48production::submitted(gHardwareBindings, owner->lease, seq)) return kNotReady;
     auto *ring = static_cast<uint32_t *>(cp.ring_cpu);
     const uint64_t startWc = gWc;
     uint64_t wc = gWc;
@@ -486,6 +499,62 @@ static uint32_t ring_submit_app_g5(Session *s, const uint64_t *va, const uint32_
         IOLockLock(gRingLock);
         since_clear(gG5Since, s->slot);
         if (timedOut) stat_timeout(gG5);
+        IOLockUnlock(gRingLock);
+    }
+    return rc;
+}
+
+// A logical context acquires hardware only for execution. Registry -> ring keeps
+// a lease stable through sequence publication and the doorbell. Space, fairness
+// and retirement waits drop both locks so other contexts can make progress.
+static uint32_t ring_submit_production(Session *s, const uint64_t *va, const uint32_t *by, uint32_t nIbs,
+                                       bool hasFence, uint64_t fenceAddr, uint64_t *seqOut) {
+    const uint32_t need = submit_dwords(nIbs, hasFence);
+    const uint64_t start = now_ns();
+    const bool fair = g5_on() && !s->ws;
+    bool waiting = false;
+    uint32_t rc = n48native::g2::kBusy;
+    if (s->ws) __atomic_store_n(&gWsLastNs, start, __ATOMIC_RELEASE);
+    for (;;) {
+        IOLockLock(gCliLock);
+        IOLockLock(gRingLock);
+        rc = n48native::g2::kBusy;
+        const uint64_t emitted = emitted_now(), retired = retired_now(emitted);
+        sysmem_rmb();
+        const uint32_t freeDw = ring_free64(*gCtx->cp.rptr_cpu & gCtx->cp.ring_ptr_mask, gWc, gCtx->cp.ring_ptr_mask);
+        if (hung_now()) rc = kNotReady;
+        else if (sess_poisoned(s)) rc = kAborted;
+        else if (__atomic_load_n(&gRecovering, __ATOMIC_SEQ_CST) == 0u && ring_has_space(freeDw, need)) {
+            if (fair) g5_fill_in_locked(s, g5_credit(), need);
+            if (!fair || n48native::g5::admission(gOwners, gG5In) == n48native::g5::kAdmit) {
+                rc = emitted == UINT64_MAX ? kNoResources : session_bind_locked(s, retired);
+                if (rc == kOk) {
+                    const uint64_t seq = emitted + 1;
+                    const uint32_t n = build_submit(gSubmitBuf, (uint32_t)(sizeof(gSubmitBuf) / sizeof(gSubmitBuf[0])), va, by, nIbs, s->vmid, hasFence,
+                                                    fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq);
+                    rc = n ? ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s) : (uint32_t)kIOReturnInternalError;
+                    if (rc == kOk) {
+                        *seqOut = seq;
+                        if (fair) n48native::g5::stat_admit(gG5, waiting ? now_ns() - start : 0);
+                    }
+                }
+            }
+        }
+        if (rc == n48native::g2::kBusy && fair) {
+            n48native::g5::since_mark(gG5Since, s->slot, now_ns());
+            waiting = true;
+        }
+        IOLockUnlock(gRingLock);
+        IOLockUnlock(gCliLock);
+        if (rc != n48native::g2::kBusy) break;
+        const uint64_t elapsed = now_ns() - start;
+        if (elapsed >= kWaitCapNs) { (void)stall_from_wait(); rc = kTimeout; break; }
+        if (elapsed < 5000000ull) IODelay(1); else IOSleep(1);
+    }
+    if (waiting) {
+        IOLockLock(gRingLock);
+        n48native::g5::since_clear(gG5Since, s->slot);
+        if (rc == kTimeout) n48native::g5::stat_timeout(gG5);
         IOLockUnlock(gRingLock);
     }
     return rc;
@@ -708,6 +777,69 @@ static __attribute__((noinline)) uint32_t ctx_prepare(uint32_t slot, uint32_t vm
     if (!*ok) N1C_LOG("open refused (NotReady): CONTEXT%u CNTL %#010x is not the native geometry (DEPTH 3 / BLOCK 0 / RETRY 0)", vmid, cntl);
     return cntl;
 }
+
+static uint32_t session_bind_locked(Session *s, uint64_t retired) {
+    using namespace n48production;
+    const Request request{s->id, s->rootPa, s->ws};
+    const Plan choice = plan(gHardwareBindings, request, retired);
+    if (choice.decision == Decision::WaitForRetirement || choice.decision == Decision::BusyBinding) return n48native::g2::kBusy;
+    if (choice.decision == Decision::Unavailable) return kNoResources;
+    if (choice.decision == Decision::Invalid) return kBadArg;
+    Ticket ticket{choice.slot, choice.generation, s->id};
+    const uint32_t hardwareVmid = vmid(choice.slot);
+    if (choice.decision == Decision::Bind) {
+        if (!claim(gHardwareBindings, choice, request, retired, &ticket)) return n48native::g2::kBusy;
+        bool geometryOk = false;
+        (void)ctx_prepare(choice.slot, hardwareVmid, &geometryOk);
+        const bool acknowledged = geometryOk && program_root(hardwareVmid, s->rootPa) == kOk;
+        if (!finish(gHardwareBindings, ticket, acknowledged) || !acknowledged) {
+            hang_from_wait();
+            return kNotReady;
+        }
+    }
+    s->lease = ticket;
+    __atomic_store_n(&s->vmid, hardwareVmid, __ATOMIC_RELEASE);
+    return kOk;
+}
+
+static uint32_t session_flush_locked(Session *s) {
+    if (!production_on()) return flush_vmid(s->vmid);
+    for (uint32_t i = 0; i < n48production::kHardwareSlots; ++i) {
+        const auto &binding = gHardwareBindings[i];
+        if (binding.context != s->id && binding.pendingContext != s->id &&
+            binding.root != s->rootPa && binding.pendingRoot != s->rootPa) continue;
+        if (binding.state != n48production::SlotState::Ready || binding.context != s->id || binding.root != s->rootPa) return kNotReady;
+        return flush_vmid(n48production::vmid(i));
+    }
+    // An unbound root has no live TLB entries. Its next bind always invalidates.
+    return kOk;
+}
+
+static bool session_park_locked(Session *s) {
+    if (!production_on()) return program_root(s->vmid, gPark.pa) == kOk;
+    IOLockLock(gRingLock);
+    bool acknowledged = true;
+    for (uint32_t i = 0; i < n48production::kHardwareSlots; ++i) {
+        const auto &binding = gHardwareBindings[i];
+        if (binding.context != s->id && binding.pendingContext != s->id &&
+            binding.root != s->rootPa && binding.pendingRoot != s->rootPa) continue;
+        if (binding.state != n48production::SlotState::Ready || binding.context != s->id || binding.root != s->rootPa) {
+            acknowledged = false;
+            break;
+        }
+        const n48production::Ticket owner{i, binding.generation, s->id};
+        n48production::Ticket parking{};
+        if (!n48production::begin_release(gHardwareBindings, owner, retired_now(emitted_now()), &parking)) {
+            acknowledged = false;
+            break;
+        }
+        const bool parked = program_root(n48production::vmid(i), gPark.pa) == kOk;
+        acknowledged = n48production::finish(gHardwareBindings, parking, parked) && parked;
+        break;
+    }
+    IOLockUnlock(gRingLock);
+    return acknowledged;
+}
 // 0.0.629 (G2 review fix R5): READ the GCVM L2 protection-fault registers of the GFXHUB - STATUS_LO32 0x15d0, STATUS_HI32 0x15d1, ADDR_LO32 0x15d2, ADDR_HI32
 // 0x15d3, the four native_s1b.cpp's fault leg reads - log them, and return n48native::g2::fault_word(STATUS_LO32, ADDR_LO32). NEVER written or cleared here (the
 // S1b self-test's VMID-8 fault stays latched: a new fault is told only by a CHANGE of this word). Register reads only.
@@ -723,6 +855,11 @@ static __attribute__((noinline)) void open_refused_log(bool multi, bool ws, uint
             (ws && openNow != 0u) ? "a WindowServer client opens only when no session is open" : "every session slot is in use or DEAD", openNow, multi ? "ON" : "OFF");
 }
 static __attribute__((noinline)) void opened_log(const Session *s, uint32_t cntl, uint64_t winMc) {
+    if (production_on()) {
+        N1C_LOG("logical client opened: record %u session %u%s root pa %#llx, no VMID assigned until submit, fence window mc %#llx",
+                s->slot, s->id, s->ws ? ", WindowServer" : "", (unsigned long long)s->rootPa, (unsigned long long)winMc);
+        return;
+    }
     const CPContext &cp = gCtx->cp;
     N1C_LOG("client opened: slot %u VMID %u (session %u%s), fresh root pa %#llx (visible pool), CONTEXT%u CNTL %#010x, ring %u dwords rptr %u wptr %u, fence window mc %#llx",
             s->slot, s->vmid, s->id, s->ws ? ", WindowServer" : "", (unsigned long long)s->rootPa, s->vmid, cntl, cp.ring_size_dwords, *cp.rptr_cpu, cp.wptr, (unsigned long long)winMc);
@@ -779,9 +916,10 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
         CPContext &cp = ctx.cp;
         const uint32_t openNow = multi ? __atomic_load_n(&gOpenFlag, __ATOMIC_SEQ_CST) : 0u;
         const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;   // 0.0.641: apps ON = a WindowServer slot is always available and the last free slot is its
-        const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen);
+        const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());
         if (pk.rc != kOk) { open_refused_log(multi, ws, openNow, appsNow, wsOpen); rc = kIOReturnExclusiveAccess; break; }
-        const uint32_t slot = pk.slot, vmid = vmid_of_slot(slot);
+        if (gSessSeqCounter == UINT32_MAX) { rc = kIOReturnNoResources; break; }
+        const uint32_t slot = pk.slot, vmid = production_on() ? N48N_VMID_DYNAMIC : vmid_of_slot(slot);
         // The ring must be idle for the FIRST session: S1b's (or the last session's) work has retired and the seqno restarts. 0.0.627: a later session
         // (switch ON) opens next to the running ones.
         if (openNow == 0u) {
@@ -794,9 +932,12 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
             }
         }
         if (rc != kIOReturnSuccess) break;
-        bool ctxOk = false;
-        const uint32_t cntl = ctx_prepare(slot, vmid, &ctxOk);   // CONTEXT<vmid>: the S1b geometry, set once for VMIDs 9..11, read back
-        if (!ctxOk) { rc = kIOReturnNotReady; break; }
+        uint32_t cntl = 0;
+        if (!production_on()) {
+            bool ctxOk = false;
+            cntl = ctx_prepare(slot, vmid, &ctxOk);
+            if (!ctxOk) { rc = kIOReturnNotReady; break; }
+        }
         // The slot's fence window: 16 GART pages reserved once per boot from the same bump allocator the ring, MQD and write-back page came from.
         FenceWindow &win = gWin[slot];
         if (!win.reserved) {
@@ -844,6 +985,7 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
         }
         n48native::g2::sess_wipe_keep_lock(s);
         s->slot = slot; s->vmid = vmid; s->ws = ws;
+        s->lease.slot = n48production::kNoHardwareSlot;
         s->faultAtOpen = fault_snap("open", slot);   // R5: read only
         s->pagesInBlk = 4u;   // forces the first block
         PtMem mem{ s };
@@ -857,7 +999,7 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
             __atomic_store_n(&gEmitted, 0ull, __ATOMIC_RELEASE);
             gHang.lastRetired = 0; gHang.tProgress = now_ns();
         }
-        if (program_root(vmid, s->rootPa) != kOk) {
+        if (!production_on() && program_root(vmid, s->rootPa) != kOk) {
             // The root was already published to hardware before the flush.
             // A timeout cannot prove that the GPU stopped referencing it.
             // Quarantine both the VMID and its table blocks for this boot.
@@ -944,7 +1086,7 @@ static bool scan_unpin2(uint32_t h, Bo &b, RelMode mode) { return scan_unpinx(2u
 
 struct ContextRetireEnv {
     Session *s;
-    bool park_root() { return program_root(s->vmid, gPark.pa) == kOk; }
+    bool park_root() { return session_park_locked(s); }
     bool clear_fence_ptes() {
         const FenceWindow &win = gWin[s->slot];
         bool cleared = false;
@@ -1068,7 +1210,7 @@ static void bo_release(Session *s, uint32_t h, RelMode mode) {
             if (va_ent_used(e) && e.handle == h) { pt_unmap(s->rootPa, e.start, e.size / kPage, mem); touched = true; }
         }
         bool memOk = true;   // review item D: false once a TLB flush did not acknowledge (HUNG): the memory of this BO is then leaked, like the HUNG leak
-        if (touched) { amdgpu_hdp_flush(*gCtx->dev); memOk = memory_may_free_after_flush(flush_vmid(s->vmid)) && memOk; }
+        if (touched) { amdgpu_hdp_flush(*gCtx->dev); memOk = memory_may_free_after_flush(session_flush_locked(s)) && memOk; }
         bool slotCleared = false;
         for (uint32_t i = 0; i < N48N_FENCE_SLOTS; i++) {
             if (s->fslot[i].used && s->fslot[i].handle == h) {
@@ -1114,7 +1256,7 @@ IOReturn n1c_hello(const N1cRef &ref, uint64_t clientAbi, uint64_t flags, uint64
         __atomic_store_n(&s->hello, true, __ATOMIC_RELEASE);
         // ABI 1.1: the minor is reported only when the client asks for it; without the flag out[0] is exactly the major, as in 1.0.
         out[0] = ((flags & N48N_HELLO_F_MINOR) != 0ull) ? (uint64_t)N48N_ABI_VERSION | ((uint64_t)N48N_ABI_MINOR << 16) : (uint64_t)N48N_ABI_VERSION;
-        out[1] = kN1cKextBuild; out[2] = N48N_MAX_IBS; out[3] = s->vmid;   // 0.0.627: the session's own VMID (8 with the switch OFF)
+        out[1] = kN1cKextBuild; out[2] = N48N_MAX_IBS; out[3] = production_on() ? N48N_VMID_DYNAMIC : s->vmid;
     }
     sess_unlock(s);
     return rc;
@@ -1130,8 +1272,9 @@ IOReturn n1c_query_info(const N1cRef &ref, n48n_info *o) {
     const uint64_t em = emitted_now();
     o->abi_version = N48N_ABI_VERSION; o->kext_build = kN1cKextBuild;
     o->flags = (hung_now() ? N48N_INFO_HUNG : 0u) | (native_s1b_state().positivePass ? N48N_INFO_S1B_POSITIVE : 0u) |
-               (native_s1b_state().gate == kGateOn ? N48N_INFO_NATIVE_BOOT : 0u);
-    o->vmid = s->vmid;
+               (native_s1b_state().gate == kGateOn ? N48N_INFO_NATIVE_BOOT : 0u) |
+               (production_on() ? N48N_INFO_DYNAMIC_VMID : 0u);
+    o->vmid = production_on() ? N48N_VMID_DYNAMIC : s->vmid;
     o->gb_addr_config = RREG32(*c.dev, SOC15_REG_OFFSET_BIDX(*c.dev, IPBlock::GC, GFXRegBaseIdx::GB_ADDR_CONFIG, GFXRegs::GB_ADDR_CONFIG));
     o->gc_version = ((uint32_t)v.major << 16) | ((uint32_t)v.minor << 8) | v.rev;
     o->ring_size_dw = c.cp.ring_size_dwords; o->max_ibs = N48N_MAX_IBS;
@@ -1443,7 +1586,7 @@ IOReturn n1c_bo_import_host(const N1cRef &ref, task_t task, uint64_t hostVa, uin
         if (mapped) {
             s->maps[slot] = VaEnt{ c.gpuStripped, size, 0, h, (uint32_t)flags };
             amdgpu_hdp_flush(*gCtx->dev);
-            const uint32_t f = flush_vmid(s->vmid);               // synchronous: the mapping is complete on return
+            const uint32_t f = session_flush_locked(s);               // synchronous: the mapping is complete on return
             if (f != kOk) rc = (IOReturn)f;                        // a hang was latched: the BO stays recorded (leaked at close)
         }
         out[0] = h; out[1] = size; out[2] = mapped ? va_canonicalize(c.gpuStripped) : 0ull; out[3] = N48N_PLACED_HOST_IMPORT;
@@ -1492,7 +1635,7 @@ IOReturn n1c_gem_va(const N1cRef &ref, const n48n_gem_va *in) {
             if (r != kOk) { rc = (IOReturn)r; break; }
             s->maps[slot] = VaEnt{ q.stripped, in->map_size, in->offset_in_bo, in->handle, in->flags };
             amdgpu_hdp_flush(*gCtx->dev);
-            const uint32_t f = flush_vmid(s->vmid);      // synchronous: the mapping is complete on return
+            const uint32_t f = session_flush_locked(s);      // synchronous: the mapping is complete on return
             if (f != kOk) rc = (IOReturn)f;
         } else {
             const int hit = va_find_exact(s->maps, kMaxMaps, in->handle, q.stripped, in->map_size);
@@ -1505,7 +1648,7 @@ IOReturn n1c_gem_va(const N1cRef &ref, const n48n_gem_va *in) {
             pt_unmap(s->rootPa, q.stripped, in->map_size / kPage, mem);
             s->maps[hit] = VaEnt{ 0, 0, 0, 0, 0 };
             amdgpu_hdp_flush(*gCtx->dev);
-            const uint32_t f = flush_vmid(s->vmid);
+            const uint32_t f = session_flush_locked(s);
             if (f != kOk) rc = (IOReturn)f;
         }
     } while (false);
@@ -1603,7 +1746,8 @@ IOReturn n1c_submit(const N1cRef &ref, const uint8_t *in, uint32_t size, uint64_
             if (fr != kOk) { rc = (IOReturn)fr; break; }
         }
         uint32_t er;
-        if (!g5_on()) er = ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut);   // G5 OFF: exactly 0.0.642
+        if (production_on()) er = ring_submit_production(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut);
+        else if (!g5_on()) er = ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut);   // G5 OFF: exactly 0.0.642
         else if (s->ws) { __atomic_store_n(&gWsLastNs, now_ns(), __ATOMIC_RELEASE); er = ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut); }   // 0.0.650 (G5): WindowServer is stamped, never gated
         else er = ring_submit_app_g5(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut);   // 0.0.650 (G5): every other session passes the admission
         if (er != kOk) { rc = (IOReturn)er; break; }
@@ -2082,11 +2226,20 @@ IOReturn n1c_g2_stat(uint64_t page, uint64_t *o) {
     }
     const uint32_t slot = stat_page_slot(page);
     SessView v {};
-    v.vmid = vmid_of_slot(slot);
+    v.vmid = production_on() ? N48N_VMID_DYNAMIC : vmid_of_slot(slot);
     IOLockLock(gCliLock);
     v.state = gSlotState[slot];
     Session *s = slot_ptr(slot);
     if (s != nullptr && __atomic_load_n(&s->open, __ATOMIC_ACQUIRE)) {   // the counters are read under gCliLock (a racing selector may be mid-update: a diagnostic)
+        if (production_on()) {
+            for (uint32_t i = 0; i < n48production::kHardwareSlots; ++i) {
+                const auto &binding = gHardwareBindings[i];
+                if (binding.state == n48production::SlotState::Ready && binding.context == s->id && binding.root == s->rootPa) {
+                    v.vmid = n48production::vmid(i);
+                    break;
+                }
+            }
+        }
         v.ws = s->ws; v.app = s->app; v.hello = s->hello; v.poisoned = sess_poisoned(s); v.id = s->id;   // 0.0.640 (G4): app
         v.vram = s->vramBytes; v.gtt = s->gttUsed; v.imported = s->importedBytes; v.ptBytes = (uint64_t)s->nblk * kArenaBlockBytes;
         v.lastSeq = __atomic_load_n(&s->emitted, __ATOMIC_ACQUIRE); v.nBos = s->nBos;
@@ -2344,6 +2497,8 @@ IOReturn n1c_g1_verb(uint32_t action, uint64_t arg, BringupContext &ctx, uint64_
     using namespace n48native::g1;
     for (uint32_t i = 0; i < kOutN; i++) o[i] = 0;
     if (!args_ok(action, arg)) return kIOReturnBadArgument;
+    // The legacy fault-injection tool writes VMID 8 directly instead of leasing.
+    if (production_on() && action != kActHangStat) return kIOReturnUnsupported;
     if (lazy_lock(&gG1Lock) == nullptr) return kIOReturnNoMemory;
     IOLockLock(gG1Lock);
     IOReturn ret = kIOReturnSuccess;
