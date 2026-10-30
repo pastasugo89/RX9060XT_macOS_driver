@@ -6307,6 +6307,22 @@ static void n48_census_log(void) {
 
 - (BOOL)supportLazyInitialization { return N48_LAZY ? YES : NO; }
 
+// Native Apple binary archives contain vendor machine code, not the AIR/SPIR-V
+// consumed by this bridge. The inherited factory reaches MTLLoader with the
+// base class's nil targetDeviceArchitecture and aborts before returning an error
+// (25G83, RenderBox clients). Reject this unsupported path at the API boundary;
+// do not invent an AMD architecture or claim that its native binaries can run.
+- (id)newBinaryArchiveWithDescriptor:(MTLBinaryArchiveDescriptor *)descriptor error:(NSError **)error {
+    (void)descriptor;
+    MTLBinaryArchiveError code = MTLBinaryArchiveErrorUnexpectedElement;
+    if (@available(macOS 13.0, *)) code = MTLBinaryArchiveErrorInternalError;
+    if (error) *error = [NSError errorWithDomain:MTLBinaryArchiveDomain
+        code:code userInfo:@{NSLocalizedDescriptionKey:
+        @"Native Metal binary archives are not supported by the AIR/SPIR-V bridge; create the pipeline from its Metal library."}];
+    N48_ONCE("native Metal binary archive unavailable; returning an error instead of entering the Apple vendor loader");
+    return nil;
+}
+
 // _MTLDevice -name composes vendorName/familyName/productName, skipping empty parts, joined by " "
 // (SUSPECTED from -[_MTLDevice name] at 0x7ff80f49a2f6; fallback string "Unnamed_GPU") -> "AMD Radeon " N48M_PRODUCT_NAME
 // (n48_asic.h: "RX 9060 XT" by default, "RX 9070 XT" with ASIC=navi48).
