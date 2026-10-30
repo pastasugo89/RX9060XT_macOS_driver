@@ -2,6 +2,16 @@
 
 Avviato il 30 ottobre 2026 su richiesta dell'utente. Obiettivo di completezza: [checklist delle capacità](COMPLETEZZA_DRIVER_GPU.md). La GPU deve servire le normali applicazioni tramite contratti generali; il numero di identificatori hardware non deve determinare quante applicazioni possono aprirla.
 
+## Fase di sviluppo e criterio di rilascio
+
+La fase principale è **lo sviluppo del driver per uso generale**. L'accelerazione confermata dall'utente è il punto di partenza: non occorre ricominciare il bring-up o continuare a trattare ogni applicazione come un caso speciale. Il nome storico della directory `navi48-bringup` non definisce la maturità né il target hardware del prodotto.
+
+Questo passaggio non dichiara il driver già pronto per la produzione. La base installata resta il riferimento di recupero; i nuovi componenti diventano candidati installabili dopo build riproducibile, verifica dell'ABI e test pertinenti. Le prove sul dispositivo qualificano poi stabilità, isolamento e prestazioni. I test CPU e la compilazione non chiudono quelle verifiche.
+
+Il primo modulo strutturale è la gestione di più client: contesti logici indipendenti dagli otto VMID utilizzati dal driver, assegnazione al submit, sincronizzazione e rilascio sicuro delle risorse. Il codice del profilo 64 descritto sotto è già integrato nei sorgenti, ma non nel kernel attualmente avviato. Il limite di 64 record è provvisorio e configurabile; non è un limite di otto applicazioni né una promessa di capacità illimitata.
+
+Le consegne successive seguono le dipendenze: memoria/contesti/sincronizzazione; compilazione shader e contratto Metal; presentazione e timing del display; video hardware e integrazione con i framework. Browser, Finder e altre app sono carichi di verifica di queste capacità. Ogni consegna deve indicare separatamente cosa è implementato, cosa è provato sulla GPU e cosa rimane aperto nella checklist completa.
+
 ## Base attualmente installata e verificata
 
 Boot `CE6DAB32-C985-4109-ACDA-096A043974BE`, Metal bundle 28, profilo `stage25-archive-boundary-v1`. La guardia registra `desktop-stable-120s` e l'utente conferma il login accelerato. Il precedente assert sugli archivi nativi non compare nei nuovi report osservati. Restano difetti reali: icona Finder non visibile, Finder crashato dopo il rifiuto del backend e un componente Dock crashato in RADV. Questa è una base di recupero, non un driver completo.
@@ -10,7 +20,7 @@ Le modifiche di questo passaggio sono nei sorgenti/staging. Non sono ancora stat
 
 ## 1. Contesti software separati dai VMID hardware
 
-Nel driver attuale `Session.slot` e `Session.vmid` sono legati per tutta la vita della sessione. `gSlot`, `gWin`, code di fairness e diverse statistiche usano lo stesso indice. Aprire un client occupa immediatamente un VMID fra 8 e 15. L'esaurimento di otto sessioni appare quindi anche con poche app visibili: wallpaper, notifiche, servizi delle icone e processi del browser sono client distinti.
+Nel driver installato `Session.slot` e `Session.vmid` sono legati per tutta la vita della sessione. `gSlot`, `gWin`, code di fairness e diverse statistiche usano lo stesso indice. Aprire un client occupa immediatamente un VMID fra 8 e 15. L'esaurimento di otto sessioni appare quindi anche con poche app visibili: wallpaper, notifiche, servizi delle icone e processi del browser sono client distinti. Il nuovo profilo nei sorgenti sostituisce questo legame come descritto sotto.
 
 La nuova struttura deve avere:
 
@@ -32,13 +42,13 @@ Il test `production_vm_lease_test.cpp` passa con ASan/UBSan: mille identità log
 
 `production_context_test.cpp` mantiene **mille record applicazione aperti contemporaneamente**, più il compositor, e ne esegue il lavoro simulato riutilizzando sette VMID applicazione. ASan/UBSan verificano anche riferimenti obsoleti con il medesimo proprietario, rifiuto di ticket appartenenti ad altri contesti, race fra close e operazione CPU, fallimento del cambio root con conservazione di entrambe le page table, e mancato riuso delle identità dopo overflow. Il test controlla le politiche CPU: **non apre mille client IOAccel e non esegue comandi sulla GPU**. Questo modulo rimane un modello isolato del ciclo di vita; il percorso kernel conserva i record `Session` stabili e i riferimenti `N1cRef` autenticati dall'IOUserClient.
 
-Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autenticato, usare un contatore delle identità unico per il boot, mantenere il lock comune registro/lease e ordinare l'accounting del submit con la pubblicazione sul ring. La politica non sostituisce questi obblighi con dati ricevuti dall'ioctl.
+Il contratto richiede un token proprietario ricavato dall'IOUserClient autenticato, un contatore delle identità unico per il boot, il lock comune registro/lease e l'accounting del submit ordinato con la pubblicazione sul ring. Il profilo kernel descritto sotto integra le identità `N1cRef`, i lock e tale ordine; la qualificazione concorrente IOAccel rimane aperta. La politica non sostituisce questi obblighi con dati ricevuti dall'ioctl.
 
 ### Chiusura dei contesti collegata al percorso kernel
 
 `production_context_retire.h` è usato da `native_s1c.cpp` nella chiusura effettiva. Prima della modifica il percorso liberava i BO, poi cancellava le PTE della finestra fence condivisa di VMID 0 e ignorava il risultato della relativa invalidazione. Ora, dopo il retirement del lavoro del client, parcheggia la root privata, cancella le PTE fence e verifica l'ACK di VMID 0 **prima** di rilasciare i BO e le page table. Un fallimento conserva risorse e record delle fence e rende non riutilizzabile lo slot.
 
-`test-kernel-context-close.py` esegue il vero corpo di `n1c_close` e i callback `ContextRetireEnv` con IO controllato: 32 percorsi, ruoli e profili legacy/multisessione, fence presenti/assenti, errori di retirement e ACK, chiusura ripetuta. ASan/UBSan passano; ogni free richiede il retirement e gli ACK pertinenti. I test esistenti G2 e host import sono aggiornati al nuovo ordine senza rimuovere il vincolo di invalidazione. Il kext completo x86_64 a otto sessioni compila e la firma ad hoc si verifica in `build-production-contexts`; è solo un artefatto locale, non installato. Il registro logico e l'assegnazione dinamica dei VMID restano da collegare: questa chiusura è un prerequisito per il loro riuso sicuro.
+`test-kernel-context-close.py` esegue il vero corpo di `n1c_close` e i callback `ContextRetireEnv` con IO controllato: 32 percorsi, ruoli e profili legacy/multisessione, fence presenti/assenti, errori di retirement e ACK, chiusura ripetuta. ASan/UBSan passano; ogni free richiede il retirement e gli ACK pertinenti. I test esistenti G2 e host import sono aggiornati al nuovo ordine senza rimuovere il vincolo di invalidazione. Il kext completo x86_64 a otto sessioni compila e la firma ad hoc si verifica in `build-production-contexts`; è solo un artefatto locale, non installato. Questa chiusura è ora usata anche dall'integrazione del profilo 64 riportata sotto; il suo riuso sicuro sulla GPU resta da qualificare.
 
 Anche `bo_release` in modalità Normal richiede ora gli ACK prima di restituire memoria a entrambi i pool VRAM. Il vecchio controllo conservava GTT/import host ma restituiva ugualmente VRAM dopo un'invalidazione fallita. `test-kernel-bo-release.py` esegue il blocco reale con 40 combinazioni di mapping, fence e ACK: memoria e budget rimangono trattenuti quando una traduzione è incerta. Non è un meccanismo di recupero della memoria in quarantena; il percorso attuale la conserva fino al reboot. Test ASan/UBSan e compilazione kernel passano, verifica hardware ancora aperta.
 
