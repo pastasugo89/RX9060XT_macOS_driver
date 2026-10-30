@@ -1756,31 +1756,46 @@ IOReturn n1c_submit(const N1cRef &ref, const uint8_t *in, uint32_t size, uint64_
     return rc;
 }
 
+struct WaitSnapshot { uint64_t emitted, retired, own; bool poisoned; };
+static bool wait_snapshot(const N1cRef &ref, Session *s, WaitSnapshot &snapshot) {
+    IOLockLock(gCliLock);
+    const bool valid = sess_peek(ref) == s && __atomic_load_n(&s->hello, __ATOMIC_ACQUIRE);
+    if (valid) {
+        snapshot.emitted = emitted_now();
+        snapshot.retired = retired_now(snapshot.emitted);
+        snapshot.own = __atomic_load_n(&s->emitted, __ATOMIC_ACQUIRE);
+        snapshot.poisoned = sess_poisoned(s);
+    }
+    IOLockUnlock(gCliLock);
+    return valid;
+}
+
 IOReturn n1c_wait(const N1cRef &ref, uint64_t target, uint64_t timeoutNs, uint64_t out[3]) {
-    if (!sess_hello(ref)) return kIOReturnNotReady;
-    Session *s = sess_peek(ref);
+    if (gCliLock == nullptr) return kIOReturnNotReady;
+    Session *s = slot_ptr(ref.slot);
     if (s == nullptr) return kIOReturnNotReady;
-    if (sess_poisoned(s)) return kIOReturnAborted;   // 0.0.627 (G2): a poisoned session's fences are failed
+    WaitSnapshot snapshot{};
+    if (!wait_snapshot(ref, s, snapshot)) return kIOReturnNotReady;
+    if (snapshot.poisoned) return kIOReturnAborted;
     uint64_t res = 0;
-    uint64_t em = emitted_now();
-    const uint32_t rrc = n48native::g2::own_wait_resolve(target, em, __atomic_load_n(&s->emitted, __ATOMIC_ACQUIRE), &res);   // 0.0.627: LAST = this session's own last seqno
+    const uint32_t rrc = n48native::g2::own_wait_resolve(target, snapshot.emitted, snapshot.own, &res);
     if (rrc != kOk) return (IOReturn)rrc;
     const uint64_t to = wait_timeout_ns(timeoutNs);
     const uint64_t start = now_ns();
-    uint64_t re = 0;
     for (;;) {
-        em = emitted_now();
-        re = retired_now(em);
-        if (sess_poisoned(s)) return kIOReturnAborted;
-        if (res == 0ull || re >= res) { out[0] = 0; out[1] = re; out[2] = em; return kIOReturnSuccess; }
+        if (!wait_snapshot(ref, s, snapshot)) return kIOReturnAborted;
+        if (snapshot.poisoned) return kIOReturnAborted;
+        if (res == 0ull || snapshot.retired >= res) { out[0] = 0; out[1] = snapshot.retired; out[2] = snapshot.emitted; return kIOReturnSuccess; }
         if (hung_now()) return kIOReturnAborted;
         const uint64_t el = now_ns() - start;
         if (el >= to) break;
         if (el < 5000000ull) IODelay(1); else IOSleep(1);
     }
-    if (hang_poll()) return kIOReturnTimeout;                // this call's wait detected the hang
-    if (sess_poisoned(s)) return kIOReturnAborted;           // 0.0.627: this call's stall named the caller guilty
-    out[0] = 1; out[1] = re; out[2] = em;
+    const bool detectedHang = hang_poll();
+    if (!wait_snapshot(ref, s, snapshot)) return kIOReturnAborted;
+    if (detectedHang) return kIOReturnTimeout;               // this call's wait detected the hang
+    if (snapshot.poisoned) return kIOReturnAborted;
+    out[0] = snapshot.retired >= res ? 0 : 1; out[1] = snapshot.retired; out[2] = snapshot.emitted;
     return kIOReturnSuccess;
 }
 

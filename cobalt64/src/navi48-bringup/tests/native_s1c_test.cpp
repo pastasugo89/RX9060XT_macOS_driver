@@ -622,17 +622,21 @@ static void u12_pins(const std::string &root) {
     expect(eng.find("const uint32_t gate = gpu_gate(s);", eng.find("IOReturn n1c_submit(")) < eng.find("ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut)"), "Submit takes the HUNG gate first");
     expect(eng.find("cs_parse(in, size, &v)") < eng.find("IOLockLock(gCliLock);", eng.find("IOReturn n1c_submit(")), "the chunk is parsed before the lock");
     expect(eng.find("wb_bus + kWbOffsetNativeSeq") != std::string::npos, "the seqno slot address is the WB page + the slot offset");
-    // WaitSeq takes no lock; QueryInfo / ReadRegs neither
-    for (const char *fn : { "IOReturn n1c_wait(", "IOReturn n1c_query_info(", "IOReturn n1c_read_regs(" }) {
+    // QueryInfo / ReadRegs remain diagnostic reads without the registry lock.
+    for (const char *fn : { "IOReturn n1c_query_info(", "IOReturn n1c_read_regs(" }) {
         const size_t a = eng.find(fn), b = eng.find("\n}\n", a);
         expect(a != std::string::npos && b != std::string::npos && eng.substr(a, b - a).find("IOLockLock(gCliLock)") == std::string::npos, "this selector takes no client lock");
     }
+    const std::string snapshot = fn_body(eng, "static bool wait_snapshot(");
+    expect(in_order(snapshot, { "IOLockLock(gCliLock);", "sess_peek(ref) == s && __atomic_load_n(&s->hello", "snapshot.own = __atomic_load_n(&s->emitted", "IOLockUnlock(gCliLock);", "return valid;" }) &&
+           snapshot.find("IOSleep") == std::string::npos && snapshot.find("IODelay") == std::string::npos && snapshot.find("hang_poll") == std::string::npos,
+           "WaitSeq validates identity and counters under a short registry lock, never across a GPU wait or recovery");
     for (const char *fn : { "IOReturn n1c_hello(", "IOReturn n1c_bo_create(", "IOReturn n1c_bo_free(", "IOReturn n1c_gem_va(", "IOReturn n1c_ctx(", "IOReturn n1c_submit(" }) {
         const size_t a = eng.find(fn), b = eng.find("\n}\n", a);
         expect(a != std::string::npos && b != std::string::npos && eng.substr(a, b - a).find("Session *s = sess_lock(ref, ") != std::string::npos && eng.substr(a, b - a).find("sess_unlock(s);") != std::string::npos,
                "this selector takes the caller's SESSION lock (0.0.627: the per-session successor of the one client lock)");
     }
-    expect_u("every selector body checks Hello (9 in ABI 1.0 + 6 scanout selectors of ABI 1.1, 0.0.603 + the DAL step of ABI 1.2, 0.0.604 + the mode trial of ABI 1.3, 0.0.605 + the HELD mode's hold / release of ABI 1.7, 0.0.609 + BoImportHost of ABI 1.9, 0.0.612 + the five instance-2 scanout selectors of ABI 1.11, 0.0.661)", count_of(eng, "if (!sess_hello(ref)) return kIOReturnNotReady;"), 25);
+    expect_u("every other selector retains its direct Hello check; WaitSeq checks Hello inside its protected identity snapshot", count_of(eng, "if (!sess_hello(ref)) return kIOReturnNotReady;"), 24);
     expect_u("every locked selector re-checks the session under the lock (6 + ScanoutAcquire / Register / Release, 0.0.603 + BoImportHost, 0.0.612)", count_of(eng, "closed while we waited for the lock"), 10);
     expect(eng.find("static Session gSess;") != std::string::npos && eng.find("IOFree(ns") == std::string::npos && count_of(eng, "IOMalloc(sizeof(Session))") == 1 && eng.find("IOMallocAligned") == std::string::npos && eng.find("IOFreeAligned") == std::string::npos,
            "SESSION LIFETIME: slot 0 is a static, slots 1..3 (0.0.627) are allocated once and never freed");

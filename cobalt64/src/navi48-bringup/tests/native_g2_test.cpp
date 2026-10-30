@@ -403,7 +403,8 @@ static void t11_pins(const std::string &root) {
     expect(in_order(gg, { "if (hung_now()) return hang_rc(true, false);", "if (s != nullptr && sess_poisoned(s)) return n48native::g2::poison_rc(true);", "hang_poll()", "sess_poisoned(s)" }), "gpu_gate: HUNG, then the poison, then the stall poll (and the poison again)");
     expect(fn_body(eng, "IOReturn n1c_submit(").find("const uint32_t gate = gpu_gate(s);") != std::string::npos, "Submit is gated per session");
     const std::string wt = fn_body(eng, "IOReturn n1c_wait(");
-    expect(in_order(wt, { "if (sess_poisoned(s)) return kIOReturnAborted;", "n48native::g2::own_wait_resolve(target, em, __atomic_load_n(&s->emitted, __ATOMIC_ACQUIRE), &res);", "if (sess_poisoned(s)) return kIOReturnAborted;", "if (res == 0ull || re >= res)" }),
+    expect(in_order(wt, { "if (!wait_snapshot(ref, s, snapshot)) return kIOReturnNotReady;", "if (snapshot.poisoned) return kIOReturnAborted;", "n48native::g2::own_wait_resolve(target, snapshot.emitted, snapshot.own, &res);",
+                          "if (!wait_snapshot(ref, s, snapshot)) return kIOReturnAborted;", "if (snapshot.poisoned) return kIOReturnAborted;", "if (res == 0ull || snapshot.retired >= res)" }),
            "WaitSeq: poisoned -> Aborted, LAST = own last, and the poison is checked BEFORE a retired seqno is reported done");
     expect(fn_body(eng, "IOReturn n1c_ctx(").find("n48native::g2::ctx_state2(hung_now(), sess_poisoned(s))") != std::string::npos, "QUERY_STATE2 reports the poison");
     // the budget

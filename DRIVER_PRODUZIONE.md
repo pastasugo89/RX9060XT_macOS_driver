@@ -60,6 +60,12 @@ Il Makefile registra il profilo delle capacità e forza la ricompilazione degli 
 
 Il confronto hardware è tracciato contro Linux commit `d89e1d186ec9271bf78e62771779e9fc03bf0fc3`: [gestione dei VMID](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/amdgpu_ids.c), [flush VM](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/amdgpu_vm.c), [GFX12](https://github.com/torvalds/linux/blob/d89e1d186ec9271bf78e62771779e9fc03bf0fc3/drivers/gpu/drm/amd/amdgpu/gfx_v12_0.c). Linux ordina il flush sul ring e sincronizza PFP/ME; il nostro cambio attende il retirement sulla CPU e programma/invalida prima della nuova doorbell. La correttezza di questa sequenza sul dispositivo va ancora provata con indirizzi virtuali uguali in root diverse, dati e shader distinti, ricambio ripetuto, concorrenza e fault. Il confronto del sorgente e i test CPU non sostituiscono quelle prove.
 
+### Attese concorrenti alla chiusura
+
+`n1c_wait` acquisisce ora una fotografia di identità, Hello, poison e contatori sotto un breve lock del registro. Il lock è rilasciato prima delle attese e del controllo/recovery globale. `LAST` viene risolto una sola volta dalla sequenza della sessione iniziale; una chiusura o riapertura dello stesso record fa abortire l'attesa, senza seguire il nuovo proprietario o il suo reset del contatore globale. La validità è controllata anche dopo `hang_poll`.
+
+`test-kernel-wait-identity.py` esegue il vero helper e il vero WaitSeq in 21 percorsi controllati, con close/reopen alle fotografie, al sonno e durante il controllo del blocco. Le mutazioni del registro sono rinviate finché il lock è rilasciato; ogni attesa e controllo hang verifica che il lock non sia trattenuto. Copre anche nuove submission dello stesso proprietario, conclusione, polling, timeout, poison, HUNG, registro non inizializzato e riferimenti non validi. ASan/UBSan passano. Rimangono da qualificare le chiamate IOAccel realmente concorrenti e gli altri lettori diagnostici del record.
+
 ### Integrazione kernel da completare prima del rilascio
 
 Assegnazione al submit, accounting prima della doorbell, invalidazioni legate al proprietario corrente, chiusura e log delle identità sono implementati nel profilo 64. Le caselle sotto restano aperte finché l'integrazione e le prove complete corrispondenti non le qualificano; non sono il conteggio dei soli file scritti.
