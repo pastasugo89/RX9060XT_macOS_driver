@@ -303,9 +303,10 @@ static BOOL n48_headless(void) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Lazy in-process RADV (NATIVE-S4-M10 route a', F5). Opened on the first resource/queue request, NEVER in
-// initWithAcceleratorPort: (every Metal-enumerating process loads this bundle). N48N is root-only and exclusive:
-// a refusal (non-root, second client) becomes nil + NSError, never an abort.
+// In-process RADV (NATIVE-S4-M10 route a', F5). WindowServer keeps the lazy
+// resource/queue path. Other admitted processes reserve the real backend before
+// their Metal device is exposed: the transient APP probe alone cannot guarantee
+// capacity remains available when the first resource is allocated.
 // ---------------------------------------------------------------------------------------------------------------
 #define N48_VK_FUNCS(X) \
     X(vkDestroyInstance) X(vkEnumeratePhysicalDevices) X(vkGetPhysicalDeviceProperties) X(vkGetPhysicalDeviceFeatures) \
@@ -6291,6 +6292,13 @@ static void n48_census_log(void) {
     NSLog(@"Navi48Metal: initWithAcceleratorPort 0x%x", port);
     const char *why = n48_admit(port);   // 11b: process filter, kill file, Ready, crash counter
     self = [super initWithAcceleratorPort:port];
+    if (self && !why && !n48_is_ws()) {
+        NSError *backendError = nil;
+        if (!n48_radv_open(&backendError)) {
+            N48LOG("device admission: backend reservation failed before exposing the Metal device: %s", backendError.localizedDescription.UTF8String);
+            why = "the actual RADV backend could not reserve a native context";
+        }
+    }
     if (why) {
         // Declining BEFORE the base init crashed (measured: the un-initialised object is released by ARC and
         // -[_MTLDevice dealloc] -> dispatch_release(NULL) SEGVs), so the base init runs first and the object is then
