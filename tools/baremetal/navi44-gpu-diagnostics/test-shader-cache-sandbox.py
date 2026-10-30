@@ -6,6 +6,14 @@ header=root/'cobalt64/tools/native/navi48metal'
 source=r'''
 #include "n48_xlate.h"
 int main(int argc, char **argv) {
+ if(argc==4) {
+  char dir[N48X_PATH_MAX];
+  // The primary parent exists but its brand-new key cannot be created.
+  if(n48x_cache_ready(argv[1],argv[3],dir,sizeof dir))return 20;
+  if(!n48x_cache_ready(argv[2],argv[3],dir,sizeof dir))return 21;
+  char result[N48X_PATH_MAX+32]; snprintf(result,sizeof result,"%s/new-shader",dir);
+  return n48x_write_atomic(result,"SPIRV",5)?22:0;
+ }
  if(argc!=3)return 10;
  char p[4096]; snprintf(p,sizeof p,"%s/result",argv[1]);
  int allowed=atoi(argv[2]);
@@ -24,4 +32,10 @@ with tempfile.TemporaryDirectory(prefix='n48-cache-sandbox-') as tmp:
  profile='(version 1)(deny default)(allow process* sysctl-read mach-lookup file-read*)(allow file-write-data file-write-create file-write-unlink (subpath '+json.dumps(str(writable))+'))'
  for target,allowed in [(writable,1),(denied,0)]:
   subprocess.run(['/usr/bin/sandbox-exec','-p',profile,str(d/'probe'),str(target),str(allowed)],check=True)
+ primary=denied/'com.navi48.xlate'; primary.mkdir(mode=0o700)
+ key='0123456789abcdef'
+ subprocess.run(['/usr/bin/sandbox-exec','-p',profile,str(d/'probe'),str(denied),str(writable),key],check=True)
+ assert not (primary/key).exists()
+ assert (writable/'com.navi48.xlate'/key/'new-shader').read_bytes()==b'SPIRV'
  print('Shader cache: allowed writes succeed with chmod denied; denied directory rejected.')
+ print('Fresh translator key: denied mkdir uses the writable fallback and saves a shader.')

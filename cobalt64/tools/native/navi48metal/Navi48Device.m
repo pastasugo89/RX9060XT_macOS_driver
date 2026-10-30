@@ -3375,20 +3375,17 @@ static void n48x_setup_locked(void) {
     const char *tu = n48_allow() ? getenv("N48M_TEST_USERCACHE") : NULL;
     if (tu && tu[0]) snprintf(ucd, sizeof ucd, "%s", tu);
     else { const size_t cn = confstr(_CS_DARWIN_USER_CACHE_DIR, ucd, sizeof ucd); if (cn == 0 || cn > sizeof ucd) ucd[0] = 0; }
-    char parent[N48X_PATH_MAX];
-    if (!n48x_parent_path(parent, sizeof parent, ucd) || !n48x_dir_path(N48XL.dir, sizeof N48XL.dir, ucd, key)) { N48XL.dirState = -1; N48LOG("inproc: no user cache directory: in-process translation is unavailable"); return; }
-    if (n48x_prepare_dirs(parent, N48XL.dir, key) != 0) { N48XL.dirState = -1; N48LOG("inproc: cannot use the cache directory %s (not a real directory of ours?): in-process translation is unavailable", N48XL.dir); return; }
-    if (!n48x_cache_writable(N48XL.dir)) {
+    if (!n48x_cache_ready(ucd, key, N48XL.dir, sizeof N48XL.dir)) {
         // Chromium restricts the shared Darwin cache. Its GPU profile permits
         // private data under Darwin temp/TemporaryItems. Check the real sandbox
         // operations before choosing this process-local translation cache.
+        // A new translator UUID also needs a new key directory: denied mkdir
+        // must take this fallback, just like a denied write in an existing key.
         char temp[1024] = "", base[N48X_PATH_MAX];
         const size_t tn = confstr(_CS_DARWIN_USER_TEMP_DIR, temp, sizeof temp);
         const int bn = tn && tn <= sizeof temp ? snprintf(base, sizeof base, "%s%sTemporaryItems", temp, temp[strlen(temp)-1] == '/' ? "" : "/") : -1;
         if (bn < 0 || (size_t)bn >= sizeof base || n48x_mkdir_checked(base) != 0 ||
-            !n48x_parent_path(parent, sizeof parent, base) ||
-            !n48x_dir_path(N48XL.dir, sizeof N48XL.dir, base, key) ||
-            n48x_prepare_dirs(parent, N48XL.dir, key) != 0 || !n48x_cache_writable(N48XL.dir)) {
+            !n48x_cache_ready(base, key, N48XL.dir, sizeof N48XL.dir)) {
             N48XL.dirState = -1;
             N48LOG("inproc: no writable shader cache permitted for this process");
             return;

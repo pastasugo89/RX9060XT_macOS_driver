@@ -269,6 +269,15 @@ static inline int n48x_cache_writable(const char *dir) {
     return wrote && closed && removed;
 }
 
+// Both mkdir and actual data access must succeed. A fresh translator key can
+// fail at mkdir even when an older cache key is readable in the same sandbox.
+static inline int n48x_cache_ready(const char *base, const char *key, char *dir, size_t capacity) {
+    char parent[N48X_PATH_MAX];
+    return n48x_parent_path(parent, sizeof parent, base) &&
+        n48x_dir_path(dir, capacity, base, key) &&
+        n48x_prepare_dirs(parent, dir, key) == 0 && n48x_cache_writable(dir);
+}
+
 // ======================================================================================================================================================================
 // 4. Size caps (section 1.5)
 // ======================================================================================================================================================================
