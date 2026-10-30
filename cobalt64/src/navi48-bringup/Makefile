@@ -137,6 +137,23 @@ OBJS := $(patsubst %.cpp,$(BUILD)/%.o,$(CXX_SRCS)) $(patsubst %.c,$(BUILD)/%.o,$
 
 NATIVE_SESSIONS ?= 4
 LOGICAL_CONTEXTS ?= $(NATIVE_SESSIONS)
+CONTEXT_PROFILE := $(BUILD)/native-context-profile
+
+# Capacity changes affect internal layouts in more than one translation unit.
+# Force recompilation when reusing a BUILD directory with different capacities.
+$(CONTEXT_PROFILE): context-profile-force
+	@mkdir -p $(BUILD)
+	@printf '%s\n' '$(NATIVE_SESSIONS) $(LOGICAL_CONTEXTS)' > $@.tmp
+	@if cmp -s $@.tmp $@; then rm $@.tmp; else mv $@.tmp $@; fi
+$(OBJS): $(CONTEXT_PROFILE)
+.PHONY: context-profile-force
+context-profile-force:
+CONTEXT_PROFILE_RECORDED := $(shell cat $(CONTEXT_PROFILE) 2>/dev/null)
+ifneq ($(CONTEXT_PROFILE_RECORDED),$(NATIVE_SESSIONS) $(LOGICAL_CONTEXTS))
+$(OBJS): context-profile-changed
+.PHONY: context-profile-changed
+context-profile-changed:
+endif
 
 COMMON := -DN48_MAX_NATIVE_SESSIONS=$(NATIVE_SESSIONS) -DN48_MAX_LOGICAL_CONTEXTS=$(LOGICAL_CONTEXTS) -arch $(ARCH) -target $(ARCH)-apple-macos$(DEPLOY) -isysroot $(SDK) \
   -I$(MKSDK)/Headers -Isrc -Isrc/amd -I$(XLAT12_DIR) -I$(SHADERCACHE_DIR) -I$(DCN41_DIR) -mmacosx-version-min=$(DEPLOY) \
