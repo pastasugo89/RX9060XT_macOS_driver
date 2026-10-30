@@ -68,7 +68,15 @@ La patch locale `cobalt64/mesa-patches/0011-radv-propagate-graphics-shader-alloc
 - evita di inserire una pipeline parziale in cache dopo quel fallimento;
 - gestisce il ramo uncached prima di dereferenziare uno shader nullo.
 
-La build nativa macOS di RADV passa. `test-radv-shader-oom.py` estrae la vera factory modificata e inietta fallimenti di allocazione in ciascuno degli otto stage e nel GS copy, oltre ai percorsi vuoto e riuscito; passa con ASan/UBSan. Restano da qualificare la pulizia completa dei dati debug nei percorsi di errore, il teardown Vulkan e la pressione di memoria sul device reale. Il RADV ricostruito ha SHA256 `48c302b6bf982d37df9d7f3ec87ac0808f8e1272778aaa7cde062d8fd240c11a` e non è installato.
+La verifica del percorso di upload ha trovato anche una doppia responsabilità di distruzione: alcuni errori liberavano lo shader dentro `radv_shader_binary_upload`, poi la factory lo liberava nuovamente. Ora gli helper restituiscono l'errore e la factory usa la distruzione ordinaria dell'oggetto inizializzato. Questa rilascia arena, copia del codice, dati debug e mutex. I dati debug passano esplicitamente di proprietà e il record sorgente viene svuotato; una creazione fallita pulisce anche gli stage non ancora visitati. Il ramo senza supporto RTLD restituisce un errore con output nullo. Le pipeline compute e gli shader object propagano a loro volta l'allocazione fallita; i dump diagnostici verificano l'esistenza dello shader.
+
+Verifiche CPU con ASan/UBSan:
+
+- `test-radv-shader-oom.py`: vera factory grafica, fallimento in ciascuno degli otto stage e nel GS copy, percorsi vuoto/riuscito, dati debug nei percorsi cached/uncached.
+- `test-radv-shader-lifetime.py`: vera factory uncached, helper di upload e distruttore; 46 percorsi complessivi con/senza RTLD e memoria visibile/invisibile. Fallimenti di oggetto, arena, copia del codice, DMA, RTLD e replay: nessuna allocazione, mutex o cache object tracciato rimane posseduto all'uscita.
+- `test-radv-compute-oom.py`: blocco di compilazione/cleanup della pipeline compute e funzioni complete di creazione shader object compute/binario; otto percorsi controllati, errore propagato, nessuna cache di successo dopo il fallimento e nessun dump di shader nullo.
+
+La build nativa macOS di RADV passa. Il nuovo SHA256 è `dc733788a2302fc29dfd7498dcdf27c749bf1830a201b1833026ca7b9db05bbe`. Il binario **non è installato**. Queste prove non qualificano il teardown di un intero device Vulkan, tutte le possibili allocazioni del compilatore/parser, vecchie cache parziali già persistite, né la pressione di memoria sulla GPU reale: quelle verifiche restano aperte.
 
 ## 4. Regola per le prossime consegne
 

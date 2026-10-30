@@ -1,0 +1,407 @@
+diff --git a/src/amd/vulkan/radv_pipeline_cache.c b/src/amd/vulkan/radv_pipeline_cache.c
+index 78040591f80..bacad98d451 100644
+--- a/src/amd/vulkan/radv_pipeline_cache.c
++++ b/src/amd/vulkan/radv_pipeline_cache.c
+@@ -58,14 +58,9 @@ radv_shader_destroy(struct vk_device *_device, struct vk_pipeline_cache_object *
+    radv_free_shader_memory(device, shader->alloc);
+
+    free(shader->code);
+-   free(shader->dbg.spirv);
+-   free(shader->dbg.nir_string);
+-   free(shader->dbg.disasm_string);
+-   free(shader->dbg.ir_string);
+-   free(shader->dbg.args_string);
+-   free(shader->dbg.statistics);
+-   free(shader->dbg.debug_info);
++   radv_shader_debug_info_finish(&shader->dbg);
+
++   simple_mtx_destroy(&shader->replay_mtx);
+    vk_pipeline_cache_object_finish(&shader->base);
+    free(shader);
+ }
+@@ -123,19 +118,17 @@ serialize_shader_debug_info(struct blob *blob, const struct radv_shader_debug_in
+ }
+
+ static void
+-serialize_binary(struct blob *blob, const struct radv_shader_binary *binary, const struct radv_shader_debug_info *dbg)
++serialize_binary(struct blob *blob, const struct radv_shader_binary *binary, struct radv_shader_debug_info *dbg)
+ {
+    if (dbg && (dbg->spirv_size || dbg->nir_string || dbg->args_string)) {
+       blob_init(blob);
+       blob_write_bytes(blob, binary, binary->total_size);
+       serialize_shader_debug_info(blob, dbg);
+-      free(dbg->spirv);
+-      free(dbg->nir_string);
+-      free(dbg->args_string);
+    } else {
+       blob_init_fixed(blob, (void *)binary, binary->total_size);
+       blob_reserve_bytes(blob, binary->total_size);
+    }
++   radv_shader_debug_info_finish(dbg);
+ }
+
+ void
+@@ -209,10 +202,11 @@ radv_shader_create(struct radv_device *device, struct vk_pipeline_cache *cache,
+ {
+    if (radv_is_cache_disabled(&device->compiler_info, cache) || skip_cache || (dbg && dbg->dump_shader)) {
+       struct radv_shader *shader;
+-      radv_shader_create_uncached(device, binary, false, NULL, dbg, &shader);
++      if (radv_shader_create_uncached(device, binary, false, NULL, dbg, &shader) != VK_SUCCESS)
++         return NULL;
+       /* radv_parse_binary_debug_info() might have been done earlier by radv_shader_dump_asm(). Skip it in that case to
+        * avoid memory leaks. */
+-      if (!dbg || (!dbg->statistics && !dbg->ir_string && !dbg->disasm_string && !dbg->debug_info_count))
++      if (!shader->dbg.statistics && !shader->dbg.ir_string && !shader->dbg.disasm_string && !shader->dbg.debug_info_count)
+          radv_parse_binary_debug_info(&device->compiler_info, binary, &shader->dbg);
+       return shader;
+    }
+diff --git a/src/amd/vulkan/radv_pipeline_compute.c b/src/amd/vulkan/radv_pipeline_compute.c
+index 5770fc4df81..33463302fd5 100644
+--- a/src/amd/vulkan/radv_pipeline_compute.c
++++ b/src/amd/vulkan/radv_pipeline_compute.c
+@@ -211,15 +211,18 @@ radv_compute_pipeline_compile(const VkComputePipelineCreateInfo *pCreateInfo, st
+       radv_compile_cs(compiler_info, &cs_stage, pipeline->base.is_internal, &cs_dbg);
+    pipeline->base.shaders[MESA_SHADER_COMPUTE] =
+       radv_shader_create(device, cache, cs_binary, skip_shaders_cache, &cs_dbg);
++   if (!pipeline->base.shaders[MESA_SHADER_COMPUTE])
++      result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+
+    cs_stage.feedback.duration += os_time_get_nano() - stage_start;
+
+-   if (!skip_shaders_cache) {
++   if (result == VK_SUCCESS && !skip_shaders_cache) {
+       radv_pipeline_cache_insert(device, cache, &pipeline->base);
+    }
+
+    free(cs_binary);
+-   if (radv_can_dump_shader_stats(&device->compiler_info, cs_stage.nir)) {
++   if (pipeline->base.shaders[MESA_SHADER_COMPUTE] &&
++       radv_can_dump_shader_stats(&device->compiler_info, cs_stage.nir)) {
+       radv_dump_shader_stats(device, &pipeline->base, pipeline->base.shaders[MESA_SHADER_COMPUTE], stderr);
+    }
+    radv_pipeline_stage_finish(&cs_stage);
+diff --git a/src/amd/vulkan/radv_pipeline_graphics.c b/src/amd/vulkan/radv_pipeline_graphics.c
+index 5e664926af8..de5fe86d495 100644
+--- a/src/amd/vulkan/radv_pipeline_graphics.c
++++ b/src/amd/vulkan/radv_pipeline_graphics.c
+@@ -2803,19 +2803,33 @@ radv_graphics_shaders_compile(const struct radv_compiler_info *compiler_info, st
+                                     gs_copy_debug, gs_copy_binary);
+ }
+
+-void
++VkResult
+ radv_graphics_shaders_create(struct radv_device *device, struct vk_pipeline_cache *cache, bool skip_shaders_cache,
+                              struct radv_shader **shaders, struct radv_shader_binary **binaries,
+                              struct radv_shader_debug_info *debug, struct radv_shader **gs_copy_shader,
+                              struct radv_shader_binary *gs_copy_binary, struct radv_shader_debug_info *gs_copy_debug)
+ {
++   VkResult result = VK_SUCCESS;
+    for (int i = 0; i < MESA_VULKAN_SHADER_STAGES; ++i) {
+       struct radv_shader_binary *binary = binaries[i];
+-      if (binary)
++      if (binary) {
+          shaders[i] = radv_shader_create(device, cache, binary, skip_shaders_cache, &debug[i]);
++         if (!shaders[i]) {
++            result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
++            goto out;
++         }
++      }
+    }
+-   if (gs_copy_binary)
++   if (gs_copy_binary) {
+       *gs_copy_shader = radv_shader_create(device, cache, gs_copy_binary, skip_shaders_cache, gs_copy_debug);
++      if (!*gs_copy_shader)
++         result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
++   }
++out:
++   for (int i = 0; i < MESA_VULKAN_SHADER_STAGES; ++i)
++      radv_shader_debug_info_finish(&debug[i]);
++   radv_shader_debug_info_finish(gs_copy_debug);
++   return result;
+ }
+
+ static bool
+@@ -3048,10 +3062,10 @@ radv_graphics_pipeline_compile(struct radv_graphics_pipeline *pipeline, const Vk
+    struct radv_shader_debug_info gs_copy_debug = {0};
+    radv_graphics_shaders_compile(compiler_info, cache, stages, &gfx_state->key.gfx_state, pipeline->base.is_internal,
+                                  retained_shaders, noop_fs, debug, binaries, &gs_copy_debug, &gs_copy_binary);
+-   radv_graphics_shaders_create(device, cache, skip_shaders_cache, pipeline->base.shaders, binaries, debug,
+-                                &pipeline->base.gs_copy_shader, gs_copy_binary, &gs_copy_debug);
++   result = radv_graphics_shaders_create(device, cache, skip_shaders_cache, pipeline->base.shaders, binaries, debug,
++                                         &pipeline->base.gs_copy_shader, gs_copy_binary, &gs_copy_debug);
+
+-   if (!skip_shaders_cache) {
++   if (result == VK_SUCCESS && !skip_shaders_cache) {
+       radv_pipeline_cache_insert(device, cache, &pipeline->base);
+    }
+
+diff --git a/src/amd/vulkan/radv_pipeline_graphics.h b/src/amd/vulkan/radv_pipeline_graphics.h
+index 4d8d32af478..a0ddc897151 100644
+--- a/src/amd/vulkan/radv_pipeline_graphics.h
++++ b/src/amd/vulkan/radv_pipeline_graphics.h
+@@ -661,7 +661,7 @@ void radv_graphics_shaders_compile(const struct radv_compiler_info *compiler_inf
+                                    struct radv_shader_debug_info *gs_copy_debug,
+                                    struct radv_shader_binary **gs_copy_binary);
+
+-void radv_graphics_shaders_create(struct radv_device *device, struct vk_pipeline_cache *cache, bool skip_shaders_cache,
++VkResult radv_graphics_shaders_create(struct radv_device *device, struct vk_pipeline_cache *cache, bool skip_shaders_cache,
+                                   struct radv_shader **shaders, struct radv_shader_binary **binaries,
+                                   struct radv_shader_debug_info *debug, struct radv_shader **gs_copy_shader,
+                                   struct radv_shader_binary *gs_copy_binary,
+diff --git a/src/amd/vulkan/radv_pipeline_rt.c b/src/amd/vulkan/radv_pipeline_rt.c
+index b075263a8f6..a8b54215472 100644
+--- a/src/amd/vulkan/radv_pipeline_rt.c
++++ b/src/amd/vulkan/radv_pipeline_rt.c
+@@ -557,7 +557,7 @@ radv_rt_compile_nir(struct radv_device *device, struct vk_pipeline_cache *cache,
+
+    *out_shader = shader;
+
+-   if (radv_can_dump_shader_stats(compiler_info, stage->nir))
++   if (shader && radv_can_dump_shader_stats(compiler_info, stage->nir))
+       radv_dump_shader_stats(device, &pipeline->base.base, shader, stderr);
+
+    return shader ? VK_SUCCESS : VK_ERROR_OUT_OF_HOST_MEMORY;
+diff --git a/src/amd/vulkan/radv_shader.c b/src/amd/vulkan/radv_shader.c
+index 4de65424706..380f752abdb 100644
+--- a/src/amd/vulkan/radv_shader.c
++++ b/src/amd/vulkan/radv_shader.c
+@@ -2765,10 +2765,8 @@ radv_shader_binary_upload(struct radv_device *device, const struct radv_shader_b
+                           struct radv_shader *shader, void *dest_ptr)
+ {
+    shader->code = calloc(shader->code_size, 1);
+-   if (!shader->code) {
+-      radv_shader_unref(device, shader);
++   if (!shader->code)
+       return false;
+-   }
+
+    if (binary->type == RADV_BINARY_TYPE_RTLD) {
+ #if !defined(USE_LIBELF)
+@@ -2777,10 +2775,8 @@ radv_shader_binary_upload(struct radv_device *device, const struct radv_shader_b
+       const struct radv_physical_device *pdev = radv_device_physical(device);
+       struct ac_rtld_binary rtld_binary = {0};
+
+-      if (!radv_open_rtld_binary(pdev->info.gfx_level, binary, &rtld_binary)) {
+-         free(shader);
++      if (!radv_open_rtld_binary(pdev->info.gfx_level, binary, &rtld_binary))
+          return false;
+-      }
+
+       struct ac_rtld_upload_info info = {
+          .binary = &rtld_binary,
+@@ -2789,7 +2785,6 @@ radv_shader_binary_upload(struct radv_device *device, const struct radv_shader_b
+       };
+
+       if (!ac_rtld_upload(&info)) {
+-         radv_shader_unref(device, shader);
+          ac_rtld_close(&rtld_binary);
+          return false;
+       }
+@@ -3094,14 +3089,31 @@ radv_parse_binary_debug_info(const struct radv_compiler_info *compiler_info, con
+    return VK_SUCCESS;
+ }
+
++void
++radv_shader_debug_info_finish(struct radv_shader_debug_info *dbg)
++{
++   if (!dbg)
++      return;
++   free(dbg->spirv);
++   free(dbg->nir_string);
++   free(dbg->disasm_string);
++   free(dbg->ir_string);
++   free(dbg->args_string);
++   free(dbg->statistics);
++   free(dbg->debug_info);
++   memset(dbg, 0, sizeof(*dbg));
++}
++
+ VkResult
+ radv_shader_create_uncached(struct radv_device *device, const struct radv_shader_binary *binary, bool replayable,
+                             struct radv_serialized_shader_arena_block *replay_block, struct radv_shader_debug_info *dbg,
+                             struct radv_shader **out_shader)
+ {
++   *out_shader = NULL;
+    VkResult result = VK_SUCCESS;
+    struct radv_shader *shader = calloc(1, sizeof(struct radv_shader));
+    if (!shader) {
++      radv_shader_debug_info_finish(dbg);
+       result = VK_ERROR_OUT_OF_HOST_MEMORY;
+       goto out;
+    }
+@@ -3115,11 +3127,14 @@ radv_shader_create_uncached(struct radv_device *device, const struct radv_shader
+    shader->config = binary->config;
+    shader->max_waves = radv_get_max_waves(device, &shader->config, &shader->info);
+
+-   if (dbg)
++   if (dbg) {
+       shader->dbg = *dbg;
++      memset(dbg, 0, sizeof(*dbg));
++   }
+
+    if (binary->type == RADV_BINARY_TYPE_RTLD) {
+ #if !defined(USE_LIBELF)
++      result = VK_ERROR_INITIALIZATION_FAILED;
+       goto out;
+ #else
+       const struct radv_physical_device *pdev = radv_device_physical(device);
+@@ -3169,8 +3184,8 @@ radv_shader_create_uncached(struct radv_device *device, const struct radv_shader
+
+ out:
+    if (result != VK_SUCCESS) {
+-      free(shader);
+-      *out_shader = NULL;
++      if (shader)
++         radv_shader_unref(device, shader);
+    }
+
+    return result;
+@@ -3626,8 +3641,13 @@ radv_create_trap_handler_shader(struct radv_device *device)
+    radv_postprocess_binary_config(&device->compiler_info, binary, &stage.args);
+
+    struct radv_shader *shader;
+-   radv_shader_create_uncached(device, binary, false, NULL, &debug, &shader);
+-   radv_parse_binary_debug_info(&device->compiler_info, binary, &shader->dbg);
++   if (radv_shader_create_uncached(device, binary, false, NULL, &debug, &shader) != VK_SUCCESS)
++      goto out;
++   if (radv_parse_binary_debug_info(&device->compiler_info, binary, &shader->dbg) != VK_SUCCESS) {
++      radv_shader_unref(device, shader);
++      shader = NULL;
++      goto out;
++   }
+
+    if (dump_shader) {
+       fprintf(stderr, "Trap handler");
+@@ -3635,6 +3655,8 @@ radv_create_trap_handler_shader(struct radv_device *device)
+    }
+
+    free(shader->dbg.disasm_string);
++   shader->dbg.disasm_string = NULL;
++out:
+    ralloc_free(b.shader);
+    free(binary);
+
+@@ -3701,16 +3723,22 @@ radv_compile_rt_prolog(struct radv_device *device, struct radv_shader_stage *sta
+
+    radv_postprocess_binary_config(compiler_info, binary, &stage->args);
+    radv_shader_create_uncached(device, binary, false, NULL, debug, &prolog);
+-   if (!prolog || radv_parse_binary_debug_info(compiler_info, binary, &prolog->dbg) != VK_SUCCESS)
++   if (!prolog)
+       goto done;
++   if (radv_parse_binary_debug_info(compiler_info, binary, &prolog->dbg) != VK_SUCCESS) {
++      radv_shader_unref(device, prolog);
++      prolog = NULL;
++      goto done;
++   }
+
+    if (dump_shader) {
+       fprintf(stderr, "Raytracing prolog");
+       fprintf(stderr, "\ndisasm:\n%s\n", prolog->dbg.disasm_string);
+-      simple_mtx_unlock(compiler_info->debug.shader_dump_mtx);
+    }
+
+ done:
++   if (dump_shader)
++      simple_mtx_unlock(compiler_info->debug.shader_dump_mtx);
+    free(binary);
+    return prolog;
+ }
+diff --git a/src/amd/vulkan/radv_shader.h b/src/amd/vulkan/radv_shader.h
+index a981a86d94a..76d2ac8d429 100644
+--- a/src/amd/vulkan/radv_shader.h
++++ b/src/amd/vulkan/radv_shader.h
+@@ -678,6 +678,8 @@ struct radv_shader_args;
+ VkResult radv_parse_binary_debug_info(const struct radv_compiler_info *compiler_info, const struct radv_shader_binary *binary,
+                                       struct radv_shader_debug_info *dbg);
+
++void radv_shader_debug_info_finish(struct radv_shader_debug_info *dbg);
++
+ VkResult radv_shader_create_uncached(struct radv_device *device, const struct radv_shader_binary *binary,
+                                      bool replayable, struct radv_serialized_shader_arena_block *replay_block,
+                                      struct radv_shader_debug_info *dbg, struct radv_shader **out_shader);
+diff --git a/src/amd/vulkan/radv_shader_object.c b/src/amd/vulkan/radv_shader_object.c
+index 98036de1ae7..69188798363 100644
+--- a/src/amd/vulkan/radv_shader_object.c
++++ b/src/amd/vulkan/radv_shader_object.c
+@@ -224,8 +224,8 @@ radv_shader_object_init_graphics(struct radv_shader_object *shader_obj, struct r
+
+       radv_graphics_shaders_compile(&device->compiler_info, NULL, stages, &gfx_state, false, NULL, false, debug,
+                                     binaries, &gs_copy_debug, &shader_obj->gs.copy_binary);
+-      radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &shader_obj->gs.copy_shader,
+-                                   shader_obj->gs.copy_binary, &gs_copy_debug);
++      VkResult result = radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &shader_obj->gs.copy_shader,
++                                                     shader_obj->gs.copy_binary, &gs_copy_debug);
+
+       shader = shaders[stage];
+       binary = binaries[stage];
+@@ -235,6 +235,8 @@ radv_shader_object_init_graphics(struct radv_shader_object *shader_obj, struct r
+
+       shader_obj->shader = shader;
+       shader_obj->binary = binary;
++      if (result != VK_SUCCESS)
++         return result;
+    } else {
+       VkShaderStageFlags next_stages = pCreateInfo->nextStage;
+
+@@ -256,8 +258,8 @@ radv_shader_object_init_graphics(struct radv_shader_object *shader_obj, struct r
+
+          radv_graphics_shaders_compile(&device->compiler_info, NULL, stages, &gfx_state, false, NULL, false, debug,
+                                        binaries, &gs_copy_debug, &shader_obj->gs.copy_binary);
+-         radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &shader_obj->gs.copy_shader,
+-                                      shader_obj->gs.copy_binary, &gs_copy_debug);
++         VkResult result = radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &shader_obj->gs.copy_shader,
++                                                        shader_obj->gs.copy_binary, &gs_copy_debug);
+
+          shader = shaders[stage];
+          binary = binaries[stage];
+@@ -288,6 +290,8 @@ radv_shader_object_init_graphics(struct radv_shader_object *shader_obj, struct r
+             shader_obj->shader = shader;
+             shader_obj->binary = binary;
+          }
++         if (result != VK_SUCCESS)
++            return result;
+       }
+    }
+
+@@ -311,7 +315,7 @@ radv_shader_object_init_compute(struct radv_shader_object *shader_obj, struct ra
+    shader_obj->shader = cs_shader;
+    shader_obj->binary = cs_binary;
+
+-   return VK_SUCCESS;
++   return cs_shader ? VK_SUCCESS : VK_ERROR_OUT_OF_DEVICE_MEMORY;
+ }
+
+ static VkResult
+@@ -330,7 +334,7 @@ radv_shader_object_init_binary(struct radv_device *device, struct blob_reader *b
+    *shader_out = radv_shader_create(device, NULL, binary, true, NULL);
+    *binary_out = (struct radv_shader_binary *)binary;
+
+-   return VK_SUCCESS;
++   return *shader_out ? VK_SUCCESS : VK_ERROR_OUT_OF_DEVICE_MEMORY;
+ }
+
+ static VkResult
+@@ -549,8 +553,21 @@ radv_shader_object_create_linked(VkDevice _device, uint32_t createInfoCount, con
+
+    radv_graphics_shaders_compile(&device->compiler_info, NULL, stages, &gfx_state, false, NULL, false, debug, binaries,
+                                  &gs_copy_debug, &gs_copy_binary);
+-   radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &gs_copy_shader, gs_copy_binary,
+-                                &gs_copy_debug);
++   VkResult result = radv_graphics_shaders_create(device, NULL, true, shaders, binaries, debug, &gs_copy_shader,
++                                                  gs_copy_binary, &gs_copy_debug);
++   if (result != VK_SUCCESS) {
++      for (unsigned i = 0; i < MESA_VULKAN_SHADER_STAGES; ++i) {
++         if (shaders[i])
++            radv_shader_unref(device, shaders[i]);
++         free(binaries[i]);
++         ralloc_free(stages[i].nir);
++      }
++      if (gs_copy_shader)
++         radv_shader_unref(device, gs_copy_shader);
++      free(gs_copy_binary);
++      ralloc_free(stages[MESA_SHADER_GEOMETRY].gs_copy_shader);
++      return result;
++   }
+
+    for (unsigned i = 0; i < createInfoCount; i++) {
+       const VkShaderCreateInfoEXT *pCreateInfo = &pCreateInfos[i];
