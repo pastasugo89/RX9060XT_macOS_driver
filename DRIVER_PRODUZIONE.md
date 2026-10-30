@@ -26,6 +26,14 @@ La nuova struttura deve avere:
 
 Il test `production_vm_lease_test.cpp` passa con ASan/UBSan: mille identità logiche alternate, ticket obsoleti, acquisizioni concorrenti simulate, attese di retirement, riserva del compositor e chiusura subordinata all'ACK. **Non prova mille applicazioni sul kernel attuale. Il modulo non è ancora collegato a native_s1c.cpp.**
 
+### Registro dei contesti implementato
+
+`production_context_pure.h` aggiunge il ciclo di vita dei contesti logici su una tabella fornita dal chiamante, senza derivarne la capacità dagli otto VMID. Ogni record ha identità monotona, proprietario, root, ultima sequenza e riferimenti alle operazioni CPU in corso. Una chiusura impedisce nuove operazioni ma conserva le risorse fino al rilascio degli ultimi riferimenti, al retirement e alla scomparsa delle root da tutte le assegnazioni hardware, comprese quelle in Binding e Quarantined. Lo stato Destroying impedisce di riciclare il record prima che il kernel abbia realmente distrutto le risorse.
+
+`production_context_test.cpp` mantiene **mille record applicazione aperti contemporaneamente**, più il compositor, e ne esegue il lavoro simulato riutilizzando sette VMID applicazione. ASan/UBSan verificano anche riferimenti obsoleti con il medesimo proprietario, rifiuto di ticket appartenenti ad altri contesti, race fra close e operazione CPU, fallimento del cambio root con conservazione di entrambe le page table, e mancato riuso delle identità dopo overflow. Il test controlla le politiche CPU: **non apre mille client IOAccel e non esegue comandi sulla GPU**. Registro e lease attendono ancora l'integrazione kernel descritta sotto.
+
+Il kernel dovrà fornire il token proprietario ricavato dall'IOUserClient autenticato, usare un contatore delle identità unico per il boot, mantenere il lock comune registro/lease e ordinare l'accounting del submit con la pubblicazione sul ring. La politica non sostituisce questi obblighi con dati ricevuti dall'ioctl.
+
 ### Integrazione kernel da completare prima del rilascio
 
 - [ ] Separare `N1cRef`/registro logico da indice hardware e VMID. Definire la compatibilità della versione ABI; Hello/QueryInfo non devono fingere un VMID permanente.
