@@ -1,0 +1,9 @@
+# Staging workspace (added by the n48xlate port). NullMoth's translator/translator and our
+# n48xlate crate build together here; wrapper/ is excluded (it needs spirv-tools / C++).
+[workspace]
+members = ["translator", "n48xlate"]
+exclude = ["wrapper"]
+resolver = "2"
+
+[profile.release]
+incremental = true

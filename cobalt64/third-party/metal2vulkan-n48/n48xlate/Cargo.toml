@@ -12,7 +12,7 @@ name = "n48xlate"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-metal2vulkan = { path = "..", features = ["serde"] }
+metal2vulkan = { path = "../translator", features = ["serde"] }
 serde_json = "1"
 
 [features]

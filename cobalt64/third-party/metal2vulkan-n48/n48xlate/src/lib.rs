@@ -31,6 +31,11 @@ pub const ABI_VERSION: u32 = 2;
 /// Largest LLVM text accepted (the caller caps it too).
 pub const MAX_LL_BYTES: usize = 64 * 1024 * 1024;
 
+/// Bindless routing of plain (non-array) textures: off keeps the per-binding model (see translate_text_with).
+pub const BINDLESS_PLAIN: bool = false;
+/// Bindless routing of texture-array element access (NullMoth's array fix).
+pub const BINDLESS_ARRAYS: bool = false;
+
 pub const RC_OK: c_int = 0;
 pub const RC_REFUSED: c_int = 1;
 pub const RC_PANIC: c_int = 2;
@@ -391,6 +396,9 @@ fn translate_text_with(
     local: [u32; 3],
     deps: Option<&[(&str, &str)]>,
 ) -> Result<(Vec<u8>, Vec<u8>), String> {
+    // Bindless texture routing (NullMoth's default is on/on). Off for plain textures keeps ordinary
+    // texture shaders on the per-binding descriptor model (no BufferAddressTable); see RESULTS.md.
+    metal2vulkan::set_bindless_routing(BINDLESS_PLAIN, BINDLESS_ARRAYS);
     let (san_entry, datalayout) = sanitize_ll_text_with_datalayout(ll_text);
     let stage = detect_stage_text(&san_entry)?;
     let san_ll = match deps {
@@ -425,6 +433,15 @@ fn translate_text_with(
         options,
         datalayout.as_deref(),
     )?;
+    // The bundle cannot bind a BufferAddressTable (it refuses any buffer descriptor at binding >= 32).
+    // A module that needs one (bindless texture-array routing) is refused here, deterministically.
+    if reflection
+        .bindings
+        .iter()
+        .any(|b| b.kind == metal2vulkan::reflect::ResourceKind::BufferAddressTable)
+    {
+        return Err("module needs a BufferAddressTable (texture-array routing), which the bundle does not bind".to_string());
+    }
     if spv.len() < 20 || spv[..4] != [0x03, 0x02, 0x23, 0x07] {
         return Err("bad SPIR-V magic".to_string());
     }
