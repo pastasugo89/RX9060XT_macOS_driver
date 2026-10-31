@@ -1,0 +1,24 @@
+--- bundle29-guard
++++ bundle30-guard
+@@ -13,7 +13,7 @@
+ KILL=/private/tmp/n48m-off
+ PLIST=/Library/LaunchDaemons/org.navi44.accelerated-trial.plist
+ STATE="$APP/boot-state.json"
+-PROFILE=stage29-nullmoth-v1
++PROFILE=stage30-vonly-v1
+ state_started=0
+ ordered_stop=0
+ [[ $(id -u) == 0 ]] || { echo 'STOP root required'; exit 1; }
+@@ -101,10 +101,10 @@
+ guard_checked=1
+ [[ -x /Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal ]] || { echo 'STOP Metal bundle missing'; exit 1; }
+ bundle_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' /Library/GPUBundles/Navi48Metal.bundle/Contents/Info.plist 2>/dev/null || true)
+-[[ "$bundle_version" == 29 ]] || { echo "STOP expected Stage29 Metal bundle version 29, got: $bundle_version"; exit 1; }
++[[ "$bundle_version" == 30 ]] || { echo "STOP expected Stage30 Metal bundle version 30, got: $bundle_version"; exit 1; }
+ echo 'CANDIDATE=stage25-archive-boundary' 
+ 
+-[[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal" | cut -d " " -f 1) == 2c8ff5d043f2beb1e875193248df20184a514bc0ce07645427500597b5a49fe8 ]] || { echo "STOP bundle component changed: MacOS/Navi48Metal"; exit 1; }
++[[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/MacOS/Navi48Metal" | cut -d " " -f 1) == 8fd0c7e3c3cb73090bcc3b3507985abf3785a2f1a94c2d1ce21d9eb8ea085230 ]] || { echo "STOP bundle component changed: MacOS/Navi48Metal"; exit 1; }
+ [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib" | cut -d " " -f 1) == f6b2053d1b26731ff88c1def9ca2375cc7c0a9a34ebc8e7ab7e2533f6c30e155 ]] || { echo "STOP bundle component changed: Resources/libvulkan_radeon.dylib"; exit 1; }
+ [[ $(shasum -a 256 "/Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libn48xlate.dylib" | cut -d " " -f 1) == 9a371cc19ee3180c13cac8277f3af15fd6de3677df2b96f848a81e51211f1a1a ]] || { echo "STOP bundle component changed: Resources/libn48xlate.dylib"; exit 1; }
+ 
