@@ -7350,6 +7350,11 @@ void Navi48Bringup::publishInterruptCounters() {
 IOService *Navi48Bringup::probe(IOService *provider, SInt32 *score) {
 	uint32_t on = 0;
 	if (!PE_parse_boot_argn("navi48bringup", &on, sizeof(on)) || on == 0) return nullptr;
+	// 0.0.667: recovery kill switch. Safe boot (-x: Shift in the OpenCore picker with PollAppleHotKeys) or navi48-off=1 skips the
+	// whole bring-up, so a kext that panics or hangs in start() can still be bypassed without editing the EFI from another system.
+	char safeBoot[4] = {};
+	uint32_t off = 0;
+	if (PE_parse_boot_argn("-x", safeBoot, sizeof(safeBoot)) || (PE_parse_boot_argn("navi48-off", &off, sizeof(off)) && off != 0)) return nullptr;
 	if (!super::probe(provider, score)) return nullptr;
 	auto *pci = OSDynamicCast(IOPCIDevice, provider);
 	if (!pci) return nullptr;
