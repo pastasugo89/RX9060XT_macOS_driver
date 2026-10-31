@@ -2040,7 +2040,7 @@ static void n48_dump_function(id fn, const char *role, NSMutableArray *paths, NS
 static NSError *n48_dump_pipeline(MTLRenderPipelineDescriptor *d) {
     NSMutableArray *paths = [NSMutableArray array], *notes = [NSMutableArray array];
     n48_dump_function(d.vertexFunction, "vertex", paths, notes);
-    n48_dump_function(d.fragmentFunction, "fragment", paths, notes);
+    if (d.fragmentFunction) n48_dump_function(d.fragmentFunction, "fragment", paths, notes);   // bundle 30: a vertex-only pipeline has no fragment AIR (and no "fragment function is nil" note)
     NSString *msg = [NSString stringWithFormat:@"Navi48Metal: pipeline not in spvcache; AIR dumped for offline translation: %@%@",
                      [paths componentsJoinedByString:@"; "],
                      notes.count ? [@" | problems: " stringByAppendingString:[notes componentsJoinedByString:@"; "]] : @""];
@@ -2241,6 +2241,7 @@ static uint64_t n48_now(void) { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); 
 // flags: N48F_A8 = Metal A8Unorm stored as VK R8_UNORM; sampling goes through a view with components (0,0,0,R) (Metal returns (0,0,0,a)); a render target of this
 // format is refused (a Vulkan attachment view must be identity, so a fragment's alpha cannot be steered into the R8 image).
 #define N48F_A8 1u
+#define N48F_ARGB 8u   // bundle 29 fix 4: Apple private pixel format 84 (ARGB8): stored as RGBA8 bytes (A,R,G,B in memory); reads reorder the channels (n48_view_map)
 #define N48F_UINT 4u   // bundle 19: an unsigned-integer colour format (RG16Uint): clears fill .uint32, the magenta fallback is masked off, /private/tmp/n48m-nouint restores the old refusal. (2u is N48F_DS below.)
 typedef struct { MTLPixelFormat mtl; VkFormat vk; uint32_t bpp; uint32_t flags; } N48Fmt;
 static const N48Fmt n48_fmts[] = {
@@ -2270,6 +2271,7 @@ static const N48Fmt n48_fmts[] = {
     // bundle 19 (NATIVE-S8-MENUS.md): pixel format 63. Core Animation's large-shadow distance-field pass (brim_init / brim_jump / brim_outline) ping-pongs two of these; the refusal made
     // emit_large_brim return without drawing, so the whole menu / Spotlight layer vanished. The RADV feature check at texture / pipeline creation stays the fail-closed gate.
     { MTLPixelFormatRG16Uint,        VK_FORMAT_R16G16_UINT,              4, N48F_UINT },
+    { (MTLPixelFormat)84,            VK_FORMAT_R8G8B8A8_UNORM,           4, N48F_ARGB },   // bundle 29 fix 4 (ARGB8, private format value): sampling only; refused as a colour attachment
 };
 #define N48_NOUINT_FILE "/private/tmp/n48m-nouint"   // bundle 19: exists -> the integer formats are refused as before (nil), read ONCE per process
 static BOOL n48_nouint(void) {
@@ -2277,11 +2279,18 @@ static BOOL n48_nouint(void) {
     dispatch_once(&once, ^{ struct stat st; v = stat(N48_NOUINT_FILE, &st) == 0; if (v) N48LOG("integer colour formats (RG16Uint) OFF: kill file " N48_NOUINT_FILE " exists (read once per process)"); });
     return v;
 }
+#define N48_MAGENTA_FILE "/private/tmp/n48m-magenta"   // bundle 30: exists -> a FALLBACK pipeline draws magenta as before (colour written, depth/stencil written); absent (default) -> invisible fallback. Read ONCE per process
+static BOOL n48_magenta_kill(void) {
+    static BOOL v; static dispatch_once_t once;
+    dispatch_once(&once, ^{ struct stat st; v = stat(N48_MAGENTA_FILE, &st) == 0; if (v) N48LOG("FALLBACK magenta kill file " N48_MAGENTA_FILE " exists: fallback pipelines draw magenta as before (read once per process)"); });
+    return v;
+}
 // The component mapping of a view of format f whose client swizzle is swz: client channel -> (format's own mapping of that channel). Identity for every format but A8.
 static VkComponentMapping n48_view_map(const N48Fmt *f, MTLTextureSwizzleChannels swz) {
     static const VkComponentSwizzle base[6] = { VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ONE, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
     static const VkComponentSwizzle a8[6] = { VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ONE, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_R };
-    const VkComponentSwizzle *m = (f && (f->flags & N48F_A8)) ? a8 : base;
+    static const VkComponentSwizzle argb[6] = { VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ONE, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A, VK_COMPONENT_SWIZZLE_R };
+    const VkComponentSwizzle *m = (f && (f->flags & N48F_A8)) ? a8 : (f && (f->flags & N48F_ARGB)) ? argb : base;
     unsigned c[4] = { swz.red, swz.green, swz.blue, swz.alpha };
     VkComponentSwizzle o[4]; for (int i = 0; i < 4; i++) o[i] = c[i] < 6 ? m[c[i]] : VK_COMPONENT_SWIZZLE_IDENTITY;
     return (VkComponentMapping){ o[0], o[1], o[2], o[3] };
@@ -2378,6 +2387,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
     IOSurfaceRef _ios; NSUInteger _iosPlane; BOOL _iosLinear; VkDeviceMemory _imem; VkBuffer _ibuf; uint8_t *_ibase; size_t _ialloc, _ibpr; NSUInteger _ioff;   // P2: _ioff = the plane's byte offset inside the imported allocation (0 for plane 0 / single-plane)
     // gap census: texture views (newTextureViewWithPixelFormat:...) share the ROOT texture's VkImage; _root is the image owner (nil for a root texture).
     N48Texture *_root; MTLTextureSwizzleChannels _swz;
+    VkImageView _smpView;   // bundle 29 fix 2: sampled reads through MTLTextureDescriptor.swizzle (VK_NULL_HANDLE = _view is the sampling view); storage / attachments never use it
     unsigned _aspects, _samples;   // bundle 10: _aspects = every VkImageAspect of a depth/stencil format (0 = colour: colour, view, IOSurface- and buffer-backed textures); _samples = the sample count (0 = 1)
     unsigned _tdk;   // bundle 9: N48TD_K_* (0 = 2D, so IOSurface-, buffer-backed and view textures stay 2D); _layers is also set for cube (6) and 2DArray (arrayLength)
     BOOL _is1D, _arr1D; NSUInteger _layers;   // m11h3: MTLTextureType1D / 1DArray (VkImageType 1D, arrayLayers = _layers); 2D textures keep _is1D NO, _layers 0
@@ -2411,6 +2421,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (size_t)n48IOSBytesPerRow;
 - (VkImage)vkImage;
 - (VkImageView)vkView;
+- (VkImageView)n48SampleView;   // bundle 29 fix 2: the view sampled reads bind (the descriptor-swizzled view when there is one)
 - (uint32_t)n48Layers;
 - (uint32_t)n48Levels;
 - (unsigned)n48Aspects;   // bundle 10: VkImageAspectFlags of every barrier / attachment view of this texture (colour for the colour world)
@@ -2566,6 +2577,18 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
         .format = _fmt->vk, .components = cm, .subresourceRange = { isDS ? n48dp_view_aspect(_aspects) : VK_IMAGE_ASPECT_COLOR_BIT, 0, (uint32_t)_levels, 0, ti.layers } };   // bundle 10: a depth/stencil sampling view has ONE aspect
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(36, [NSString stringWithFormat:@"vkCreateImageView = %d", r]); return nil; }
+    // bundle 29 fix 2: a non-identity MTLTextureDescriptor.swizzle gets its own sampled view (same image, range and format; the client mapping composed with the format's own).
+    // Not for depth/stencil, texture buffers or multisample textures. A failure logs once and keeps the identity mapping.
+    if ([d respondsToSelector:@selector(swizzle)]) {
+        MTLTextureSwizzleChannels dsw = d.swizzle;
+        const BOOL dflt = dsw.red == MTLTextureSwizzleRed && dsw.green == MTLTextureSwizzleGreen && dsw.blue == MTLTextureSwizzleBlue && dsw.alpha == MTLTextureSwizzleAlpha;
+        if (!dflt && !isDS && tt != MTLTextureTypeTextureBuffer && ti.samples <= 1) {
+            VkImageViewCreateInfo sv = vc; sv.components = n48_view_map(_fmt, dsw);
+            VkResult sr = vkCreateImageView(N48R.dev, &sv, NULL, &_smpView);
+            if (sr != VK_SUCCESS) { N48_ONCE("swizzled sampled view: vkCreateImageView = %d; sampled reads keep the identity mapping", sr); _smpView = VK_NULL_HANDLE; }
+            else N48_ONCE("swizzled sampled view: descriptor swizzle %u%u%u%u applied to sampled reads only", (unsigned)dsw.red, (unsigned)dsw.green, (unsigned)dsw.blue, (unsigned)dsw.alpha);
+        }
+    }
     N48LOGR("N48Texture %p: %lux%lu%s pf %lu vkformat %d levels %lu (alloc %llu, memtype %d)%s", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, is3D ? [NSString stringWithFormat:@"x%lu (3D)", (unsigned long)_depth].UTF8String : "",
            (unsigned long)_pf, _fmt->vk, (unsigned long)_levels, (unsigned long long)mr.size, mt, _viewSwz ? " [sampled through a swizzled view]" : "");
     return self;
@@ -2599,6 +2622,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     if (N48R.ok) {
         for (NSNumber *lvv in _lvViews.allValues) vkDestroyImageView(N48R.dev, (VkImageView)(uintptr_t)lvv.unsignedLongLongValue, NULL);
         if (_view) vkDestroyImageView(N48R.dev, _view, NULL);
+        if (_smpView) vkDestroyImageView(N48R.dev, _smpView, NULL);
         if (_img && !_root) vkDestroyImage(N48R.dev, _img, NULL);
         if (_pooled) { n48_mem_free(&_pm); atomic_fetch_sub(&n48_alloc_total, _acct); }   // P1
         else if (_mem) { vkFreeMemory(N48R.dev, _mem, NULL); atomic_fetch_sub(&n48_alloc_total, _acct); }
@@ -2966,6 +2990,7 @@ N48_DNR(N48Texture)
 }
 - (VkImage)vkImage { return _root ? [_root vkImage] : _img; }
 - (VkImageView)vkView { return _view; }
+- (VkImageView)n48SampleView { return _smpView ? _smpView : _view; }
 - (uint32_t)n48Layers { return _root ? [_root n48Layers] : n48td_nlayers((unsigned)_layers); }
 - (uint32_t)n48Levels { return _root ? [_root n48Levels] : (uint32_t)(_levels ? _levels : 1); }
 - (unsigned)n48Aspects { return n48dp_barrier_aspect(_root ? [_root n48Aspects] : _aspects); }
@@ -3339,6 +3364,18 @@ static struct {
     int sandboxedDone, sandboxed;
 } N48XL = { .mu = PTHREAD_MUTEX_INITIALIZER };
 static NSMutableSet<NSString *> *n48x_logged, *n48x_touched, *n48x_timedout;   // guarded by N48XL.mu
+// bundle 29 fix 3: DETERMINISTIC in-process translation failures only: N48X_E_CAP, _SKIP_CRASH, _SKIP_FAIL, _READER, _REFUSED (the same input fails the same way again).
+// Never memoised: N48X_E_SKIP_LIVE (another process is translating now), N48X_E_IO, N48X_E_UNAVAILABLE and N48X_E_TIMEOUT (transient; a timed-out key is still installed later by the hot-swap). Bounded (256 entries).
+// Key: AIR identity (the linked key when linked), stage and the function-constant values. A hit returns NO at once, the same as a failed translation.
+static NSCache<NSString *, NSNumber *> *n48x_failcache;
+static NSString *n48x_fail_key(NSString *sha, const char *role, id fn) {
+    static dispatch_once_t once; dispatch_once(&once, ^{ n48x_failcache = [NSCache new]; n48x_failcache.countLimit = 256; });
+    if (!sha) return nil;
+    NSString *cst = @"";
+    SEL cs = NSSelectorFromString(@"functionConstantsDictionary");
+    if (fn && [fn respondsToSelector:cs]) { id dct = ((id (*)(id, SEL))objc_msgSend)(fn, cs); cst = dct ? [dct description] : @""; }
+    return [NSString stringWithFormat:@"%@|%s|%@", sha, role, cst];
+}
 static BOOL n48x_test_inproc(void) { const char *e = getenv("N48M_TEST_INPROC"); return n48_allow() && e && !strcmp(e, "1"); }
 static void n48x_gate_read(void) {
     pthread_mutex_lock(&N48XL.mu);
@@ -3454,6 +3491,8 @@ static BOOL n48x_translate_fn(id fn, const char *role, uint64_t deadlineNs) {
     NSString *name = [fn respondsToSelector:@selector(name)] ? [fn name] : @"";
     char spvp[N48X_PATH_MAX]; struct stat sb;
     if (n48x_file_path(spvp, sizeof spvp, dir.fileSystemRepresentation, sha.UTF8String, N48X_EXT_SPV) && stat(spvp, &sb) == 0 && S_ISREG(sb.st_mode)) return YES;   // installed meanwhile (another thread / process)
+    NSString *fkey = n48x_fail_key(sha, role, fn);   // bundle 29 fix 3
+    if (fkey && [n48x_failcache objectForKey:fkey]) { N48_ONCE("inproc: translation of %s '%s' failed earlier for this AIR and constants; not retried (memoised failure)", role, name.UTF8String); return NO; }
     pthread_mutex_lock(&N48XL.mu);
     if (!N48XL.engineInit) {
         const char *rl = n48_allow() ? getenv("N48M_TEST_LLVM_LIB") : NULL;
@@ -3482,6 +3521,7 @@ static BOOL n48x_translate_fn(id fn, const char *role, uint64_t deadlineNs) {
     if (!n48x_logged) n48x_logged = [NSMutableSet set];
     const BOOL firstLog = ![n48x_logged containsObject:sha]; if (firstLog) [n48x_logged addObject:sha];
     pthread_mutex_unlock(&N48XL.mu);
+    if (fkey && (rc == N48X_E_CAP || rc == N48X_E_SKIP_CRASH || rc == N48X_E_SKIP_FAIL || rc == N48X_E_READER || rc == N48X_E_REFUSED)) { [n48x_failcache setObject:@(rc) forKey:fkey]; N48_ONCE("inproc: failures are memoised (bounded, 256): a failed translation is not retried for the same AIR and constants"); }
     if (rc == N48X_OK) N48LOG("inproc OK %s '%s' %s: translated in %.0f ms", role, name.UTF8String, sha.UTF8String, ms);
     else if (rc == N48X_E_TIMEOUT) N48LOG("inproc TIMEOUT %s '%s' %s: not ready within %d ms (strike %d of %d%s); the fallback is used and the hot-swap installs the result%s", role, name.UTF8String, sha.UTF8String, waitMs, strikes, N48G_SYNC_STRIKES,
                                           strikes >= N48G_SYNC_STRIKES ? ", waiting is now OFF for this process" : "", waitMs == 0 ? " (not waiting)" : "");
@@ -3860,6 +3900,15 @@ static BOOL n48_sync_wait(const char *what, NSArray<NSString *> *shas, BOOL need
 @end
 static VkRenderPass n48_mk_rp(const VkAttachmentDescription *ads, uint32_t na, uint32_t nd, BOOL fetch);   // bundle 10: nd = 1 when ads[na] is the depth/stencil attachment
 
+// BEGIN n48-vonly-helpers (bundle 30; tests/test-b30-vonly.sh extracts this block and compiles it)
+// Stage decision for a render pipeline: the vertex stage must be available, and the fragment stage too unless the pipeline is vertex-only (nil fragment function).
+static BOOL n48_pl_stages_ready(BOOL vonly, BOOL haveV, BOOL haveF) { return haveV && (vonly || haveF); }
+// A FALLBACK pipeline is invisible (no colour written, no depth/stencil writes) unless the magenta kill file is present.
+static BOOL n48_pl_fb_invisible(BOOL fb, BOOL magentaKill) { return fb && !magentaKill; }
+// Shader stages passed to vkCreateGraphicsPipelines: the fragment stage is passed only when its module exists.
+static uint32_t n48_pl_stage_count(BOOL haveFragmentModule) { return haveFragmentModule ? 2u : 1u; }
+// END n48-vonly-helpers
+
 // Returns the cached SPIR-V for fn, or nil with *err code 40 (no bitcodeData) / 41 (miss, or N48M_FORCE_FALLBACK).
 // *fname gets the function name for logs; *meta the <sha>.meta.json sidecar when present. Reflection reads the entry-point name out of the SPIR-V itself.
 static NSData *n48_spv_lookup_impl(id fn, const char *role, NSError **err, NSString **fname, NSDictionary **meta) {
@@ -3924,26 +3973,29 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
     if (!n48_radv_open(err)) return nil;
     // 11e: SPIR-V from the cache; on a miss in WindowServer (or N48M_FORCE_FALLBACK with N48M_ALLOW) build BOTH stages
     // from the built-in magenta shaders instead of failing (the AIR is dumped by the caller-side n48_dump_pipeline).
-    NSString *vname = nil, *fname = nil; NSError *e1 = nil, *e2 = nil; NSDictionary *mv_ = nil, *mf_ = nil;
+    // bundle 30: a nil fragment function makes a VERTEX-ONLY pipeline (Metal allows it: rasterisation runs and depth/stencil are written, no colour is written).
+    // The fragment is not looked up, translated, reflected or built; _fs stays VK_NULL_HANDLE unless the magenta fallback applies (below).
+    const BOOL vonly = (d.fragmentFunction == nil);
+    NSString *vname = nil, *fname = vonly ? @"?" : nil; NSError *e1 = nil, *e2 = nil; NSDictionary *mv_ = nil, *mf_ = nil;
     NSData *vsd = n48_spv_lookup(d.vertexFunction, "vertex", &e1, &vname, &mv_);
-    NSData *fsd = n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
+    NSData *fsd = vonly ? nil : n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
     strlcpy(_vnm, vname.UTF8String ? vname.UTF8String : "?", sizeof _vnm); strlcpy(_fnm, fname.UTF8String ? fname.UTF8String : "?", sizeof _fnm);
     BOOL fb = NO;
-    if (!vsd || !fsd) {
+    if (!n48_pl_stages_ready(vonly, vsd != nil, fsd != nil)) {
         NSError *e = e1 ? e1 : e2;
         const BOOL inproc = (e.code == 41 && !nofb && n48x_active()) ? YES : NO;
         if (inproc) {   // bundle 14: translate in this process first (the AIR dump and the daemon wait below are then skipped); a failure or a timeout falls through to today's fallback + hot-swap
             const uint64_t dl = n48_now() + (uint64_t)N48G_SYNC_WAIT_MS * 1000000ull;
-            const BOOL tv = vsd ? YES : n48x_translate_fn(d.vertexFunction, "vertex", dl), tf = fsd ? YES : n48x_translate_fn(d.fragmentFunction, "fragment", dl);
+            const BOOL tv = vsd ? YES : n48x_translate_fn(d.vertexFunction, "vertex", dl), tf = (vonly || fsd) ? YES : n48x_translate_fn(d.fragmentFunction, "fragment", dl);   // bundle 30: a nil fragment is never translated
             if (tv && tf) {
                 e1 = nil; e2 = nil; mv_ = nil; mf_ = nil;
                 vsd = n48_spv_lookup(d.vertexFunction, "vertex", &e1, &vname, &mv_);
-                fsd = n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
+                fsd = vonly ? nil : n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
                 strlcpy(_vnm, vname.UTF8String ? vname.UTF8String : "?", sizeof _vnm); strlcpy(_fnm, fname.UTF8String ? fname.UTF8String : "?", sizeof _fnm);
             }
         }
     }
-    if (!vsd || !fsd) {
+    if (!n48_pl_stages_ready(vonly, vsd != nil, fsd != nil)) {
         NSError *e = e1 ? e1 : e2;
         const BOOL inproc = (e.code == 41 && !nofb && n48x_active()) ? YES : NO;
         if (e.code == 41 && n48_fallback_ok() && !nofb) {
@@ -3956,11 +4008,11 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
                 if (n48_sync_wait("render", want, NO)) {
                     e1 = nil; e2 = nil; mv_ = nil; mf_ = nil;
                     vsd = n48_spv_lookup(d.vertexFunction, "vertex", &e1, &vname, &mv_);
-                    fsd = n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
+                    fsd = vonly ? nil : n48_spv_lookup(d.fragmentFunction, "fragment", &e2, &fname, &mf_);
                     strlcpy(_vnm, vname.UTF8String ? vname.UTF8String : "?", sizeof _vnm); strlcpy(_fnm, fname.UTF8String ? fname.UTF8String : "?", sizeof _fnm);
                 }
             }
-            if (!vsd || !fsd) {
+            if (!n48_pl_stages_ready(vonly, vsd != nil, fsd != nil)) {
                 fb = YES; _fallback = YES;
                 N48LOG("FALLBACK %s / %s (%s)", vname.UTF8String, fname.UTF8String, e.localizedDescription.UTF8String);
             }
@@ -3970,25 +4022,27 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
     NSData *fsp = nil;
     if (!fb) {
         char why[256] = "";
-        fsp = n48_spv_set(fsd, 1);   // fragment descriptors live in set 1 (binding-model comment above)
-        rv = calloc(1, sizeof *rv); rf = calloc(1, sizeof *rf);
+        if (!vonly) fsp = n48_spv_set(fsd, 1);   // fragment descriptors live in set 1 (binding-model comment above); bundle 30: none for a vertex-only pipeline
+        rv = calloc(1, sizeof *rv); rf = vonly ? NULL : calloc(1, sizeof *rf);
         BOOL bad = NO;
         if (n48s_parse(vsd.bytes, vsd.length / 4, &mv, why, sizeof why) || !mv.has_ep || mv.ep_model != 0 || n48s_reflect(&mv, 0, rv)) {
             if (err) *err = n48_err(51, [NSString stringWithFormat:@"vertex SPIR-V reflection: %s", why[0] ? why : rv->why[0] ? rv->why : "no/wrong entry point"]); bad = YES; }
-        else if (n48s_parse(fsp.bytes, fsp.length / 4, &mf, why, sizeof why) || !mf.has_ep || mf.ep_model != 4 || n48s_reflect(&mf, 1, rf)) {
+        else if (!vonly && (n48s_parse(fsp.bytes, fsp.length / 4, &mf, why, sizeof why) || !mf.has_ep || mf.ep_model != 4 || n48s_reflect(&mf, 1, rf))) {
             if (err) *err = n48_err(52, [NSString stringWithFormat:@"fragment SPIR-V reflection: %s", why[0] ? why : rf->why[0] ? rf->why : "no/wrong entry point"]); bad = YES; }
-        if (!bad) { strlcpy(vep, mv.ep_name, sizeof vep); strlcpy(fep, mf.ep_name, sizeof fep); }
+        if (!bad) { strlcpy(vep, mv.ep_name, sizeof vep); if (!vonly) strlcpy(fep, mf.ep_name, sizeof fep); }
         n48s_free(&mv); n48s_free(&mf);
         if (bad) { free(rv); free(rf); return nil; }
     }
     strlcpy(_vep, vep, sizeof _vep); strlcpy(_fep, fep, sizeof _fep);
     BOOL ok = NO;
+    _fs = VK_NULL_HANDLE;   // bundle 30: stays null for a vertex-only pipeline (the magenta fallback fragment module is still built when fb)
     do {
         _vs = fb ? n48_spv_module(n48_fb_vs_spv, sizeof n48_fb_vs_spv, "vertex", err) : n48_spv_module(vsd.bytes, vsd.length, "vertex", err); if (!_vs) break;
-        _fs = fb ? n48_spv_module(n48_fb_fs_spv, sizeof n48_fb_fs_spv, "fragment", err) : n48_spv_module(fsp.bytes, fsp.length, "fragment", err); if (!_fs) break;
+        if (fb || !vonly) { _fs = fb ? n48_spv_module(n48_fb_fs_spv, sizeof n48_fb_fs_spv, "fragment", err) : n48_spv_module(fsp.bytes, fsp.length, "fragment", err); if (!_fs) break; }
         ok = YES;
     } while (0);
     if (!ok) { free(rv); free(rf); return nil; }
+    if (vonly) N48LOG("pipeline: no fragment function: vertex-only pipeline (depth/stencil only, colour write masks 0)%s", fb ? " [magenta fallback fragment]" : "");
     VkAttachmentDescription ads[9]; VkAttachmentReference refs[8]; uint32_t na = 0;
     {   // bundle 10: sample count, dynamic states, depth bias: n48pc_config (a colour-only single-sample pipeline gets exactly the old three dynamic states, one sample, no bias)
         const char *pcwhy = NULL;
@@ -4002,6 +4056,8 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         const N48Fmt *f = n48_fmt(ca.pixelFormat);
         if (!f) { N48LOG("pipeline: colour attachment %lu pixel format %lu has no Vulkan mapping in the format table", (unsigned long)i, (unsigned long)ca.pixelFormat);
                   if (err) *err = n48_err(43, [NSString stringWithFormat:@"unsupported colour attachment format %lu", (unsigned long)ca.pixelFormat]); free(rv); free(rf); return nil; }
+        if (f->flags & N48F_ARGB) { N48_ONCE("pipeline: colour attachment %lu is pixel format 84 (ARGB8): render targets of that format are refused", (unsigned long)i);
+                  if (err) *err = n48_err(43, @"unsupported colour attachment format 84 (ARGB8 render targets are not supported)"); free(rv); free(rf); return nil; }
         if (f->flags & N48F_A8) { N48LOG("pipeline: colour attachment %lu is A8Unorm: not supported (the fragment's alpha cannot be written into an R8 attachment)", (unsigned long)i);
                   if (err) *err = n48_err(43, @"unsupported colour attachment format 1 (A8Unorm render targets are not supported)"); free(rv); free(rf); return nil; }
         if (!n48_radv_open(err)) { free(rv); free(rf); return nil; }
@@ -4018,6 +4074,7 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         if (m & MTLColorWriteMaskBlue) wm |= VK_COLOR_COMPONENT_B_BIT; if (m & MTLColorWriteMaskAlpha) wm |= VK_COLOR_COMPONENT_A_BIT;
         wm = n48if_write_mask(fb, (f->flags & N48F_UINT) != 0, wm);   // bundle 19: the float magenta fallback shader must not write into an integer attachment
         if (rf && !(rf->outmask & (1u << na))) { wm = 0; N48LOG("pipeline: fragment stage does not write output %u: attachment write mask forced to 0 (contents kept)", na); }
+        if (vonly || n48_pl_fb_invisible(fb, n48_magenta_kill())) wm = 0;   // bundle 30: no fragment stage writes colour (a vertex-only pipeline, or an invisible fallback): the attachment contents are kept
         _cba[na] = (VkPipelineColorBlendAttachmentState){ .colorWriteMask = wm };
         if (ca.isBlendingEnabled) {   // 11e: blending from the descriptor (enable, factors, ops, write mask)
             BOOL bad = NO;
@@ -4118,12 +4175,12 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
     if (!p0) { if (err) *err = ve; return nil; }
     _variants[@((uint64_t)VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST | ((uint64_t)VK_CULL_MODE_NONE << 8) | ((uint64_t)VK_FRONT_FACE_CLOCKWISE << 16) | ((uint64_t)dk0 << 24))] = [NSValue valueWithPointer:(void *)p0];
     N48LOG("N48RenderPipelineState %p: pipeline %p (%u colour attachment(s), set0 %u / set1 %u bindings, %u vertex input(s), %u vertex binding(s)%s%s)", (__bridge void *)self, (void *)p0, na,
-           _npbV, _npbF, _nvia, _nvib, fb ? ", FALLBACK magenta" : "", _fetch ? ", FRAMEBUFFER FETCH (input attachments)" : "");
+           _npbV, _npbF, _nvia, _nvib, fb ? (n48_pl_fb_invisible(YES, n48_magenta_kill()) ? ", FALLBACK invisible" : ", FALLBACK magenta") : "", _fetch ? ", FRAMEBUFFER FETCH (input attachments)" : "");
     if (fb) {   // hot-swap: remember how to rebuild (descriptor copy: the client may reuse its own) and watch for the .spv files
-        NSString *sv = n48_fn_sha(d.vertexFunction), *sf = n48_fn_sha(d.fragmentFunction);
-        if (sv && sf) {
+        NSString *sv = n48_fn_sha(d.vertexFunction), *sf = n48_fn_sha(d.fragmentFunction);   // sf is nil for a vertex-only pipeline
+        if (sv && (vonly || sf)) {
             _hsDesc = [d copy];
-            n48hs_register(self, @[ sv, sf ], NO, [NSString stringWithFormat:@"%@ / %@", vname, fname], ^BOOL(id o) { return [(N48RenderPipelineState *)o n48HotRebuild]; });
+            n48hs_register(self, vonly ? @[ sv ] : @[ sv, sf ], NO, [NSString stringWithFormat:@"%@ / %@", vname, fname], ^BOOL(id o) { return [(N48RenderPipelineState *)o n48HotRebuild]; });
         }
     }
     return self;
@@ -4150,14 +4207,15 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         .cullMode = cull, .frontFace = front, .lineWidth = 1.0f, .depthBiasEnable = _pc.depthBias ? VK_TRUE : VK_FALSE };   // bundle 10: the bias VALUES are dynamic (setDepthBias:), on for depth pipelines only
     VkPipelineMultisampleStateCreateInfo ms = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = (VkSampleCountFlagBits)_pc.samples, .alphaToCoverageEnable = _pc.alphaToCoverage ? VK_TRUE : VK_FALSE };
     n48ds_vk_t dv; n48ds_decode(dk, &dv);
+    const BOOL inv = n48_pl_fb_invisible(_fallback, n48_magenta_kill());   // bundle 30: an invisible fallback writes no depth and no stencil
     VkPipelineDepthStencilStateCreateInfo dss = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = dv.depthTest ? VK_TRUE : VK_FALSE, .depthWriteEnable = dv.depthWrite ? VK_TRUE : VK_FALSE, .depthCompareOp = (VkCompareOp)dv.depthCompareOp, .stencilTestEnable = dv.stencilTest ? VK_TRUE : VK_FALSE,
+        .depthTestEnable = dv.depthTest ? VK_TRUE : VK_FALSE, .depthWriteEnable = (dv.depthWrite && !inv) ? VK_TRUE : VK_FALSE, .depthCompareOp = (VkCompareOp)dv.depthCompareOp, .stencilTestEnable = (dv.stencilTest && !inv) ? VK_TRUE : VK_FALSE,
         .front = { (VkStencilOp)dv.front.failOp, (VkStencilOp)dv.front.passOp, (VkStencilOp)dv.front.depthFailOp, (VkCompareOp)dv.front.compareOp, 0, 0, 0 },
         .back = { (VkStencilOp)dv.back.failOp, (VkStencilOp)dv.back.passOp, (VkStencilOp)dv.back.depthFailOp, (VkCompareOp)dv.back.compareOp, 0, 0, 0 } };
     VkPipelineColorBlendStateCreateInfo cb = { .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, .attachmentCount = _na, .pAttachments = _cba };
     VkDynamicState dyn[8]; for (unsigned i = 0; i < _pc.ndyn && i < 8; i++) dyn[i] = (VkDynamicState)_pc.dyn[i];   // bundle 10: viewport, scissor, blend constants (+ stencil masks / reference and depth bias for a depth/stencil pipeline)
     VkPipelineDynamicStateCreateInfo ds = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = _pc.ndyn, .pDynamicStates = dyn };
-    VkGraphicsPipelineCreateInfo gpc = { .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, .stageCount = 2, .pStages = st, .pVertexInputState = &vi,
+    VkGraphicsPipelineCreateInfo gpc = { .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, .stageCount = n48_pl_stage_count(_fs != VK_NULL_HANDLE), .pStages = st, .pVertexInputState = &vi,
         .pInputAssemblyState = &ia, .pViewportState = &vps, .pRasterizationState = &rs, .pMultisampleState = &ms, .pDepthStencilState = _pc.hasDS ? &dss : NULL, .pColorBlendState = &cb,
         .pDynamicState = &ds, .layout = _pl, .renderPass = _rp };
     VkPipeline p = VK_NULL_HANDLE; uint64_t t_ = n48_now(); VkResult r = vkCreateGraphicsPipelines(N48R.dev, N48R.pc, 1, &gpc, NULL, &p); n48t_add(&T1.gfx, n48_now() - t_); atomic_fetch_add(&n48_pipes_new, 1);
@@ -4240,7 +4298,12 @@ static N48Texture *n48_dummy_texture(id dev) {
 static N48SamplerState *n48_dummy_sampler(id dev) {
     static N48SamplerState *s;
     @synchronized ([Navi48Device class]) {
-        if (!s) { NSError *e = nil; s = [[N48SamplerState alloc] initWithDevice:dev descriptor:[MTLSamplerDescriptor new] error:&e];
+        if (!s) { NSError *e = nil; MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];   // bundle 29 fix 5: unbound slots read level 0 only, nearest, clamp-to-edge
+                  sd.minFilter = MTLSamplerMinMagFilterNearest; sd.magFilter = MTLSamplerMinMagFilterNearest; sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+                  sd.sAddressMode = MTLSamplerAddressModeClampToEdge; sd.tAddressMode = MTLSamplerAddressModeClampToEdge; sd.rAddressMode = MTLSamplerAddressModeClampToEdge;
+                  sd.lodMinClamp = 0; sd.lodMaxClamp = 0;
+                  s = [[N48SamplerState alloc] initWithDevice:dev descriptor:sd error:&e];
+                  if (s) N48_ONCE("default sampler: level 0 only (lodMaxClamp 0), nearest, clamp-to-edge");
                   if (!s) N48LOG("dummy sampler failed: %s", e.localizedDescription.UTF8String); }
     }
     return s;
@@ -5065,8 +5128,14 @@ N48_DNR(N48CommandBuffer)
                 if (!t) { N48LOG("WARN %s texture(%u) is used by the shader but was never bound: 1x1 dummy", nm, ix); t = n48_dummy_texture(dev); }
                 if (!t) { [self n48Fail:@"no dummy texture"]; return NO; }
                 if (([t n48Samples] > 1) != p->multisampled) { [self n48Fail:[NSString stringWithFormat:@"%s texture(%u): sample count %lu does not match the shader image type (multisampled=%d)", nm, ix, (unsigned long)[t n48Samples], p->multisampled]]; return NO; }
+                VkImageView tv = [t n48SampleView];
+                if (!tv) {   // bundle 29 fix 1: a texture without a VkImageView is replaced by the 1x1 dummy (logged once); the old code wrote a NULL view
+                    N48_ONCE("%s texture(%u) has no Vulkan image view: bound to the 1x1 dummy instead", nm, ix);
+                    N48Texture *dt = n48_dummy_texture(dev); VkImageView dv = dt ? [dt n48SampleView] : VK_NULL_HANDLE;
+                    if (dv) { t = dt; tv = dv; }
+                }
                 [self n48Retain:t];
-                ii[nii++] = (VkDescriptorImageInfo){ VK_NULL_HANDLE, [t vkView], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+                ii[nii++] = (VkDescriptorImageInfo){ VK_NULL_HANDLE, tv, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
             }
             break;
         case VK_DESCRIPTOR_TYPE_SAMPLER:
@@ -5079,6 +5148,11 @@ N48_DNR(N48CommandBuffer)
                     if (!s) { N48LOG("WARN %s sampler(%u) is used by the shader but was never bound: default nearest/clamp sampler", nm, ix); s = n48_dummy_sampler(dev); }
                     if (!s) { [self n48Fail:@"no dummy sampler"]; return NO; }
                     [self n48Retain:s]; vs = [s vkSampler];
+                    if (!vs) {   // bundle 29 fix 1: a sampler without a VkSampler is replaced by the default sampler (logged once); the old code wrote a NULL sampler
+                        N48_ONCE("%s sampler(%u) has no Vulkan sampler: the default nearest/clamp sampler is bound instead", nm, ix);
+                        N48SamplerState *ds = n48_dummy_sampler(dev);
+                        if (ds && [ds vkSampler]) { [self n48Retain:ds]; vs = [ds vkSampler]; }
+                    }
                 }
                 ii[nii++] = (VkDescriptorImageInfo){ vs, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED };
             }
@@ -5526,7 +5600,7 @@ N48_ENCODER_NOOPS
             break;
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             for (uint32_t k = 0; k < p->count; k++) { uint32_t ix = p->binding - 32 + k; N48Texture *t = (p->binding >= 32 && ix < 128) ? st->tex[ix] : nil;
-                n48dc_sig_push(&sig, (uint64_t)(uintptr_t)(__bridge void *)t); n48dc_sig_push(&sig, t ? (uint64_t)(uintptr_t)[t vkView] : 0); }
+                n48dc_sig_push(&sig, (uint64_t)(uintptr_t)(__bridge void *)t); n48dc_sig_push(&sig, t ? (uint64_t)(uintptr_t)[t n48SampleView] : 0); }
             break;
         case VK_DESCRIPTOR_TYPE_SAMPLER:
             n48dc_sig_push(&sig, (uint64_t)(uintptr_t)p->stat);
