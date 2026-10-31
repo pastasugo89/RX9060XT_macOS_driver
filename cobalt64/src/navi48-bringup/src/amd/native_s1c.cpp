@@ -1263,13 +1263,20 @@ IOReturn n1c_hello(const N1cRef &ref, uint64_t clientAbi, uint64_t flags, uint64
 }
 
 IOReturn n1c_query_info(const N1cRef &ref, n48n_info *o) {
-    if (!sess_hello(ref)) return kIOReturnNotReady;
-    Session *s = sess_peek(ref);
+    if (gCliLock == nullptr || gCtx == nullptr) return kIOReturnNotReady;
+    Session *s = sess_lock(ref, true);
     if (s == nullptr) return kIOReturnNotReady;
+    // Keep this identity and its accounting alive while taking the snapshot.
+    // Allocator totals and shared budgets use the registry lock; ring counters
+    // use a short nested ring lock. None of these reads waits for GPU work.
+    IOLockLock(gCliLock);
     BringupContext &c = *gCtx;
     memset(o, 0, sizeof(*o));
     const IPVersion v = c.dev->ip.getVersion(IPBlock::GC);
+    IOLockLock(gRingLock);
     const uint64_t em = emitted_now();
+    const uint64_t retired = retired_now(em), writeCounter = gWc;
+    IOLockUnlock(gRingLock);
     o->abi_version = N48N_ABI_VERSION; o->kext_build = kN1cKextBuild;
     o->flags = (hung_now() ? N48N_INFO_HUNG : 0u) | (native_s1b_state().positivePass ? N48N_INFO_S1B_POSITIVE : 0u) |
                (native_s1b_state().gate == kGateOn ? N48N_INFO_NATIVE_BOOT : 0u) |
@@ -1283,16 +1290,18 @@ IOReturn n1c_query_info(const N1cRef &ref, n48n_info *o) {
     o->vram_hi_free = c.gmc.vram_alloc_hi.is_inited() ? c.gmc.vram_alloc_hi.bytes_free() : 0;
     o->gtt_cap = kGttCap; o->gtt_used = s->gttUsed; o->gtt_max_bo = kGttMaxBo;
     o->pt_cap = kPtCap; o->pt_used = (uint64_t)s->nblk * kArenaBlockBytes;
-    o->reserved[0] = (uint32_t)(gWc & 0xFFFFFFFFu); o->reserved[1] = (uint32_t)(gWc >> 32);   // the native write counter (a diagnostic; the contract leaves reserved[] unused)
+    o->reserved[0] = (uint32_t)(writeCounter & 0xFFFFFFFFu); o->reserved[1] = (uint32_t)(writeCounter >> 32);   // the native write counter (a diagnostic; the contract leaves reserved[] unused)
     o->reserved[2] = N48N_ABI_MINOR;                                                          // ABI 1.1 (0.0.603): the minor
-    o->seq_emitted = em; o->seq_retired = retired_now(em);
-    {   // 0.0.640 (G4), ABI 1.10: the session's VRAM budget (reserved[3..7]); all zero for a WindowServer session and with the switch OFF. The two loads are a diagnostic, not under gCliLock.
+    o->seq_emitted = em; o->seq_retired = retired;
+    {   // ABI 1.10: all budget words come from the same protected allocator snapshot.
         const uint64_t poolFree = o->vram_vis_free + o->vram_hi_free;
         n48native::g4::budget_pack(n48native::g4::budget_report(multi_on(), s->ws, __atomic_load_n(&s->app, __ATOMIC_ACQUIRE), __atomic_load_n(&gVramOthers, __ATOMIC_RELAXED), vram_total(), poolFree), o->reserved);
     }
     o->va_low_first = kVaFirst; o->va_low_last = 0x00007FFFFFFFFFFFull;
     o->va_high_first = 0xFFFF800000000000ull; o->va_high_last = 0xFFFFFFFFFFFFFFFFull;
     o->max_bos = N48N_MAX_BOS; o->fence_slots = N48N_FENCE_SLOTS;
+    IOLockUnlock(gCliLock);
+    sess_unlock(s);
     return kIOReturnSuccess;
 }
 

@@ -33,7 +33,8 @@ OVERLAY = (
 )
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
-         'test-kernel-bo-release.py', 'test-kernel-wait-identity.py')
+         'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
+         'test-kernel-query-info.py')
 
 
 def sha(path):

@@ -622,8 +622,8 @@ static void u12_pins(const std::string &root) {
     expect(eng.find("const uint32_t gate = gpu_gate(s);", eng.find("IOReturn n1c_submit(")) < eng.find("ring_submit(s, va, by, v.nIbs, hasFence, fenceAddr, seqOut)"), "Submit takes the HUNG gate first");
     expect(eng.find("cs_parse(in, size, &v)") < eng.find("IOLockLock(gCliLock);", eng.find("IOReturn n1c_submit(")), "the chunk is parsed before the lock");
     expect(eng.find("wb_bus + kWbOffsetNativeSeq") != std::string::npos, "the seqno slot address is the WB page + the slot offset");
-    // QueryInfo / ReadRegs remain diagnostic reads without the registry lock.
-    for (const char *fn : { "IOReturn n1c_query_info(", "IOReturn n1c_read_regs(" }) {
+    // ReadRegs remains a diagnostic read without the registry lock.
+    for (const char *fn : { "IOReturn n1c_read_regs(" }) {
         const size_t a = eng.find(fn), b = eng.find("\n}\n", a);
         expect(a != std::string::npos && b != std::string::npos && eng.substr(a, b - a).find("IOLockLock(gCliLock)") == std::string::npos, "this selector takes no client lock");
     }
@@ -631,16 +631,21 @@ static void u12_pins(const std::string &root) {
     expect(in_order(snapshot, { "IOLockLock(gCliLock);", "sess_peek(ref) == s && __atomic_load_n(&s->hello", "snapshot.own = __atomic_load_n(&s->emitted", "IOLockUnlock(gCliLock);", "return valid;" }) &&
            snapshot.find("IOSleep") == std::string::npos && snapshot.find("IODelay") == std::string::npos && snapshot.find("hang_poll") == std::string::npos,
            "WaitSeq validates identity and counters under a short registry lock, never across a GPU wait or recovery");
-    for (const char *fn : { "IOReturn n1c_hello(", "IOReturn n1c_bo_create(", "IOReturn n1c_bo_free(", "IOReturn n1c_gem_va(", "IOReturn n1c_ctx(", "IOReturn n1c_submit(" }) {
+    for (const char *fn : { "IOReturn n1c_hello(", "IOReturn n1c_query_info(", "IOReturn n1c_bo_create(", "IOReturn n1c_bo_free(", "IOReturn n1c_gem_va(", "IOReturn n1c_ctx(", "IOReturn n1c_submit(" }) {
         const size_t a = eng.find(fn), b = eng.find("\n}\n", a);
         expect(a != std::string::npos && b != std::string::npos && eng.substr(a, b - a).find("Session *s = sess_lock(ref, ") != std::string::npos && eng.substr(a, b - a).find("sess_unlock(s);") != std::string::npos,
                "this selector takes the caller's SESSION lock (0.0.627: the per-session successor of the one client lock)");
     }
-    expect_u("every other selector retains its direct Hello check; WaitSeq checks Hello inside its protected identity snapshot", count_of(eng, "if (!sess_hello(ref)) return kIOReturnNotReady;"), 24);
+    expect_u("other selectors retain their direct Hello check; QueryInfo checks under sess_lock and WaitSeq inside its protected identity snapshot", count_of(eng, "if (!sess_hello(ref)) return kIOReturnNotReady;"), 23);
     expect_u("every locked selector re-checks the session under the lock (6 + ScanoutAcquire / Register / Release, 0.0.603 + BoImportHost, 0.0.612)", count_of(eng, "closed while we waited for the lock"), 10);
     expect(eng.find("static Session gSess;") != std::string::npos && eng.find("IOFree(ns") == std::string::npos && count_of(eng, "IOMalloc(sizeof(Session))") == 1 && eng.find("IOMallocAligned") == std::string::npos && eng.find("IOFreeAligned") == std::string::npos,
            "SESSION LIFETIME: slot 0 is a static, slots 1..3 (0.0.627) are allocated once and never freed");
-    { const size_t a = eng.find("IOReturn n1c_query_info("), b = eng.find("\n}\n", a); expect(eng.substr(a, b - a).find("sess_lock(") == std::string::npos && eng.substr(a, b - a).find("Session *s = sess_peek(ref);") != std::string::npos, "the lock-free QueryInfo reads the caller's never-freed session record without a lock"); }
+    {
+        const std::string query = fn_body(eng, "IOReturn n1c_query_info(");
+        expect(in_order(query, { "Session *s = sess_lock(ref, true);", "IOLockLock(gCliLock);", "IOLockLock(gRingLock);", "retired_now(em)", "IOLockUnlock(gRingLock);", "c.gmc.vram_alloc.bytes_free()", "budget_pack", "IOLockUnlock(gCliLock);", "sess_unlock(s);" }) &&
+               query.find("IOSleep") == std::string::npos && query.find("IODelay") == std::string::npos && query.find("own_wait") == std::string::npos && query.find("hang_poll") == std::string::npos,
+               "QueryInfo pins the caller identity and snapshots allocator/budget/ring state with ordered locks and no GPU wait");
+    }
     expect(eng.find("vram_alloc.free(s->blk") == std::string::npos && eng.find("gPtFree[gPtFreeN++] = s->blk[i]") != std::string::npos &&
            count_of(eng, "vram_alloc.alloc(kArenaBlockBytes") == 2, "PAGE TABLES: blocks return to the per-boot reserve, never to vram_alloc (the two allocs are the reserve's growth and the park root)");
     expect(eng.find("if (!regs_allowed(off, count)") != std::string::npos, "ReadRegs is allowlisted");
