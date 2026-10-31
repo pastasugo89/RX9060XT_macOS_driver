@@ -5,7 +5,8 @@ Source of the baseline bytes, which must hash to the payload's baseline_config_s
   --backup DIR     a backup made by install-kernel-efi.py (default: newest under the backup root)
   --from-recovery  the RECOVERY copy kept on the EFI itself
 
-The new kext is kept unless --remove-kext is given. The RECOVERY copy is never removed.
+The new kext is kept unless --remove-kext is given. The RECOVERY copies and OC/Tools/startup.nsh are never removed
+(the startup script only copies the 665 configuration, which is the baseline bytes, so it is harmless to keep).
 Default is a dry run. Never loads kexts, changes boot-args, touches the activation job or reboots.
 """
 import argparse
@@ -89,6 +90,7 @@ def main(argv=None):
     parser.add_argument('--system-root', type=Path, default=inst.DEFAULT_SYSTEM_ROOT)
     parser.add_argument('--backup-root', type=Path, help='default: SYSTEM_ROOT/' + inst.BACKUP_REL)
     parser.add_argument('--efi-root', type=Path, help='TEST ONLY: EFI directory instead of the mounted volume')
+    parser.add_argument('--efi-uuid', help='target EFI partition VolumeUUID (default: the payload manifest efi_volume_uuid)')
     args = parser.parse_args(argv)
     system_root = args.system_root.absolute()
     backup_root = (args.backup_root or system_root / inst.BACKUP_REL).absolute()

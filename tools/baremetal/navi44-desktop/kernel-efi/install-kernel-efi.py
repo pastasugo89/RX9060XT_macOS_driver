@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Install an EFI kernel payload: copy the new kext, keep the pre-install config, swap one key.
+"""Install an EFI kernel payload: copy the new kext and its extra files, keep the pre-install config, apply the
+payload manifest's listed config edits (path, old, new), and nothing else.
+
+Scope: only OC/ and RECOVERY/ on the EFI volume are read or written. Other files on the volume (the CachyOS loader and
+scripts, BOOT/, System Volume Information) are ignored and never touched.
 
 Default is a dry run: every check runs and the planned actions are printed, nothing is written.
 --apply performs the writes and requires root unless the test-only --efi-root is given.
@@ -17,6 +21,7 @@ import hashlib
 import json
 import os
 import plistlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +33,7 @@ APP_REL = 'Library/Application Support/Navi44/accelerated-trial'
 BACKUP_REL = 'Library/Application Support/Navi44'
 BOOT_ARGS_GUID = '7C436110-AB2A-4BBB-A880-FE41995C9F82'
 CONFIG = 'OC/config.plist'
+STARTUP_SCRIPT = 'OC/Tools/startup.nsh'
 PENDING = '.navi44-pending-'
 MISSING = '<missing>'
 
@@ -45,11 +51,39 @@ def safe_rel(name):
     return bool(name) and not p.is_absolute() and '..' not in p.parts and '\\' not in name and p.as_posix() == name
 
 
+SCOPE_DIRS = ('OC', 'RECOVERY')
+SCOPE_PREFIXES = tuple(d + '/' for d in SCOPE_DIRS)
+UUID_RE = r'[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}'
+
+
+def _walk(root, tops):
+    result = {}
+    for top in tops:
+        base = root / top
+        if base.is_symlink() or not base.is_dir():
+            raise ValueError('Missing or unsafe EFI tree: ' + str(base))
+        for p in sorted(base.rglob('*')):
+            if p.is_symlink() or not (p.is_file() or p.is_dir()):
+                raise ValueError('Unsafe entry (symlink or special file): ' + str(p))
+            if p.is_file():
+                result[p.relative_to(root).as_posix()] = sha(p)
+    return result
+
+
 def tree(root):
-    """Exact inventory {relative path: sha256} of regular files; symlinks or special files refuse."""
+    """Exact inventory {relative path: sha256} of the payload-owned paths, OC/ and RECOVERY/ only. The rest of the
+    volume (CachyOS loader and scripts, BOOT/, System Volume Information, ...) is never listed, read, required or written."""
     root = Path(root)
     if root.is_symlink() or not root.is_dir():
         raise ValueError('Missing or unsafe EFI tree: ' + str(root))
+    return _walk(root, SCOPE_DIRS)
+
+
+def full_tree(root):
+    """Every regular file under a payload directory. Used only to prove that a payload holds nothing outside the scope."""
+    root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError('Missing or unsafe payload EFI tree: ' + str(root))
     result = {}
     for p in sorted(root.rglob('*')):
         if p.is_symlink() or not (p.is_file() or p.is_dir()):
@@ -94,7 +128,7 @@ def load_payload(payload):
     if payload.is_symlink() or not payload.is_dir():
         raise ValueError('Payload must be a real directory: ' + str(payload))
     m = json.loads((payload / 'manifest.json').read_text())
-    needed = ('schema', 'baseline_efi_files', 'candidate_efi_files', 'add_files',
+    needed = ('schema', 'baseline_efi_files', 'candidate_efi_files', 'add_files', 'config_edits', 'recovery_copy',
               'baseline_config_sha256', 'candidate_config_sha256', 'efi_volume_uuid')
     if any(key not in m for key in needed) or m['schema'] != 1:
         raise ValueError('Unsupported payload manifest')
@@ -102,8 +136,15 @@ def load_payload(payload):
     for name in set(base) | set(cand) | set(add):
         if not safe_rel(name):
             raise ValueError('Unsafe payload path: ' + name)
+    outside = sorted(n for n in set(base) | set(cand) | set(add) if not n.startswith(SCOPE_PREFIXES))
+    if outside:
+        raise ValueError('Manifest lists files outside the OC/RECOVERY scope: ' + ', '.join(outside))
     efi_payload = payload / 'EFI'
-    if tree(efi_payload) != cand:
+    everything = full_tree(efi_payload)
+    outside = sorted(n for n in everything if not n.startswith(SCOPE_PREFIXES))
+    if outside:
+        raise ValueError('Payload directory holds files outside the OC/RECOVERY scope: ' + ', '.join(outside))
+    if everything != cand:
         raise ValueError('Payload EFI tree differs from its candidate inventory')
     if base.get(CONFIG) != m['baseline_config_sha256'] or cand.get(CONFIG) != m['candidate_config_sha256']:
         raise ValueError('Config hashes differ from the manifest')
@@ -114,35 +155,51 @@ def load_payload(payload):
     if any(add[name] != cand[name] for name in add):
         raise ValueError('Declared additions differ from payload files')
 
-    recovery = sorted(k for k in add if k.startswith('RECOVERY/'))
     kexts = sorted(k for k in add if k.startswith('OC/Kexts/'))
-    if len(recovery) != 1 or recovery[0].count('/') != 1 or set(recovery) | set(kexts) != set(add):
-        raise ValueError('Unexpected EFI additions: expected one RECOVERY file and one kext bundle')
+    others = sorted(k for k in add if not k.startswith('OC/Kexts/'))
+    if not kexts:
+        raise ValueError('Unexpected EFI additions: no kext bundle')
     bundles = {k.split('/')[2] for k in kexts}
     if len(bundles) != 1:
         raise ValueError('Payload adds more than one kext bundle: ' + ', '.join(sorted(bundles)))
     bundle = bundles.pop()
     if not bundle.endswith('.kext') or any(not k.startswith('OC/Kexts/%s/' % bundle) for k in kexts):
         raise ValueError('Kext additions are not confined to one bundle')
-    rec = recovery[0]
+    # Other additions: RECOVERY/*.plist copies of the baseline bytes, and the one recovery startup script. Nothing else.
+    for name in others:
+        if name.startswith('RECOVERY/') and name.count('/') == 1 and name.endswith('.plist'):
+            if add[name] != m['baseline_config_sha256']:
+                raise ValueError('RECOVERY copy is not the baseline config: ' + name)
+        elif name != STARTUP_SCRIPT:
+            raise ValueError('Unexpected EFI addition: ' + name)
+    rec = m['recovery_copy']
+    if rec not in others or not rec.startswith('RECOVERY/'):
+        raise ValueError('Manifest recovery_copy is not a RECOVERY file of the payload')
 
     baseline_bytes = (efi_payload / rec).read_bytes()
-    if sha_bytes(baseline_bytes) != m['baseline_config_sha256'] or add[rec] != m['baseline_config_sha256']:
+    if sha_bytes(baseline_bytes) != m['baseline_config_sha256']:
         raise ValueError('RECOVERY copy is not the baseline config')
     candidate_bytes = (efi_payload / CONFIG).read_bytes()
     base_cfg = plistlib.loads(baseline_bytes)
     cand_cfg = plistlib.loads(candidate_bytes)
-    diffs = leaf_diffs(base_cfg, cand_cfg)
-    # 0.0.667 payloads may also enable PollAppleHotKeys (Shift in the picker -> -x, the kext's recovery kill switch). Nothing else.
-    hotkeys = [d for d in diffs if d == (('Misc', 'Boot', 'PollAppleHotKeys'), False, True)]
-    diffs = [d for d in diffs if d not in hotkeys]
-    if len(diffs) != 1:
-        raise ValueError('Config must differ from baseline by exactly one key (plus PollAppleHotKeys false -> true), found %d: %r' % (len(diffs), diffs))
-    path, old, new = diffs[0]
-    if (len(path) != 4 or path[:2] != ('Kernel', 'Add') or not isinstance(path[2], int)
-            or path[3] != 'BundlePath' or new != bundle or not isinstance(old, str)
-            or not old.endswith('.kext') or old == new):
-        raise ValueError('Config change is not the expected Kernel/Add BundlePath swap: %r' % (diffs,))
+
+    # The allowed config edits are the payload manifest's explicit list, (path, old, new), and nothing else.
+    listed = m['config_edits']
+    if not isinstance(listed, list) or not listed:
+        raise ValueError('Payload manifest lists no config_edits; this installer applies only explicitly listed edits')
+    edits = []
+    for entry in listed:
+        if not isinstance(entry, dict) or set(entry) != {'path', 'old', 'new'} or not isinstance(entry['path'], str):
+            raise ValueError('Malformed config edit: %r' % (entry,))
+        edits.append((entry['path'], entry['old'], entry['new']))
+    if len({path for path, _, _ in edits}) != len(edits):
+        raise ValueError('Duplicate config edit path in the manifest')
+    actual = [('/'.join(str(part) for part in path), old, new) for path, old, new in leaf_diffs(base_cfg, cand_cfg)]
+    if sorted(actual, key=repr) != sorted(edits, key=repr):
+        raise ValueError('Config differs from the listed edits: actual %r, listed %r' % (actual, edits))
+    kext_edits = [(p, o, n) for p, o, n in edits if re.fullmatch(r'Kernel/Add/\d+/BundlePath', p)]
+    if len(kext_edits) != 1 or kext_edits[0][2] != bundle or not kext_edits[0][1].endswith('.kext') or kext_edits[0][1] == bundle:
+        raise ValueError('The listed kext edit does not swap in the payload bundle: %r' % (kext_edits,))
 
     bundle_dir = efi_payload / 'OC/Kexts' / bundle
     info = plistlib.loads((bundle_dir / 'Contents/Info.plist').read_bytes())
@@ -172,10 +229,11 @@ def load_payload(payload):
     if not isinstance(boot_args, str) or not boot_args.strip():
         raise ValueError('Baseline config has no NVRAM/Add boot-args to check against live NVRAM')
 
+    extra_bytes = {name: (efi_payload / name).read_bytes() for name in others}
     return {'payload': payload, 'uuid': str(m['efi_volume_uuid']).upper(), 'baseline': base, 'candidate': cand,
             'add': add, 'bundle': bundle, 'recovery': rec, 'baseline_bytes': baseline_bytes,
-            'candidate_bytes': candidate_bytes, 'candidate_cfg': cand_cfg, 'config_change': [path, old, new], 'hotkeys': bool(hotkeys),
-            'boot_args': boot_args, 'system_files': system_files}
+            'candidate_bytes': candidate_bytes, 'candidate_cfg': cand_cfg, 'config_edits': edits,
+            'extra_bytes': extra_bytes, 'boot_args': boot_args, 'system_files': system_files}
 
 
 def classify_install(efi, plan):
@@ -214,7 +272,7 @@ def activation_guard(system_root, plan):
         target = Path(system_root) / name
         if target.is_symlink() or not target.is_file() or sha(target) != digest:
             raise ValueError('Activation guard is not disabled and ' + str(target) +
-                             ' is not the reviewed 666 file. Create APP/disabled first (see RECOVERY.md).')
+                             ' is not the reviewed payload file. Create APP/disabled first (see RECOVERY.md).')
     return 'reviewed-system-files-installed'
 
 
@@ -283,13 +341,16 @@ def check_live_opencore(plan):
 def resolve_efi(args, plan, writable):
     if args.efi_root is not None:
         return {'efi': args.efi_root.absolute(), 'discovery': 'test-root (not a booted-EFI proof)', 'handle': None}
-    handle = mount_efi(plan['uuid'], writable)
+    uuid = (getattr(args, 'efi_uuid', None) or plan['uuid']).upper()
+    if not re.fullmatch(UUID_RE, uuid):
+        raise ValueError('Not a volume UUID: ' + uuid)
+    handle = mount_efi(uuid, writable)
     try:
         check_live_opencore(plan)
     except Exception:
         unmount(handle)
         raise
-    return {'efi': handle['mount'] / 'EFI', 'discovery': 'unique EFI partition by VolumeUUID; live NVRAM matches baseline',
+    return {'efi': handle['mount'] / 'EFI', 'discovery': 'unique EFI partition by VolumeUUID %s; live NVRAM matches baseline' % uuid,
             'handle': handle}
 
 
@@ -395,28 +456,30 @@ def apply_install(plan, efi, backup_root):
     created, changes = [], []
     kext_dir = efi / 'OC/Kexts' / plan['bundle']
     pending = efi / 'OC/Kexts' / (PENDING + plan['bundle'])
-    recovery = efi / plan['recovery']
+    extra_targets = {name: efi / name for name in plan['extra_bytes']}
     try:
-        if os.path.lexists(kext_dir) or os.path.lexists(pending) or os.path.lexists(recovery):
+        if os.path.lexists(kext_dir) or os.path.lexists(pending) or any(os.path.lexists(p) for p in extra_targets.values()):
             raise ValueError('Target EFI path already exists')
         created.append(pending)
         copy_tree_exclusive(plan['payload'] / 'EFI/OC/Kexts' / plan['bundle'], pending)
         os.rename(pending, kext_dir)
         created[-1] = kext_dir
         changes.append('copied kext OC/Kexts/' + plan['bundle'])
-        created.append(recovery)
-        with open(recovery, 'xb') as stream:
-            stream.write(plan['baseline_bytes'])
-            stream.flush()
-            os.fsync(stream.fileno())
-        changes.append('kept pre-install config at ' + plan['recovery'])
+        for name, target in sorted(extra_targets.items()):
+            if not target.parent.is_dir():
+                raise ValueError('EFI directory missing for ' + name)
+            created.append(target)
+            with open(target, 'xb') as stream:
+                stream.write(plan['extra_bytes'][name])
+                stream.flush()
+                os.fsync(stream.fileno())
+            changes.append('added ' + name)
         if tree(efi) != {**plan['baseline'], **plan['add']}:
             raise ValueError('Unexpected EFI state after additions')
         replace_file(efi / CONFIG, plan['candidate_bytes'])
-        path, old, new = plan['config_change']
-        changes.append('replaced OC/config.plist atomically: %s %r -> %r' % ('/'.join(map(str, path)), old, new))
-        if plan.get('hotkeys'):
-            changes.append('  and Misc/Boot/PollAppleHotKeys False -> True (Shift in the picker boots with -x)')
+        changes.append('replaced OC/config.plist atomically')
+        for path, old, new in plan['config_edits']:
+            changes.append('  config edit %s: %r -> %r' % (path, old, new))
         if tree(efi) != plan['candidate'] or plistlib.loads((efi / CONFIG).read_bytes()) != plan['candidate_cfg']:
             raise ValueError('Final EFI verification failed')
     except Exception as error:
@@ -431,13 +494,12 @@ def apply_install(plan, efi, backup_root):
 def planned_actions(plan, state, backup_root):
     if state == 'candidate':
         return ['none: the EFI already holds the candidate']
-    path, old, new = plan['config_change']
     return [
         'create private backup %s/efi-backup-<timestamp>/ (EFI baseline, %d files, plus manifest)' % (backup_root, len(plan['baseline'])),
         'copy OC/Kexts/%s (exclusive, via pending name)' % plan['bundle'],
-        'create %s (baseline config bytes, exclusive)' % plan['recovery'],
-        'atomically replace OC/config.plist: %s %r -> %r%s' % ('/'.join(map(str, path)), old, new,
-                                                              ', and Misc/Boot/PollAppleHotKeys False -> True' if plan.get('hotkeys') else ''),
+        'create exclusively: ' + ', '.join(sorted(plan['extra_bytes'])),
+        'atomically replace OC/config.plist with the listed edits:',
+        *['    %s: %r -> %r' % edit for edit in plan['config_edits']],
         'verify exact EFI inventory against the candidate (%d files)' % len(plan['candidate']),
         'unmount only if this run mounted the volume',
     ]
@@ -452,6 +514,8 @@ def main(argv=None):
     parser.add_argument('--system-root', type=Path, default=DEFAULT_SYSTEM_ROOT)
     parser.add_argument('--backup-root', type=Path, help='default: SYSTEM_ROOT/' + BACKUP_REL)
     parser.add_argument('--efi-root', type=Path, help='TEST ONLY: EFI directory instead of the mounted volume')
+    parser.add_argument('--efi-uuid', help='target EFI partition VolumeUUID (default: the payload manifest efi_volume_uuid; '
+                                           'the CachyOS partition 97C4AA5C-... is the v3 default, the OCBOOT stick 7ADF2DE6-... needs this flag)')
     args = parser.parse_args(argv)
     system_root = args.system_root.absolute()
     backup_root = (args.backup_root or system_root / BACKUP_REL).absolute()

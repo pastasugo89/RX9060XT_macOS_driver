@@ -21,22 +21,41 @@ PROBE = APP + '/context-isolation-probe'
 METAL = 'Library/GPUBundles/Navi48Metal.bundle'
 JOB = 'Library/LaunchDaemons/org.navi44.accelerated-trial.plist'
 CRITICAL = (JOB, APP+'/boot-state.py', APP+'/navi48test', APP+'/n48nub', APP+'/seed-gpu-apps.py', APP+'/app-allowlist.json')
-EFI = Path('/Volumes/OCBOOT/EFI')
-UUID = '7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3'
+# The payload owns only OC/ and RECOVERY/ on the EFI volume. Everything else on it (CachyOS loader and scripts, BOOT/,
+# System Volume Information) is never read, listed, required or written.
+SCOPE = ('OC/', 'RECOVERY/')
+STICK_UUID = '7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3'   # OCBOOT USB stick (earlier target)
+LOCAL_UUID = '97C4AA5C-B87D-3786-B1B3-F84A76840DEF'   # CachyOS EFI partition (disk1s1): default for new payloads
+EFI_UUIDS = (LOCAL_UUID, STICK_UUID)
+UUID = LOCAL_UUID
 PROFILE = 'stage26-logical-contexts-v1'
 OLD = 'Navi48Bringup-eight-0.0.665.kext'
 BASE_SHA = '607fd0513cac568996d788f4037ba4824ed005cc4ff6eb32d6220dbcd196fd24'
 BASE_CONFIG_SHA = '92379563c75677729be3433ce4f5d659fcdf32c7d8729b3feadd9e1daa7934cb'
 # Each release: its kext bundle, its recovery copy of the 665 config, the reviewed kernel binary, the CPU-test count,
-# the strings its binary must contain, and the exact list of config paths it changes (checked, never assumed).
+# the strings its binary must contain, the exact list of config edits (path, old, new: checked, never assumed), and the
+# extra EFI files it adds: 'baseline' means the baseline config bytes, otherwise the sha256 of the reviewed source file.
+STARTUP = 'OC/Tools/startup.nsh'
+STARTUP_SOURCE = Path(__file__).resolve().parent/'kernel-efi/startup.nsh'
+STARTUP_SHA = '318f9fb9dc8e4419b9a8a33f58f866b961ddf7fc72fa93a178bfe71a6bbd5753'
+EXTRA_SOURCES = {STARTUP: STARTUP_SOURCE}
 RELEASES = {
     '0.0.666': {'new': 'Navi48Bringup-contexts-0.0.666.kext', 'recovery': 'RECOVERY/pre-contexts-666-config.plist',
                 'kernel_sha': '3ddcb7b087683c0e7a6416232534569d3aca37b747787669711db34d8f2d5f51', 'tests': 5,
-                'strings': (), 'edits': ['Kernel/Add/7/BundlePath'], 'guard': 'stage26', 'metal': None},
+                'strings': (), 'guard': 'stage26', 'metal': None,
+                'edits': [{'path': 'Kernel/Add/7/BundlePath', 'old': OLD, 'new': 'Navi48Bringup-contexts-0.0.666.kext'}],
+                'extras': {'RECOVERY/pre-contexts-666-config.plist': 'baseline'}},
     '0.0.667': {'new': 'Navi48Bringup-contexts-0.0.667.kext', 'recovery': 'RECOVERY/pre-contexts-667-config.plist',
                 'kernel_sha': '976b3375082c3f319f940b02f74fd5ff03155884a39feae771edfab62623f287',   # reviewed 0.0.667 build (db8b202)
                 'tests': 6, 'strings': ('navi48-off', 'application budget', 'open refused (NoResources)'),
-                'edits': ['Kernel/Add/7/BundlePath', 'Misc/Boot/PollAppleHotKeys'],
+                'edits': [
+                    {'path': 'Kernel/Add/7/BundlePath', 'old': OLD, 'new': 'Navi48Bringup-contexts-0.0.667.kext'},
+                    {'path': 'Misc/Tools/0/Name', 'old': 'Ripristino EFI (UEFI Shell)',
+                     'new': 'Ripristino EFI: driver funzionanti (665)'},
+                    {'path': 'Misc/Tools/0/Comment', 'old': 'Recovery shell: restore stage17 config',
+                     'new': 'Restores RECOVERY/funzionante-665.plist (kernel 665) and reboots'}],
+                'extras': {'RECOVERY/pre-contexts-667-config.plist': 'baseline',
+                           'RECOVERY/funzionante-665.plist': 'baseline', STARTUP: STARTUP_SHA},
                 # the LIVE bundle-30 guard (stage30-vonly-v1) is the base; its Metal expectations are bundle 30
                 'guard': 'live', 'metal': {'Contents/MacOS/Navi48Metal': '8fd0c7e3c3cb73090bcc3b3507985abf3785a2f1a94c2d1ce21d9eb8ea085230',
                                            'Contents/Resources/libn48xlate.dylib': '9a371cc19ee3180c13cac8277f3af15fd6de3677df2b96f848a81e51211f1a1a'}},
@@ -67,6 +86,36 @@ def metadata(path):
     if path.is_symlink() or (path.exists() and not path.is_file()):
         raise ValueError('Unsafe target: '+str(path))
     return {'sha256': sha(path), 'mode': path.stat().st_mode & 0o777} if path.exists() else None
+
+
+def scoped(inventory):
+    return {k: v for k, v in inventory.items() if k.startswith(SCOPE)}
+
+
+def scoped_tree(root):
+    """Inventory of the payload-owned EFI paths (OC/ and RECOVERY/) only; the rest of the volume is never read."""
+    result = {}
+    for top in ('OC', 'RECOVERY'):
+        base = root/top
+        if base.is_symlink() or not base.is_dir(): raise ValueError('Missing/unsafe tree: '+str(base))
+        for p in sorted(base.rglob('*')):
+            if p.is_symlink() or not (p.is_file() or p.is_dir()): raise ValueError('Unsafe file: '+str(p))
+            if p.is_file(): result[p.relative_to(root).as_posix()] = sha(p)
+    return result
+
+
+def efi_mount(uuid):
+    """Mount point of the single mounted EFI partition with this VolumeUUID (the mount root; EFI/ is below it)."""
+    listing = plistlib.loads(subprocess.check_output(['diskutil','list','-plist']))
+    matches = []
+    for disk in listing.get('AllDisksAndPartitions', []):
+        for part in disk.get('Partitions', []):
+            if part.get('Content') != 'EFI': continue
+            info = plistlib.loads(subprocess.check_output(['diskutil','info','-plist',part['DeviceIdentifier']]))
+            if str(info.get('VolumeUUID','')).upper() == uuid: matches.append(info)
+    if len(matches) != 1 or not matches[0].get('MountPoint'):
+        raise ValueError('Expected one mounted EFI partition with VolumeUUID %s' % uuid)
+    return Path(matches[0]['MountPoint'])
 
 
 def boot_uuid():
@@ -102,14 +151,24 @@ def diff_paths(a, b, prefix=''):
     return [] if a == b else [prefix]
 
 
+def path_slot(data, path):
+    """(container, key) for a slash path such as Kernel/Add/7/BundlePath; list indexes are integers."""
+    parts = path.split('/')
+    node = data
+    for part in parts[:-1]:
+        node = node[int(part)] if isinstance(node, list) else node[part]
+    last = parts[-1]
+    return node, (int(last) if isinstance(node, list) else last)
+
+
 def expected_config(original, rel):
-    """The baseline boot configuration with exactly the release's listed edits."""
+    """The baseline boot configuration with exactly the release's listed edits; each edit must find its listed old value."""
     config = copy.deepcopy(original)
-    baseline_config(config)['BundlePath'] = rel['new']
-    if 'Misc/Boot/PollAppleHotKeys' in rel['edits']:
-        if config['Misc']['Boot'].get('PollAppleHotKeys') is not False:
-            raise ValueError('Baseline PollAppleHotKeys is not false')
-        config['Misc']['Boot']['PollAppleHotKeys'] = True   # Shift in the OpenCore picker boots with -x
+    for edit in rel['edits']:
+        container, key = path_slot(config, edit['path'])
+        if container[key] != edit['old']:
+            raise ValueError('Baseline value differs from the listed edit: ' + edit['path'])
+        container[key] = edit['new']
     return config
 
 
@@ -122,20 +181,32 @@ echo 'LOGICAL_CONTEXT_CAPACITY_VERIFIED=64'
 '''
 
 
+# Inserted before the live guard's fbidentity line. Loaded 0.0.667: the capability checks (dynamic VMID, logical
+# context 63). Loaded 0.0.665 (the recovery entry restored that configuration): the checks are skipped and the live guard
+# runs as it always has. Any other kernel stops. Only additions: no live line is removed or changed.
+KERNEL_BRANCH = r'''if printf '%s\n' "$loaded" | grep -Eq 'com\.navi48\.bringup[[:space:]]+\(0\.0\.667\)'; then
+PROBE_BLOCK_HERE
+elif printf '%s\n' "$loaded" | grep -Eq 'com\.navi48\.bringup[[:space:]]+\(0\.0\.665\)'; then
+echo 'CAPABILITY_CHECKS=skipped for kernel 0.0.665 (recovery configuration)'
+else
+echo 'STOP expected kernel 667 or 665'; exit 1
+fi
+'''
+
+
 def guard_live(original, probe_sha, version):
-    """The live bundle-30 guard plus only the 0.0.667 expectations: the loaded-kext version and the capability probe
-    (dynamic VMID, logical context 63). Profile name, Metal hashes and everything else are the live file's own."""
-    build = version.rsplit('.', 1)[1]
-    version_re = version.replace('.', r'\.')
+    """The live bundle-30 guard plus only the 0.0.667 branch (see KERNEL_BRANCH). Profile name, Metal hashes and every
+    other live line are the live file's own."""
+    if version != '0.0.667': raise ValueError('The live guard is only derived for 0.0.667')
     def replace(old, new):
         nonlocal original
         if original.count(old) != 1: raise ValueError('Unexpected activation guard baseline: '+old[:80])
         original = original.replace(old, new)
-    marker = '[[ "$loaded" == *com.navi48.bringup* && "$loaded" == *com.hackintosh.RDNA4FB* ]] || { echo \'STOP bringup or RDNA4FB kext missing\'; exit 1; }'
-    replace(marker, marker + '\n' + r'''printf '%s\n' "$loaded" | grep -Eq 'com\.navi48\.bringup[[:space:]]+\(@RE@\)' || { echo 'STOP expected kernel @BUILD@'; exit 1; }'''
-            .replace('@RE@', version_re).replace('@BUILD@', build))
+    kext_check = '[[ "$loaded" == *com.navi48.bringup* && "$loaded" == *com.hackintosh.RDNA4FB* ]] || { echo \'STOP bringup or RDNA4FB kext missing\'; exit 1; }'
+    if original.count(kext_check) != 1: raise ValueError('Unexpected kext check in the live guard')
     marker = 'fbidentity=$(ioreg -r -c RDNA4FB -d 1 -w 0 2>/dev/null || true)'
-    replace(marker, PROBE_BLOCK.replace('PROBE_DIGEST', probe_sha) + '\n' + marker)
+    branch = KERNEL_BRANCH.replace('PROBE_BLOCK_HERE\n', PROBE_BLOCK.replace('PROBE_DIGEST', probe_sha))
+    replace(marker, branch + marker)
     return original
 
 
@@ -182,7 +253,7 @@ def baseline_sources(snapshot):
     m = json.loads((snapshot/'manifest.json').read_text())
     _, rel = release_of(m)
     sources = {}
-    for name, digest in m['baseline_efi_files'].items():
+    for name, digest in scoped(m['baseline_efi_files']).items():
         if not safe(name):
             raise ValueError('Unsafe baseline path: '+name)
         path = snapshot/'EFI'/rel['recovery'] if name == 'OC/config.plist' else snapshot/'EFI'/name
@@ -192,7 +263,7 @@ def baseline_sources(snapshot):
     return sources
 
 
-def verify(payload, live=False, efi=EFI, system_root=Path('/')):
+def verify(payload, live=False, efi=None, system_root=Path('/')):
     if payload.is_symlink(): raise ValueError('Symlink payload')
     m = json.loads((payload/'manifest.json').read_text())
     if m.get('schema') != 1 or m.get('profile') != PROFILE or m.get('status') != 'prepared-not-installed':
@@ -217,13 +288,19 @@ def verify(payload, live=False, efi=EFI, system_root=Path('/')):
         if not safe(name) or (name != 'OC/config.plist' and staged.get(name) != digest):
             raise ValueError('Original EFI path changed: '+name)
     additions = {k:v for k,v in staged.items() if k not in base}
-    if additions != m['add_files'] or any(not (k.startswith('OC/Kexts/'+rel['new']+'/') or k == rel['recovery']) for k in additions):
+    kexts = {k for k in additions if k.startswith('OC/Kexts/'+rel['new']+'/')}
+    if not kexts or additions != m['add_files'] or set(additions) != kexts | set(rel['extras']):
         raise ValueError('Unexpected EFI additions')
-    if additions.get(rel['recovery']) != base['OC/config.plist']: raise ValueError('Recovery config differs from original')
+    for name, want in rel['extras'].items():
+        if additions[name] != (base['OC/config.plist'] if want == 'baseline' else want):
+            raise ValueError('Unexpected content for EFI addition: '+name)
     original = plistlib.loads((payload/'EFI'/rel['recovery']).read_bytes())
     staged_config = plistlib.loads((payload/'EFI/OC/config.plist').read_bytes())
-    if [d[1:] for d in diff_paths(original, staged_config)] != rel['edits'] or staged_config != expected_config(original, rel):
+    listed = sorted(e['path'] for e in rel['edits'])
+    if sorted(d[1:] for d in diff_paths(original, staged_config)) != listed or staged_config != expected_config(original, rel):
         raise ValueError('Boot configuration differs from the reviewed edits')
+    if 'config_edits' in m and m['config_edits'] != rel['edits']:
+        raise ValueError('Manifest config edits differ from the reviewed edits')
     bundle = payload/'EFI/OC/Kexts'/rel['new']
     if rel['kernel_sha'] is None or sha(bundle/'Contents/MacOS/Navi48Bringup') != rel['kernel_sha']:
         raise ValueError('Unexpected kernel binary')
@@ -238,14 +315,15 @@ def verify(payload, live=False, efi=EFI, system_root=Path('/')):
     if sha(old_guard) != m['system_before'][GUARD]['sha256'] or guard != make_guard(rel, old_guard.read_text(), sha(payload/'system'/PROBE), version):
         raise ValueError('Activation guard differs from the reviewed transformation')
     subprocess.run(['/bin/bash','-n',str(payload/'system'/GUARD)],check=True)
-    if m['efi_volume_uuid'] != UUID: raise ValueError('Unexpected EFI volume identity')
+    if m['efi_volume_uuid'] not in EFI_UUIDS: raise ValueError('Unexpected EFI volume identity')
     if live:
         if boot_uuid() != m['prepared_boot_uuid']: raise ValueError('Payload prepared in another boot')
         if subprocess.check_output(['sw_vers','-buildVersion'],text=True).strip() != '25G83': raise ValueError('Different macOS build')
+        if efi is None: efi = efi_mount(m['efi_volume_uuid'])/'EFI'
         volume = plistlib.loads(subprocess.check_output(['diskutil','info','-plist',str(efi.parent)]))
-        if volume.get('MountPoint') != str(efi.parent) or volume.get('VolumeUUID','').upper() != UUID or volume.get('FilesystemType') != 'msdos':
+        if volume.get('MountPoint') != str(efi.parent) or volume.get('VolumeUUID','').upper() != m['efi_volume_uuid'] or volume.get('FilesystemType') != 'msdos':
             raise ValueError('Wrong mounted EFI volume')
-        if tree(efi) != base: raise ValueError('Live EFI differs from baseline')
+        if scoped_tree(efi) != scoped(base): raise ValueError('Live EFI differs from baseline')
         if tree(system_root/METAL) != m['working_metal_files']: raise ValueError('Working Metal changed')
         for name, expected in {**m['system_before'], **m['critical_system_files']}.items():
             if not safe(name) or metadata(system_root/name) != expected: raise ValueError('Live system dependency changed: '+name)
@@ -270,18 +348,18 @@ def prepare(candidate, output, baseline_payload=None):
     bundle = candidate/build['candidate_bundle']
     if not bundle.resolve().is_relative_to(candidate) or sha(bundle/'Contents/MacOS/Navi48Bringup') != rel['kernel_sha']:
         raise ValueError('Candidate bundle changed')
-    if baseline_payload is None:
-        sources = None
-        before = tree(EFI)
-        config_bytes = (EFI/'OC/config.plist').read_bytes()
+    live = baseline_payload is None
+    if live:
+        live_efi = efi_mount(UUID)/'EFI'
+        sources = {name: live_efi/name for name in scoped_tree(live_efi)}
     else:
         sources = baseline_sources(baseline_payload)
-        before = {name: sha(path) for name, path in sources.items()}
-        config_bytes = sources['OC/config.plist'].read_bytes()
+    before = {name: sha(path) for name, path in sources.items()}
+    config_bytes = sources['OC/config.plist'].read_bytes()
     config = plistlib.loads(config_bytes); entry = baseline_config(config)
     if before.get('OC/Kexts/'+OLD+'/'+entry['ExecutablePath']) != BASE_SHA or before['OC/config.plist'] != build['active_baseline']['config_sha256']:
         raise ValueError('Working EFI is not the compiled baseline')
-    if any(k.startswith('OC/Kexts/'+rel['new']+'/') or k == rel['recovery'] for k in before):
+    if any(k.startswith('OC/Kexts/'+rel['new']+'/') or k in rel['extras'] for k in before):
         raise ValueError('Candidate/recovery EFI paths already exist')
     if any(x.get('BundlePath') == rel['new'] for x in config['Kernel']['Add']): raise ValueError('Candidate already listed in config')
     original_guard = (Path('/')/GUARD).read_text()
@@ -294,16 +372,16 @@ def prepare(candidate, output, baseline_payload=None):
     shutil.copyfile(candidate/'manifest.json',output/'evidence/build-manifest.json')
     (output/'evidence/original-guard.sh').write_text(original_guard)
     efi_out = output/'EFI'
-    if sources is None:
-        shutil.copytree(EFI, efi_out)
-    else:
-        for name, path in sources.items():
-            (efi_out/name).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, efi_out/name)
+    for name, path in sources.items():
+        (efi_out/name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, efi_out/name)
     if tree(efi_out) != before: raise ValueError('Staged baseline differs from the recorded baseline')
     shutil.copytree(bundle, efi_out/'OC/Kexts'/rel['new'])
-    (efi_out/rel['recovery']).parent.mkdir(parents=True, exist_ok=True)
-    (efi_out/rel['recovery']).write_bytes(config_bytes)
+    for name, want in rel['extras'].items():
+        data = config_bytes if want == 'baseline' else EXTRA_SOURCES[name].read_bytes()
+        if want != 'baseline' and hashlib.sha256(data).hexdigest() != want: raise ValueError('Not the reviewed file: '+name)
+        (efi_out/name).parent.mkdir(parents=True, exist_ok=True)
+        (efi_out/name).write_bytes(data)
     (efi_out/'OC/config.plist').write_bytes(plistlib.dumps(expected_config(config, rel), sort_keys=False))
     verifier = ROOT/'research/ext/navi44-baremetal-stage1-candidate-20261027/tools/ocvalidate'
     subprocess.run([str(verifier), str(efi_out/'OC/config.plist')], check=True)
@@ -323,9 +401,9 @@ def prepare(candidate, output, baseline_payload=None):
          'baseline_efi_files':before,'candidate_efi_files':staged,
          'baseline_config_sha256':before['OC/config.plist'],
          'candidate_config_sha256':staged['OC/config.plist'],
-         'config_edits':rel['edits'],
-         'baseline_source':'live-efi' if sources is None else 'recorded-payload:'+baseline_payload.name,
-         'live_efi_verified': sources is None,
+         'config_edits':rel['edits'],'recovery_copy':rel['recovery'],
+         'baseline_source':'live-efi' if live else 'recorded-payload:'+baseline_payload.name,
+         'live_efi_verified': live,
          'add_files':{k:v for k,v in staged.items() if k not in before},
          'system_before':baseline_system,'critical_system_files':critical,
          'working_metal_files':metal,'files':files,
@@ -334,7 +412,7 @@ def prepare(candidate, output, baseline_payload=None):
          'probe_source_sha256':sha(probe_source),'preparer_sha256':sha(Path(__file__)),
          'hardware_validation':'not performed','installation':'not performed'}
     (output/'manifest.json').write_text(json.dumps(m,indent=2,sort_keys=True)+'\n')
-    verify(output, live=sources is None)
+    verify(output, live=live)
     return m
 
 

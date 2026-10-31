@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Offline tests for install-kernel-efi.py and restore-kernel-efi.py.
+"""Offline tests for install-kernel-efi.py, restore-kernel-efi.py and the recovery startup script.
 
-Every test works in a temporary sandbox: a fake EFI built from kernel-payload-v2's baseline,
-a temporary system root and a temporary backup root. No real EFI, /Library or diskutil call
-is made. The payload directory is only read.
+Every test works in a temporary sandbox: a fake EFI built from kernel-payload-v3's baseline, a temporary system
+root and a temporary backup root. No real EFI, /Library or diskutil call is made. The payload directories are only read.
 """
+import argparse
 import importlib.util
 import json
 import os
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -19,9 +20,20 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-PAYLOAD_SRC = REPO / 'research/builds/macos-20261031/production/kernel-payload-v2'
+PAYLOAD_SRC = REPO / 'research/builds/macos-20261031/production/kernel-payload-v3'
+PAYLOAD_V2 = REPO / 'research/builds/macos-20261031/production/kernel-payload-v2'
 INSTALL = HERE / 'install-kernel-efi.py'
 RESTORE = HERE / 'restore-kernel-efi.py'
+STARTUP = HERE / 'startup.nsh'
+LOCAL_UUID = '97C4AA5C-B87D-3786-B1B3-F84A76840DEF'   # CachyOS EFI partition, v3 default
+STICK_UUID = '7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3'   # OCBOOT stick, only with --efi-uuid
+CACHYOS_FILES = {
+    'cachyos/grubx64.efi': b'cachyos grub loader',
+    'cachyos/rx9060xt-vfio-test.env': b'VFIO_TEST=1\n',
+    'boot/bootx64.efi': b'cachyos fallback loader',
+    'navi44-grub/run-tahoe.sh': b'#!/bin/sh\necho grub\n',
+    'System Volume Information/WPSettings.dat': b'svi',
+}
 
 
 def load(name, path):
@@ -35,9 +47,30 @@ inst = load('install_kernel_efi', INSTALL)
 rest = load('restore_kernel_efi', RESTORE)
 CONFIG = inst.CONFIG
 MANIFEST = json.loads((PAYLOAD_SRC / 'manifest.json').read_text())
-BUNDLE = 'Navi48Bringup-contexts-0.0.666.kext'
-RECOVERY = 'RECOVERY/pre-contexts-666-config.plist'
+BUNDLE = 'Navi48Bringup-contexts-0.0.667.kext'
+RECOVERY = 'RECOVERY/pre-contexts-667-config.plist'
+FUNZIONANTE = 'RECOVERY/funzionante-665.plist'
+STARTUP_EFI = 'OC/Tools/startup.nsh'
 GUARD = 'Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh'
+NON_KEXT_ADDITIONS = sorted(k for k in MANIFEST['add_files'] if not k.startswith('OC/Kexts/'))
+
+
+def slot(data, path):
+    parts = path.split('/')
+    node = data
+    for part in parts[:-1]:
+        node = node[int(part)] if isinstance(node, list) else node[part]
+    last = parts[-1]
+    return node, (int(last) if isinstance(node, list) else last)
+
+
+def with_listed_edits(cfg):
+    """The baseline configuration with every edit listed in the payload manifest applied."""
+    for edit in MANIFEST['config_edits']:
+        container, key = slot(cfg, edit['path'])
+        assert container[key] == edit['old'], edit['path']
+        container[key] = edit['new']
+    return cfg
 
 
 class Sandbox(unittest.TestCase):
@@ -52,11 +85,14 @@ class Sandbox(unittest.TestCase):
         shutil.copytree(self.payload / 'EFI', self.efi, symlinks=False)
         # Make the live fake EFI the baseline: no additions, original config bytes.
         shutil.rmtree(self.efi / 'OC/Kexts' / BUNDLE)
-        (self.efi / RECOVERY).unlink()
+        for name in NON_KEXT_ADDITIONS:
+            (self.efi / name).unlink()
         (self.efi / CONFIG).write_bytes((self.payload / 'EFI' / RECOVERY).read_bytes())
         self.baseline = MANIFEST['baseline_efi_files']
         self.candidate = MANIFEST['candidate_efi_files']
         self.assertEqual(inst.tree(self.efi), self.baseline)
+        self.add_cachyos_volume()
+        self.foreign_before = self.foreign_inventory()
         self.system = self.root / 'system'
         (self.system / inst.APP_REL).mkdir(parents=True)
         self.backup_root = self.system / inst.BACKUP_REL
@@ -64,6 +100,21 @@ class Sandbox(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
+
+    def add_cachyos_volume(self):
+        """The local ESP as it is: CachyOS files and scripts beside OC/ and RECOVERY/. No BOOT/ directory."""
+        for name, data in CACHYOS_FILES.items():
+            target = self.efi / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+
+    def top_names(self):
+        return sorted(p.name for p in self.efi.iterdir())
+
+    def foreign_inventory(self):
+        """Every regular file on the volume outside OC/ and RECOVERY/: must never change."""
+        return {p.relative_to(self.efi).as_posix(): inst.sha(p) for p in sorted(self.efi.rglob('*'))
+                if p.is_file() and not p.relative_to(self.efi).as_posix().startswith(inst.SCOPE_PREFIXES)}
 
     def disable_activation(self):
         (self.system / inst.APP_REL / 'disabled').write_text('')
@@ -88,6 +139,31 @@ class Sandbox(unittest.TestCase):
 
     def snapshot(self):
         return inst.tree(self.efi), inst.tree(self.payload / 'EFI')
+
+    def reseal_config(self, cfg):
+        """Write a changed candidate config into the payload and its manifest (hashes only, edits untouched)."""
+        data = plistlib.dumps(cfg, sort_keys=False)
+        (self.payload / 'EFI' / CONFIG).write_bytes(data)
+        m = json.loads((self.payload / 'manifest.json').read_text())
+        m['candidate_efi_files'][CONFIG] = inst.sha_bytes(data)
+        m['candidate_config_sha256'] = inst.sha_bytes(data)
+        (self.payload / 'manifest.json').write_text(json.dumps(m))
+
+    def candidate_cfg(self):
+        return plistlib.loads((self.payload / 'EFI' / CONFIG).read_bytes())
+
+    def baseline_cfg(self):
+        return plistlib.loads((self.payload / 'EFI' / RECOVERY).read_bytes())
+
+    def add_payload_file(self, name, data):
+        """Add an unlisted file to the payload (inventory and manifest updated consistently)."""
+        target = self.payload / 'EFI' / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        m = json.loads((self.payload / 'manifest.json').read_text())
+        m['candidate_efi_files'][name] = inst.sha_bytes(data)
+        m['add_files'][name] = inst.sha_bytes(data)
+        (self.payload / 'manifest.json').write_text(json.dumps(m))
 
 
 class InstallTests(Sandbox):
@@ -129,45 +205,38 @@ class InstallTests(Sandbox):
         self.assertEqual(inst.tree(self.efi), self.baseline)
         self.assertEqual(self.backups(), [])
 
-    def test_refuses_config_change_beyond_bundle_path(self):
-        # Manifest-consistent payload whose config changes a second key: must fail the exact-diff rule.
-        cfg = plistlib.loads((self.payload / 'EFI' / CONFIG).read_bytes())
+    def test_refuses_config_change_beyond_listed_edits(self):
+        # A manifest-consistent payload whose config changes a key that the manifest does not list.
+        cfg = with_listed_edits(self.baseline_cfg())
         cfg['Misc']['Boot']['Timeout'] = 9
-        data = plistlib.dumps(cfg, sort_keys=False)
-        (self.payload / 'EFI' / CONFIG).write_bytes(data)
-        m = json.loads((self.payload / 'manifest.json').read_text())
-        m['candidate_efi_files'][CONFIG] = inst.sha_bytes(data)
-        m['candidate_config_sha256'] = inst.sha_bytes(data)
-        (self.payload / 'manifest.json').write_text(json.dumps(m))
-        with self.assertRaisesRegex(ValueError, 'exactly one key'):
+        self.reseal_config(cfg)
+        with self.assertRaisesRegex(ValueError, 'differs from the listed edits'):
             inst.load_payload(self.payload)
 
-    def _payload_with_hotkeys(self, value):
-        cfg = plistlib.loads((self.payload / 'EFI' / CONFIG).read_bytes())
-        cfg['Misc']['Boot']['PollAppleHotKeys'] = value
-        data = plistlib.dumps(cfg, sort_keys=False)
-        (self.payload / 'EFI' / CONFIG).write_bytes(data)
-        m = json.loads((self.payload / 'manifest.json').read_text())
-        m['candidate_efi_files'][CONFIG] = inst.sha_bytes(data)
-        m['candidate_config_sha256'] = inst.sha_bytes(data)
-        (self.payload / 'manifest.json').write_text(json.dumps(m))
+    def test_refuses_listed_edit_that_is_not_applied(self):
+        # The manifest lists the Tools edits, but the candidate config does not carry them.
+        cfg = self.candidate_cfg()
+        cfg['Misc']['Tools'][0]['Name'] = 'Ripristino EFI (UEFI Shell)'
+        self.reseal_config(cfg)
+        with self.assertRaisesRegex(ValueError, 'differs from the listed edits'):
+            inst.load_payload(self.payload)
 
-    def test_accepts_poll_apple_hotkeys_enabled_beside_bundle_path(self):
-        # 0.0.667 recovery kill switch: PollAppleHotKeys false -> true is the one extra change allowed.
-        self._payload_with_hotkeys(True)
-        inst.load_payload(self.payload)
-
-    def test_refuses_poll_apple_hotkeys_other_change(self):
-        cfg = plistlib.loads((self.payload / 'EFI' / CONFIG).read_bytes())
+    def test_refuses_poll_apple_hotkeys_flip_unless_listed(self):
+        # The former PollAppleHotKeys special case is gone: the flip is an ordinary unlisted edit and is refused.
+        cfg = with_listed_edits(self.baseline_cfg())
         cfg['Misc']['Boot']['PollAppleHotKeys'] = True
-        cfg['Misc']['Boot']['Timeout'] = 9
-        data = plistlib.dumps(cfg, sort_keys=False)
-        (self.payload / 'EFI' / CONFIG).write_bytes(data)
-        m = json.loads((self.payload / 'manifest.json').read_text())
-        m['candidate_efi_files'][CONFIG] = inst.sha_bytes(data)
-        m['candidate_config_sha256'] = inst.sha_bytes(data)
-        (self.payload / 'manifest.json').write_text(json.dumps(m))
-        with self.assertRaisesRegex(ValueError, 'exactly one key'):
+        self.reseal_config(cfg)
+        with self.assertRaisesRegex(ValueError, 'differs from the listed edits'):
+            inst.load_payload(self.payload)
+
+    def test_refuses_manifest_without_listed_edits(self):
+        # kernel-payload-v2 (the 666 payload) predates the explicit list and is not installable by this installer.
+        with self.assertRaises(ValueError):
+            inst.load_payload(PAYLOAD_V2)
+
+    def test_refuses_unlisted_extra_file_in_payload(self):
+        self.add_payload_file('OC/Tools/other.nsh', b'echo x\r\n')
+        with self.assertRaisesRegex(ValueError, 'Unexpected EFI addition'):
             inst.load_payload(self.payload)
 
     def test_refuses_symlink_on_efi(self):
@@ -199,7 +268,87 @@ class InstallTests(Sandbox):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('test-only', json.loads(result.stdout)['error'])
 
-    def test_apply_installs_exact_candidate_with_single_key_change(self):
+    def test_cachyos_files_present_and_untouched_by_install(self):
+        self.assertEqual(self.foreign_inventory(), self.foreign_before)
+        self.assertEqual(sorted(CACHYOS_FILES), sorted(k for k in self.foreign_before))
+        rc, report = self.install()
+        self.assertEqual(rc, 0, report)
+        self.assertEqual(self.foreign_inventory(), self.foreign_before)
+        for name, data in CACHYOS_FILES.items():
+            self.assertEqual((self.efi / name).read_bytes(), data, name)
+
+    def test_boot_directory_is_never_written(self):
+        # FAT is case-insensitive: BOOT/ and boot/ are one directory here, so compare the top-level names.
+        names = self.top_names()
+        rc, report = self.install()
+        self.assertEqual(rc, 0, report)
+        self.assertEqual(self.top_names(), names)
+        self.assertEqual((self.efi / 'boot/bootx64.efi').read_bytes(), CACHYOS_FILES['boot/bootx64.efi'])
+
+    def test_stick_style_boot_directory_is_ignored(self):
+        # The stick layout has BOOT/. It is outside the scope: present or not, it is neither read into the plan nor written.
+        shutil.rmtree(self.efi / 'boot')          # on FAT, BOOT and boot are one directory
+        (self.efi / 'BOOT').mkdir()
+        (self.efi / 'BOOT' / 'BOOTx64.efi').write_bytes(b'stick loader')
+        rc, report = self.install()
+        self.assertEqual(rc, 0, report)
+        self.assertEqual((self.efi / 'BOOT' / 'BOOTx64.efi').read_bytes(), b'stick loader')
+        self.assertEqual(inst.tree(self.efi), self.candidate_scoped())
+
+    def candidate_scoped(self):
+        return {k: v for k, v in self.candidate.items() if k.startswith(inst.SCOPE_PREFIXES)}
+
+    def test_extra_files_outside_scope_are_ignored(self):
+        (self.efi / 'stray.txt').write_text('x')
+        (self.efi / 'navi44-grub' / 'extra.sh').write_text('echo extra')
+        rc, report = self.install()
+        self.assertEqual(rc, 0, report)
+        self.assertEqual((self.efi / 'stray.txt').read_text(), 'x')
+        self.assertEqual((self.efi / 'navi44-grub' / 'extra.sh').read_text(), 'echo extra')
+
+    @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0, 'needs a non-root user to make a directory unreadable')
+    def test_unreadable_system_volume_information_is_never_read(self):
+        svi = self.efi / 'System Volume Information'
+        svi.chmod(0)
+        try:
+            rc, report = self.install()
+            self.assertEqual(rc, 0, report)
+        finally:
+            svi.chmod(0o755)
+
+    def test_target_uuid_defaults_to_local_partition_and_flag_overrides(self):
+        plan = inst.load_payload(self.payload)
+        self.assertEqual(plan['uuid'], LOCAL_UUID)
+        seen = []
+
+        def fake_mount(uuid, writable):
+            seen.append(uuid)
+            raise RuntimeError('stop before mounting')
+
+        with mock.patch.object(inst, 'mount_efi', side_effect=fake_mount):
+            for efi_uuid in (None, STICK_UUID):
+                args = argparse.Namespace(efi_root=None, efi_uuid=efi_uuid)
+                with self.assertRaises(RuntimeError):
+                    inst.resolve_efi(args, plan, writable=False)
+            with self.assertRaisesRegex(ValueError, 'Not a volume UUID'):
+                inst.resolve_efi(argparse.Namespace(efi_root=None, efi_uuid='nope'), plan, writable=False)
+        self.assertEqual(seen, [LOCAL_UUID, STICK_UUID])
+
+    def test_payload_listing_boot_files_is_refused(self):
+        m = json.loads((self.payload / 'manifest.json').read_text())
+        m['baseline_efi_files']['BOOT/BOOTx64.efi'] = '0' * 64
+        (self.payload / 'manifest.json').write_text(json.dumps(m))
+        with self.assertRaisesRegex(ValueError, 'outside the OC/RECOVERY scope'):
+            inst.load_payload(self.payload)
+
+    def test_payload_lists_three_edits_and_three_extra_files(self):
+        plan = inst.load_payload(self.payload)
+        self.assertEqual([e[0] for e in plan['config_edits']],
+                         ['Kernel/Add/7/BundlePath', 'Misc/Tools/0/Name', 'Misc/Tools/0/Comment'])
+        self.assertEqual(sorted(plan['extra_bytes']), sorted([FUNZIONANTE, RECOVERY, STARTUP_EFI]))
+        self.assertEqual(plan['extra_bytes'][FUNZIONANTE], (self.payload / 'EFI' / RECOVERY).read_bytes())
+
+    def test_apply_installs_exact_candidate_with_listed_edits(self):
         before_payload = inst.tree(self.payload / 'EFI')
         rc, report = self.install()
         self.assertEqual(rc, 0, report)
@@ -208,19 +357,16 @@ class InstallTests(Sandbox):
         self.assertFalse(report['rebooted'])
         self.assertEqual(inst.tree(self.efi), self.candidate)
         self.assertEqual(inst.tree(self.payload / 'EFI'), before_payload)
-        # Exact single-key diff against the baseline bytes.
-        original = plistlib.loads((self.payload / 'EFI' / RECOVERY).read_bytes())
+        # The live config is exactly the baseline with the three listed edits.
         live_cfg = plistlib.loads((self.efi / CONFIG).read_bytes())
-        expected = plistlib.loads((self.payload / 'EFI' / RECOVERY).read_bytes())
-        expected['Kernel']['Add'][7]['BundlePath'] = BUNDLE
-        self.assertEqual(live_cfg, expected)
-        diffs = inst.leaf_diffs(original, live_cfg)
-        self.assertEqual([(p, o, n) for p, o, n in diffs],
-                         [(('Kernel', 'Add', 7, 'BundlePath'), 'Navi48Bringup-eight-0.0.665.kext', BUNDLE)])
-        # Kext and RECOVERY are byte-identical to the payload.
-        self.assertEqual(inst.tree(self.efi / 'OC/Kexts' / BUNDLE),
-                         inst.tree(self.payload / 'EFI/OC/Kexts' / BUNDLE))
-        self.assertEqual((self.efi / RECOVERY).read_bytes(), (self.payload / 'EFI' / RECOVERY).read_bytes())
+        self.assertEqual(live_cfg, with_listed_edits(plistlib.loads((self.payload / 'EFI' / RECOVERY).read_bytes())))
+        original = plistlib.loads((self.payload / 'EFI' / RECOVERY).read_bytes())
+        diffs = [(('/'.join(map(str, p))), o, n) for p, o, n in inst.leaf_diffs(original, live_cfg)]
+        self.assertEqual(sorted(diffs), sorted((e['path'], e['old'], e['new']) for e in MANIFEST['config_edits']))
+        # Kext and the extra files are byte-identical to the payload.
+        self.assertEqual(inst.full_tree(self.efi / 'OC/Kexts' / BUNDLE), inst.full_tree(self.payload / 'EFI/OC/Kexts' / BUNDLE))
+        for name in NON_KEXT_ADDITIONS:
+            self.assertEqual((self.efi / name).read_bytes(), (self.payload / 'EFI' / name).read_bytes(), name)
 
     def test_backup_contains_full_baseline_and_manifest(self):
         rc, report = self.install()
@@ -260,9 +406,10 @@ class InstallTests(Sandbox):
             with self.assertRaisesRegex(OSError, 'injected'):
                 inst.apply_install(plan, self.efi, self.backup_root)
         self.assertEqual(len(calls), 1)  # the injected failure hit the config commit exactly once
-        self.assertEqual(inst.tree(self.efi), self.baseline)  # includes no temp files, no kext, no RECOVERY
+        self.assertEqual(inst.tree(self.efi), self.baseline)  # no temp files, kext or extra files
         self.assertFalse((self.efi / 'OC/Kexts' / BUNDLE).exists())
-        self.assertFalse((self.efi / RECOVERY).exists())
+        for name in NON_KEXT_ADDITIONS:
+            self.assertFalse((self.efi / name).exists(), name)
         self.assertEqual((self.efi / CONFIG).read_bytes(), (self.payload / 'EFI' / RECOVERY).read_bytes())
 
     def test_config_replacement_is_atomic_rename(self):
@@ -331,21 +478,21 @@ class RestoreTests(Sandbox):
         self.assertFalse(report['restored'])
         self.assertEqual(inst.tree(self.efi), before)
 
-    def test_restore_from_backup_gives_exact_baseline_bytes_and_keeps_kext(self):
+    def test_restore_from_backup_gives_exact_baseline_bytes_and_keeps_additions(self):
         rc, report = self.restore('--apply', '--backup', str(self.backups()[0]))
         self.assertEqual(rc, 0, report)
         self.assertEqual((self.efi / CONFIG).read_bytes(), self.baseline_bytes)
-        expected = {**self.baseline, **{k: v for k, v in MANIFEST['add_files'].items()}}
+        expected = {**self.baseline, **MANIFEST['add_files']}
         self.assertEqual(inst.tree(self.efi), expected)
         self.assertFalse(report['activated'])
 
-    def test_restore_remove_kext_keeps_recovery(self):
+    def test_restore_remove_kext_keeps_recovery_files(self):
         rc, report = self.restore('--apply', '--remove-kext', '--backup', str(self.backups()[0]))
         self.assertEqual(rc, 0, report)
         self.assertFalse((self.efi / 'OC/Kexts' / BUNDLE).exists())
-        self.assertEqual(report['remaining_additions'], [RECOVERY])
+        self.assertEqual(report['remaining_additions'], NON_KEXT_ADDITIONS)
         self.assertEqual((self.efi / RECOVERY).read_bytes(), self.baseline_bytes)
-        self.assertEqual(inst.tree(self.efi), {**self.baseline, RECOVERY: MANIFEST['add_files'][RECOVERY]})
+        self.assertEqual(inst.tree(self.efi), {**self.baseline, **{k: MANIFEST['add_files'][k] for k in NON_KEXT_ADDITIONS}})
 
     def test_restore_from_recovery_when_backup_is_gone(self):
         shutil.rmtree(self.backup_root)
@@ -377,13 +524,103 @@ class RestoreTests(Sandbox):
         self.assertEqual(rc, 0, report)
         self.assertEqual(report['changes'], ['OC/config.plist already equals the baseline; not rewritten',
                                              'removed OC/Kexts/' + BUNDLE])
-        self.assertEqual(inst.tree(self.efi), {**self.baseline, RECOVERY: MANIFEST['add_files'][RECOVERY]})
+        self.assertEqual(inst.tree(self.efi), {**self.baseline, **{k: MANIFEST['add_files'][k] for k in NON_KEXT_ADDITIONS}})
+
+    def test_restore_leaves_cachyos_files_untouched(self):
+        names = self.top_names()
+        rc, report = self.restore('--apply', '--from-recovery')
+        self.assertEqual(rc, 0, report)
+        self.assertEqual(self.foreign_inventory(), self.foreign_before)
+        self.assertEqual(self.top_names(), names)
 
     def test_restore_refuses_unexpected_addition(self):
         (self.efi / 'OC/stray.txt').write_text('x')
         rc, report = self.restore('--apply', '--from-recovery')
         self.assertNotEqual(rc, 0)
         self.assertEqual((self.efi / CONFIG).read_bytes(), self.candidate_bytes)
+
+
+class StartupScript(unittest.TestCase):
+    """Offline lint of OC/Tools/startup.nsh (UEFI Shell 2.x script). Structure only; it is not run."""
+    ALLOWED = {'echo', 'for', 'endfor', 'if', 'endif', 'else', 'cp', 'stall', 'reset'}
+    FS = 'fs0 fs1 fs2 fs3 fs4 fs5 fs6 fs7 fs8 fs9'
+    CONDITIONS = {
+        r'if exist %a:\EFI\RECOVERY\funzionante-665.plist then',
+        r'if exist %a:\EFI\OC\Tools\OpenShell.efi then',
+        r'if exist %a:\EFI\OC\config.plist then',
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = STARTUP.read_bytes()
+        cls.lines = cls.raw.decode('ascii').split('\r\n')[:-1]
+
+    def test_same_file_in_source_and_payload(self):
+        payload_copy = PAYLOAD_SRC / 'EFI' / STARTUP_EFI
+        self.assertEqual(payload_copy.read_bytes(), self.raw)
+        self.assertEqual(inst.sha_bytes(self.raw), MANIFEST['candidate_efi_files'][STARTUP_EFI])
+
+    def test_crlf_and_ascii_only(self):
+        self.raw.decode('ascii')
+        self.assertEqual(self.raw.count(b'\n'), self.raw.count(b'\r\n'))
+        self.assertTrue(self.raw.endswith(b'\r\n'))
+
+    def test_only_allowed_commands(self):
+        for line in self.lines:
+            self.assertTrue(line, 'empty line')
+            first = line.split()[0]
+            self.assertIn(first, self.ALLOWED, line)
+
+    def test_for_and_if_blocks_are_balanced_and_nested(self):
+        stack = []
+        for line in self.lines:
+            words = line.split()
+            if words[0] == 'for':
+                self.assertEqual(line, 'for %a in ' + self.FS)
+                stack.append('for')
+            elif words[0] == 'endfor':
+                self.assertEqual(stack.pop(), 'for', line)
+            elif words[0] == 'if':
+                self.assertIn(line, self.CONDITIONS, line)
+                stack.append('if')
+            elif words[0] == 'endif':
+                self.assertEqual(stack.pop(), 'if', line)
+            elif words[0] == 'else':
+                self.assertEqual(stack[-1:], ['if'], line)
+        self.assertEqual(stack, [])
+
+    def test_copy_stall_reset_sit_inside_three_ifs_in_the_loop(self):
+        stack = []
+        seen = {}
+        for line in self.lines:
+            words = line.split()
+            if words[0] in ('for', 'if'):
+                stack.append(words[0])
+            elif words[0] in ('endfor', 'endif'):
+                stack.pop()
+            elif words[0] in ('cp', 'stall', 'reset'):
+                seen[words[0]] = list(stack)
+        expected = ['for', 'if', 'if', 'if']
+        self.assertEqual(seen, {'cp': expected, 'stall': expected, 'reset': expected})
+
+    def test_exact_copy_and_timing_lines(self):
+        self.assertEqual(sum(1 for l in self.lines if l.startswith('cp ')), 1)
+        self.assertIn(r'cp -q %a:\EFI\RECOVERY\funzionante-665.plist %a:\EFI\OC\config.plist', self.lines)
+        self.assertIn('stall 5000000', self.lines)
+        self.assertEqual(sum(1 for l in self.lines if l == 'reset'), 1)
+        self.assertLess(self.lines.index('stall 5000000'), self.lines.index('reset'))
+
+    def test_manual_fallback_follows_the_loop(self):
+        end = self.lines.index('endfor')
+        after = self.lines[end + 1:]
+        self.assertTrue(after and all(line.startswith('echo') for line in after))
+        text = '\n'.join(after)
+        for needed in ('map -r', r'ls \EFI\RECOVERY', r'cp -q \EFI\RECOVERY\funzionante-665.plist \EFI\OC\config.plist', 'reset'):
+            self.assertIn(needed, text)
+
+    def test_percent_only_as_loop_variable(self):
+        for line in self.lines:
+            self.assertEqual(re.sub(r'%a', '', line).count('%'), 0, line)
 
 
 if __name__ == '__main__':

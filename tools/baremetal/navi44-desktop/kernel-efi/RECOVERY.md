@@ -1,116 +1,159 @@
-# Piano di recupero: kernel Navi48Bringup 0.0.666 / 0.0.667 (contexts)
+# Piano di recupero: kernel Navi48Bringup 0.0.667 (payload v3)
 
-Stato: piano scritto offline. Nulla di quanto segue è stato provato su hardware né sull'EFI reale.
+Stato: scritto offline. Nulla di quanto segue è stato provato su hardware né sull'EFI reale.
 Il payload dichiara `hardware_validation: not performed` e `installation: not performed`.
-Quando un punto è dedotto dal codice o dai log, e non verificato su un avvio reale, è segnalato come tale.
+Ciò che è dedotto dal codice o dalla documentazione, e non verificato su un avvio reale, è segnalato come tale.
 
-## 0. Riferimenti fissi
+## 0. Dove vive OpenCore
 
-- Payload: `research/builds/macos-20261031/production/kernel-payload-v2`
-- UUID del volume EFI: `7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3` (partizione FAT, OCBOOT)
-- Config baseline, sha256 `92379563c75677729be3433ce4f5d659fcdf32c7d8729b3feadd9e1daa7934cb`.
-  È identica a `EFI/RECOVERY/pre-contexts-666-config.plist`, sia nel payload sia sull'EFI dopo l'installazione.
-- Config candidata, sha256 `eb1a13e457fe69073124406f51116df64fdd401affe84081d54c50a8caa1eea4`.
-  La sola differenza è `Kernel/Add[7]/BundlePath`: da `Navi48Bringup-eight-0.0.665.kext` a `Navi48Bringup-contexts-0.0.666.kext`.
-- Il 665 resta sull'EFI sia prima sia dopo l'installazione.
-- Backup dell'installer: `/Library/Application Support/Navi44/efi-backup-<timestamp>/`, con `EFI/` completo e `backup-manifest.json`.
+- OpenCore ora è avviato da GRUB, con la voce `macOS Tahoe (OpenCore)`, e vive sulla partizione EFI interna di CachyOS.
+  La chiavetta OCBOOT (UUID `7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3`) non serve più.
+- Partizione target: `disk1s1`, FAT32, VolumeUUID `97C4AA5C-B87D-3786-B1B3-F84A76840DEF`,
+  GPT partition UUID `CA42FCAB-D077-43EE-B98D-F1BAFC0F6F90`. Il default del payload v3 è questo UUID.
+- Payload v3 (kernel 0.0.667): `research/builds/macos-20261031/production/kernel-payload-v3`.
+  Versioni superate, conservate: `kernel-payload-v3.superseded-hotkeys/` (PollAppleHotKeys) e
+  `kernel-payload-v3.superseded-stick-uuid/` (UUID della chiavetta, con BOOT/).
+- Baseline, configurazione funzionante con kernel 0.0.665, sha256 `92379563c75677729be3433ce4f5d659fcdf32c7d8729b3feadd9e1daa7934cb`.
+  Già presente sulla partizione locale (copiata oggi dalla chiavetta).
+- Configurazione v3, sha256 `5ea9932d7fd53e97062021a72c6613f76bb96a3ecccce12d942fa8b796d531c6`.
 
-## 1. Risposte alle domande
+## 1. Cosa cambia sull'EFI, e cosa non viene toccato
 
-### 1.1 La guard di avvio protegge il caso (b)?
+Scope: l'installer e il ripristino leggono e scrivono solo `EFI/OC/**` e `EFI/RECOVERY/**`.
+Tutto il resto della partizione è ignorato e non viene mai letto, richiesto o scritto:
 
-No, non per il caricamento del kext. Lo protegge solo per l'attivazione del display.
+- `EFI/cachyos/` (loader e file di test di CachyOS), `EFI/boot/bootx64.efi` (fallback di CachyOS),
+  `navi44-grub/`, `System Volume Information/`.
+- `EFI/BOOT/`: non viene mai scritto. Su FAT `BOOT` e `boot` sono la stessa cartella: nel payload
+  non c'è `BOOT/`, e l'installer non lo crea.
 
-- Il handoff (`HANDOFF-MACOS-RX9060XT.md`, sezione "Stato confermato") registra che in precedenza la configurazione si bloccava dopo la selezione della regione, prima della rimozione di `cpus=1`. Un ciclo di blocco al boot è quindi uno scenario reale, non ipotetico.
-- Il kext esegue la bring-up in `start()` (`cobalt64/src/navi48-bringup/src/Navi48Bringup.cpp:7369`). La stage è letta a riga 7396 da `navi48-stage`. Il gate di `probe()` è a riga 7352 e legge `navi48bringup`.
-- Questi boot-args arrivano da OpenCore a ogni avvio. Il log lo conferma: `research/hw_dump/baremetal_boot2/opencore.txt`, righe 39-41 (Delete, poi Setting).
-- La guard (`system/.../accelerated-reboot-trial.sh`, nel payload) scrive il latch `begin` alla riga 114. Questo avviene solo dopo l'attesa del traduttore (righe 139-144) e del WindowServer (147-151). Il controllo `expected kernel 666` è a riga 158. L'attivazione (`pipearm 1` riga 223, `killall WindowServer` riga 231) viene dopo.
-- Un hang causato dal kext in `start()` avviene prima di qualsiasi latch. Nessuno stato viene scritto. Il riavvio successivo carica di nuovo il 666 con gli stessi boot-args, e il ciclo non ha uscita automatica.
-- Se l'hang avviene dopo il latch, il riavvio successivo trova `pending` e rifiuta l'attivazione (`BOOT-STATE.md`, tabella: pending, refuse, reset revisionato). Questo blocca solo l'attivazione. Il kext viene caricato comunque.
+Tre modifiche alla configurazione funzionante, nessun'altra (verificato con `production-kernel-payload.py check`):
 
-### 1.2 Esiste un boot-arg che disattiva il kext, impostabile senza desktop?
+| Percorso | Prima (665) | Dopo (v3) |
+|---|---|---|
+| `Kernel/Add[7]/BundlePath` | `Navi48Bringup-eight-0.0.665.kext` | `Navi48Bringup-contexts-0.0.667.kext` |
+| `Misc/Tools[0]/Name` | `Ripristino EFI (UEFI Shell)` | `Ripristino EFI: driver funzionanti (665)` |
+| `Misc/Tools[0]/Comment` | `Recovery shell: restore stage17 config` | `Restores RECOVERY/funzionante-665.plist (kernel 665) and reboots` |
 
-- Sì: `navi48bringup` (`Navi48Bringup.cpp:7352`). Se è assente o 0, `probe()` ritorna `nullptr`. Il kext non si aggancia alla GPU e non esegue la bring-up.
-- Non è impostabile senza modificare l'EFI. Il valore arriva da `NVRAM/Add` (GUID `7C436110-…`, chiave `boot-args`), e `NVRAM/Delete` elenca `boot-args` (`config.plist`, circa righe 1449 e 1491). OpenCore elimina quindi la variabile e la riscrive a ogni avvio.
-- Quindi `nvram boot-args=…` da Terminale di Recovery non sopravvive al prossimo avvio OpenCore. Il log mostra l'ordine Delete poi Setting (`opencore.txt:39,41`). Non verificato con un avvio reale.
-- `ResetNvramEntry.efi` (Drivers) e `WriteFlash=false` non cambiano il quadro: OpenCore ripristina comunque i valori di `Add`.
+`Misc/Boot/PollAppleHotKeys` resta `false`. Lo Shift nel picker non è più parte del piano: l'utente ha riferito
+che non funziona.
 
-### 1.3 Picker e Recovery
+File aggiunti oltre al kext:
 
-- `ShowPicker=true`, `Timeout=5` (`config.plist:1334,1338`). `ScanPolicy=0` (riga 1386) mostra tutte le voci rilevate.
-- `Misc/Entries` è vuoto. Non c'è una voce alternativa con un `Kernel/Add` diverso: `Kernel/Add` è globale a tutte le voci.
-- Recovery è avviata da OpenCore con la stessa `Kernel/Add`. Il bundle ha `MinKernel 25.0.0` e `MaxKernel` vuoto (`Kernel/Add[7]`, circa righe 431-445). Il comportamento atteso è che il kext venga iniettato anche in Recovery. Non verificato.
-- Recovery quindi non è un bypass: se il kext causa panic o hang, può farlo anche lì.
+- `RECOVERY/pre-contexts-667-config.plist`: byte della baseline, sha256 `92379563…`.
+- `RECOVERY/funzionante-665.plist`: byte della baseline, sha256 `92379563…`. È la copia da ripristinare.
+- `OC/Tools/startup.nsh`: script della shell UEFI, sha256 `318f9fb9…`, fine riga CRLF.
 
-### 1.4 Procedure più brevi e sicure
+`RECOVERY/stage17.plist` e `OC/Tools/OpenShell.efi` restano invariati.
 
-**Via d'uscita principale (dalla 0.0.667): Shift nel picker di OpenCore**
+## 2. Ripristino dal picker di OpenCore (percorso principale)
 
-Il payload v3 attiva `Misc/Boot/PollAppleHotKeys`. Nel picker di OpenCore seleziona macOS e premi Invio tenendo premuto Shift: macOS parte in modalità provvisoria (`-x`). Il kext 0.0.667 in `probe()` rinuncia a partire con `-x` oppure con `navi48-off=1` (`Navi48Bringup.cpp`, commit `db8b202`). Il desktop parte senza accelerazione e senza driver GPU, e da lì si esegue il ripristino (c) punto 3. Vale per i casi (a) e (b). Non è ancora provato su hardware: va verificato una volta, a freddo, subito dopo l'installazione.
+1. Al boot, in GRUB, scegli `macOS Tahoe (OpenCore)`. GRUB è il percorso di avvio di OpenCore: non cambia la
+   configurazione, che resta quella di `OC/config.plist`.
+2. Nel picker di OpenCore scegli `Ripristino EFI: driver funzionanti (665)`.
+   Il picker ha `Timeout` di 5 secondi (`Misc/Boot/Timeout`): seleziona la voce entro quel tempo,
+   altrimenti parte la voce predefinita di macOS.
+3. Dopo la selezione non premere altri tasti e attendi.
+4. Comportamento atteso, non verificato su questa macchina: OpenShell esegue `startup.nsh` dalla propria cartella
+   dopo circa 5 secondi. ESC prima dello scadere lo salta.
+5. Lo script cerca su `fs0`…`fs9` una partizione che contenga insieme `EFI\RECOVERY\funzionante-665.plist`,
+   `EFI\OC\Tools\OpenShell.efi` e `EFI\OC\config.plist`. Sulla prima trovata copia `funzionante-665.plist`
+   su `EFI\OC\config.plist`, attende 5 secondi e riavvia.
+6. Il riavvio carica il kext 0.0.665 e il desktop deve tornare accelerato (sezione 4).
 
-**(a) Panic al boot**
+Atteso, non verificato: la voce `Tools` avvia OpenShell e non passa per l'iniezione dei kext di macOS. Quindi il
+kext 0.0.667 non viene caricato da questa voce, anche se causa un panic nell'avvio di macOS.
 
-1. Non ripetere il boot più volte. Ogni tentativo ripete lo stesso panic e non lascia alcun latch.
-2. Prova la voce Recovery dal picker. Se parte, esegui il ripristino della sezione 2.
-3. Se Recovery va in panic, monta l'EFI da un altro computer (partizione FAT con l'UUID sopra). Copia `RECOVERY/pre-contexts-666-config.plist` su `OC/config.plist`. Verifica che il sha256 sia `92379563…`. Facoltativamente rimuovi `OC/Kexts/Navi48Bringup-contexts-0.0.666.kext`. Poi smonta.
+Se lo script non trova una partizione con i file attesi, stampa i comandi manuali e resta nella shell: vedi sezione 3.
 
-**(b) Hang al WindowServer**
+## 3. Ripristino manuale nella shell UEFI
 
-- Se il sistema torna alla shell o a Recovery, segui (a) punto 2.
-- Altrimenti: spegnimento forzato, senza nuovi tentativi. Il latch è assente (hang prima della riga 114) o `pending` (hang dopo). In entrambi i casi il kext viene caricato di nuovo. Procedi come (a) punto 3.
-- Non usare `nvram` come rimedio: non è persistente (1.2).
+Dalla shell, nell'ordine:
 
-**(c) Avvio con desktop ma comportamento errato**
+```
+map -r
+fs0:
+ls \EFI\RECOVERY
+```
 
-1. Blocca l'attivazione al prossimo avvio (root): `sudo touch "/Library/Application Support/Navi44/accelerated-trial/disabled"`. La guard si ferma alla riga 86.
-2. Se la sessione è ancora usabile, disarma la GPU: `sudo "/Library/Application Support/Navi44/accelerated-trial/navi48test" accel pipearm 0`. È lo stesso comando di rollback della guard (riga 61). Non verificato in questa sessione.
-3. Ripristina l'EFI: `sudo python3 kernel-efi/restore-kernel-efi.py <payload> --dry-run`, poi `--apply`. Aggiungi `--remove-kext` solo se vuoi rimuovere il 666 dall'EFI.
-4. Riavvia e verifica: `kmutil showloaded --list-only | grep -i navi48` deve mostrare `com.navi48.bringup (0.0.665)`.
-5. Il ripristino non azzera `boot-state.json`. Una nuova attivazione richiede la revisione descritta in `BOOT-STATE.md`.
+Se `ls` non mostra `funzionante-665.plist`, prova `fs1:`, poi `fs2:` e così via, finché la trovi (sulla partizione
+CachyOS compaiono `\EFI\OC` e `\EFI\RECOVERY`). Quando la trovi:
 
-## 2. Ripristino da Terminale di Recovery, senza Python
+```
+cp -q \EFI\RECOVERY\funzionante-665.plist \EFI\OC\config.plist
+reset
+```
 
-Non è garantito che Recovery contenga `python3`. I comandi seguenti usano solo strumenti di sistema. Non sono stati provati e vanno verificati su un Mac con lo stesso layout prima di affidarsi a loro.
+`cp -q` non stampa un esito verificabile: se a schermo compare un errore, non riavviare; usa la sezione 5.
+
+## 4. Guardia di attivazione (desktop accelerato dopo il ripristino)
+
+La guardia `accelerated-reboot-trial.sh` ha un ramo per il kernel caricato:
+
+- `com.navi48.bringup (0.0.667)`: i controlli di capacità a 64 contesti (VMID dinamico, contesto logico 63), come prima.
+- `com.navi48.bringup (0.0.665)`: i controlli a 64 contesti sono saltati; il resto è la guardia live (bundle-30) invariata.
+- altro kernel: `STOP expected kernel 667 or 665`.
+
+Rispetto alla guardia live il diff contiene solo aggiunte (nessuna riga live è rimossa o modificata).
+Il formato `com.navi48.bringup (0.0.665)` nell'output di `kmutil showloaded` è stato confermato nei log del repo.
+Il comportamento a runtime non è verificato.
+
+## 5. Ripristino da Terminale di Recovery (senza Python e senza la shell)
+
+Non è garantito che Recovery contenga `python3`. I comandi usano solo strumenti di sistema. Non sono stati provati:
+verifica su un Mac con lo stesso layout prima di affidarsi a loro.
 
 ```sh
-diskutil list                        # individuare la partizione EFI FAT con UUID 7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3
-diskutil mount diskXsY               # montaggio in scrittura
-ls /Volumes                          # trovare il nome reale del mount
-E=/Volumes/EFI/EFI                   # adattare al nome reale
-cmp "$E/RECOVERY/pre-contexts-666-config.plist" "$E/OC/config.plist"   # ci si aspetta una differenza
-cp "$E/RECOVERY/pre-contexts-666-config.plist" "$E/OC/config.plist.tmp"
-mv "$E/OC/config.plist.tmp" "$E/OC/config.plist"                        # rinomina sul FAT
-cmp "$E/RECOVERY/pre-contexts-666-config.plist" "$E/OC/config.plist" && echo CONFIG_RESTORED
+diskutil info disk1s1 | grep -E 'Volume UUID|Mount Point'   # conferma 97C4AA5C-B87D-3786-B1B3-F84A76840DEF
+diskutil mount disk1s1                  # montaggio in scrittura
+E=/Volumes/EFI/EFI                      # adattare al nome reale del mount (ls /Volumes)
+shasum -a 256 "$E/RECOVERY/funzionante-665.plist"   # ci si aspetta 92379563…
+cp "$E/RECOVERY/funzionante-665.plist" "$E/OC/config.plist.tmp"
+mv "$E/OC/config.plist.tmp" "$E/OC/config.plist"    # rinomina sul FAT
+cmp "$E/RECOVERY/funzionante-665.plist" "$E/OC/config.plist" && echo CONFIG_RESTORED
 sync
-diskutil unmount diskXsY
+diskutil unmount disk1s1
 ```
 
-Se `shasum` è disponibile, `shasum -a 256 "$E/OC/config.plist"` deve dare `92379563…`.
+## 6. Installazione e ripristino con gli script (offline, non eseguiti)
 
-## 3. Lacune trovate e modifica minima proposta
-
-**G1, nessun avvio senza il 666 se il kext va in panic o in hang durante `start()`.** Chiusa dalla 0.0.667 con `-x` / `navi48-off=1` in `probe()` e `PollAppleHotKeys` attivo (vedi 1.4). Con il solo 666 resta aperta. Analisi originale:
-
-- La configurazione attuale non la chiude. `Kernel/Add` è globale, non esistono voci alternative, e `boot-args` non è persistente da NVRAM.
-- Proposta preferita, un kill switch da NVRAM non gestito da OpenCore. Cambia `Navi48Bringup::probe()` (`Navi48Bringup.cpp:7350-7352`): prima del gate `navi48bringup`, legge una variabile NVRAM non presente né in `NVRAM/Add` né in `NVRAM/Delete`, per esempio `7C436110-AB2A-4BBB-A880-FE41995C9F82:navi48-kill`. Se vale 1, ritorna `nullptr`. La lettura da `/options` (IODTNVRAM) è da verificare.
-  - Modifiche: una funzione nel sorgente, un test host, una nuova build 0.0.667 con `build-production-contexts.py`, e un payload v3. Nessuna modifica a `Kernel/Add` o a `config.plist`.
-  - Uso da Recovery: `nvram 7C436110-AB2A-4BBB-A880-FE41995C9F82:navi48-kill=1`. Rimozione: `nvram -d 7C436110-AB2A-4BBB-A880-FE41995C9F82:navi48-kill`. Funziona anche in Recovery, perché anche lì il kext viene caricato.
-- Alternativa configurativa, non verificata: una seconda voce in `Misc/Entries` che avvia un secondo loader OpenCore con la config baseline in una cartella separata. Richiede un test hardware. OpenCore potrebbe non risolvere la config del secondo loader come previsto.
-
-**G2, la guard non copre il caricamento del kext.** Non si risolve modificando la guard. La protezione deve stare nel kext, come in G1.
-
-**G3, installazione dell'EFI con la guard vecchia.** La guard in uso prima dell'installazione non ha il controllo `expected kernel 666` né la probe. Con il 666 sull'EFI, l'attivazione girerebbe senza quei controlli. L'installer rifiuta quindi l'installazione se non è presente `APP/disabled` o se i file di sistema revisionati non sono già installati. Installare prima i file di sistema revisionati oppure creare `disabled`.
-
-## 4. Comandi di riferimento
+Il target di default è la partizione CachyOS (UUID della sezione 0). Con `--efi-uuid` si può scegliere un altro volume,
+per esempio la chiavetta `7ADF2DE6-4394-3D07-AC2B-E79E1D78A2F3`, ma non è più il percorso previsto.
 
 ```sh
-# Verifica e piano (nessuna scrittura, nessun montaggio in scrittura)
-sudo python3 tools/baremetal/navi44-desktop/kernel-efi/install-kernel-efi.py <payload>
-# Installazione (scrive l'EFI e crea il backup)
-sudo python3 tools/baremetal/navi44-desktop/kernel-efi/install-kernel-efi.py <payload> --apply
-# Ripristino dal backup, o dal RECOVERY sull'EFI
-sudo python3 tools/baremetal/navi44-desktop/kernel-efi/restore-kernel-efi.py <payload> --backup <dir> --apply
-sudo python3 tools/baremetal/navi44-desktop/kernel-efi/restore-kernel-efi.py <payload> --from-recovery --apply
-# Test offline
+# verifica e piano, nessuna scrittura
+sudo python3 tools/baremetal/navi44-desktop/kernel-efi/install-kernel-efi.py research/builds/macos-20261031/production/kernel-payload-v3
+# installazione: scrive solo OC/ e RECOVERY/, crea il backup, non attiva e non riavvia
+sudo python3 tools/baremetal/navi44-desktop/kernel-efi/install-kernel-efi.py research/builds/macos-20261031/production/kernel-payload-v3 --apply
+# ripristino dal backup, o dal RECOVERY sull'EFI
+sudo python3 tools/baremetal/navi44-desktop/kernel-efi/restore-kernel-efi.py <payload-v3> --backup <dir> --apply
+sudo python3 tools/baremetal/navi44-desktop/kernel-efi/restore-kernel-efi.py <payload-v3> --from-recovery --apply
+# test offline
 python3 tools/baremetal/navi44-desktop/kernel-efi/test-kernel-efi.py
+python3 tools/baremetal/navi44-desktop/test-production-kernel-guard.py
 ```
+
+- L'installer applica solo le modifiche elencate in `config_edits` del manifest (percorso, vecchio valore, nuovo valore).
+  Un payload senza elenco, come v2, viene rifiutato. Un payload che elenca file fuori da `OC/` e `RECOVERY/` viene rifiutato.
+- `restore-kernel-efi.py --remove-kext` rimuove il kext 0.0.667. Le copie in `RECOVERY/` e `OC/Tools/startup.nsh`
+  restano. Lo script non le rimuove: `startup.nsh` copia la baseline, quindi è innocuo.
+- L'installazione richiede `APP/disabled` oppure i file di guardia revisionati (vedi `install-kernel-efi.py`).
+
+## 7. Lacune note
+
+**G1, un panic in `start()` del kext 0.0.667 non è coperto dal picker.** La voce `Tools` evita il kext (sezione 2),
+ma il percorso di avvio macOS resta quello con il kext. Non è stato verificato. Il rimedio operativo è la voce del picker.
+
+**G2, la guardia non protegge il caricamento del kext.** Protegge solo l'attivazione del display. Un hang in `start()`
+avviene prima di qualsiasi latch di stato.
+
+**G3, la guardia deve essere quella revisionata prima dell'installazione.** Vedi `APP/disabled` in `install-kernel-efi.py`.
+
+**G4, GRUB e picker.** Il passaggio da GRUB non è stato provato: non è verificato che la voce `macOS Tahoe (OpenCore)`
+porti al picker con i `Timeout` attesi.
+
+Il picker non è un percorso sicuro verso il 665 se la voce `Tools` non viene riconosciuta: in quel caso restano
+le sezioni 3 e 5.
+
+**Nota, non una via di recupero:** il kext 0.0.667 rinuncia a partire con `-x` o con `navi48-off=1` (commit `db8b202`).
+Lo Shift nel picker non funziona su questa macchina, quindi questo interruttore non è raggiungibile dal picker.
