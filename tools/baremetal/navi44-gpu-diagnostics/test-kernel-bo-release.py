@@ -5,11 +5,14 @@ MMIO, backing allocations and descriptors are tracked stubs. This checks that
 uncertain translation cannot recycle GTT, host imports or either VRAM pool.
 """
 from pathlib import Path
+import argparse
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
-headers = root / 'cobalt64/src/navi48-bringup/src/amd'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--kernel-source', type=Path, default=root / 'cobalt64/src/navi48-bringup')
+headers = parser.parse_args().kernel_source.resolve() / 'src/amd'
 source = (headers / 'native_s1c.cpp').read_text()
 marker = '} else if (mode == kRelNormal) {'
 start = source.index(marker, source.index('static void bo_release(Session *s, uint32_t h, RelMode mode) {')) + len(marker)

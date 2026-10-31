@@ -5,11 +5,14 @@ The source function runs with controlled snapshots, sleeps and a hang detector.
 This verifies identity/cancellation semantics without invoking IOKit or a GPU.
 """
 from pathlib import Path
+import argparse
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
-headers = root / 'cobalt64/src/navi48-bringup/src/amd'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--kernel-source', type=Path, default=root / 'cobalt64/src/navi48-bringup')
+headers = parser.parse_args().kernel_source.resolve() / 'src/amd'
 source = (headers / 'native_s1c.cpp').read_text()
 start = source.index('struct WaitSnapshot {')
 end = source.index('\n// ---- ABI 1.1:', start)
