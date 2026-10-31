@@ -5,6 +5,7 @@ Uses temporary source/EFI fixtures. Does not build, install or access a GPU.
 The actual baseline reproduction and candidate builds are separate checks.
 """
 import importlib.util
+import json
 import plistlib
 import tempfile
 import unittest
@@ -101,14 +102,52 @@ class CandidateBoundary(unittest.TestCase):
         (source / 'src/amd/native_s1c.h').write_text('kN1cKextBuild = 664;\n')
         build.copy_source(baseline, candidate)
         before = build.tree_files(baseline)
-        changed = build.overlay_candidate(candidate, source)
+        changed = build.overlay_candidate(candidate, source, '0.0.667')
         self.assertEqual(set(changed), set(build.OVERLAY) | {'Info.plist', 'src/Navi48MetalNub.cpp'})
         for name, data in protected.items():
             self.assertEqual((candidate / name).read_bytes(), data)
-        self.assertEqual((candidate / 'Info.plist').read_text().count('0.0.666'), 2)
-        self.assertIn('kN1cKextBuild = 666;', (candidate / 'src/amd/native_s1c.h').read_text())
-        self.assertEqual((candidate / 'src/Navi48MetalNub.cpp').read_text().count('666u'), 2)
+        self.assertEqual((candidate / 'Info.plist').read_text().count('0.0.667'), 2)
+        self.assertIn('kN1cKextBuild = 667;', (candidate / 'src/amd/native_s1c.h').read_text())
+        self.assertEqual((candidate / 'src/Navi48MetalNub.cpp').read_text().count('667u'), 2)
         self.assertEqual(build.tree_files(baseline), before)
+
+    def test_admission_commit_files_are_overlaid(self):
+        # every kernel source file changed by c440e35 (the application budget); tests/ is userspace and not in the kext
+        admission = {'src/Navi48NativeClient.cpp', 'src/Navi48NativeClient.hpp', 'src/amd/native_g4_pure.h',
+                     'src/amd/native_open_policy_pure.h', 'src/amd/native_s1c.cpp', 'src/amd/native_s1c.h'}
+        self.assertLessEqual(admission, set(build.OVERLAY))
+        self.assertEqual(len(build.OVERLAY), len(set(build.OVERLAY)))
+        self.assertIn('test-kernel-app-admission.py', build.TESTS)
+
+    def test_kill_switch_is_the_committed_hunk_only(self):
+        block = ('\t// 0.0.667: recovery kill switch.\n\tchar safeBoot[4] = {};\n'
+                 '\tif (PE_parse_boot_argn("-x", safeBoot, sizeof(safeBoot))) return nullptr;\n')
+        anchor = build.KILL_SWITCH_ANCHOR
+        committed = 'head\n' + anchor + block + '\tif (!super::probe(provider, score)) return nullptr;\n'
+        path = self.root / 'Navi48Bringup.cpp'
+        path.write_text('head\n' + anchor + '\tif (!super::probe(provider, score)) return nullptr;\n')
+        self.assertEqual(build.kill_switch_block(committed), block)
+        build.apply_kill_switch(path, committed)
+        self.assertEqual(path.read_text(), committed)
+        with self.assertRaises(ValueError):
+            build.apply_kill_switch(path, committed)   # already applied: refused
+
+    def test_release_version_is_limited_and_sets_its_build_number(self):
+        self.assertEqual(build.release_build('0.0.666'), 666)
+        self.assertEqual(build.release_build('0.0.667'), 667)
+        for version in ('0.0.665', '0.0.668', '0.0.667.1', '0.1.667'):
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                build.release_build(version)
+
+    def test_recorded_active_baseline_must_be_the_accelerated_665_kernel(self):
+        manifest = self.root / 'manifest.json'
+        good = {'bundle_path': build.BASE_BUNDLE, 'kernel_sha256': build.BASE_SHA,
+                'config_sha256': build.BASE_CONFIG_SHA, 'version': '0.0.665'}
+        manifest.write_text(json.dumps({'active_baseline': good}))
+        self.assertEqual(build.recorded_active_baseline(manifest), good)
+        manifest.write_text(json.dumps({'active_baseline': {**good, 'kernel_sha256': '0' * 64}}))
+        with self.assertRaises(ValueError):
+            build.recorded_active_baseline(manifest)
 
     def test_version_marker_mismatch_is_refused(self):
         path = self.root / 'version.h'

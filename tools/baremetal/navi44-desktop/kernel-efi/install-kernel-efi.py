@@ -174,7 +174,7 @@ def load_payload(payload):
 
     return {'payload': payload, 'uuid': str(m['efi_volume_uuid']).upper(), 'baseline': base, 'candidate': cand,
             'add': add, 'bundle': bundle, 'recovery': rec, 'baseline_bytes': baseline_bytes,
-            'candidate_bytes': candidate_bytes, 'candidate_cfg': cand_cfg, 'config_change': [path, old, new],
+            'candidate_bytes': candidate_bytes, 'candidate_cfg': cand_cfg, 'config_change': [path, old, new], 'hotkeys': bool(hotkeys),
             'boot_args': boot_args, 'system_files': system_files}
 
 
@@ -415,6 +415,8 @@ def apply_install(plan, efi, backup_root):
         replace_file(efi / CONFIG, plan['candidate_bytes'])
         path, old, new = plan['config_change']
         changes.append('replaced OC/config.plist atomically: %s %r -> %r' % ('/'.join(map(str, path)), old, new))
+        if plan.get('hotkeys'):
+            changes.append('  and Misc/Boot/PollAppleHotKeys False -> True (Shift in the picker boots with -x)')
         if tree(efi) != plan['candidate'] or plistlib.loads((efi / CONFIG).read_bytes()) != plan['candidate_cfg']:
             raise ValueError('Final EFI verification failed')
     except Exception as error:
@@ -434,7 +436,8 @@ def planned_actions(plan, state, backup_root):
         'create private backup %s/efi-backup-<timestamp>/ (EFI baseline, %d files, plus manifest)' % (backup_root, len(plan['baseline'])),
         'copy OC/Kexts/%s (exclusive, via pending name)' % plan['bundle'],
         'create %s (baseline config bytes, exclusive)' % plan['recovery'],
-        'atomically replace OC/config.plist: %s %r -> %r' % ('/'.join(map(str, path)), old, new),
+        'atomically replace OC/config.plist: %s %r -> %r%s' % ('/'.join(map(str, path)), old, new,
+                                                              ', and Misc/Boot/PollAppleHotKeys False -> True' if plan.get('hotkeys') else ''),
         'verify exact EFI inventory against the candidate (%d files)' % len(plan['candidate']),
         'unmount only if this run mounted the volume',
     ]
