@@ -64,6 +64,7 @@
 #include "n48_intfmt.h"    // bundle 19 (missing menus): integer colour-format rules - the integer clear conversion measured on Apple's Metal, the fallback write mask (host test: test-intfmt.c, test-intclear-semantics.m)
 #include "n48_pool.h"      // P1 memory pooling decisions (fence-gated deferred frees, 4 MiB slabs, recycle cache; host test: test-pool.c)
 #include "n48_drawcache.h" // P5b per-draw redundancy: descriptor-set signatures, last-pipeline caches, render-pass cache (host test: test-drawcache.c)
+#include "n48_memtype.h"   // bundle 33: memory-type plan for GPU-only allocations (device-local without host-visible, then GTT; host test: test-b33-memtype.c)
 
 #ifndef N48_LAZY
 #define N48_LAZY 1
@@ -310,7 +311,7 @@ static BOOL n48_headless(void) {
 // ---------------------------------------------------------------------------------------------------------------
 #define N48_VK_FUNCS(X) \
     X(vkDestroyInstance) X(vkEnumeratePhysicalDevices) X(vkGetPhysicalDeviceProperties) X(vkGetPhysicalDeviceFeatures) \
-    X(vkGetPhysicalDeviceMemoryProperties) X(vkGetPhysicalDeviceQueueFamilyProperties) X(vkCreateDevice) \
+    X(vkGetPhysicalDeviceMemoryProperties) X(vkGetPhysicalDeviceMemoryProperties2) X(vkGetPhysicalDeviceQueueFamilyProperties) X(vkCreateDevice) \
     X(vkGetDeviceQueue) X(vkCreateBuffer) X(vkDestroyBuffer) X(vkGetBufferMemoryRequirements) \
     X(vkAllocateMemory) X(vkFreeMemory) X(vkBindBufferMemory) X(vkMapMemory) X(vkUnmapMemory) \
     X(vkCreateCommandPool) X(vkDestroyCommandPool) X(vkAllocateCommandBuffers) X(vkFreeCommandBuffers) \
@@ -345,7 +346,12 @@ static struct {
     BOOL dbClamp;   // bundle 10: depthBiasClamp enabled on the device (a non-zero clamp in setDepthBias is passed on only then)
     BOOL dualSrc;   // bundle 32: dualSrcBlend enabled on the device (and maxFragmentDualSrcAttachments >= 1): Source1* blend factors are mapped only then
     BOOL hostExt; uint64_t hostAlign; uint64_t impTotal;   // 11h.6: external_memory_host enabled, minImportedHostPointerAlignment, bytes currently imported
+    BOOL budgetExt;   // bundle 33: VK_EXT_memory_budget advertised by RADV and enabled on the device (the T1 vidmem line reads it)
 } N48R;
+// bundle 33: RADV's memory types (propertyFlags per type, copied once at device creation: n48_memtype.h decides on them) and the count of GPU-only
+// allocations that moved to another type after VK_ERROR_OUT_OF_DEVICE_MEMORY (the T1 vidmem line reports it).
+static struct { uint32_t n; uint32_t flags[N48MT_MAX_TYPES]; } N48MT;
+static _Atomic uint64_t n48_mt_fallbacks;
 
 static NSError *n48_err(NSInteger code, NSString *msg) {
     return [NSError errorWithDomain:@"Navi48Metal" code:code userInfo:@{ NSLocalizedDescriptionKey: msg }];
@@ -463,8 +469,28 @@ static void n48_imp_report(unsigned tick);
 static void n48_led_report(unsigned tick);
 static void n48_pool_tick(void);
 static void n48_pool_report(unsigned tick);
+static void n48_vidmem_report(void);
 static void n48_drawopt_latch(void);
 static void n48_drawopt_report(unsigned tick);
+// bundle 33: VK_EXT_memory_budget per heap, in every 10 s T1 tick (only where the extension is enabled). RADV's heapUsage is the larger of this
+// process's own allocations and the kernel's system-wide use of that heap; heapBudget is the heap size less the system-wide use plus this process's
+// own. "VRAM-visible" is the CPU-visible VRAM heap (217 MiB here) that the scanout slots and the kernel's visible placements share.
+static void n48_vidmem_report(void) {
+    if (!N48R.budgetExt || !vkGetPhysicalDeviceMemoryProperties2 || !N48R.pd || N48R.mp.memoryHeapCount == 0) return;
+    VkPhysicalDeviceMemoryBudgetPropertiesEXT bud = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT };
+    VkPhysicalDeviceMemoryProperties2 m2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2, .pNext = &bud };
+    vkGetPhysicalDeviceMemoryProperties2(N48R.pd, &m2);
+    char line[512]; size_t o = 0; line[0] = 0;
+    for (uint32_t h = 0; h < N48R.mp.memoryHeapCount && o < sizeof line; h++) {
+        BOOL vis = NO;
+        for (uint32_t t = 0; t < N48R.mp.memoryTypeCount; t++)
+            if (N48R.mp.memoryTypes[t].heapIndex == h && (N48R.mp.memoryTypes[t].propertyFlags & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) vis = YES;
+        const char *nm = !(N48R.mp.memoryHeaps[h].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) ? "GTT" : vis ? "VRAM-visible" : "VRAM";
+        o += (size_t)snprintf(line + o, sizeof line - o, "%s%s %llu MiB: usage %llu budget %llu MiB", h ? "; " : "", nm,
+                              (unsigned long long)(N48R.mp.memoryHeaps[h].size >> 20), (unsigned long long)(bud.heapUsage[h] >> 20), (unsigned long long)(bud.heapBudget[h] >> 20));
+    }
+    N48LOG("T1 vidmem/10s [%s pid %d]: %s; GPU-only memory-type fallbacks %llu", getprogname(), (int)getpid(), line, (unsigned long long)atomic_load(&n48_mt_fallbacks));
+}
 static void n48_t1_report(void) {
     static unsigned tick;
     struct { const char *n; n48t_hist *h; n48t_snap s; } m[] = { { "spvcache_read", &T1.spv, {0} }, { "shader_module", &T1.shm, {0} }, { "gfx_pipeline", &T1.gfx, {0} }, { "comp_pipeline", &T1.cmp, {0} }, { "import", &T1.imp, {0} },
@@ -478,6 +504,7 @@ static void n48_t1_report(void) {
     if (any || fr) N48LOG("T1 counts/10s [%s pid %d]: pipelines gfx=%llu comp=%llu imports=%llu command_buffers=%llu frames=%llu (frame = command buffer that wrote a display surface)", getprogname(), (int)getpid(),
         (unsigned long long)m[2].s.n, (unsigned long long)m[3].s.n, (unsigned long long)m[4].s.n, (unsigned long long)m[5].s.n, (unsigned long long)fr);
     else if (tick % 6 == 5) N48LOG("T1 idle: no pipeline/import/command buffer in the last 60 s [%s pid %d]", getprogname(), (int)getpid());
+    n48_vidmem_report();   // bundle 33: VK_EXT_memory_budget per heap every tick (nothing when the extension is not enabled)
     n48_pool_report(tick);   // P1: one line when the pool is ON and something happened (nothing when OFF)
     n48_drawopt_report(tick);   // P5b: one line when the drawopt switch is ON and something happened (nothing when OFF)
     n48_m6_report();   // bundle 11: one line when the kernel latch navi48-m6 is ON (nothing when OFF)
@@ -597,6 +624,7 @@ static BOOL n48_radv_open_once(NSError **err) {
             BOOL hasRO = NO, hasLR = NO, hasFL = NO, hasDR = NO;
             for (uint32_t i = 0; i < ne; i++) {
                 if (!strcmp(ex[i].extensionName, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME)) N48R.hostExt = YES;
+                if (!strcmp(ex[i].extensionName, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) N48R.budgetExt = YES;   // bundle 33
                 hasRO |= !strcmp(ex[i].extensionName, "VK_EXT_rasterization_order_attachment_access") || !strcmp(ex[i].extensionName, "VK_ARM_rasterization_order_attachment_access");
                 hasLR |= !strcmp(ex[i].extensionName, "VK_KHR_dynamic_rendering_local_read");
                 hasFL |= !strcmp(ex[i].extensionName, "VK_EXT_attachment_feedback_loop_layout");
@@ -610,9 +638,11 @@ static BOOL n48_radv_open_once(NSError **err) {
             N48LOG("radv: framebuffer-fetch support: rasterization_order_attachment_access ext %d (color feature %d, depth %d, stencil %d); dynamic_rendering_local_read ext %d (feature %d); attachment_feedback_loop_layout ext %d; dynamic_rendering ext %d; classic render-pass input attachments: core 1.0",
                    hasRO, fro.rasterizationOrderColorAttachmentAccess, fro.rasterizationOrderDepthAttachmentAccess, fro.rasterizationOrderStencilAttachmentAccess, hasLR, flr.dynamicRenderingLocalRead, hasFL, hasDR);
         }
-        const char *devExts[] = { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME };
+        const char *devExts[2] = { NULL, NULL }; uint32_t nDevExts = 0;   // bundle 33: VK_EXT_memory_budget joins the external-memory-host extension when RADV has it
+        if (N48R.hostExt) devExts[nDevExts++] = VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME;
+        if (N48R.budgetExt) devExts[nDevExts++] = VK_EXT_MEMORY_BUDGET_EXTENSION_NAME;
         VkDeviceCreateInfo dci = { .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, .queueCreateInfoCount = 1, .pQueueCreateInfos = &dq, .pEnabledFeatures = &ef,
-                                   .enabledExtensionCount = N48R.hostExt ? 1 : 0, .ppEnabledExtensionNames = devExts };
+                                   .enabledExtensionCount = nDevExts, .ppEnabledExtensionNames = devExts };
         r = vkCreateDevice(N48R.pd, &dci, NULL, &N48R.dev);
         if (r != VK_SUCCESS) { N48R.err = n48_err(7, [NSString stringWithFormat:@"vkCreateDevice = %d", r]); goto fail; }
         vkGetDeviceQueue(N48R.dev, qfi, 0, &N48R.q);
@@ -626,6 +656,8 @@ static BOOL n48_radv_open_once(NSError **err) {
             N48LOG("radv: VK_EXT_external_memory_host enabled, vkGetMemoryHostPointerPropertiesEXT %s, minImportedHostPointerAlignment %llu", n48_vkGetMHPP ? "present" : "MISSING", (unsigned long long)N48R.hostAlign);
         } else N48LOG("radv: VK_EXT_external_memory_host NOT available (IOSurface-backed textures will be refused)");
         vkGetPhysicalDeviceMemoryProperties(N48R.pd, &N48R.mp);
+        N48MT.n = N48R.mp.memoryTypeCount < N48MT_MAX_TYPES ? N48R.mp.memoryTypeCount : N48MT_MAX_TYPES;   // bundle 33: flat copy for n48_memtype.h
+        for (uint32_t i = 0; i < N48MT.n; i++) N48MT.flags[i] = N48R.mp.memoryTypes[i].propertyFlags;
         pthread_mutex_init(&N48R.qlock, NULL);
         VkCommandPoolCreateInfo opc = { .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, .queueFamilyIndex = qfi, .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT };
         r = vkCreateCommandPool(N48R.dev, &opc, NULL, &N48R.opool);   // one-shot uploads (replaceRegion, getBytes)
@@ -681,6 +713,31 @@ static int n48_find_mem(uint32_t bits, VkMemoryPropertyFlags want) {
     for (uint32_t i = 0; i < N48R.mp.memoryTypeCount; i++)
         if ((bits & (1u << i)) && (N48R.mp.memoryTypes[i].propertyFlags & want) == want) return (int)i;
     return -1;
+}
+// bundle 33: GPU-only memory (Private buffers, textures, the IOSurface device-local copy) starts at the first DEVICE_LOCAL type WITHOUT HOST_VISIBLE the
+// resource allows (type 0 here: the 15 GB heap, never the 217 MiB CPU-visible heap). CPU-visible data keeps n48_find_mem; the scanout slots keep
+// n48_find_mem(DEVICE_LOCAL|HOST_VISIBLE|HOST_COHERENT). A VK_ERROR_OUT_OF_DEVICE_MEMORY moves to the next plan entry (n48_memtype.h): another
+// DEVICE_LOCAL type without HOST_VISIBLE, then host-coherent system memory for allocations up to N48MT_GTT_FALLBACK_MAX.
+static int n48_find_gpu_mem(uint32_t bits) { return n48mt_gpu_first(bits, N48MT.flags, N48MT.n); }
+static void n48_mt_moved(uint32_t from, uint32_t to, uint64_t size) {
+    atomic_fetch_add(&n48_mt_fallbacks, 1);
+    static _Atomic int logged; if (!atomic_exchange(&logged, 1))
+        N48LOG("T1 memtype: a GPU-only allocation of %llu B was refused by memory type %u (VK_ERROR_OUT_OF_DEVICE_MEMORY); type %u (heap %u) took it. Logged once per process; the count is on the T1 vidmem line",
+               (unsigned long long)size, from, to, N48R.mp.memoryTypes[to].heapIndex);
+}
+// Non-pooled GPU-only allocation with *ma (memoryTypeIndex = the first choice). On success ma->memoryTypeIndex is the type that was used.
+static VkResult n48_gpu_vkalloc(VkMemoryRequirements mr, VkMemoryAllocateInfo *ma, VkDeviceMemory *mem) {
+    const uint32_t first = ma->memoryTypeIndex;
+    uint32_t fb[N48MT_MAX_TYPES];
+    const uint32_t nfb = n48mt_gpu_fallbacks(mr.memoryTypeBits, N48MT.flags, N48MT.n, mr.size, N48MT_GTT_FALLBACK_MAX, first, fb);
+    VkResult r = vkAllocateMemory(N48R.dev, ma, NULL, mem);
+    for (uint32_t k = 0; r == VK_ERROR_OUT_OF_DEVICE_MEMORY && k < nfb; k++) {
+        ma->memoryTypeIndex = fb[k];
+        r = vkAllocateMemory(N48R.dev, ma, NULL, mem);
+        if (r == VK_SUCCESS) n48_mt_moved(first, fb[k], mr.size);
+    }
+    if (r != VK_SUCCESS) { *mem = VK_NULL_HANDLE; ma->memoryTypeIndex = first; }
+    return r;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -756,7 +813,7 @@ static VkResult n48_pool_vkalloc(uint32_t mt, uint64_t size, BOOL map, VkDeviceM
     return VK_SUCCESS;
 }
 // Memory for one resource whose requirements are `mr` (memory type `mt`). Fills *m; the caller binds at m->off and, for a mapped buffer, uses m->map.
-static VkResult n48_mem_alloc(uint32_t mt, VkMemoryRequirements mr, BOOL map, BOOL zero, VkBuffer b, VkImage i, N48Mem *m) {
+static VkResult n48_mem_alloc_one(uint32_t mt, VkMemoryRequirements mr, BOOL map, BOOL zero, VkBuffer b, VkImage i, N48Mem *m) {
     memset(m, 0, sizeof *m);
     uint64_t gran = N48R.lim.bufferImageGranularity ? N48R.lim.bufferImageGranularity : 1;
     uint64_t align = mr.alignment > gran ? mr.alignment : gran, sz = n48p_alup(mr.size, gran), sub = sz;
@@ -794,6 +851,19 @@ static VkResult n48_mem_alloc(uint32_t mt, VkMemoryRequirements mr, BOOL map, BO
     if (vr != VK_SUCCESS) return vr;
     *m = (N48Mem){ 0, dm, dmap, 0, 0, mr.size, key };
     return VK_SUCCESS;
+}
+// bundle 33: pooled memory for one resource at type mt (n48_mem_alloc_one). Only GPU-only memory (map == NO) takes the fallback: a
+// VK_ERROR_OUT_OF_DEVICE_MEMORY from mt tries the rest of the plan in order. CPU-visible memory (map == YES) keeps its one type.
+static VkResult n48_mem_alloc(uint32_t mt, VkMemoryRequirements mr, BOOL map, BOOL zero, VkBuffer b, VkImage i, N48Mem *m) {
+    VkResult r = n48_mem_alloc_one(mt, mr, map, zero, b, i, m);
+    if (r != VK_ERROR_OUT_OF_DEVICE_MEMORY || map) return r;
+    uint32_t fb[N48MT_MAX_TYPES];
+    const uint32_t nfb = n48mt_gpu_fallbacks(mr.memoryTypeBits, N48MT.flags, N48MT.n, mr.size, N48MT_GTT_FALLBACK_MAX, mt, fb);
+    for (uint32_t k = 0; r == VK_ERROR_OUT_OF_DEVICE_MEMORY && k < nfb; k++) {
+        r = n48_mem_alloc_one(fb[k], mr, map, zero, b, i, m);
+        if (r == VK_SUCCESS) n48_mt_moved(mt, fb[k], mr.size);
+    }
+    return r;
 }
 static void n48_mem_free(N48Mem *m) {
     if (!m->mem) return;
@@ -2123,7 +2193,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
     // Private (2) is DEVICE_LOCAL with no CPU mapping (contents = NULL). Memoryless (3) is refused.
     unsigned sm = (unsigned)((opts >> 4) & 0xF);
     if (sm > 2) { if (err) *err = n48_err(25, @"buffer storage mode Memoryless is not supported"); return nil; }
-    int mt = sm == 2 ? n48_find_mem(mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    int mt = sm == 2 ? n48_find_gpu_mem(mr.memoryTypeBits)   // bundle 33: GPU-only (Private) memory: never the CPU-visible heap
                      : n48_find_mem(mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     if (mt < 0) { if (err) *err = n48_err(21, sm == 2 ? @"no device-local memory type" : @"no host-visible coherent memory type"); return nil; }
     VkMemoryAllocateInfo ma = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr.size, .memoryTypeIndex = (uint32_t)mt };
@@ -2136,7 +2206,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
         if (r != VK_SUCCESS) { if (err) *err = n48_err(23, [NSString stringWithFormat:@"vkBindBufferMemory = %d (pool, offset %llu)", r, (unsigned long long)_pm.off]); return nil; }
         if (sm != 2) _ptr = _pm.map;
     } else {
-    r = vkAllocateMemory(N48R.dev, &ma, NULL, &_vkmem);
+    r = sm == 2 ? n48_gpu_vkalloc(mr, &ma, &_vkmem) : vkAllocateMemory(N48R.dev, &ma, NULL, &_vkmem);   // bundle 33: GPU-only fallback (n48_memtype.h)
     if (r != VK_SUCCESS) { if (err) *err = n48_err(22, [NSString stringWithFormat:@"vkAllocateMemory = %d", r]); return nil; }
     atomic_fetch_add(&n48_alloc_total, (uint64_t)_asz);
     r = vkBindBufferMemory(N48R.dev, _vkbuf, _vkmem, 0);
@@ -2564,7 +2634,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     VkResult r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(32, [NSString stringWithFormat:@"vkCreateImage = %d", r]); return nil; }
     VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, _img, &mr);
-    int mt = n48_find_mem(mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    int mt = n48_find_gpu_mem(mr.memoryTypeBits);   // bundle 33: textures are GPU-only: the 15 GB heap first, never the CPU-visible one
     if (mt < 0) { if (err) *err = n48_err(33, @"no device-local memory type"); return nil; }
     VkMemoryAllocateInfo ma = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr.size, .memoryTypeIndex = (uint32_t)mt };
     if (N48P.on) {   // P1
@@ -2574,7 +2644,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
         r = vkBindImageMemory(N48R.dev, _img, _pm.mem, _pm.off);
         if (r != VK_SUCCESS) { if (err) *err = n48_err(35, [NSString stringWithFormat:@"vkBindImageMemory = %d (pool, offset %llu)", r, (unsigned long long)_pm.off]); return nil; }
     } else {
-    r = vkAllocateMemory(N48R.dev, &ma, NULL, &_mem);
+    r = n48_gpu_vkalloc(mr, &ma, &_mem);   // bundle 33: GPU-only fallback (n48_memtype.h)
     if (r != VK_SUCCESS) { if (err) *err = n48_err(34, [NSString stringWithFormat:@"vkAllocateMemory = %d", r]); return nil; }
     _size = (NSUInteger)mr.size; _acct = mr.size; atomic_fetch_add(&n48_alloc_total, _acct);
     r = vkBindImageMemory(N48R.dev, _img, _mem, 0);
@@ -2708,7 +2778,7 @@ N48_DNR(N48Texture)
         VkResult nr = vkCreateImage(N48R.dev, &nic, NULL, &_img);
         if (nr != VK_SUCCESS) { _img = VK_NULL_HANDLE; IOSFAIL(85, @"vkCreateImage(optimal, no CPU mapping) = %d", nr); }
         VkMemoryRequirements nmr; vkGetImageMemoryRequirements(N48R.dev, _img, &nmr);
-        int nmt = n48_find_mem(nmr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        int nmt = n48_find_gpu_mem(nmr.memoryTypeBits);   // bundle 33: GPU-only copy (no CPU mapping): never the CPU-visible heap
         if (nmt < 0) IOSFAIL(86, @"no device-local memory type");
         if (N48P.on) {
             nr = n48_mem_alloc((uint32_t)nmt, nmr, NO, NO, VK_NULL_HANDLE, _img, &_pm);
@@ -2718,7 +2788,7 @@ N48_DNR(N48Texture)
             if (nr != VK_SUCCESS) IOSFAIL(88, @"vkBindImageMemory = %d (pool, offset %llu)", nr, (unsigned long long)_pm.off);
         } else {
             VkMemoryAllocateInfo nma = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = nmr.size, .memoryTypeIndex = (uint32_t)nmt };
-            nr = vkAllocateMemory(N48R.dev, &nma, NULL, &_mem);
+            nr = n48_gpu_vkalloc(nmr, &nma, &_mem);   // bundle 33: GPU-only fallback (n48_memtype.h)
             if (nr != VK_SUCCESS) { _mem = VK_NULL_HANDLE; IOSFAIL(87, @"vkAllocateMemory(image) = %d", nr); }
             _acct = nmr.size; atomic_fetch_add(&n48_alloc_total, _acct);
             nr = vkBindImageMemory(N48R.dev, _img, _mem, 0);
@@ -2806,7 +2876,7 @@ N48_DNR(N48Texture)
         r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
         if (r != VK_SUCCESS) { _img = VK_NULL_HANDLE; IOSFAIL(85, @"vkCreateImage(optimal) = %d", r); }
         VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, _img, &mr);
-        int mt = n48_find_mem(mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        int mt = n48_find_gpu_mem(mr.memoryTypeBits);   // bundle 33: the device-local copy of path (b) is GPU-only: never the CPU-visible heap
         if (mt < 0) IOSFAIL(86, @"no device-local memory type");
         VkMemoryAllocateInfo m2 = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr.size, .memoryTypeIndex = (uint32_t)mt };
         if (N48P.on) {   // P1 (the optimal device-local image of path (b); the import stays as it was)
@@ -2816,7 +2886,7 @@ N48_DNR(N48Texture)
             r = vkBindImageMemory(N48R.dev, _img, _pm.mem, _pm.off);
             if (r != VK_SUCCESS) IOSFAIL(88, @"vkBindImageMemory = %d (pool, offset %llu)", r, (unsigned long long)_pm.off);
         } else {
-        r = vkAllocateMemory(N48R.dev, &m2, NULL, &_mem);
+        r = n48_gpu_vkalloc(mr, &m2, &_mem);   // bundle 33: GPU-only fallback (n48_memtype.h)
         if (r != VK_SUCCESS) { _mem = VK_NULL_HANDLE; IOSFAIL(87, @"vkAllocateMemory(image) = %d", r); }
         _acct = mr.size; atomic_fetch_add(&n48_alloc_total, _acct);
         r = vkBindImageMemory(N48R.dev, _img, _mem, 0);
@@ -2882,7 +2952,7 @@ N48_DNR(N48Texture)
     VkResult r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
     if (r != VK_SUCCESS) { _img = VK_NULL_HANDLE; BFAIL(126, @"vkCreateImage = %d", r); }
     VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, _img, &mr);
-    int mt = n48_find_mem(mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    int mt = n48_find_gpu_mem(mr.memoryTypeBits);   // bundle 33: GPU-only image: the 15 GB heap first (n48_memtype.h), never the CPU-visible one
     if (mt < 0) BFAIL(127, @"no device-local memory type");
     VkMemoryAllocateInfo ma = { .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, .allocationSize = mr.size, .memoryTypeIndex = (uint32_t)mt };
     if (N48P.on) {   // P1
@@ -2892,7 +2962,7 @@ N48_DNR(N48Texture)
         r = vkBindImageMemory(N48R.dev, _img, _pm.mem, _pm.off);
         if (r != VK_SUCCESS) BFAIL(129, @"vkBindImageMemory = %d (pool, offset %llu)", r, (unsigned long long)_pm.off);
     } else {
-    r = vkAllocateMemory(N48R.dev, &ma, NULL, &_mem);
+    r = n48_gpu_vkalloc(mr, &ma, &_mem);   // bundle 33: GPU-only fallback (n48_memtype.h)
     if (r != VK_SUCCESS) { _mem = VK_NULL_HANDLE; BFAIL(128, @"vkAllocateMemory = %d", r); }
     _size = (NSUInteger)mr.size; _acct = mr.size; atomic_fetch_add(&n48_alloc_total, _acct);
     r = vkBindImageMemory(N48R.dev, _img, _mem, 0);

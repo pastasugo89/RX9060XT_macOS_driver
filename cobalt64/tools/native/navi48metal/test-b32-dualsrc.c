@@ -124,7 +124,11 @@ int main(int argc, char **argv) {
     check(at(h, "if (v->index == 1 && v->loc != 0) { snprintf(r->why") != NULL, "reflection: Index 1 is refused on any Location but 0");
     check(at(h, "if (v->index == 1) r->dual_src = 1;") != NULL, "reflection: Index 1 sets dual_src");
     check(at(h, "   int dual_src;") != NULL, "reflection: N48sRefl.dual_src");
-    check(at(pl, "<key>CFBundleVersion</key>\n\t<string>32</string>") != NULL, "Info.plist: CFBundleVersion 32");
+    {   /* bundle 33 bumps CFBundleVersion: this check only guards against a revert below the bundle-32 value */
+        const char *vk = "<key>CFBundleVersion</key>\n\t<string>";
+        const char *v = at(pl, vk);
+        check(v != NULL && strtol(v + strlen(vk), NULL, 10) >= 32, "Info.plist: CFBundleVersion >= 32 (relaxed from == 32 by bundle 33)");
+    }
 
     /* ---- part 2: reflection of hand-made SPIR-V ---- */
     {   /* a: plain single colour output */
