@@ -343,6 +343,7 @@ static struct {
     VkPhysicalDeviceMemoryProperties mp; pthread_mutex_t qlock; VkPhysicalDeviceLimits lim; VkCommandPool opool; VkPipelineCache pc;   // pc: T2 persisted pipeline cache (VK_NULL_HANDLE = none)
     BOOL occPrecise, occOK;   // build 18 (P2): occlusionQueryPrecise enabled on the device; every query entry point resolved
     BOOL dbClamp;   // bundle 10: depthBiasClamp enabled on the device (a non-zero clamp in setDepthBias is passed on only then)
+    BOOL dualSrc;   // bundle 32: dualSrcBlend enabled on the device (and maxFragmentDualSrcAttachments >= 1): Source1* blend factors are mapped only then
     BOOL hostExt; uint64_t hostAlign; uint64_t impTotal;   // 11h.6: external_memory_host enabled, minImportedHostPointerAlignment, bytes currently imported
 } N48R;
 
@@ -566,7 +567,8 @@ static BOOL n48_radv_open_once(NSError **err) {
         VkDeviceQueueCreateInfo dq = { .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, .queueFamilyIndex = qfi, .queueCount = 1, .pQueuePriorities = &prio };
         VkPhysicalDeviceFeatures pf; vkGetPhysicalDeviceFeatures(N48R.pd, &pf);
         // translated AIR uses Int64 (10a); 11e: storage images are translated with format Unknown + Read/WriteWithoutFormat (add-air.py)
-        VkPhysicalDeviceFeatures ef = { .shaderInt64 = pf.shaderInt64, .fragmentStoresAndAtomics = pf.fragmentStoresAndAtomics, .shaderStorageImageReadWithoutFormat = pf.shaderStorageImageReadWithoutFormat,
+        // bundle 32: dualSrcBlend is enabled when RADV has it (the Source1* blend factors and the second fragment output need it)
+        VkPhysicalDeviceFeatures ef = { .dualSrcBlend = pf.dualSrcBlend, .shaderInt64 = pf.shaderInt64, .fragmentStoresAndAtomics = pf.fragmentStoresAndAtomics, .shaderStorageImageReadWithoutFormat = pf.shaderStorageImageReadWithoutFormat,
                                         .shaderStorageImageWriteWithoutFormat = pf.shaderStorageImageWriteWithoutFormat,
                                         .depthBiasClamp = pf.depthBiasClamp,   // bundle 10: setDepthBias:slopeScale:clamp:
                                         .occlusionQueryPrecise = pf.occlusionQueryPrecise };   // build 18 (P2): Counting visibility mode
@@ -574,6 +576,8 @@ static BOOL n48_radv_open_once(NSError **err) {
                pf.shaderStorageImageReadWithoutFormat, pf.shaderStorageImageWriteWithoutFormat);
         N48R.lim = pp.limits; N48R.dbClamp = pf.depthBiasClamp ? YES : NO;
         N48R.occPrecise = pf.occlusionQueryPrecise ? YES : NO;
+        N48R.dualSrc = (pf.dualSrcBlend && pp.limits.maxFragmentDualSrcAttachments >= 1) ? YES : NO;   // bundle 32
+        N48LOG("radv: dual-source blending %s (dualSrcBlend %u, maxFragmentDualSrcAttachments %u)", N48R.dualSrc ? "on" : "off", pf.dualSrcBlend, pp.limits.maxFragmentDualSrcAttachments);
         N48R.occOK = (vkCreateQueryPool && vkDestroyQueryPool && vkCmdResetQueryPool && vkCmdBeginQuery && vkCmdEndQuery && vkGetQueryPoolResults && vkGetFenceStatus) ? YES : NO;   // build 18 (P2)
         {   // bundle 10: what the device offers for depth/stencil and MSAA (each depth texture / pipeline checks these again before it uses a format)
             static const VkFormat dsf[4] = { VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT, VK_FORMAT_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
@@ -3766,8 +3770,18 @@ static VkBlendFactor n48_bf(MTLBlendFactor f, BOOL *bad) {
     case MTLBlendFactorSourceAlphaSaturated: return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
     case MTLBlendFactorBlendColor: return VK_BLEND_FACTOR_CONSTANT_COLOR; case MTLBlendFactorOneMinusBlendColor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
     case MTLBlendFactorBlendAlpha: return VK_BLEND_FACTOR_CONSTANT_ALPHA; case MTLBlendFactorOneMinusBlendAlpha: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-    default: *bad = YES; return VK_BLEND_FACTOR_ZERO;   // Source1* (dual-source blending): dualSrcBlend not enabled
+    // bundle 32: dual-source factors (the second fragment output, Index 1 of Location 0): mapped only when the device enabled dualSrcBlend
+    case MTLBlendFactorSource1Color: if (N48R.dualSrc) return VK_BLEND_FACTOR_SRC1_COLOR; break;
+    case MTLBlendFactorOneMinusSource1Color: if (N48R.dualSrc) return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR; break;
+    case MTLBlendFactorSource1Alpha: if (N48R.dualSrc) return VK_BLEND_FACTOR_SRC1_ALPHA; break;
+    case MTLBlendFactorOneMinusSource1Alpha: if (N48R.dualSrc) return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA; break;
+    default: break;
     }
+    *bad = YES;   // an unknown factor, or a Source1* factor while dual-source blending is off
+    return VK_BLEND_FACTOR_ZERO;
+}
+static BOOL n48_bf_is_src1(MTLBlendFactor f) {   // bundle 32: the four dual-source factors
+    return f == MTLBlendFactorSource1Color || f == MTLBlendFactorOneMinusSource1Color || f == MTLBlendFactorSource1Alpha || f == MTLBlendFactorOneMinusSource1Alpha;
 }
 static VkBlendOp n48_bo(MTLBlendOperation o, BOOL *bad) {
     switch (o) { case MTLBlendOperationAdd: return VK_BLEND_OP_ADD; case MTLBlendOperationSubtract: return VK_BLEND_OP_SUBTRACT;
@@ -4095,6 +4109,12 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         _cba[na] = (VkPipelineColorBlendAttachmentState){ .colorWriteMask = wm };
         if (ca.isBlendingEnabled) {   // 11e: blending from the descriptor (enable, factors, ops, write mask)
             BOOL bad = NO;
+            // bundle 32: a dual-source factor belongs to colour attachment 0 only (its second source is the Index 1 output of Location 0)
+            const BOOL src1 = n48_bf_is_src1(ca.sourceRGBBlendFactor) || n48_bf_is_src1(ca.destinationRGBBlendFactor) ||
+                              n48_bf_is_src1(ca.sourceAlphaBlendFactor) || n48_bf_is_src1(ca.destinationAlphaBlendFactor);
+            if (src1 && i != 0) { N48LOG("pipeline: colour attachment %lu blends with Source1* factors: only colour attachment 0 may (dual-source)", (unsigned long)i);
+                if (err) *err = n48_err(67, @"dual-source (Source1*) blend factors are supported on colour attachment 0 only"); free(rv); free(rf); return nil; }
+            if (src1 && rf && !rf->dual_src) N48LOG("pipeline: WARN attachment 0 blends with Source1* factors but the fragment stage writes no second colour output (Index 1)");
             _cba[na].blendEnable = VK_TRUE;
             _cba[na].srcColorBlendFactor = n48_bf(ca.sourceRGBBlendFactor, &bad); _cba[na].dstColorBlendFactor = n48_bf(ca.destinationRGBBlendFactor, &bad);
             _cba[na].srcAlphaBlendFactor = n48_bf(ca.sourceAlphaBlendFactor, &bad); _cba[na].dstAlphaBlendFactor = n48_bf(ca.destinationAlphaBlendFactor, &bad);

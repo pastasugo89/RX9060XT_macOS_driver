@@ -1,7 +1,7 @@
 /* n48_spvrefl.h - minimal SPIR-V reflection for Navi48Metal pipeline creation (native #11 step 11e).
  * Ported from tools/native/shader-compile-census/compile-census.c (validated on 274/274 compositor-set modules):
  * descriptor sets/bindings from OpVariable + Decoration, push-constant size from member Offsets, vertex inputs from Location,
- * fragment colour outputs from Location/FragDepth. Names are prefixed n48s_. Header-only, static. */
+ * fragment colour outputs from Location/Index/FragDepth (bundle 32: Index 1 = dual-source second output, Location 0 only). Names are prefixed n48s_. Header-only, static. */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +18,7 @@ typedef struct {
    uint32_t cval;      /* OpConstant low word */
    uint32_t *mem;      /* struct members */
    uint32_t *moff, *mstride; /* member Offset / MatrixStride decorations (0xffffffff = none) */
-   int set, bind, loc, builtin; /* -1 = none */
+   int set, bind, loc, builtin, index; /* -1 = none; index (bundle 32): the Index decoration, a value above 1 is stored as 2 */
    int block, bufblock;
    uint32_t stride;    /* ArrayStride */
 } N48sId;
@@ -37,7 +37,7 @@ static int n48s_parse(const uint32_t *w, size_t nw, N48sMod *m, char *why, size_
    m->bound = w[3];
    if (m->bound > 1000000) { snprintf(why, whyn, "id bound %u", m->bound); return 1; }
    m->id = calloc(m->bound + 1, sizeof(N48sId));
-   for (uint32_t i = 0; i <= m->bound; i++) { m->id[i].set = m->id[i].bind = m->id[i].loc = m->id[i].builtin = -1; }
+   for (uint32_t i = 0; i <= m->bound; i++) { m->id[i].set = m->id[i].bind = m->id[i].loc = m->id[i].builtin = m->id[i].index = -1; }
    /* pass 1: decorations and definitions (decorations may precede type defs, so member arrays are sized lazily) */
    size_t p = 5;
    while (p < nw) {
@@ -62,6 +62,7 @@ static int n48s_parse(const uint32_t *w, size_t nw, N48sMod *m, char *why, size_
          case 2: t->block = 1; break;
          case 3: t->bufblock = 1; break;
          case 6: t->stride = a[2]; break;
+         case 32: t->index = a[2] > 1 ? 2 : (int)a[2]; break;   /* Index: dual-source output index (bundle 32) */
          }
          break; }
       case 72: { /* OpMemberDecorate struct member decoration [args] */
@@ -128,6 +129,7 @@ typedef struct {
    uint32_t pc_size;
    VkVertexInputAttributeDescription va[32]; VkVertexInputBindingDescription vb[32]; int nva;
    int nout; int frag_depth; uint32_t outmask;   /* outmask: bit n set = the fragment stage writes output Location n (11e-2: an unwritten attachment keeps its contents, Metal semantics) */
+   int dual_src;   /* bundle 32: 1 = the fragment stage writes a second colour source (Index 1; always on Location 0, so it is never an attachment of its own) */
    char why[256];
 } N48sRefl;
 
@@ -205,6 +207,11 @@ static int n48s_reflect(N48sMod *m, int stage /* 0 v, 1 f, 2 k */, N48sRefl *r)
       } else if (v->sc == 3 && stage == 1) { /* Output of a fragment shader */
          if (v->builtin == 22) { r->frag_depth = 1; continue; }
          if (v->builtin >= 0 || v->loc < 0) continue;
+         /* bundle 32: Index selects the blend source of a Location, it does not select an attachment. Index 0 (colour) and Index 1 (the
+          * dual-source second input, Location 0 only) both count as a write of their Location, so neither adds an attachment of its own. */
+         if (v->index > 1) { snprintf(r->why, sizeof r->why, "fragment output %%%u: Index decoration above 1 (only 0 and 1 are valid)", i); return 1; }
+         if (v->index == 1 && v->loc != 0) { snprintf(r->why, sizeof r->why, "fragment output %%%u: Index 1 on Location %d (dual-source is Location 0 only)", i, v->loc); return 1; }
+         if (v->index == 1) r->dual_src = 1;
          uint32_t t = pointee, reps = 1;
          while (m->id[t].op == 28) { reps *= m->id[m->id[t].n].cval ? m->id[m->id[t].n].cval : 1; t = m->id[t].elem; }
          if ((int)(v->loc + reps) > r->nout) r->nout = v->loc + (int)reps;
