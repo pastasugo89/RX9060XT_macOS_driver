@@ -33,6 +33,7 @@ typedef struct {
     unsigned levels;        // mip levels (0 -> 1)
     unsigned depth;         // depth (0 -> 1)
     int is1D, is3D;
+    unsigned dropStorage;   // bundle 31: ShaderWrite on a multisample texture is accepted and the texture is made WITHOUT a storage image (1)
 } n48td_t;
 
 // d_* are the raw descriptor fields.  usage is MTLTextureUsage.  Returns 1 when accepted (and fills *o), else 0 with o->why set.
@@ -41,14 +42,16 @@ static inline int n48td_map(unsigned long tt, unsigned long w, unsigned long h, 
     unsigned long levels = mipLevelsRaw ? mipLevelsRaw : 1, depth = depthRaw ? depthRaw : 1;
     int is1D = tt == N48TD_MTL_1D || tt == N48TD_MTL_1DARRAY, is3D = tt == N48TD_MTL_3D;
     o->ok = 0; o->why = NULL; o->kind = N48TD_K_2D; o->imageType = N48TD_VK_IMAGE_2D; o->viewType = N48TD_VK_VIEW_2D; o->layers = 1; o->flags = 0; o->layersIvar = 0;
-    o->levels = (unsigned)levels; o->depth = (unsigned)depth; o->is1D = is1D; o->is3D = is3D; o->samples = 1;
+    o->levels = (unsigned)levels; o->depth = (unsigned)depth; o->is1D = is1D; o->is3D = is3D; o->samples = 1; o->dropStorage = 0;
     if (tt == N48TD_MTL_CUBEARRAY) { o->why = "cube-array textures (MTLTextureTypeCubeArray) are not supported; only cube (6 faces) and 2D-array textures exist"; return 0; }
     if (tt == N48TD_MTL_2DMS) {   // bundle 10: MSAA colour / depth targets.  The sample count itself (2, 4, 8) is checked against the device in Navi48Device.m (n48_depth.h n48ms_texture_ok).
         if (sampleCount < 2) { o->why = "a 2D multisample texture needs sampleCount >= 2"; return 0; }
         if (arrayLength != 1) { o->why = "a 2D multisample texture has arrayLength 1 (2DMultisampleArray is not supported)"; return 0; }
         if (depth != 1) { o->why = "a 2D multisample texture has depth 1"; return 0; }
         if (levels != 1) { o->why = "a 2D multisample texture has one mip level"; return 0; }
-        if (usage & N48TD_USE_SHADERWRITE) { o->why = "ShaderWrite on a multisample texture is not supported (a storage image cannot be multisampled here)"; return 0; }
+        // bundle 31: not refused any more. The texture keeps its usage (MTLTextureUsageShaderWrite is still reported) but its VkImage has no VK_IMAGE_USAGE_STORAGE_BIT;
+        // a shader that binds it as a storage image fails that encode (Navi48Device.m). NullMoth's plugin makes the same choice (NVMTLDevice.m:959-963, no storage view).
+        if (usage & N48TD_USE_SHADERWRITE) o->dropStorage = 1;
         o->kind = N48TD_K_2DMS; o->imageType = N48TD_VK_IMAGE_2D; o->viewType = N48TD_VK_VIEW_2D; o->layers = 1; o->flags = 0; o->layersIvar = 0; o->samples = (unsigned)sampleCount;
         o->ok = 1; return 1;
     }

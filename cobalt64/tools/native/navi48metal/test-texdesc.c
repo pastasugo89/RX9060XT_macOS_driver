@@ -68,7 +68,11 @@ int main(int argc, char **argv) {
     CHECK(n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 8, 1, 5, &t) && t.samples == 8, "2DMultisample with 8 samples and ShaderRead|RenderTarget -> accepted by the descriptor map (the device decides 8)");
     CHECK(!n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 1, 1, 4, &t) && t.why && strstr(t.why, "sampleCount >= 2"), "2DMultisample with sampleCount 1 -> refused (\"%s\")", t.why ? t.why : "");
     CHECK(!n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 2, 4, 1, 4, &t) && !n48td_map(N48TD_MTL_2DMS, 32, 16, 3, 1, 4, 1, 4, &t) && !n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 2, 4, &t), "2DMultisample with arrayLength 2, depth 3 or 2 mip levels -> refused");
-    CHECK(!n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 1, N48TD_USE_SHADERWRITE, &t) && t.why && strstr(t.why, "ShaderWrite"), "ShaderWrite on a multisample texture -> refused");
+    // bundle 31: ShaderWrite on a multisample texture is accepted; its storage usage is dropped (no VK_IMAGE_USAGE_STORAGE_BIT), the rest of the mapping is unchanged
+    CHECK(n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 1, N48TD_USE_SHADERWRITE, &t) && t.ok && t.dropStorage == 1 && t.kind == N48TD_K_2DMS && t.imageType == N48TD_VK_IMAGE_2D && t.samples == 4 && t.layers == 1,
+          "ShaderWrite on a multisample texture -> accepted with storage dropped (bundle 31)");
+    CHECK(n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 1, 5, &t) && t.dropStorage == 0, "multisample without ShaderWrite -> storage not dropped");
+    CHECK(n48td_map(N48TD_MTL_2D, 32, 16, 1, 1, 1, 1, N48TD_USE_SHADERWRITE, &t) && t.dropStorage == 0, "a 2D texture with ShaderWrite -> storage kept (dropStorage 0)");
     CHECK(!n48td_map(N48TD_MTL_2DMSARRAY, 32, 16, 1, 1, 4, 1, 1, &t) && !n48td_map(N48TD_MTL_BUFFER, 32, 16, 1, 1, 1, 1, 1, &t), "2DMultisampleArray, TextureBuffer -> still refused");
     CHECK(n48td_mtl_type(N48TD_K_2DMS) == N48TD_MTL_2DMS && n48td_array_length(N48TD_K_2DMS, 0) == 1 && n48td_nlayers(0) == 1 && n48td_heap_layers(N48TD_MTL_2DMS, 1) == 1, "2DMS kind reports textureType 2DMultisample, arrayLength 1, one layer");
     { n48td_att_t a; CHECK(n48td_att_view(N48TD_K_2DMS, 0, 0, &a) && a.viewType == N48TD_VK_VIEW_2D && a.baseLayer == 0 && a.layerCount == 1 && !n48td_att_view(N48TD_K_2DMS, 0, 1, &a), "2DMS attachment view: a plain 2D view of layer 0"); }

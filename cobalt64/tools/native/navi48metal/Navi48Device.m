@@ -2400,6 +2400,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
     BOOL _impShared, _iosNoBase;   // P4: _imem is a shared import-cache entry (give it back with n48_imp_put, never vkFreeMemory); _iosNoBase = a protected IOSurface with no CPU mapping: a GPU-only texture (no _imem/_ibuf/_ibase, n48IsIOS is NO)
     BOOL _disp; VkBuffer _dbuf;   // S5.2a: CoreDisplay display surface (D-copy source); _dbuf = a VkBuffer over _imem when path (a) has no _ibuf
     BOOL _led;   // build 16 (P5 Step 0): entered in the live-import ledger (removed in -dealloc)
+    BOOL _stDropped;   // bundle 31: ShaderWrite on a multisample texture: created without a storage image; a storage bind of it fails its encode
 }
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLTextureDescriptor *)d error:(NSError **)err;
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid;
@@ -2428,6 +2429,8 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (BOOL)n48IsDS;
 - (BOOL)n48IsUInt;   // bundle 19: an unsigned-integer colour format (RG16Uint)
 - (BOOL)n48IsView;
+- (N48Texture *)n48Owner;   // bundle 31: the texture that owns the VkImage and the IOSurface machinery state (self, or the root of a view)
+- (BOOL)n48StorageDropped;   // bundle 31: see _stDropped
 - (NSUInteger)n48Samples;
 - (unsigned)n48CopyAspect;   // the aspect of a buffer<->image copy (0 = refuse: a combined depth/stencil format)
 - (VkImageView)n48AttViewLevel:(uint32_t)lv;
@@ -2507,6 +2510,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     if (is3D && (d.usage & MTLTextureUsageRenderTarget)) { if (err) *err = n48_err(45, @"3D render targets are not supported"); return nil; }
     if (!n48_radv_open(err)) return nil;
     _is1D = is1D; _arr1D = tt == MTLTextureType1DArray; _layers = ti.layersIvar; _tdk = ti.kind; _is3D = is3D; _levels = levels; _depth = depth; _samples = ti.samples > 1 ? ti.samples : 0;
+    _stDropped = ti.dropStorage ? YES : NO;
     if (ti.samples > 1 && d.storageMode != MTLStorageModePrivate) { if (err) *err = n48_err(31, [NSString stringWithFormat:@"multisample textures are Private storage only (storage mode %lu)", (unsigned long)d.storageMode]); return nil; }
     if (is1D && (d.height != 1 || _w > N48R.lim.maxImageDimension1D || _layers > N48R.lim.maxImageArrayLayers)) {
         if (err) { *err = n48_err(37, [NSString stringWithFormat:@"1D texture %lux%lu array %lu outside RADV limits (width <= %u, layers <= %u, height 1)", (unsigned long)_w, (unsigned long)_h,
@@ -2525,7 +2529,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     BOOL canRT = isDS ? ((ff & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) : (!is1D && !is3D && !(_fmt->flags & N48F_A8) && (ff & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT));
     if ((d.usage & MTLTextureUsageRenderTarget) && !canRT) {
         if (err) *err = n48_err(39, [NSString stringWithFormat:@"pixel format %lu (vk %d) type %lu cannot be a render target on RADV (features 0x%x)", (unsigned long)_pf, _fmt->vk, (unsigned long)tt, ff]); return nil; }
-    BOOL wantSt = (d.usage & MTLTextureUsageShaderWrite) != 0;
+    BOOL wantSt = (d.usage & MTLTextureUsageShaderWrite) != 0 && !ti.dropStorage;   // bundle 31: a multisample ShaderWrite texture has no storage image (n48td_map)
     if (wantSt && !(ff & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)) {
         if (err) *err = n48_err(40, [NSString stringWithFormat:@"pixel format %lu (vk %d) has no storage-image support on RADV (features 0x%x)", (unsigned long)_pf, _fmt->vk, ff]); return nil; }
     VkImageUsageFlags iu = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -2552,6 +2556,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .imageType = vit, .format = _fmt->vk,
         .extent = { (uint32_t)_w, (uint32_t)_h, is3D ? (uint32_t)_depth : 1 }, .mipLevels = (uint32_t)_levels, .arrayLayers = ti.layers, .samples = (VkSampleCountFlagBits)ti.samples,   // bundle 10: 1 except a 2D multisample texture
         .flags = icf, .tiling = VK_IMAGE_TILING_OPTIMAL, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, .usage = iu };
+    if (ti.dropStorage) N48_ONCE("ShaderWrite ignored on a multisample texture: storage usage dropped");   // bundle 31
     VkResult r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(32, [NSString stringWithFormat:@"vkCreateImage = %d", r]); return nil; }
     VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, _img, &mr);
@@ -2650,6 +2655,7 @@ N48_DNR(N48Texture)
     // m11h9: any pixel format of the table whose bytes per pixel equal the surface's bytes per element (BGR10A2Unorm 'l10r' and RGBA16Float 'RGhA' are what the compositor's
     // display surfaces use); an A8 / render-target mismatch is refused below by the same rules as an ordinary texture.
     if (!_fmt) IOSFAIL(71, @"pixel format %lu is not in the format table", (unsigned long)_pf);
+    const VkImageCreateFlags iosf = (d.usage & MTLTextureUsagePixelFormatView) ? VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT : 0;   // bundle 31: views of this texture may reinterpret the format only when asked (as an ordinary texture)
     if ((_fmt->flags & N48F_A8) && (d.usage & MTLTextureUsageRenderTarget)) IOSFAIL(71, @"A8Unorm render targets are not supported");
     if (d.textureType != MTLTextureType2D || d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) IOSFAIL(72, @"only single 2D textures (no mips/array/MSAA)");
     size_t pc = IOSurfaceGetPlaneCount(s);
@@ -2693,7 +2699,7 @@ N48_DNR(N48Texture)
         BOOL nbAtt = !(_fmt->flags & N48F_A8) && (nbf & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
         VkImageUsageFlags nbu = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (nbAtt ? (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT) : 0) |
                                 ((d.usage & MTLTextureUsageShaderWrite) ? VK_IMAGE_USAGE_STORAGE_BIT : 0);
-        VkImageCreateInfo nic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
+        VkImageCreateInfo nic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .flags = iosf, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
             .mipLevels = 1, .arrayLayers = 1, .samples = VK_SAMPLE_COUNT_1_BIT, .tiling = VK_IMAGE_TILING_OPTIMAL, .usage = nbu, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED };
         VkResult nr = vkCreateImage(N48R.dev, &nic, NULL, &_img);
         if (nr != VK_SUCCESS) { _img = VK_NULL_HANDLE; IOSFAIL(85, @"vkCreateImage(optimal, no CPU mapping) = %d", nr); }
@@ -2772,7 +2778,7 @@ N48_DNR(N48Texture)
     }
     if (tryA) {
         VkExternalMemoryImageCreateInfo emi = { .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT };
-        VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .pNext = &emi, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
+        VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .pNext = &emi, .flags = iosf, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
             .mipLevels = 1, .arrayLayers = 1, .samples = VK_SAMPLE_COUNT_1_BIT, .tiling = VK_IMAGE_TILING_LINEAR, .usage = use, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED };
         VkImage li = VK_NULL_HANDLE; r = vkCreateImage(N48R.dev, &ic, NULL, &li);
         if (r != VK_SUCCESS) N48LOG("newTexture(iosurface): path (a) unavailable: linear vkCreateImage = %d", r);
@@ -2791,7 +2797,7 @@ N48_DNR(N48Texture)
         }
     }
     if (!_iosLinear) {   // path (b): optimal device-local image + a VkBuffer over the import
-        VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
+        VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .flags = iosf, .imageType = VK_IMAGE_TYPE_2D, .format = _fmt->vk, .extent = { (uint32_t)_w, (uint32_t)_h, 1 },
             .mipLevels = 1, .arrayLayers = 1, .samples = VK_SAMPLE_COUNT_1_BIT, .tiling = VK_IMAGE_TILING_OPTIMAL, .usage = use, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED };
         r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
         if (r != VK_SUCCESS) { _img = VK_NULL_HANDLE; IOSFAIL(85, @"vkCreateImage(optimal) = %d", r); }
@@ -2997,6 +3003,8 @@ N48_DNR(N48Texture)
 - (BOOL)n48IsDS { return (_root ? [_root n48Aspects] : _aspects) != 0 && (_root ? [_root n48Aspects] : _aspects) != N48DP_ASP_COLOR; }
 - (BOOL)n48IsUInt { return _fmt != NULL && (_fmt->flags & N48F_UINT) != 0; }
 - (BOOL)n48IsView { return _root != nil; }
+- (N48Texture *)n48Owner { return _root ? _root : self; }
+- (BOOL)n48StorageDropped { return _stDropped; }
 - (NSUInteger)n48Samples { return _root ? 1 : (_samples ? _samples : 1); }
 - (unsigned)n48CopyAspect { return [self n48IsDS] ? n48dp_copy_aspect([self n48Aspects]) : N48DP_ASP_COLOR; }
 - (VkFormat)vkFormat { return _fmt->vk; }
@@ -3052,7 +3060,7 @@ N48_RESOURCE_SPI
 - (void *)virtualAddress { return [self n48IsIOS] ? (void *)_ibase : NULL; }
 // Views. Only same-size reinterpretation of a whole single-level 2D texture: a level range {0,1}, a slice range {0,1}, textureType 2D, an optional swizzle.
 // The root must have been created with MTLTextureUsagePixelFormatView when the pixel format changes (that sets VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT), and must not be
-// IOSurface-backed (the IOSurface upload / write-back machinery tracks the root texture object; a view would bypass it).
+// IOSurface-backed roots are allowed since bundle 31: a view shares the root's VkImage, and every IOSurface entry point resolves a view to its owner (n48Owner).
 - (id)n48View:(MTLPixelFormat)pf type:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl swizzle:(MTLTextureSwizzleChannels)sw {
     if (tt != MTLTextureType2D || lv.location != 0 || lv.length != 1 || sl.location != 0 || sl.length != 1) {
         N48LOG("newTextureView: type %lu levels %lu+%lu slices %lu+%lu: only a 2D view of level 0 slice 0 exists (no mips/arrays); nil", (unsigned long)tt, (unsigned long)lv.location,
@@ -3074,7 +3082,7 @@ N48_RESOURCE_SPI
     self = [super init]; if (!self) return nil;
     #define VFAIL(code, ...) do { if (err) *err = n48_err(code, [NSString stringWithFormat:__VA_ARGS__]); return nil; } while (0)
     if (!root || root->_root) VFAIL(92, @"a view needs a root texture");
-    if ([root n48IsIOS]) VFAIL(93, @"views of IOSurface-backed textures are not implemented");
+    if (root->_hostBuf) VFAIL(93, @"views of buffer-backed textures are not implemented");   // bundle 31: IOSurface-backed roots are shared (below)
     if (root->_is1D) VFAIL(99, @"views of 1D / 1DArray textures are not implemented");
     if (n48td_is_layered2d(root->_tdk)) VFAIL(98, @"views of cube / 2D-array textures are not implemented");
     if (root->_samples > 1) VFAIL(100, @"views of multisample textures are not implemented");
@@ -3086,6 +3094,15 @@ N48_RESOURCE_SPI
     if (pf != root->_pf) {
         if (f->bpp != root->_fmt->bpp) VFAIL(95, @"view pixel format %lu has %u bytes per pixel, the texture has %u", (unsigned long)pf, f->bpp, root->_fmt->bpp);
         if (!(root->_usage & MTLTextureUsagePixelFormatView)) VFAIL(96, @"the texture was not created with MTLTextureUsagePixelFormatView");
+    }
+    if (pf != root->_pf && root->_ios) {   // bundle 31: the shared VkImage has the root's usages; the view format must support each of them with the image's tiling
+        VkFormatProperties rp = {0}, vp = {0};
+        vkGetPhysicalDeviceFormatProperties(N48R.pd, root->_fmt->vk, &rp); vkGetPhysicalDeviceFormatProperties(N48R.pd, f->vk, &vp);
+        const VkFormatFeatureFlags need = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+        const VkFormatFeatureFlags rf = (root->_iosLinear ? rp.linearTilingFeatures : rp.optimalTilingFeatures) & need;
+        const VkFormatFeatureFlags vf = root->_iosLinear ? vp.linearTilingFeatures : vp.optimalTilingFeatures;
+        if ((vf & rf) != rf) VFAIL(102, @"view pixel format %lu (vk %d) lacks features 0x%x of the shared IOSurface image (texture pixel format %lu, vk %d)", (unsigned long)pf, f->vk, rf & ~vf, (unsigned long)root->_pf, root->_fmt->vk);
     }
     _root = root; _dev = root->_dev; _w = root->_w; _h = root->_h; _pf = pf; _fmt = f; _usage = root->_usage; _opts = root->_opts; _swz = swz;
     if (swz.red > 5 || swz.green > 5 || swz.blue > 5 || swz.alpha > 5) VFAIL(97, @"bad swizzle");
@@ -4735,6 +4752,7 @@ static void n48s_record_copy_img(VkCommandBuffer cmd, N48Texture *t, const n48df
 // WindowServer and the kill file /private/tmp/n48m-noioalias keep build 14's rule exactly (upload at the first touch that needs the contents) and only COUNT the cases the rules would have acted on.
 // Returns YES when commands were recorded. The caller guarantees [t n48IsIOS].
 static BOOL n48_ios_touch(N48CommandBuffer *cb, N48Texture *t, BOOL need, BOOL write, void (^endPass)(void)) {
+    t = [t n48Owner];   // bundle 31: a view is tracked as its root (one VkImage, one import, one upload / write-back)
     const BOOL first = [cb n48IOFirstTouch:t];
     const n48ia_act d = [cb n48IOAlias:t need:need write:write];
     BOOL did = NO;
@@ -4764,6 +4782,7 @@ static BOOL n48_ios_touch(N48CommandBuffer *cb, N48Texture *t, BOOL need, BOOL w
 }
 // Call OUTSIDE a render pass. needContents NO = the caller clears the whole texture, so the upload is skipped.
 static void n48_ios_usek(N48CommandBuffer *cb, N48Texture *t, BOOL needContents, BOOL write, uint32_t kind) {
+    t = [t n48Owner];   // bundle 31
     if (![t n48IsIOS]) {
         if ([t n48DispImgOnly]) {   // P6: a protected display surface has no host copy to upload or write back; it only needs to be retained and recorded as written so the D-copy reads its image
             (void)[cb n48IOFirstTouch:t];
@@ -4779,6 +4798,7 @@ static void n48_ios_use(N48CommandBuffer *cb, N48Texture *t, BOOL needContents, 
 
 @implementation N48CommandBuffer
 - (BOOL)n48IOFirstTouch:(N48Texture *)t {
+    t = [t n48Owner];   // bundle 31
     if (!_iot) { _iot = [NSMutableArray array]; _iow = [NSMutableArray array]; }
     if ([_iot indexOfObjectIdenticalTo:t] != NSNotFound) return NO;
     [_iot addObject:t]; [self n48Retain:t];
@@ -4805,11 +4825,12 @@ static void n48_ios_use(N48CommandBuffer *cb, N48Texture *t, BOOL needContents, 
 - (uint64_t)n48TBegin { return _tBeg; }
 - (BOOL)n48IsFrame { return _frame; }
 - (void)n48IOWritten:(N48Texture *)t {
+    t = [t n48Owner];   // bundle 31
     if ([_iow indexOfObjectIdenticalTo:t] == NSNotFound) [_iow addObject:t];
     if ([t n48IsIOS] && [t n48IOSRef]) _ncbw = n48cb_addsid(_cbw, _ncbw, N48CB_MAXW, IOSurfaceGetID([t n48IOSRef]));
     else if ([t n48DispImgOnly]) _ncbw = n48cb_addsid(_cbw, _ncbw, N48CB_MAXW, [t n48DispSid]);   // P6: the transaction correlation also sees protected display surfaces
 }
-- (void)n48CBRead:(N48Texture *)t { if (t && [t n48IsIOS] && [t n48IOSRef]) _ncbr = n48cb_addsid(_cbr, _ncbr, N48CB_MAXR, IOSurfaceGetID([t n48IOSRef])); }
+- (void)n48CBRead:(N48Texture *)t { t = [t n48Owner]; if (t && [t n48IsIOS] && [t n48IOSRef]) _ncbr = n48cb_addsid(_cbr, _ncbr, N48CB_MAXR, IOSurfaceGetID([t n48IOSRef])); }
 // Stage 0b. -commit is stamped, logged, then handed to Metal's own implementation unchanged.
 - (void)commit {
     _tcommit = n48_now();
@@ -4851,6 +4872,7 @@ static void n48_ios_use(N48CommandBuffer *cb, N48Texture *t, BOOL needContents, 
 }
 // native #12 P1: records HOW a display surface is written by this command buffer (OR-ed bits per surface; the pipeline names of every draw, deduplicated).
 - (void)n48DispNote:(N48Texture *)t bits:(uint32_t)bits pso:(N48RenderPipelineState *)p {
+    t = [t n48Owner];   // bundle 31
     if (![t n48IsDisp]) return;
     int k = -1; for (int i = 0; i < _ndw; i++) if (_dw[i].t == t) { k = i; break; }
     if (k < 0) { if (_ndw >= 4) return; k = _ndw++; _dw[k].t = t; _dw[k].mask = 0; _dw[k].lastpso = NULL; _dw[k].fns[0] = 0; memset(&_dw[k].wr, 0, sizeof _dw[k].wr); }
@@ -5163,6 +5185,7 @@ N48_DNR(N48CommandBuffer)
             for (uint32_t k = 0; k < p->count; k++) {
                 uint32_t ix = p->binding - 480 + k; N48Texture *t = ix < 128 ? st->tex[ix] : nil;
                 if (!t) { [self n48Fail:[NSString stringWithFormat:@"%s: writable texture(%u) is used by the shader but was never bound", nm, ix]]; return NO; }
+                if ([t n48StorageDropped]) { [self n48Fail:[NSString stringWithFormat:@"%s: writable texture(%u) is multisampled and was created without ShaderWrite (storage usage dropped): the shader cannot write it", nm, ix]]; return NO; }   // bundle 31
                 [self n48Retain:t];
                 ii[nii++] = (VkDescriptorImageInfo){ VK_NULL_HANDLE, [t n48AttViewLevel:0], VK_IMAGE_LAYOUT_GENERAL };   // storage images: single-level, identity-swizzle view
             }
@@ -5285,7 +5308,7 @@ static VkRenderPass n48_mk_rp_c(const VkAttachmentDescription *ads, uint32_t na,
         if (na == 0) { _w = (uint32_t)MAX((NSUInteger)1, t.width >> lvl); _h = (uint32_t)MAX((NSUInteger)1, t.height >> lvl); }
         n48_ios_use(_cb, t, ca.loadAction != MTLLoadActionClear, YES);   // 11h.6: IOSurface contents are never discarded (only Clear skips the upload)
         [_cb n48DispNote:t bits:(N48DF_W_PASS | (ca.loadAction == MTLLoadActionClear ? N48DF_W_CLEAR : 0)) pso:nil];   // native #12 P1
-        BOOL load = (ca.loadAction == MTLLoadActionLoad || ([t n48IsIOS] && ca.loadAction != MTLLoadActionClear)) && [t layout] != VK_IMAGE_LAYOUT_UNDEFINED;
+        BOOL load = (ca.loadAction == MTLLoadActionLoad || ([[t n48Owner] n48IsIOS] && ca.loadAction != MTLLoadActionClear)) && [t layout] != VK_IMAGE_LAYOUT_UNDEFINED;   // bundle 31: owner for a view
         // The layout of a texture is tracked for the WHOLE image. A render pass only transitions its attachment's level, so a multi-level texture is moved to the attachment layout
         // explicitly (outside any pass: the previous encoder has ended) and the pass then starts from that layout.
         BOOL wholeImg = [t n48Levels] > 1 || [t n48Layers] > 1;   // bundle 9: a layered texture is moved as a whole too (the pass only transitions its one layer)
@@ -5569,11 +5592,11 @@ N48_ENCODER_NOOPS
 
 // ---- P5b helpers (only reached when the n48m-drawopt switch is ON) ----
 - (void)n48NeedTex:(N48Texture *)t layout:(VkImageLayout)l {   // the body of needTex in n48PrepareDraw, verbatim
-    if ([t n48IsIOS]) (void)n48_ios_touch(_cb, t, YES, l == VK_IMAGE_LAYOUT_GENERAL, ^{   // 11h.6 / build 16 (P1): upload / flush outside the render pass (splits it if one is open)
+    if ([[t n48Owner] n48IsIOS]) (void)n48_ios_touch(_cb, t, YES, l == VK_IMAGE_LAYOUT_GENERAL, ^{   // 11h.6 / build 16 (P1): upload / flush outside the render pass (splits it if one is open)
         if (self->_inPass) { [self n48EndPass]; N48LOGR("render pass split: IOSurface texture %p uploaded", (__bridge void *)t); } });
     [_cb n48CBRead:t];
-    if ([t n48DispImgOnly]) (void)[_cb n48IOFirstTouch:t];   // P6: retained for the command buffer, nothing to upload
-    if (([t n48IsIOS] || [t n48DispImgOnly]) && l == VK_IMAGE_LAYOUT_GENERAL) { [_cb n48IOWritten:t]; [_cb n48DispNote:t bits:N48DF_W_COMPUTE pso:nil]; }
+    if ([[t n48Owner] n48DispImgOnly]) (void)[_cb n48IOFirstTouch:t];   // P6: retained for the command buffer, nothing to upload
+    if (([[t n48Owner] n48IsIOS] || [[t n48Owner] n48DispImgOnly]) && l == VK_IMAGE_LAYOUT_GENERAL) { [_cb n48IOWritten:t]; [_cb n48DispNote:t bits:N48DF_W_COMPUTE pso:nil]; }
     [self n48Need:t layout:l];
 }
 - (void)n48EachTex:(const N48PB *)pb n:(uint32_t)n state:(const N48StageState *)st dev:(id)dev {   // n48_each_tex, with the callback inlined
@@ -5648,11 +5671,11 @@ N48_ENCODER_NOOPS
         [_cb n48Fail:[NSString stringWithFormat:@"vertex buffer at index %u is read by the vertex descriptor but never bound", need[i]]]; return NO; }
     id dev = [_cb device];
     void (^needTex)(N48Texture *, VkImageLayout) = ^(N48Texture *t, VkImageLayout l) {
-        if ([t n48IsIOS]) (void)n48_ios_touch(self->_cb, t, YES, l == VK_IMAGE_LAYOUT_GENERAL, ^{   // 11h.6 / build 16 (P1): upload / flush outside the render pass (splits it if one is open)
+        if ([[t n48Owner] n48IsIOS]) (void)n48_ios_touch(self->_cb, t, YES, l == VK_IMAGE_LAYOUT_GENERAL, ^{   // 11h.6 / build 16 (P1): upload / flush outside the render pass (splits it if one is open)
             if (self->_inPass) { [self n48EndPass]; N48LOGR("render pass split: IOSurface texture %p uploaded", (__bridge void *)t); } });
         [self->_cb n48CBRead:t];   // Stage 0b: sampled (or storage-accessed) by a render draw
-        if ([t n48DispImgOnly]) (void)[self->_cb n48IOFirstTouch:t];   // P6: retained for the command buffer, nothing to upload
-        if (([t n48IsIOS] || [t n48DispImgOnly]) && l == VK_IMAGE_LAYOUT_GENERAL) { [self->_cb n48IOWritten:t]; [self->_cb n48DispNote:t bits:N48DF_W_COMPUTE pso:nil]; }   // a storage-image write from a render pass
+        if ([[t n48Owner] n48DispImgOnly]) (void)[self->_cb n48IOFirstTouch:t];   // P6: retained for the command buffer, nothing to upload
+        if (([[t n48Owner] n48IsIOS] || [[t n48Owner] n48DispImgOnly]) && l == VK_IMAGE_LAYOUT_GENERAL) { [self->_cb n48IOWritten:t]; [self->_cb n48DispNote:t bits:N48DF_W_COMPUTE pso:nil]; }   // a storage-image write from a render pass
         [self n48Need:t layout:l];
     };
     if (_dcOn) {   // P5b item 5: the same visit as n48_each_tex, as a plain loop (no heap-copied block)
