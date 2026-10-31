@@ -45,7 +45,7 @@ inline const char *open_reason_text(OpenReason r) {
     case kReasonWsArgOff:      return "uid 88 but boot-arg navi48-metal-ws is not 1";
     case kReasonWsAlreadyOpen: return "uid 88 but a native client is already open";
     case kReasonApp:           return "allow-listed user application (navi48-apps=1)";
-    case kReasonAppNotAllowed: return "user application not on the navi48-apps allow-list";
+    case kReasonAppNotAllowed: return "user application refused (not on the navi48-apps allow-list, or struck out)";
     default:                   return "?";
     }
 }

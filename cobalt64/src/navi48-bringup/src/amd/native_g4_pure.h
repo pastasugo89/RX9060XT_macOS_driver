@@ -124,6 +124,11 @@ inline uint32_t strike_add(StrikeTab &t, uint64_t key) {
 constexpr bool strike_refused(uint32_t count) { return count >= kStrikeLimit; }
 // A name is admitted as an APP only when it is on the allow-list AND not struck out.
 constexpr bool app_admit(bool onAllowList, uint32_t strikes) { return onAllowList && !strike_refused(strikes); }
+// 0.0.666 (64-context profile): an application needs no allow-list entry there - the table is shared out by the budget below instead, and three recoveries
+// blamed on a name still refuse it. logicalProfile = kMaxSessions > kHardwareSessions (the caller's production_on()). The legacy fixed-VMID profiles keep app_admit.
+constexpr bool app_admit_profile(bool logicalProfile, bool onAllowList, uint32_t strikes) {
+    return logicalProfile ? !strike_refused(strikes) : app_admit(onAllowList, strikes);
+}
 
 // ---- the verb ---------------------------------------------------------------------------------------------------------------------------------------------
 constexpr uint32_t kActAppAllow = 104u;
@@ -227,6 +232,47 @@ inline uint64_t log_gate_step(uint64_t w, uint64_t nowSec, bool *admit, uint32_t
     if (used < kLogPerSec) { *admit = true; return w + (1ull << 32); }
     *admit = false; return supp < 0xFFFFu ? w + (1ull << 48) : w;
 }
+
+// ---- 0.0.666 (64-context profile): the application budget ---------------------------------------------------------------------------------------------------
+// The logical-context table (N48_MAX_LOGICAL_CONTEXTS records) is shared by admin, WindowServer and application opens. Applications (the APP role only) may hold at
+// most app_total_cap() records together, must leave kReserved records FREE, and are capped per process and per uid. Admin and WindowServer opens are never refused
+// here. In the kext a refusal is kIOReturnNoResources (distinct from ExclusiveAccess, which means the table itself is full). Pure: no kernel header.
+namespace budget {
+constexpr uint32_t kWsReserve = 1u;        // WindowServer always keeps a record: applications never take the last one
+constexpr uint32_t kSystemReserve = 8u;    // a further share for system processes (uid < 501, root tools); applications leave it free
+constexpr uint32_t kReserved = kWsReserve + kSystemReserve;
+constexpr uint32_t kPerPid = 8u;           // open application records of one process
+constexpr uint32_t kPerUid = 32u;          // open application records of one uid
+constexpr uint32_t app_total_cap(uint32_t logical) { return logical > kReserved ? logical - kReserved : 0u; }
+enum Verdict : uint32_t { kVerdictOk = 0u, kReservedForSystem = 1u, kAppTotal = 2u, kPerPidLimit = 3u, kPerUidLimit = 4u };
+struct Use { bool open; bool app; uint32_t pid; uint32_t uid; };   // one record: open now, admitted as an application, its opener
+// u[0..n): every record. freeRecords: records in the Free state now. logical: the table size. Only an application open is ever refused.
+inline Verdict admit(const Use *u, uint32_t n, uint32_t logical, bool app, uint32_t pid, uint32_t uid, uint32_t freeRecords) {
+    if (!app) return kVerdictOk;
+    if (freeRecords <= kReserved) return kReservedForSystem;
+    uint32_t total = 0, byPid = 0, byUid = 0;
+    for (uint32_t i = 0; u != nullptr && i < n; i++) {
+        if (!u[i].open || !u[i].app) continue;
+        total++;
+        if (u[i].pid == pid) byPid++;
+        if (u[i].uid == uid) byUid++;
+    }
+    if (total >= app_total_cap(logical)) return kAppTotal;
+    if (byPid >= kPerPid) return kPerPidLimit;
+    if (byUid >= kPerUid) return kPerUidLimit;
+    return kVerdictOk;
+}
+inline const char *verdict_text(Verdict v) {
+    switch (v) {
+    case kVerdictOk:       return "admitted";
+    case kReservedForSystem: return "the last records are kept for WindowServer and system processes";
+    case kAppTotal:        return "applications hold their share of the table";
+    case kPerPidLimit:     return "this process holds its limit of records";
+    case kPerUidLimit:     return "this user holds its limit of records";
+    default:               return "?";
+    }
+}
+} // namespace budget
 
 } // namespace g4
 } // namespace n48native

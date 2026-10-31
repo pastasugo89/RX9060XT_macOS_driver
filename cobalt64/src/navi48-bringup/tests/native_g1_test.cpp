@@ -437,9 +437,9 @@ static void g9_pins(const std::string &root) {
     expect_u("every G1 wait is the pure bounded wait (the kernel has none of its own)", count_of(g1, "wait_until("), 0);
     // the WindowServer note
     // 0.0.627 (G2): the note is set by the open itself, from the client's WindowServer-session flag, under gCliLock with the open; the close clears it before the open count drops
-    expect(ncl.find("wsSession = d.reason == n48native::policy::kReasonWindowServer;") != std::string::npos && in_order(ncl, { "amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref);", "uc->opened = true;", "if (!uc->attach(attachTo))" }) &&
+    expect(ncl.find("wsSession = d.reason == n48native::policy::kReasonWindowServer;") != std::string::npos && in_order(ncl, { "amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref, &who);", "uc->opened = true;", "if (!uc->attach(attachTo))" }) &&
            ncl.find("n1c_note_ws_session") == std::string::npos, "the native client opens with its WindowServer flag (the note is part of the open)");
-    { const std::string op = between(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {", "\n}\n");
+    { const std::string op = between(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {", "\n}\n");
       expect(in_order(op, { "IOLockLock(gCliLock);", "__atomic_store_n(&s->open, true, __ATOMIC_RELEASE);", "if (ws) __atomic_store_n(&gSessWs, 1u, __ATOMIC_SEQ_CST);", "IOLockUnlock(gCliLock);" }), "n1c_open sets the note for a WindowServer open, under the client lock"); }
     expect(in_order(eng, { "if (s->ws) __atomic_store_n(&gSessWs, 0u, __ATOMIC_SEQ_CST);", "if (!multi) OSCompareAndSwap(1, 0, &gOpenFlag);\n    else __atomic_sub_fetch(&gOpenFlag, 1u, __ATOMIC_SEQ_CST);\n    IOLockUnlock(gCliLock);\n    IOLockUnlock(sl);" }), "n1c_close clears the note before the open flag (count) drops");
     // dispatch: before the native refusal, behind native_exempt with the latch; the user client bound

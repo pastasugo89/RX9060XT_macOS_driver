@@ -52,6 +52,8 @@ private:
 	bool           wsSession { false };     // 0.0.627 (G2): admitted by the uid-88 (WindowServer) rule (policy reason kReasonWindowServer): THIS client's session is WindowServer's
 	bool           appSession { false };    // 0.0.640 (G4): admitted by the allow-list rule (policy reason kReasonApp): an ordinary user application, limited to n48native::policy::selector_allowed_for_app
 	uint64_t       appKey { 0 };            // 0.0.641: the opener's executable-name key (Navi48AppKey.h) when admitted as an APP; the strike count's key
+	uint32_t       openerPid { 0 };         // 0.0.666: the opener's pid and effective uid (initWithTask): the application budget's per-process and per-uid counts (n1c_open)
+	uint32_t       openerUid { 0 };
 	uint32_t       sessSlot { 0 };          // 0.0.627 (G2): this client's session (amdgpu::N1cRef): slot 0..3 = VMID 8..11 ...
 	uint32_t       sessId { 0 };            // ... and the id of its open (0 = none). Every engine call carries both; a stale pair is refused.
 };

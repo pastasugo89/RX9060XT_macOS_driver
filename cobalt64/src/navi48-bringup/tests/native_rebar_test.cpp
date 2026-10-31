@@ -310,7 +310,7 @@ static void p5_pins(const std::string &root) {
     expect(at(lt, "amdgpu::n1c_latch_bar0_conflict(u.conflict);") < at(lt, "amdgpu::n1c_latch_pci_bars(base, size, n);"), "P5 item 5: the conflict is latched before the BARs");
     expect(has(b, "return n48rebar::cfg_bar_addr(lo, hi);") && has(b, "const uint32_t hi = ((lo & 0x6) == 0x4) ? pci->configRead32(kIOPCIConfigBaseAddress1) : 0;"), "P5 item 5: the config-space BAR0 address joins both dwords");
     expect(has(s1ch, "void n1c_latch_bar0_conflict(bool conflict);") && has(s1c, "void n1c_latch_bar0_conflict(bool conflict) {"), "P5 item 5: the latch is declared and defined");
-    const std::string op = between(s1c, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {", "// (4) exclusivity.");
+    const std::string op = between(s1c, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {", "// (4) exclusivity.");
     expect(has(op, "__atomic_load_n(&gBar0Conflict, __ATOMIC_ACQUIRE) == 2u") && has(op, "return kIOReturnNotReady;") && at(op, "gBar0Conflict") < at(op, "(2) the S1b gate"), "P5 item 5: n1c_open refuses on a BAR0 disagreement, before the S1b gate");
     expect(at(s1c, "static volatile UInt32 gBar0Conflict;") != std::string::npos && has(s1c, "OSCompareAndSwap(0, conflict ? 2u : 1u, &gBar0Conflict)"), "P5 item 5: the conflict word is first-writer-wins");
     // item 6: read-only census

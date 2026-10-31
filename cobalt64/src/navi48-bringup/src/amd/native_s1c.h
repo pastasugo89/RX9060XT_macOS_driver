@@ -38,7 +38,10 @@ struct N1cRef { uint32_t slot; uint32_t id; };
 // Open: gate checks, exclusivity, and the fresh tree. Returns kIOReturnSuccess, NotReady (gate / S1b / HUNG / device not ready),
 // ExclusiveAccess (a client is open; 0.0.627 with boot-arg navi48-multisession=1: no free slot, a G1 test holds the GPU, or a WindowServer open while
 // any session is open) or NoMemory. Logs one line per refusal. ws: the caller was admitted by the uid-88 (WindowServer) rule. *out: the session.
-IOReturn n1c_open(BringupContext &ctx, bool ws = false, N1cRef *out = nullptr);
+// 0.0.666: who opens the session. app = admitted as an application (the 64-context profile's budget applies: a per-process, per-uid and reserve check under the client
+// lock; refused with kIOReturnNoResources). pid / uid = the opener's process and effective uid. who == nullptr: not an application (admin, WindowServer, G1 test).
+struct N1cOpener { bool app; uint32_t pid; uint32_t uid; };
+IOReturn n1c_open(BringupContext &ctx, bool ws = false, N1cRef *out = nullptr, const N1cOpener *who = nullptr);
 // Close (clientClose / clientDied / stop): idempotent. `how` names the caller in the log line.
 void n1c_close(const N1cRef &ref, const char *how);
 bool n1c_is_open();   // any session open

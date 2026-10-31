@@ -155,7 +155,7 @@ static void o3_pins(const std::string &root) {
     expect(init.find("if (gMetalWsLatch == n48native::policy::kLatchUnset) latchBootArgs();") != std::string::npos && init.find("latchBootArgs();") < init.find("open_decision("), "initWithTask latches (if start never did) BEFORE it decides");
     expect(init.find("clientHasPrivilege") < init.find("open_decision("), "the privilege query precedes the decision");
     // the service and the open path are unchanged
-    expect(cli.find("const IOReturn rc = amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref);") != std::string::npos && cli.find("return kIOReturnNotPrivileged;   // non-root") != std::string::npos, "create() still refuses with NotPrivileged and opens through n1c_open (exclusivity with the switch OFF, VMID 8; 0.0.627: the WindowServer flag and the session reference)");
+    expect(cli.find("const IOReturn rc = amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref, &who);") != std::string::npos && cli.find("return kIOReturnNotPrivileged;   // non-root") != std::string::npos, "create() still refuses with NotPrivileged and opens through n1c_open (exclusivity with the switch OFF, VMID 8; 0.0.627: the WindowServer flag and the session reference)");
     expect_u("still exactly one native VMID", n48native::kNativeVmid, 8);
 }
 

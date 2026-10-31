@@ -332,7 +332,7 @@ static void t11_pins(const std::string &root) {
     expect(eng.find("PE_parse_boot_argn(\"navi48-multisession\", &v, sizeof(v))") != std::string::npos && count_of(eng, "PE_parse_boot_argn(\"navi48-multisession\"") == 1, "the switch is boot-arg navi48-multisession, parsed in one place");
     expect(eng.find("if (OSCompareAndSwap(n48native::g2::kLatchUnset, n48native::g2::latch_value(present, v), &gMultiLatch))") != std::string::npos, "latched once (first writer wins)");
     // open: OFF = the CAS, ON = open_pick; the VMID of the slot everywhere
-    const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {");
+    const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {");
     expect(!op.empty(), "n1c_open found");
     expect(in_order(op, { "if (gHang.hung) {", "const bool multi = multi_on();", "if (!multi && !OSCompareAndSwap(0, 1, &gOpenFlag)) {", "IOLockLock(gCliLock);",
                           "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());", "if (pk.rc != kOk) {", "if (gSessSeqCounter == UINT32_MAX)",
@@ -574,7 +574,7 @@ static void t12_pins(const std::string &root) {
     const std::string tail = lastCli != std::string::npos ? cl.substr(lastCli + std::strlen("IOLockUnlock(gCliLock);")) : std::string("s->");
     expect(tail.find("IOLockUnlock(sl);") != std::string::npos && tail.find("s->") == std::string::npos && tail.find("sess_unlock(") == std::string::npos,
            "R1: after close's LAST gCliLock release nothing reads the Session; the lock is released through the local");
-    const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {");
+    const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {");
     expect(op.find("bzero(s, sizeof(Session))") == std::string::npos && eng.find("bzero(s, sizeof(Session))") == std::string::npos, "R1: no whole-record wipe of a live slot's Session");
     expect(in_order(op, { "if (s->lock == nullptr) {", "IOLock *nl = IOLockAlloc();", "__atomic_store_n(&s->lock, nl, __ATOMIC_RELEASE);", "n48native::g2::sess_wipe_keep_lock(s);", "s->slot = slot;" }),
            "R1: open creates the lock once per slot, then wipes the record WITHOUT it");

@@ -356,7 +356,7 @@ static void t8_pins(const std::string &root) {
     expect(init.find("gAppOpenLogged < 64u") != std::string::npos, "T8: the app-open line is rate limited");
     // create(): the mark
     const std::string cr = fn_body(cli, "IOReturn IOAccelNavi48NativeClient::create(");
-    expect(in_order(cr, { "amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref);", "uc->sessSlot = ref.slot; uc->sessId = ref.id;", "if (uc->appSession) {", "amdgpu::n1c_mark_app(ref, uc->appKey);",
+    expect(in_order(cr, { "amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref, &who);", "uc->sessSlot = ref.slot; uc->sessId = ref.id;", "if (uc->appSession) {", "amdgpu::n1c_mark_app(ref, uc->appKey);",
                           "amdgpu::n1c_close(ref, \"app mark refused\"); uc->release(); return mrc;", "uc->opened = true;", "if (!uc->attach(attachTo))" }),
            "T8: an APP session is marked right after the open, before the client is returned; a refused mark closes it again");
     // the selector gate
@@ -375,7 +375,7 @@ static void t8_pins(const std::string &root) {
     }
     expect(in_order(fn_body(eng, "IOReturn n1c_read_regs("), { "kCallReadRegs", "regs_allowed(" }) && fn_body(eng, "IOReturn n1c_scan_acquire(").find("kCallScanout") != std::string::npos, "T8: ReadRegs uses its own call class, the scanout calls theirs");
     { const std::string aa = fn_body(eng, "bool n1c_app_allowed(const char *comm, bool *struckOut) {");
-      expect(in_order(aa, { "*struckOut = false;", "if (!apps_on()) return false;", "n48native::g4::al_contains(gAppAllow, key)", "n48native::g4::strike_refused(n48native::g4::strike_count(gStrikes, key))", "return n48native::g4::app_admit(listed,", }),
+      expect(in_order(aa, { "*struckOut = false;", "if (!apps_on()) return false;", "n48native::g4::al_contains(gAppAllow, key)", "n48native::g4::strike_refused(n48native::g4::strike_count(gStrikes, key))", "return n48native::g4::app_admit_profile(logical,", }),
              "T8: the allow-list answers false whenever the role is disabled; a listed name with out-of-limit strikes is refused too"); }
     expect(eng.find("static uint64_t gAppAllow[n48native::g4::kMaxEntries];") != std::string::npos, "T8: the list is a static array of kMaxEntries (zero at every boot)");
     expect(slurp(K + "src/Navi48AppKey.h").find("return h != 0ull ? h : 1ull;   /* 0 is the empty slot */") != std::string::npos, "T8: a name key is never 0 (0 is the empty slot)");
@@ -659,7 +659,7 @@ static void t12_slots(const std::string &root) {
     // the real kernel
     const std::string K = root + "/src/navi48-bringup/";
     const std::string eng = slurp(K + "src/amd/native_s1c.cpp"), cli = slurp(K + "src/Navi48NativeClient.cpp"), g2p = slurp(K + "src/amd/native_g2_pure.h");
-    expect(in_order(fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {"), { "const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;",
+    expect(in_order(fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {"), { "const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;",
                           "const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());", "if (pk.rc != kOk) {", "if (ws) __atomic_store_n(&gSessWs, 1u, __ATOMIC_SEQ_CST);" }),
            "T12: REACHABLE: n1c_open hands open_pick the live apps flag and the live WindowServer flag (gSessWs, written with the open itself) under gCliLock");
     expect(in_order(fn_body(cli, "bool IOAccelNavi48NativeClient::initWithTask("), { "const bool appsOn = amdgpu::n1c_apps_enabled();", "n48native::g2::ws_already_open(appsOn, amdgpu::n1c_is_open(), amdgpu::n1c_ws_is_open())", "uid, appsOn, onAllow);" }),
@@ -725,9 +725,81 @@ static void t14_wording(const std::string &root) {
     expect(g4p.find("close_vram_return_ok and the close-time unmap sweep are keyed on apps_on()") != std::string::npos && g4p.find("BoFree / close behave as 0.0.629") == std::string::npos, "T14: the header comment says exactly what is gated");
 }
 
+// T15 (0.0.666, 64-context profile): admission without the allow-list, the application budget (reserve, per process, per uid, distinct refusal code), and the
+// kernel wiring that ties them to the real open. The legacy profiles keep app_admit (T2 / T4 / T13 above).
+static void t15_admission_budget(const std::string &root) {
+    using namespace n48native::g4;
+    using namespace n48native::g4::budget;
+    const std::string K = root + "/src/navi48-bringup/";
+    // the admission rule per profile
+    expect(!app_admit_profile(false, false, 0) && app_admit_profile(false, true, 0) && !app_admit_profile(false, true, 3), "T15: legacy profile: the allow-list decides, strikes refuse");
+    expect(app_admit_profile(true, false, 0) && app_admit_profile(true, true, 0) && !app_admit_profile(true, false, 3) && !app_admit_profile(true, true, 3), "T15: 64 profile: admitted WITHOUT the list; three strikes still refuse");
+    // sequential opens of distinct processes and uids: the table keeps kReserved free, so exactly 64 - 9 = 55 applications open
+    {
+        Use u[64] = {};
+        uint32_t admitted = 0, firstRefusal = 99;
+        Verdict refusal = kVerdictOk;
+        for (uint32_t k = 0; k < 64; k++) {
+            uint32_t freeRec = 0; for (uint32_t i = 0; i < 64; i++) if (!u[i].open) freeRec++;
+            const Verdict v = admit(u, 64, 64, true, 2000u + k, 501u + (k % 10u), freeRec);
+            if (v != kVerdictOk) { if (firstRefusal == 99) { firstRefusal = k; refusal = v; } continue; }
+            for (uint32_t i = 0; i < 64; i++) if (!u[i].open) { u[i] = Use{ true, true, 2000u + k, 501u + (k % 10u) }; break; }
+            admitted++;
+        }
+        expect_u("T15: applications admitted into an empty table", admitted, 55);
+        expect_u("T15: the 56th application is refused by the reserve", firstRefusal, 55);
+        expect(refusal == kReservedForSystem, "T15: that refusal is the reserve (kReservedForSystem)");
+        expect(app_total_cap(64) == 55 && kReserved == 9 && kWsReserve == 1 && kSystemReserve == 8, "T15: 9 records kept free (WindowServer 1 + system 8), 55 for applications");
+        uint32_t sys = 0;
+        for (uint32_t i = 0; i < 64; i++) if (!u[i].open) { u[i] = Use{ true, false, 1u, 0u }; sys++; }
+        expect_u("T15: system and WindowServer opens take the reserved records (no budget refusal)", sys, 9);
+        uint32_t freeAfter = 0; for (uint32_t i = 0; i < 64; i++) if (!u[i].open) freeAfter++;
+        expect_u("T15: the table is then full", freeAfter, 0);
+        expect(admit(u, 64, 64, false, 1u, 0u, 0) == kVerdictOk, "T15: a non-application open is never refused by the budget");
+    }
+    // per process: a single pid holds at most kPerPid application records
+    {
+        Use u[64] = {};
+        for (uint32_t k = 0; k < 8; k++) u[k] = Use{ true, true, 3000u, 501u };
+        expect(admit(u, 64, 64, true, 3000u, 501u, 64 - 8) == kPerPidLimit, "T15: the 9th record of one process is refused (per-process cap 8)");
+        expect(admit(u, 64, 64, true, 3001u, 501u, 64 - 8) == kVerdictOk, "T15: another process of the same uid is still admitted");
+    }
+    // per uid: 16 processes x 2 records = 32 for one uid; the next process of that uid is refused, another uid is not
+    {
+        Use u[64] = {};
+        for (uint32_t k = 0; k < 32; k++) u[k] = Use{ true, true, 4000u + k / 2u, 600u };
+        expect(admit(u, 64, 64, true, 4100u, 600u, 64 - 32) == kPerUidLimit, "T15: a uid holds at most 32 records together");
+        expect(admit(u, 64, 64, true, 4100u, 601u, 64 - 32) == kVerdictOk, "T15: another uid is admitted");
+    }
+    // the application total: unreachable with the reserve at 64 (free > 9 implies fewer than 55 open), so tested with a smaller table
+    {
+        Use u[60] = {};
+        for (uint32_t k = 0; k < 51; k++) u[k] = Use{ true, true, 5000u + k, 700u + k % 5u };
+        expect(admit(u, 60, 60, true, 6000u, 800u, 9 + 5) == kAppTotal, "T15: applications never exceed table - 9 (checked on a 60-record table)");
+    }
+    // refusal texts and the distinct code: exhaustion of the budget is kIOReturnNoResources, not ExclusiveAccess (table full)
+    for (uint32_t v = 1; v <= 4; v++) expect(std::strcmp(verdict_text((Verdict)v), "?") != 0, "T15: every budget refusal has a text");
+    expect_u("T15: the budget refusal code is kIOReturnNoResources", s1c::kNoResources, 0xe00002beu);
+    expect(s1c::kNoResources != s1c::kExclusive, "T15: distinct from ExclusiveAccess (the table itself full)");
+    // kernel wiring
+    const std::string eng = slurp(K + "src/amd/native_s1c.cpp"), cli = slurp(K + "src/Navi48NativeClient.cpp");
+    const std::string op = fn_body(eng, "IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {");
+    expect(in_order(op, { "if (pk.rc != kOk) { open_refused_log(", "production_on() && who != nullptr && who->app", "app_budget_locked(*who)", "app_budget_refused_log(*who, bv); rc = kIOReturnNoResources; break;", "if (gSessSeqCounter == UINT32_MAX)" }),
+           "T15: n1c_open applies the budget after the table choice and before any record is taken (NoResources)");
+    expect(in_order(op, { "sess_wipe_keep_lock(s);", "s->pid = who != nullptr ? who->pid : 0u;", "s->app = who != nullptr && who->app;" }), "T15: the opener's pid, uid and app role are recorded after the wipe");
+    const std::string budgetFn = fn_body(eng, "static __attribute__((noinline)) n48native::g4::budget::Verdict app_budget_locked(");
+    expect(in_order(budgetFn, { "gSlotState[i] == n48native::g2::kSlotOpen", "budget::admit(gBudgetUse, kMaxSessions, kMaxSessions, true, who.pid, who.uid, freeRecords)" }), "T15: the budget counts open application records of the table");
+    const std::string cr = fn_body(cli, "IOReturn IOAccelNavi48NativeClient::create(");
+    expect(in_order(cr, { "const amdgpu::N1cOpener who { uc->appSession, uc->openerPid, uc->openerUid };", "amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref, &who);" }), "T15: create passes the opener to n1c_open");
+    expect(cli.find("openerPid = (uint32_t)proc_selfpid();") != std::string::npos && cli.find("openerUid = uid;") != std::string::npos, "T15: initWithTask records the opener's pid and uid (on the opener's thread)");
+    const std::string alw = fn_body(eng, "bool n1c_app_allowed(const char *comm, bool *struckOut) {");
+    expect(in_order(alw, { "const bool logical = production_on();", "n48native::g4::app_admit_profile(logical, listed," }), "T15: the allow-list is not required in the 64-context profile");
+    expect(eng.find("n48native::g4::app_admit(") == std::string::npos || in_order(alw, { "app_admit_profile(" }), "T15: admission goes through app_admit_profile");
+}
+
 int main(int argc, char **argv) {
     const std::string root = argc > 1 ? argv[1] : ".";
-    t1_switch(); t2_open_policy(); t3_selectors(); t4_allowlist(); t5_budget(); t6_close_path(); t7_defence(); t8_pins(root); t9_close_path(root); t10_log_gate(root); t11_visible_pool(root); t12_slots(root); t13_strikes(root); t14_wording(root);
+    t1_switch(); t2_open_policy(); t3_selectors(); t4_allowlist(); t5_budget(); t6_close_path(); t7_defence(); t8_pins(root); t9_close_path(root); t10_log_gate(root); t11_visible_pool(root); t12_slots(root); t13_strikes(root); t14_wording(root); t15_admission_budget(root);
     std::printf("native_g4: %d checks, %d failed\n", gRun, gFail);
     return gFail == 0 ? 0 : 1;
 }

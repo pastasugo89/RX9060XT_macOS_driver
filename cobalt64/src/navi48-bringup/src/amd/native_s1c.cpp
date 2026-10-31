@@ -132,6 +132,7 @@ struct Session {
     bool      open, ws;        // ws: admitted by the uid-88 (WindowServer) rule
     bool      app;             // 0.0.640 (G4): admitted by the allow-list rule (an ordinary user application); set once by n1c_mark_app right after the open, never ReadRegs / scanout
     uint64_t  appKey;          // 0.0.641: the executable-name key (Navi48AppKey.h) of an APP session, for the strike count; written once with `app`
+    uint32_t  pid, uid;        // 0.0.666: the opener's process and effective uid (the application budget's per-process and per-uid counts); written by n1c_open
     volatile UInt32 poisoned;  // 1 once an automatic recovery named this session guilty (switch ON): Submit refused, waits and GPU calls Aborted
     uint64_t  faultAtOpen;     // 0.0.629 (R5): n48native::g2::fault_word read (never cleared) at this session's open, for sessstat
 };
@@ -849,6 +850,23 @@ static __attribute__((noinline)) uint64_t fault_snap(const char *when, uint32_t 
             n48native::g2::fault_word_vmid(n48native::g2::fault_word(sLo, aLo)), sHi, aLo, aHi);
     return n48native::g2::fault_word(sLo, aLo);
 }
+// 0.0.666: the application budget of the 64-context profile (native_g4_pure.h budget::admit), for one open. Caller holds gCliLock: the records' state, app role, pid and
+// uid change only under it. The scratch table is static (the open's frame stays small) and is read only under that lock.
+static n48native::g4::budget::Use gBudgetUse[kMaxSessions];
+static __attribute__((noinline)) n48native::g4::budget::Verdict app_budget_locked(const N1cOpener &who) {
+    uint32_t freeRecords = 0;
+    for (uint32_t i = 0; i < kMaxSessions; i++) {
+        const Session *g = slot_ptr(i);
+        gBudgetUse[i] = n48native::g4::budget::Use{ gSlotState[i] == n48native::g2::kSlotOpen, g != nullptr && g->app, g != nullptr ? g->pid : 0u, g != nullptr ? g->uid : 0u };
+        if (gSlotState[i] == n48native::g2::kSlotFree) freeRecords++;
+    }
+    return n48native::g4::budget::admit(gBudgetUse, kMaxSessions, kMaxSessions, true, who.pid, who.uid, freeRecords);
+}
+static __attribute__((noinline)) void app_budget_refused_log(const N1cOpener &who, n48native::g4::budget::Verdict v) {
+    using namespace n48native::g4::budget;
+    N1C_LOG("open refused (NoResources): application budget (%s): process %u uid %u; applications hold at most %u of %u records, %u kept free for WindowServer and system processes, %u per process, %u per uid",
+            verdict_text(v), who.pid, who.uid, app_total_cap(kMaxSessions), kMaxSessions, kReserved, kPerPid, kPerUid);
+}
 static __attribute__((noinline)) void open_refused_log(bool multi, bool ws, uint32_t openNow, bool apps, bool wsOpen) {
     N1C_LOG("open refused (ExclusiveAccess): %s (%u session(s) open, switch %s)", !multi ? "the session slot is not free" : g1_holds() ? "a G1 test context holds the GPU" :
             apps ? (ws && wsOpen) ? "a WindowServer session is already open" : (!ws && !wsOpen) ? "the last free slot is reserved for WindowServer" : "every session slot is in use or DEAD" :
@@ -864,7 +882,7 @@ static __attribute__((noinline)) void opened_log(const Session *s, uint32_t cntl
     N1C_LOG("client opened: slot %u VMID %u (session %u%s), fresh root pa %#llx (visible pool), CONTEXT%u CNTL %#010x, ring %u dwords rptr %u wptr %u, fence window mc %#llx",
             s->slot, s->vmid, s->id, s->ws ? ", WindowServer" : "", (unsigned long long)s->rootPa, s->vmid, cntl, cp.ring_size_dwords, *cp.rptr_cpu, cp.wptr, (unsigned long long)winMc);
 }
-IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
+IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out, const N1cOpener *who) {
     using namespace n48native::g2;
     DeviceContext *dev = ctx.dev;
     const NativeS1bState &s1b = native_s1b_state();
@@ -918,6 +936,11 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
         const bool appsNow = apps_on(), wsOpen = __atomic_load_n(&gSessWs, __ATOMIC_SEQ_CST) != 0u;   // 0.0.641: apps ON = a WindowServer slot is always available and the last free slot is its
         const OpenPick pk = open_pick(multi, gSlotState, openNow, ws, g1_holds(), appsNow, wsOpen, production_on());
         if (pk.rc != kOk) { open_refused_log(multi, ws, openNow, appsNow, wsOpen); rc = kIOReturnExclusiveAccess; break; }
+        // 0.0.666: the application budget. Only the 64-context profile, and only for an application open; every other open is unchanged.
+        if (production_on() && who != nullptr && who->app) {
+            const n48native::g4::budget::Verdict bv = app_budget_locked(*who);
+            if (bv != n48native::g4::budget::kVerdictOk) { app_budget_refused_log(*who, bv); rc = kIOReturnNoResources; break; }
+        }
         if (gSessSeqCounter == UINT32_MAX) { rc = kIOReturnNoResources; break; }
         const uint32_t slot = pk.slot, vmid = production_on() ? N48N_VMID_DYNAMIC : vmid_of_slot(slot);
         // The ring must be idle for the FIRST session: S1b's (or the last session's) work has retired and the seqno restarts. 0.0.627: a later session
@@ -985,6 +1008,7 @@ IOReturn n1c_open(BringupContext &ctx, bool ws, N1cRef *out) {
         }
         n48native::g2::sess_wipe_keep_lock(s);
         s->slot = slot; s->vmid = vmid; s->ws = ws;
+        s->pid = who != nullptr ? who->pid : 0u; s->uid = who != nullptr ? who->uid : 0u; s->app = who != nullptr && who->app;   // 0.0.666: the budget's counts (the APP mark below is the same flag)
         s->lease.slot = n48production::kNoHardwareSlot;
         s->faultAtOpen = fault_snap("open", slot);   // R5: read only
         s->pagesInBlk = 4u;   // forces the first block
@@ -2166,8 +2190,9 @@ bool n1c_app_allowed(const char *comm, bool *struckOut) {
     if (!apps_on()) return false;
     const uint64_t key = n48a_comm_key(comm);
     const bool listed = n48native::g4::al_contains(gAppAllow, key);
-    *struckOut = listed && n48native::g4::strike_refused(n48native::g4::strike_count(gStrikes, key));
-    return n48native::g4::app_admit(listed, n48native::g4::strike_count(gStrikes, key));
+    const bool logical = production_on();   // 0.0.666: the 64-context profile admits without the list (budget instead); the legacy profiles keep the list rule
+    *struckOut = (listed || logical) && n48native::g4::strike_refused(n48native::g4::strike_count(gStrikes, key));
+    return n48native::g4::app_admit_profile(logical, listed, n48native::g4::strike_count(gStrikes, key));
 }
 // Mark the session the client was just opened with as an APP. Called by create() right after n1c_open, before the client is returned (so no selector can have run). A stale reference
 // or a disabled role is refused; the client then closes the session again. 0.0.641: `key` = the opener's executable-name key (for the strike count).

@@ -43,7 +43,8 @@ IOReturn IOAccelNavi48NativeClient::create(Navi48Bringup *owner, IOService *atta
 	// The gate, exclusivity and the fresh tree. Nothing has been attached yet, so a refusal is a plain release.
 	// 0.0.627 (G2): the open returns this client's session (slot, id); the WindowServer note is set by the open itself (`hangtest` refuses by name while one is open).
 	amdgpu::N1cRef ref { 0u, 0u };
-	const IOReturn rc = amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref);
+	const amdgpu::N1cOpener who { uc->appSession, uc->openerPid, uc->openerUid };   // 0.0.666: an APP open is budgeted per process / uid in the 64-context profile
+	const IOReturn rc = amdgpu::n1c_open(*owner->bringupContext(), uc->wsSession, &ref, &who);
 	if (rc != kIOReturnSuccess) { uc->release(); return rc; }
 	uc->sessSlot = ref.slot; uc->sessId = ref.id;
 	// 0.0.640 (G4): an APP session is marked before the client is returned (no selector can have run yet); if the mark is refused the session is closed again.
@@ -75,6 +76,7 @@ bool IOAccelNavi48NativeClient::initWithTask(task_t owningTask, void *securityID
 	if (gMetalWsLatch == n48native::policy::kLatchUnset) latchBootArgs();
 	const bool admin = clientHasPrivilege(securityID, kIOClientPrivilegeAdministrator) == kIOReturnSuccess;
 	const uint32_t uid = (uint32_t)kauth_cred_getuid(kauth_cred_get());
+	openerUid = uid; openerPid = (uint32_t)proc_selfpid();   // 0.0.666: IOServiceOpen runs on the opener's thread: its process for the application budget
 	// 0.0.640 (G4): the third role. Only an ordinary user (uid >= 501, not root) with BOTH boot-args set is ever looked up: proc_name(proc_selfpid()) (the opener's executable name,
 	// Navi48AppKey.h) against the kernel allow-list. With the boot-args off nothing here runs and app_refine hands back open_decision's verdict unchanged.
 	const bool appsOn = amdgpu::n1c_apps_enabled();
@@ -86,7 +88,7 @@ bool IOAccelNavi48NativeClient::initWithTask(task_t owningTask, void *securityID
 		onAllow = amdgpu::n1c_app_allowed(comm, &struckOut);   // 0.0.641: also false for a listed name with 3 strikes (struckOut)
 		appKey = n48a_comm_key(comm);
 		static volatile UInt32 gAppOpenLogged = 0;   // the first 64 lines: every Metal-enumerating process probes the bundle's gate once, so a refusal must not flood the log
-		if (gAppOpenLogged < 64u && OSIncrementAtomic((volatile SInt32 *)&gAppOpenLogged) < 64) NCLOG("app open: uid %u process \"%s\" key %#llx: %s", uid, comm, (unsigned long long)n48a_comm_key(comm), onAllow ? "on the allow-list" : struckOut ? "REFUSED: 3 strikes (automatic recoveries blamed on this name this boot)" : "NOT on the allow-list (add it with: navi48test accel appallow add <name>)");
+		if (gAppOpenLogged < 64u && OSIncrementAtomic((volatile SInt32 *)&gAppOpenLogged) < 64) NCLOG("app open: uid %u process \"%s\" key %#llx: %s", uid, comm, (unsigned long long)n48a_comm_key(comm), onAllow ? "admitted (on the allow-list, or the 64-context profile needs no entry)" : struckOut ? "REFUSED: 3 strikes (automatic recoveries blamed on this name this boot)" : "NOT on the allow-list (add it with: navi48test accel appallow add <name>)");
 	}
 	const n48native::policy::OpenDecision d = n48native::policy::app_refine(
 	    n48native::policy::open_decision(admin, uid, n48native::policy::latch_is_on(gMetalWsLatch),
