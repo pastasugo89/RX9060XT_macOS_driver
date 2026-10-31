@@ -524,11 +524,11 @@ static void t10_log_gate(const std::string &root) {
 
 // ---- T11 (0.0.641, review MEDIUM): the visible-VRAM pool -----------------------------------------------------------------------------------------------------
 namespace {
-// The placement decision of n1c_bo_create for a VRAM request, in the very order the kernel asks the pure functions: hi first (apps, non-WindowServer, NO_CPU_ACCESS), the visible cap, the
-// visible pool, the hi fallback. visFree / hiFree: whether the pool can satisfy the request.
+// The placement decision of n1c_bo_create for a VRAM request, in the very order the kernel asks the pure functions: hi first (apps, non-WindowServer, NO_CPU_ACCESS; 0.0.668: every
+// session in the 64-context profile, logical = true), the visible cap, the visible pool, the hi fallback. visFree / hiFree: whether the pool can satisfy the request.
 enum Where { kWhereNone, kWhereVis, kWhereHi };
-Where place_sim(bool apps, bool isWs, bool hiOk, bool hiFree, bool visFree, uint64_t held, uint64_t add, uint64_t cap) {
-    bool hiDone = g4::hi_first(apps, isWs, hiOk) && hiFree;
+Where place_sim(bool apps, bool isWs, bool hiOk, bool hiFree, bool visFree, uint64_t held, uint64_t add, uint64_t cap, bool logical = false) {
+    bool hiDone = g4::hi_first_placement(logical, apps, isWs, hiOk) && hiFree;
     if (!hiDone) {
         if (!g4::appvis_ok(apps, isWs, held, add, cap)) return kWhereNone;
         if (visFree) return kWhereVis;
@@ -546,6 +546,12 @@ static void t11_visible_pool(const std::string &root) {
     expect(appvis_ok(true, false, 0, cap, cap) && !appvis_ok(true, false, 1, cap, cap) && appvis_ok(true, false, cap - 4096, 4096, cap) && !appvis_ok(true, false, cap - 4096, 8192, cap), "T11: non-WindowServer: held + add must stay within the cap");
     expect(appvis_ok(true, true, cap * 10, cap * 10, cap) && appvis_ok(false, false, cap * 10, cap * 10, cap), "T11: WindowServer is never capped, and apps OFF has no cap (0.0.632)");
     expect(hi_first(true, false, true) && !hi_first(true, true, true) && !hi_first(true, false, false) && !hi_first(false, false, true), "T11: hi first only for apps ON, non-WindowServer, NO_CPU_ACCESS");
+    // 0.0.668: the 64-context profile places every GPU-only BO hi first; the legacy profiles keep hi_first() for every input
+    for (bool a : {false, true}) for (bool w : {false, true}) for (bool h : {false, true}) {
+        expect(hi_first_placement(false, a, w, h) == hi_first(a, w, h), "T11 (0.0.668): the legacy profiles keep hi_first() for every input");
+        expect(hi_first_placement(true, a, w, h) == h, "T11 (0.0.668): the 64-context profile is hi first for every NO_CPU_ACCESS BO: WindowServer, apps ON or OFF");
+    }
+    expect(!hi_first_placement(true, true, false, false) && !hi_first_placement(false, true, false, false), "T11 (0.0.668): a BO that needs CPU access is never hi first");
     expect(appvis_counts(true, false, true) && !appvis_counts(true, true, true) && !appvis_counts(false, false, true) && !appvis_counts(true, false, false), "T11: only a non-WindowServer visible placement with apps ON counts");
     // placement decisions
     expect(place_sim(true, false, true, true, true, 0, 4096, cap) == kWhereHi, "T11: apps ON, NO_CPU_ACCESS, both pools free: the hi pool");
@@ -556,6 +562,16 @@ static void t11_visible_pool(const std::string &root) {
     expect(place_sim(true, true, true, true, true, cap, 4096, cap) == kWhereVis, "T11: WindowServer is placed visible first and is not capped");
     expect(place_sim(false, false, true, true, true, cap * 4, 4096, cap) == kWhereVis, "T11: apps OFF: visible first, as 0.0.632 (also for a NO_CPU_ACCESS BO)");
     expect(place_sim(false, false, true, true, false, 0, 4096, cap) == kWhereHi, "T11: apps OFF: the old hi fallback");
+    // 0.0.668, 64-context profile (logical = true): GPU-only BOs of every session are hi first; CPU-access BOs and the scanout slots stay visible first
+    expect(place_sim(true, true, true, true, true, 0, 4096, cap, true) == kWhereHi, "T11 (0.0.668): WindowServer's NO_CPU_ACCESS BO goes to the hi pool first");
+    expect(place_sim(false, true, true, true, true, 0, 4096, cap, true) == kWhereHi, "T11 (0.0.668): ... with apps OFF as well");
+    expect(place_sim(true, true, true, false, true, 0, 4096, cap, true) == kWhereVis, "T11 (0.0.668): WindowServer's NO_CPU_ACCESS BO falls back to the visible pool when the hi pool is full");
+    expect(place_sim(true, true, true, false, false, 0, 4096, cap, true) == kWhereNone, "T11 (0.0.668): ... and is out of memory when both pools are full");
+    expect(place_sim(true, true, false, true, true, 0, 4096, cap, true) == kWhereVis, "T11 (0.0.668): WindowServer's CPU-access BO (descriptor pool, shader arena, scanout slot) stays visible first");
+    expect(place_sim(true, false, false, true, true, 0, 4096, cap, true) == kWhereVis, "T11 (0.0.668): an application's CPU-access BO stays visible first");
+    expect(place_sim(true, false, true, true, true, 0, 4096, cap, true) == kWhereHi, "T11 (0.0.668): an application's NO_CPU_ACCESS BO is hi first, as before");
+    expect(place_sim(true, false, true, false, true, cap, 4096, cap, true) == kWhereNone, "T11 (0.0.668): an application's NO_CPU_ACCESS BO that falls back to the visible pool is still under the visible cap");
+    expect(place_sim(true, true, true, true, false, cap * 4, 4096, cap, false) == kWhereHi, "T11 (0.0.668): the legacy profile keeps WindowServer visible first (the hi pool is taken only when visible is full)");
     // sessstat 4
     g2::GlobalView gv {}; gv.open = 2; uint64_t o[g2::kOutN];
     g2::global_out(gv, o);
@@ -571,10 +587,20 @@ static void t11_visible_pool(const std::string &root) {
     const std::string K = root + "/src/navi48-bringup/";
     const std::string eng = slurp(K + "src/amd/native_s1c.cpp"), cmd = slurp(root + "/tools/pc/navi48test.c");
     const std::string bc = fn_body(eng, "IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t out[4]) {");
-    expect(in_order(bc, { "vram_budget_ok(multi, s->ws, gVramOthers, p.size, vram_total())", "const bool appsNow = apps_on();", "n48native::g4::hi_first(appsNow, s->ws, p.hiOk)", "vram_alloc_hi.alloc(p.size, p.align, &a)", "if (!hiDone) {",
+    expect(in_order(bc, { "vram_budget_ok(multi, s->ws, gVramOthers, p.size, vram_total())", "const bool appsNow = apps_on();", "const bool logical = kMaxSessions > n48native::g2::kHardwareSessions;",
+                          "n48native::g4::hi_first_placement(logical, appsNow, s->ws, p.hiOk)", "vram_alloc_hi.alloc(p.size, p.align, &a)", "if (!hiDone) {",
                           "n48native::g4::appvis_ok(appsNow, s->ws, gVisOthers, p.size, appsNow ? appvis_cap() : 0ull)", "rc = kIOReturnNoMemory; break;", "got = gCtx->gmc.vram_alloc.alloc(p.size, p.align, &a);",
-                          "n48native::g4::appvis_counts(appsNow, s->ws, true)) { b.visCounted = 1u; gVisOthers += p.size; }", "} else if (hiDone || (p.hiOk &&", "b.kind = kBoHi;" }),
-           "T11: REACHABLE, in this order: the existing 25 % budget, hi first for a non-WindowServer NO_CPU_ACCESS BO, the visible cap (the existing NoMemory), the visible pool, the count, the hi fallback");
+                          "n48native::g4::appvis_counts(appsNow, s->ws, true)) { b.visCounted = 1u; gVisOthers += p.size; }", "if (logical && p.hiOk && !hiDone) place_fallback_log(s->slot, p.size);",
+                          "} else if (hiDone || (p.hiOk &&", "b.kind = kBoHi;" }),
+           "T11: REACHABLE, in this order: the existing 25 % budget, the hi-first rule (0.0.668: every session's NO_CPU_ACCESS BO in the 64-context profile), the visible cap (the existing NoMemory), the visible pool, the count, the logged fallback, the hi fallback");
+    expect_u("T11: n1c_bo_create decides hi first only through hi_first_placement (the legacy hi_first is not called there)", count_of(bc, "hi_first("), 0);
+    expect_u("T11: ... and the profile flag is computed once", count_of(bc, "const bool logical = "), 1);
+    const std::string fb = fn_body(eng, "static __attribute__((noinline)) void place_fallback_log(uint32_t slot, uint64_t bytes) {");
+    expect(in_order(fb, { "const uint64_t sec = now_ns() / 1000000000ull;", "n48native::g4::log_gate_step(w, sec, &admit, &suppressed)", "__atomic_compare_exchange_n(&gPlaceLogGate, &w, nw",
+                          "if (!admit) return;", "N1C_LOG(\"BoCreate: GPU-only VRAM BO of %llu KiB (slot %u) is in the CPU-visible pool: the hi pool could not take it\"" }),
+           "T11 (0.0.668): the fallback log is rate limited through its own gate word and names the GPU-only BO");
+    expect(in_order(eng, { "static uint64_t gPlaceLogGate;", "static __attribute__((noinline)) void place_fallback_log(" }), "T11 (0.0.668): the gate word exists once, before its helper");
+    expect_u("T11 (0.0.668): the fallback log is called exactly once", count_of(eng, "place_fallback_log(s->slot, p.size)"), 1);
     expect(in_order(eng, { "static inline void budget_release(Bo &b) {", "if (b.visCounted != 0u) { gVisOthers =", "b.visCounted = 0u;" }), "T11: freeing a visible BO takes it off the visible counter (a leaked one is never released, so it stays counted)");
     expect_u("T11: navi48-appvis is read in exactly one place", count_of(eng, "PE_parse_boot_argn(\"navi48-appvis\""), 1);
     expect(in_order(fn_body(eng, "static uint64_t appvis_cap() {"), { "PE_parse_boot_argn(\"navi48-appvis\"", "n48native::g4::appvis_cap_bytes(present, v)", "__atomic_store_n(&gAppVisLatch, 1u" }), "T11: the cap comes from the pure function, latched once");

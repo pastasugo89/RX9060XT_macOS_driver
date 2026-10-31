@@ -135,9 +135,63 @@ class CandidateBoundary(unittest.TestCase):
     def test_release_version_is_limited_and_sets_its_build_number(self):
         self.assertEqual(build.release_build('0.0.666'), 666)
         self.assertEqual(build.release_build('0.0.667'), 667)
-        for version in ('0.0.665', '0.0.668', '0.0.667.1', '0.1.667'):
+        self.assertEqual(build.release_build('0.0.668'), 668)
+        for version in ('0.0.665', '0.0.669', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
+
+    def test_668_overlay_sets_its_version_and_build_number(self):
+        baseline, source, candidate = (self.root / name for name in ('baseline668', 'source668', 'candidate668'))
+        baseline.mkdir()
+        source.mkdir()
+        for name in build.TREE_NAMES:
+            (baseline / name).mkdir()
+        (baseline / 'Info.plist').write_text('<string>0.0.665</string>\n' * 2)
+        (baseline / 'Makefile').write_text('all:\n')
+        (baseline / 'src/Navi48MetalNub.cpp').write_text('sizeof(N48MetalOps), 665u\n' * 2)
+        (baseline / 'src/amd').mkdir(parents=True)
+        (baseline / 'src/amd/native_s1c.h').write_text('kN1cKextBuild = 664;\n')
+        for name in build.OVERLAY:
+            p = source / name
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text('0.0.668 placement implementation\n')
+        (source / 'src/amd/native_s1c.h').write_text('kN1cKextBuild = 664;\n')
+        build.copy_source(baseline, candidate)
+        build.overlay_candidate(candidate, source, '0.0.668')
+        self.assertEqual((candidate / 'Info.plist').read_text().count('<string>0.0.668</string>'), 2)
+        self.assertIn('kN1cKextBuild = 668;', (candidate / 'src/amd/native_s1c.h').read_text())
+        self.assertEqual((candidate / 'src/Navi48MetalNub.cpp').read_text().count('668u'), 2)
+
+    def test_uncommitted_overlay_is_refused_unless_recorded_explicitly(self):
+        committed = {name: b'committed ' + name.encode() for name in build.OVERLAY}
+        working = dict(committed)
+        blobs = {name: 'b' * 40 for name in build.OVERLAY}
+        self.assertEqual(build.classify_overlay(committed, dict(committed), blobs, False)['source'], 'committed')
+        working['src/amd/native_s1c.cpp'] = b'reviewed but uncommitted'
+        with self.assertRaises(ValueError):
+            build.classify_overlay(committed, working, blobs, False)
+        record = build.classify_overlay(committed, working, blobs, True)
+        self.assertEqual(record['source'], 'working-tree')
+        self.assertEqual(record['uncommitted'], ['src/amd/native_s1c.cpp'])
+        self.assertEqual(record['sha256']['src/amd/native_s1c.cpp'],
+                         build.hashlib.sha256(b'reviewed but uncommitted').hexdigest())
+        self.assertEqual(record['blob_ids'], blobs)
+
+    def test_668_active_kernel_is_the_installed_0_0_667_candidate(self):
+        production = Path(build.__file__).resolve().parents[3] / 'research/builds/macos-20261031/production'
+        payload_v3 = production / 'kernel-payload-v3/manifest.json'
+        self.assertEqual(build.recorded_active_release(payload_v3, '0.0.668'), build.INSTALLED_667)
+        manifest = json.loads(payload_v3.read_text())
+        manifest['candidate_efi_files']['OC/config.plist'] = '0' * 64
+        other = self.root / 'other.json'
+        other.write_text(json.dumps(manifest))
+        with self.assertRaises(ValueError):
+            build.recorded_active_release(other, '0.0.668')
+        # 0.0.666 and 0.0.667 keep the 665 baseline record
+        manifest_665 = self.root / 'manifest665.json'
+        manifest_665.write_text(json.dumps({'active_baseline': {'bundle_path': build.BASE_BUNDLE, 'kernel_sha256': build.BASE_SHA,
+                                                             'config_sha256': build.BASE_CONFIG_SHA, 'version': '0.0.665'}}))
+        self.assertEqual(build.recorded_active_release(manifest_665, '0.0.667')['version'], '0.0.665')
 
     def test_recorded_active_baseline_must_be_the_accelerated_665_kernel(self):
         manifest = self.root / 'manifest.json'

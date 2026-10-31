@@ -24,8 +24,13 @@ SOURCE = ROOT / 'cobalt64/src/navi48-bringup'
 EFI = Path('/Volumes/OCBOOT/EFI/OC')
 SDK = ROOT / 'research/builds/macos-20261027/sdk/MacKernelSDK'
 BUILD_ROOT = ROOT / 'research/builds'
-RELEASE = '0.0.666'   # default candidate; `--version 0.0.667` builds the admission candidate
-REQUIRED_STRINGS = (b'application budget', b'open refused (NoResources)', b'navi48-off')  # admission + kill switch
+RELEASE = '0.0.666'   # default candidate; `--version 0.0.667` builds the admission candidate, `--version 0.0.668` the GPU-only placement
+REQUIRED_STRINGS = (b'application budget', b'open refused (NoResources)', b'navi48-off',   # admission + kill switch
+                    b'the hi pool could not take it')   # 0.0.668: the GPU-only fallback log (native_s1c.cpp place_fallback_log)
+# 0.0.668 is built on the kernel installed by payload v3 (0.0.667): its binary and its boot configuration, both hashed in that payload's manifest.
+INSTALLED_667 = {'bundle_path': 'Navi48Bringup-contexts-0.0.667.kext',
+                 'kernel_sha256': '976b3375082c3f319f940b02f74fd5ff03155884a39feae771edfab62623f287',
+                 'config_sha256': '5ea9932d7fd53e97062021a72c6613f76bb96a3ecccce12d942fa8b796d531c6', 'version': '0.0.667'}
 OVERLAY = (
     'Makefile',
     'src/Navi48NativeABI.h',
@@ -102,8 +107,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666, 0.0.667)."""
-    if not re.fullmatch(r'0\.0\.66[67]', version):
+    """The build number that goes with a candidate version (0.0.666, 0.0.667, 0.0.668)."""
+    if not re.fullmatch(r'0\.0\.66[678]', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -116,6 +121,20 @@ def recorded_active_baseline(path):
     if recorded != expected:
         raise ValueError('Recorded active baseline is not the accelerated 665 kernel')
     return recorded
+
+
+def recorded_active_release(path, version):
+    """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
+    installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
+    if version != '0.0.668':
+        return recorded_active_baseline(path)
+    manifest = json.loads(path.read_text())
+    efi = manifest.get('candidate_efi_files', {})
+    kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % INSTALLED_667['bundle_path']
+    if (manifest.get('candidate_version') != '0.0.667' or efi.get('OC/config.plist') != INSTALLED_667['config_sha256']
+            or efi.get(kernel) != INSTALLED_667['kernel_sha256']):
+        raise ValueError('Manifest is not the installed 0.0.667 candidate (payload v3)')
+    return dict(INSTALLED_667)
 
 
 def overlay_candidate(candidate, source, version=RELEASE):
@@ -162,43 +181,60 @@ def apply_kill_switch(path, committed):
     return hashlib.sha256(block.encode()).hexdigest()
 
 
-def committed_overlay():
-    """Reject uncommitted inputs instead of silently bundling unrelated work."""
+def classify_overlay(committed, working, blobs, allow_working_tree):
+    """The overlay inputs at HEAD (committed) against the working tree. Uncommitted files are refused unless the caller asks
+    for them explicitly; then they are recorded with their sha256 and the git blob ids they will have once committed, so
+    the commit can be checked against the candidate that was built from them."""
+    uncommitted = sorted(name for name in OVERLAY if committed[name] != working[name])
+    if uncommitted and not allow_working_tree:
+        raise ValueError('Overlay input is not committed: ' + uncommitted[0])
+    return {'source': 'working-tree' if uncommitted else 'committed', 'uncommitted': uncommitted,
+            'sha256': {name: hashlib.sha256(working[name]).hexdigest() for name in OVERLAY},
+            'blob_ids': dict(blobs)}
+
+
+def overlay_provenance(allow_working_tree=False):
+    """Reject uncommitted inputs instead of silently bundling unrelated work (unless --worktree-overlay is given)."""
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    committed, working, blobs = {}, {}, {}
     for name in OVERLAY:
         path = SOURCE / name
-        contents = subprocess.check_output(['git', 'show', revision + ':' +
-                                            str(path.relative_to(ROOT))], cwd=ROOT)
-        if contents != path.read_bytes():
-            raise ValueError('Overlay input is not committed: ' + name)
-    return revision
+        committed[name] = subprocess.check_output(['git', 'show', revision + ':' + str(path.relative_to(ROOT))], cwd=ROOT)
+        working[name] = path.read_bytes()
+        blobs[name] = subprocess.check_output(['git', 'hash-object', str(path)], cwd=ROOT, text=True).strip()
+    return revision, classify_overlay(committed, working, blobs, allow_working_tree)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default) or 0.0.667')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667 or 0.0.668')
     parser.add_argument('--active-baseline-manifest', type=Path,
-                        help='offline: take the active 665 kernel from this verified manifest (EFI not mounted)')
+                        help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
+                             'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
+    parser.add_argument('--worktree-overlay', action='store_true',
+                        help='accept overlay files that differ from HEAD (uncommitted review work); they are recorded with their sha256 and git blob ids')
     args = parser.parse_args()
     version = args.version
     release_build(version)
     out = output_directory(args.output)
     if sha(BASE / BASE_EXEC) != BASE_SHA:
         raise ValueError('Reference kernel binary changed')
+    if version == '0.0.668' and not args.active_baseline_manifest:
+        raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
-        active = recorded_active_baseline(args.active_baseline_manifest)
+        active = recorded_active_release(args.active_baseline_manifest, version)
         active_source = 'recorded:' + str(args.active_baseline_manifest)
     else:
         active = active_kernel(EFI)
         active_source = 'live-efi'
-    revision = committed_overlay()
+    revision, overlay = overlay_provenance(args.worktree_overlay)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
     repro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repro)
     out.mkdir(parents=True)
     manifest = {'schema': 1, 'status': 'preparing-not-installable',
-                'source_commit': revision, 'active_baseline': active,
+                'source_commit': revision, 'overlay': overlay, 'active_baseline': active,
                 'preparer_sha256': sha(Path(__file__)),
                 'test_scripts': {name: sha(ROOT / 'tools/baremetal/navi44-gpu-diagnostics' / name)
                                  for name in TESTS},

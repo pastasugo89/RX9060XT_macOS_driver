@@ -10,6 +10,7 @@ The bash checks run the guard text with fake kmutil / NT / probe binaries (macOS
 import difflib
 import hashlib
 import importlib.util
+import json
 import os
 import plistlib
 import shutil
@@ -195,6 +196,152 @@ class Guard(unittest.TestCase):
         m.baseline_config(data)['BundlePath'] = R666['new']
         self.assertEqual(data['unrelated'],{'refresh':120,'audio':'original'})
         with self.assertRaises(ValueError):m.baseline_config(data)
+
+
+# 0.0.668: built on payload v3's candidate (the installed 0.0.667 state). Fixtures are the reviewed payload files, not the live system.
+R668 = m.RELEASES['0.0.668']
+V3 = PRODUCTION / 'kernel-payload-v3'
+V4 = PRODUCTION / 'kernel-payload-v4'
+GUARD_REL = 'Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh'
+V3_GUARD = (V3 / 'system' / GUARD_REL).read_text()
+V4_GUARD = (V4 / 'system' / GUARD_REL).read_text()
+LIVE_BASE_OF_V4 = (V4 / 'evidence/original-guard.sh').read_text()   # the live guard payload v4 was prepared from
+KERNEL_BRANCH_668_NAME = 'com.navi48.bringup (0.0.668)'
+
+
+def guard_changes(before, after):
+    diff = [l for l in difflib.unified_diff(before.splitlines(), after.splitlines(), lineterm='', n=0)
+            if l[:1] in '+-' and l[:3] not in ('+++', '---')]
+    return [l[1:] for l in diff if l[0] == '-'], [l[1:] for l in diff if l[0] == '+']
+
+
+class Release668(unittest.TestCase):
+    def test_the_0_0_667_capability_block_is_the_reviewed_insertion(self):
+        self.assertEqual(V3_GUARD.count(m.capability_block(m.KERNEL_BRANCH, m.PROBE_667_SHA)), 1)
+        self.assertEqual(LIVE_BASE_OF_V4.count(m.capability_block(m.KERNEL_BRANCH, m.PROBE_667_SHA)), 1)
+
+    def test_bump_changes_only_the_kernel_match_and_its_stop_text(self):
+        removed, added = guard_changes(V3_GUARD, m.bump_guard(V3_GUARD, m.PROBE_667_SHA))
+        self.assertEqual(len(removed), 2)
+        self.assertEqual(len(added), 2)
+        self.assertTrue(any(r'\(0\.0\.667\)' in l for l in removed) and any(r'\(0\.0\.668\)' in l for l in added))
+        self.assertTrue(any("'STOP expected kernel 667 or 665'" in l for l in removed))
+        self.assertTrue(any("'STOP expected kernel 668 or 665'" in l for l in added))
+        self.assertIn("'CAPABILITY_CHECKS=skipped for kernel 0.0.665 (recovery configuration)'", m.bump_guard(V3_GUARD, m.PROBE_667_SHA))
+
+    def test_bump_follows_a_different_staged_probe_digest(self):
+        bumped = m.bump_guard(V3_GUARD, 'c' * 64)
+        self.assertEqual(bumped.count('== ' + 'c' * 64 + ' ]]'), 1)
+        self.assertNotIn(m.PROBE_667_SHA, bumped)
+
+    def test_bump_refuses_a_guard_without_the_reviewed_block(self):
+        with self.assertRaises(ValueError):
+            m.bump_guard(LIVE, 'a' * 64)                          # the stage30 base, before the 0.0.667 insertion
+        with self.assertRaises(ValueError):
+            m.bump_guard(V3_GUARD.replace(m.PROBE_667_SHA, 'b' * 64), m.PROBE_667_SHA)   # a probe digest the block does not pin
+
+    def test_payload_v4_guard_is_the_bump_of_the_live_guard_it_was_prepared_from(self):
+        self.assertEqual(V4_GUARD, m.bump_guard(LIVE_BASE_OF_V4, m.PROBE_667_SHA))
+        self.assertEqual(m.make_guard(R668, LIVE_BASE_OF_V4, m.PROBE_667_SHA, '0.0.668'), V4_GUARD)
+
+    def test_668_metal_pins_are_the_bundle_33_components_the_live_guard_pins(self):
+        self.assertEqual(R668['metal_version'], '33')
+        self.assertIn('"$bundle_version" == 33 ', LIVE_BASE_OF_V4)
+        for name, digest in R668['metal'].items():
+            with self.subTest(name=name):
+                self.assertIn(digest, LIVE_BASE_OF_V4)
+        self.assertEqual(R668['metal']['Contents/MacOS/Navi48Metal'],
+                         '85c7d8bdfe8c681503a5701afc09ce3b5cddf3ef124fca587913d261c7b4fd5f')
+
+    def test_668_boot_configuration_is_exactly_the_bundle_path_edit(self):
+        original = plistlib.loads((V3 / 'EFI/OC/config.plist').read_bytes())
+        expected = m.expected_config(original, R668)
+        self.assertEqual([d[1:] for d in m.diff_paths(original, expected)], ['Kernel/Add/7/BundlePath'])
+        self.assertEqual(expected['Kernel']['Add'][7]['BundlePath'], 'Navi48Bringup-contexts-0.0.668.kext')
+        self.assertEqual(expected['Misc']['Tools'][0]['Name'], 'Ripristino EFI: driver funzionanti (665)')
+        self.assertEqual(expected['Misc']['Tools'][0]['Path'], 'OpenShell.efi')
+
+    def test_668_carries_the_recovery_features_of_payload_v3(self):
+        self.assertEqual(R668['extras'], {'RECOVERY/pre-contexts-668-config.plist': 'baseline'})
+        self.assertEqual(R668['recovery_entry'], m.RECOVERY_ENTRY)
+        for name, digest in R668['carried'].items():
+            with self.subTest(name=name):
+                self.assertEqual(m.sha(V3 / 'EFI' / name), digest)
+        self.assertEqual(R668['carried'][m.STARTUP], m.STARTUP_SHA)
+
+    def test_668_probe_is_the_reviewed_binary_in_both_payloads(self):
+        self.assertEqual(R668['probe_reuse'], m.PROBE_667_SHA)
+        self.assertEqual(m.sha(V3 / 'system' / 'Library/Application Support/Navi44/accelerated-trial/context-isolation-probe'), m.PROBE_667_SHA)
+        self.assertEqual(m.sha(V4 / 'system' / 'Library/Application Support/Navi44/accelerated-trial/context-isolation-probe'), m.PROBE_667_SHA)
+
+    @unittest.skipUnless(shutil.which('shasum'), 'needs shasum (macOS guard)')
+    def test_668_capability_block_runs_as_specified(self):
+        """Run the 0.0.668 block alone (the Metal checks need the real bundle): 668 passes, 665 skips, 667 and others stop."""
+        with tempfile.TemporaryDirectory(prefix='guard-668-') as work:
+            work = Path(work)
+            app = work/'app'; app.mkdir()
+            (app/'context-isolation-probe').write_text(FAKE_PROBE)
+            (app/'context-isolation-probe').chmod(0o755)
+            probe_sha = hashlib.sha256((app/'context-isolation-probe').read_bytes()).hexdigest()
+            nt = work/'nt'; nt.write_text(FAKE_NT); nt.chmod(0o755)
+            def run(block, loaded, session='63 / 9 / 1'):
+                script = work/'block.sh'
+                script.write_text(HARNESS + 'loaded=$(kmutil showloaded --list-only)\n' + block)
+                calls = work/'calls.txt'
+                calls.unlink(missing_ok=True)
+                env = {'PATH': os.environ['PATH'], 'APP': str(app), 'NT': str(nt), 'CALLS': str(calls),
+                       'FAKE_LOADED': loaded, 'FAKE_SESSION': session}
+                result = subprocess.run(['/bin/bash', str(script)], env=env, capture_output=True, text=True)
+                return result.returncode, result.stdout.strip(), calls.read_text() if calls.exists() else ''
+            block = m.capability_block(m.KERNEL_BRANCH_668, probe_sha)
+            current = run(block, '  12 0 0x0 0x0 ' + KERNEL_BRANCH_668_NAME + ' 1 UUID')
+            self.assertEqual(current[0], 0)
+            self.assertIn('CONTEXT_PROFILE_VERIFIED=PROFILE_OK', current[1])
+            self.assertIn('LOGICAL_CONTEXT_CAPACITY_VERIFIED=64', current[1])
+            self.assertIn('accel sessstat 95', current[2])
+            recovery = run(block, '  12 0 0x0 0x0 ' + KERNEL_665 + ' 1 UUID')
+            self.assertEqual(recovery[0], 0)
+            self.assertIn('CAPABILITY_CHECKS=skipped for kernel 0.0.665', recovery[1])
+            for loaded in (KERNEL_667, KERNEL_666):
+                with self.subTest(loaded=loaded):
+                    stop = run(block, '  12 0 0x0 0x0 ' + loaded + ' 1 UUID')
+                    self.assertEqual((stop[0], stop[1].splitlines()[-1]), (1, 'STOP expected kernel 668 or 665'))
+            wrong = run(m.capability_block(m.KERNEL_BRANCH_668, 'f' * 64), '  12 0 0x0 0x0 ' + KERNEL_BRANCH_668_NAME + ' 1 UUID')
+            self.assertEqual((wrong[0], wrong[1].splitlines()[-1]), (1, 'STOP context profile checker changed'))
+            missing = run(block, '  12 0 0x0 0x0 ' + KERNEL_BRANCH_668_NAME + ' 1 UUID', session='12 / 9 / 1')
+            self.assertEqual((missing[0], missing[1].splitlines()[-1]), (1, 'STOP missing logical context 63'))
+
+    def test_probe_reuse_ignores_only_the_link_uuid(self):
+        probe = (V4 / 'system/Library/Application Support/Navi44/accelerated-trial/context-isolation-probe').read_bytes()
+        self.assertTrue(m.same_except_uuid(probe, probe))
+        uuid_byte = bytearray(probe)
+        uuid_byte[0x420] ^= 0xFF                      # inside LC_UUID (the reviewed binary's UUID bytes)
+        self.assertTrue(m.same_except_uuid(probe, bytes(uuid_byte)))
+        code_byte = bytearray(probe)
+        code_byte[-1] ^= 0x01                         # outside it: refused
+        self.assertFalse(m.same_except_uuid(probe, bytes(code_byte)))
+        self.assertFalse(m.same_except_uuid(probe, probe[:-1]))
+        with self.assertRaises(ValueError):
+            m.same_except_uuid(b'not a binary' * 8, b'not a binary' * 8)
+
+    def test_668_kernel_and_payload_match_the_built_candidate(self):
+        build = json.loads((PRODUCTION / 'kernel-contexts-v4/manifest.json').read_text())
+        self.assertEqual(build['candidate_binary_sha256'], R668['kernel_sha'])
+        self.assertEqual(build['active_baseline']['kernel_sha256'], R668['from_kernel_sha'])
+        self.assertEqual(build['active_baseline']['config_sha256'], R668['from_config_sha'])
+        self.assertEqual(len(build['cpu_tests']), R668['tests'])
+        self.assertIn('the hi pool could not take it', build['required_strings'])
+
+    def test_668_payload_verifies_with_its_recorded_inputs(self):
+        m.verify(V4, live=False)
+
+    def test_baseline_of_668_is_the_candidate_state_of_payload_v3(self):
+        sources = m.baseline_sources(V3, 'candidate')
+        self.assertEqual(m.sha(sources['OC/config.plist']), R668['from_config_sha'])
+        self.assertEqual(m.sha(sources['OC/Kexts/' + R668['from'] + '/Contents/MacOS/Navi48Bringup']), R668['from_kernel_sha'])
+        self.assertNotIn('OC/Kexts/Navi48Bringup-contexts-0.0.668.kext/Contents/Info.plist', sources)
+        with self.assertRaises(ValueError):
+            m.baseline_sources(V3, 'unknown')
 
 
 if __name__ == '__main__': unittest.main()

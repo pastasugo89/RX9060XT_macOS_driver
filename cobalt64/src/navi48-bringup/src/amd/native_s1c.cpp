@@ -1338,6 +1338,23 @@ IOReturn n1c_read_regs(const N1cRef &ref, uint64_t off, uint64_t count, uint64_t
     return kIOReturnSuccess;
 }
 
+// 0.0.668: the log of a GPU-only BO that went to the CPU-visible pool because the hi pool could not take it (64-context profile only). Rate limited like the "open refused"
+// line (n48native::g4::log_gate_step, kLogPerSec lines a second) on a word of its own. Log-only: nothing else reads it.
+static uint64_t gPlaceLogGate;
+static __attribute__((noinline)) void place_fallback_log(uint32_t slot, uint64_t bytes) {
+    bool admit = false;
+    uint32_t suppressed = 0;
+    const uint64_t sec = now_ns() / 1000000000ull;
+    uint64_t w = __atomic_load_n(&gPlaceLogGate, __ATOMIC_RELAXED);
+    for (;;) {
+        const uint64_t nw = n48native::g4::log_gate_step(w, sec, &admit, &suppressed);
+        if (__atomic_compare_exchange_n(&gPlaceLogGate, &w, nw, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) break;
+    }
+    if (!admit) return;
+    if (suppressed != 0u) N1C_LOG("BoCreate: %u GPU-only fallback line(s) dropped by the rate limit", suppressed);
+    N1C_LOG("BoCreate: GPU-only VRAM BO of %llu KiB (slot %u) is in the CPU-visible pool: the hi pool could not take it", (unsigned long long)(bytes >> 10), slot);
+}
+
 IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t out[4]) {
     if (!sess_hello(ref)) return kIOReturnNotReady;
     const Place p = place_decide(in->bo_size, in->alignment, in->domains, in->domain_flags);
@@ -1365,9 +1382,11 @@ IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t
             VRAMAllocation a {};
             // 0.0.641 (G4 review), apps ON: a non-WindowServer session's NO_CPU_ACCESS BO goes to the hi pool FIRST (the visible pool is WindowServer's), and a CPU-visible placement of such a
             // session must fit under the shared cap (appvis_cap(), default 64 MiB) or the request fails like any other out-of-memory. Everything else is as 0.0.640.
+            // 0.0.668, 64-context profile: EVERY session's GPU-only BO (hiOk) goes hi first, WindowServer included (hi_first_placement); the legacy profiles are unchanged.
             const bool appsNow = apps_on();
+            const bool logical = kMaxSessions > n48native::g2::kHardwareSessions;
             bool got = false;
-            bool hiDone = n48native::g4::hi_first(appsNow, s->ws, p.hiOk) && gCtx->gmc.vram_alloc_hi.is_inited() && gCtx->gmc.vram_alloc_hi.alloc(p.size, p.align, &a);
+            bool hiDone = n48native::g4::hi_first_placement(logical, appsNow, s->ws, p.hiOk) && gCtx->gmc.vram_alloc_hi.is_inited() && gCtx->gmc.vram_alloc_hi.alloc(p.size, p.align, &a);
             if (!hiDone) {
                 if (!n48native::g4::appvis_ok(appsNow, s->ws, gVisOthers, p.size, appsNow ? appvis_cap() : 0ull)) {
                     N1C_LOG("BoCreate refused (NoMemory): slot %u is over the visible-VRAM cap for non-WindowServer sessions (%llu KiB held of %llu MiB, %llu KiB asked)", s->slot,
@@ -1386,6 +1405,7 @@ IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t
                 amdgpu_hdp_flush(dev);
                 placed = N48N_GEM_DOMAIN_VRAM; bits = N48N_PLACED_CPU_MAPPABLE | N48N_PLACED_ZEROED;
                 if (n48native::g4::appvis_counts(appsNow, s->ws, true)) { b.visCounted = 1u; gVisOthers += p.size; }
+                if (logical && p.hiOk && !hiDone) place_fallback_log(s->slot, p.size);   // 0.0.668: a GPU-only BO the hi pool could not take
             } else if (hiDone || (p.hiOk && gCtx->gmc.vram_alloc_hi.is_inited() && gCtx->gmc.vram_alloc_hi.alloc(p.size, p.align, &a))) {
                 b.kind = kBoHi; b.a = a; b.mc = a.gpu_va;
                 placed = N48N_GEM_DOMAIN_VRAM; bits = N48N_PLACED_HI_POOL;

@@ -217,6 +217,13 @@ constexpr uint32_t kAppVisDefaultMiB = 64u, kAppVisMinMiB = 16u, kAppVisMaxMiB =
 constexpr uint64_t appvis_cap_bytes(bool present, uint32_t mib) { return (uint64_t)((present && mib >= kAppVisMinMiB && mib <= kAppVisMaxMiB) ? mib : kAppVisDefaultMiB) << 20; }
 constexpr bool appvis_ok(bool appsOn, bool isWs, uint64_t held, uint64_t add, uint64_t cap) { return !appsOn || isWs || !s1c::would_exceed(held, add, cap); }
 constexpr bool hi_first(bool appsOn, bool isWs, bool hiOk) { return appsOn && !isWs && hiOk; }
+// 0.0.668 (64-context profile; logicalProfile = kMaxSessions > kHardwareSessions, a compile-time property): a GPU-only BO (hiOk: NO_CPU_ACCESS and not CPU_ACCESS_REQUIRED) goes
+// to the hi pool FIRST for EVERY session, WindowServer included. WindowServer's GPU-only textures filled the 217 MiB CPU-visible pool (bundle 33 evidence), where descriptor pools
+// and shader arenas cannot go elsewhere. The visible pool keeps what needs CPU mapping (no NO_CPU_ACCESS flag: descriptor pools, CPU-written buffers) and the scanout slots
+// (HOST_VISIBLE memory, CPU_ACCESS_REQUIRED, so never hiOk). A hi allocation that fails falls back to the visible pool in the caller. The legacy fixed-VMID profiles keep hi_first().
+constexpr bool hi_first_placement(bool logicalProfile, bool appsOn, bool isWs, bool hiOk) {
+    return logicalProfile ? hiOk : hi_first(appsOn, isWs, hiOk);
+}
 // Does a non-WindowServer BO count against the visible cap? Yes when it was placed in the visible pool (not hi, not GTT) with apps ON.
 constexpr bool appvis_counts(bool appsOn, bool isWs, bool placedVisible) { return appsOn && !isWs && placedVisible; }
 

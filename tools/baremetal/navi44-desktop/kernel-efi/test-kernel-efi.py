@@ -623,5 +623,85 @@ class StartupScript(unittest.TestCase):
             self.assertEqual(re.sub(r'%a', '', line).count('%'), 0, line)
 
 
+# 0.0.668 (payload v4): its baseline is payload v3's CANDIDATE, the EFI installed now (0.0.667 kext and configuration, recovery files).
+PAYLOAD_V4 = REPO / 'research/builds/macos-20261031/production/kernel-payload-v4'
+BUNDLE_668 = 'Navi48Bringup-contexts-0.0.668.kext'
+BUNDLE_667 = BUNDLE
+RECOVERY_668 = 'RECOVERY/pre-contexts-668-config.plist'
+
+
+class V4Sandbox(Sandbox):
+    """The live EFI is payload v3's candidate tree (the installed 0.0.667 state); the payload is payload v4."""
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix='kernel-efi-v4-test-'))
+        self.payload = self.root / 'payload'
+        self.payload.mkdir()
+        shutil.copyfile(PAYLOAD_V4 / 'manifest.json', self.payload / 'manifest.json')
+        shutil.copytree(PAYLOAD_V4 / 'EFI', self.payload / 'EFI', symlinks=False)
+        shutil.copytree(PAYLOAD_V4 / 'system', self.payload / 'system', symlinks=False)
+        self.efi = self.root / 'efi'
+        shutil.copytree(PAYLOAD_SRC / 'EFI', self.efi, symlinks=False)
+        self.manifest = json.loads((PAYLOAD_V4 / 'manifest.json').read_text())
+        self.baseline = self.manifest['baseline_efi_files']
+        self.candidate = self.manifest['candidate_efi_files']
+        self.assertEqual(inst.tree(self.efi), self.baseline)
+        self.add_cachyos_volume()
+        self.foreign_before = self.foreign_inventory()
+        self.system = self.root / 'system'
+        (self.system / inst.APP_REL).mkdir(parents=True)
+        self.backup_root = self.system / inst.BACKUP_REL
+        self.disable_activation()
+
+
+class V4InstallTests(V4Sandbox):
+    def test_plan_swaps_the_installed_667_kext_for_668_with_one_config_edit(self):
+        plan = inst.load_payload(self.payload)
+        self.assertEqual(plan['bundle'], BUNDLE_668)
+        self.assertEqual(plan['config_edits'], [('Kernel/Add/7/BundlePath', BUNDLE_667, BUNDLE_668)])
+        self.assertEqual(plan['recovery'], RECOVERY_668)
+        self.assertEqual(sorted(plan['add']), sorted(set(self.candidate) - set(self.baseline)))
+        self.assertTrue(all(name.startswith(('OC/Kexts/' + BUNDLE_668 + '/', 'RECOVERY/')) for name in plan['add']))
+
+    def test_dry_run_plans_from_the_installed_667_state_and_writes_nothing(self):
+        before_efi, before_payload = self.snapshot()
+        rc, report = self.run_cli(INSTALL)
+        self.assertEqual(rc, 0, report)
+        self.assertEqual(report['efi_state'], 'baseline')
+        self.assertFalse(report['applied'])
+        self.assertTrue(any(BUNDLE_668 in line for line in report['planned']), report['planned'])
+        self.assertEqual(inst.tree(self.efi), before_efi)
+        self.assertEqual(inst.tree(self.payload / 'EFI'), before_payload)
+        self.assertEqual(self.backups(), [])
+
+    def test_apply_installs_668_and_keeps_667_for_rollback(self):
+        rc, report = self.install()
+        self.assertEqual(rc, 0, report)
+        self.assertEqual(inst.tree(self.efi), self.candidate)
+        self.assertTrue((self.efi / 'OC/Kexts' / BUNDLE_667).is_dir())
+        cfg = plistlib.loads((self.efi / CONFIG).read_bytes())
+        self.assertEqual(cfg['Kernel']['Add'][7]['BundlePath'], BUNDLE_668)
+        self.assertEqual(cfg['Misc']['Tools'][0]['Name'], 'Ripristino EFI: driver funzionanti (665)')
+        self.assertEqual(self.foreign_inventory(), self.foreign_before)
+        self.assertEqual(len(self.backups()), 1)
+
+    def test_refuses_the_pre_667_configuration_as_the_live_state(self):
+        # the 665 recovery configuration is neither the 667 state (the v4 baseline) nor the 668 candidate
+        (self.efi / CONFIG).write_bytes((self.efi / FUNZIONANTE).read_bytes())
+        before = inst.tree(self.efi)
+        rc, report = self.install()
+        self.assertNotEqual(rc, 0)
+        self.assertIn('neither the baseline nor the candidate', report['error'])
+        self.assertEqual(inst.tree(self.efi), before)
+        self.assertEqual(self.backups(), [])
+
+    def test_refuses_a_v4_payload_whose_668_kext_is_not_the_reviewed_binary(self):
+        binary = self.payload / 'EFI/OC/Kexts' / BUNDLE_668 / 'Contents/MacOS/Navi48Bringup'
+        binary.write_bytes(binary.read_bytes() + b'\0')
+        rc, report = self.install()
+        self.assertNotEqual(rc, 0)
+        self.assertEqual(inst.tree(self.efi), self.baseline)
+        self.assertEqual(self.backups(), [])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
