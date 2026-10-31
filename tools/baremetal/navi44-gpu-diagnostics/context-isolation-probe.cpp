@@ -75,7 +75,7 @@ struct Client {
         return ok;
     }
 
-    bool open(io_service_t service) {
+    bool open(io_service_t service, bool allocateBuffers = true) {
         if (!call_ok(IOServiceOpen(service, mach_task_self(), N48N_UC_TYPE, &connection), "IOAccelerator native open")) return false;
         const uint64_t hello[] = {N48N_ABI_VERSION, N48N_HELLO_F_MINOR};
         uint64_t output[4] = {}; uint32_t count = 4;
@@ -93,6 +93,7 @@ struct Client {
             std::fprintf(stderr, "Refused: kernel capabilities/state do not match the candidate.\n");
             return false;
         }
+        if (!allocateBuffers) return true;
         const n48n_gem_create_in create{kBytes, 4096, N48N_GEM_DOMAIN_GTT, 0};
         count = 4;
         if (!call_ok(IOConnectCallMethod(connection, N48N_SEL_BOCREATE, nullptr, 0,
@@ -164,18 +165,29 @@ bool self_test() {
 
 int main(int argc, char **argv) {
     if (argc == 2 && std::strcmp(argv[1], "--self-test") == 0) return self_test() ? 0 : 1;
-    if (argc != 2 || std::strcmp(argv[1], "--run") != 0) {
-        std::puts("Usage: context-isolation-probe --self-test | --run\n"
+    const bool profileOnly = argc == 2 && std::strcmp(argv[1], "--check-profile") == 0;
+    if (!profileOnly && (argc != 2 || std::strcmp(argv[1], "--run") != 0)) {
+        std::puts("Usage: context-isolation-probe --self-test | --check-profile | --run\n"
+                  "--check-profile: open/Hello/QueryInfo/close one native client; no BOs or submissions.\n"
                   "--run: candidate 666 only, root, 16 concurrent IOAccelerator connections, 32 rounds;\n"
                   "same GPU VA/different BOs and patterns, guard checks, explicit fence waits and close/reopen.\n"
                   "One process, admin role, sequential submissions. Does not qualify shaders, Metal,\n"
                   "application admission, simultaneous CPU submits, video or rendering performance.\n"
-                  "No IOKit calls made without --run.");
+                  "No IOKit calls made without --run or --check-profile.");
         return argc == 1 ? 0 : 2;
     }
     if (geteuid() != 0) { std::fputs("Requires root for this admin-role probe.\n", stderr); return 2; }
     io_service_t service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("Navi48Accelerator"));
     if (service == IO_OBJECT_NULL) { std::fputs("IOAccelerator provider missing.\n", stderr); return 1; }
+    if (profileOnly) {
+        Client client;
+        bool ok = client.open(service, false);
+        ok = client.close() && ok;
+        IOObjectRelease(service);
+        std::printf("{\"status\":\"%s\",\"required_kernel_build\":666,\"dynamic_vmids\":%s,\"gpu_submissions\":0}\n",
+                    ok ? "pass" : "fail", ok ? "true" : "false");
+        return ok ? 0 : 1;
+    }
     constexpr uint32_t clients = 16, rounds = 32;
     Client connections[clients];
     bool ok = true; uint32_t completed = 0, reopened = 0, opened = 0;
