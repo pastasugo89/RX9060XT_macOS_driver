@@ -1,5 +1,5 @@
 // Controlled native-ABI exercise through the real IOAccelerator provider.
-// --self-test never opens IOKit; --run requires the dynamic-VMID candidate 666.
+// --self-test never opens IOKit; --run requires a dynamic-VMID kernel, build 666 or later.
 // This checks command/data address-space isolation, not shaders or Metal.
 #include <IOKit/IOKitLib.h>
 #include <unistd.h>
@@ -10,7 +10,7 @@
 #include "amd/amdgpu_pm4.h"
 
 namespace {
-constexpr uint32_t kBuild = 666, kMaxClients = 32, kWords = 64;
+constexpr uint32_t kMinBuild = 666, kMaxClients = 32, kWords = 64;
 constexpr uint64_t kVa = 0x40000000ull, kBytes = 16384, kResultOffset = 4096;
 constexpr uint32_t kGuard = 0xcdcdcdcdu, kFirst = 16, kPayload = 16, kIbWords = 32;
 
@@ -81,13 +81,13 @@ struct Client {
         uint64_t output[4] = {}; uint32_t count = 4;
         if (!call_ok(IOConnectCallScalarMethod(connection, N48N_SEL_HELLO, hello, 2, output, &count), "Hello")) return false;
         if (count != 4 || (output[0] & 0xffffu) != N48N_ABI_VERSION ||
-            output[1] != kBuild || output[3] != N48N_VMID_DYNAMIC) {
-            std::fprintf(stderr, "Refused: requires candidate 666 with dynamic VMIDs; no test work submitted.\n");
+            output[1] < kMinBuild || output[3] != N48N_VMID_DYNAMIC) {
+            std::fprintf(stderr, "Refused: requires kernel build 666 or later with dynamic VMIDs; no test work submitted.\n");
             return false;
         }
         n48n_info info{}; size_t size = sizeof(info);
         if (!call_ok(IOConnectCallStructMethod(connection, N48N_SEL_QUERYINFO, nullptr, 0, &info, &size), "QueryInfo")) return false;
-        if (size != sizeof(info) || info.kext_build != kBuild ||
+        if (size != sizeof(info) || info.kext_build < kMinBuild ||
             info.abi_version != N48N_ABI_VERSION || !(info.flags & N48N_INFO_DYNAMIC_VMID) ||
             (info.flags & N48N_INFO_HUNG) || info.vmid != N48N_VMID_DYNAMIC) {
             std::fprintf(stderr, "Refused: kernel capabilities/state do not match the candidate.\n");
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
     if (!profileOnly && (argc != 2 || std::strcmp(argv[1], "--run") != 0)) {
         std::puts("Usage: context-isolation-probe --self-test | --check-profile | --run\n"
                   "--check-profile: open/Hello/QueryInfo/close one native client; no BOs or submissions.\n"
-                  "--run: candidate 666 only, root, 16 concurrent IOAccelerator connections, 32 rounds;\n"
+                  "--run: kernel build 666 or later only, root, 16 concurrent IOAccelerator connections, 32 rounds;\n"
                   "same GPU VA/different BOs and patterns, guard checks, explicit fence waits and close/reopen.\n"
                   "One process, admin role, sequential submissions. Does not qualify shaders, Metal,\n"
                   "application admission, simultaneous CPU submits, video or rendering performance.\n"
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
         bool ok = client.open(service, false);
         ok = client.close() && ok;
         IOObjectRelease(service);
-        std::printf("{\"status\":\"%s\",\"required_kernel_build\":666,\"dynamic_vmids\":%s,\"gpu_submissions\":0}\n",
+        std::printf("{\"status\":\"%s\",\"min_kernel_build\":666,\"dynamic_vmids\":%s,\"gpu_submissions\":0}\n",
                     ok ? "pass" : "fail", ok ? "true" : "false");
         return ok ? 0 : 1;
     }
