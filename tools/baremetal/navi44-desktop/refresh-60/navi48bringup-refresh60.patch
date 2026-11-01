@@ -1,0 +1,243 @@
+--- a/src/Navi48Bringup.cpp
++++ b/src/Navi48Bringup.cpp
+@@ -7378,6 +7378,9 @@
+ 	if (!gFmLock) gFmLock = IOLockAlloc();           // build 0.0.518 (switch 74, flip mode): never freed, same reason
+ 	if (!gSfLock) gSfLock = IOLockAlloc();           // build 0.0.542 (`scanout full`'s published capture): never freed, same reason
+ 	if (!amdgpu::gTlb83Lock) amdgpu::gTlb83Lock = IOLockAlloc();   // build 0.0.528 (switch 83's leaf lock): never freed, same reason
++	if (!refreshLock) refreshLock = IOLockAlloc();                 // 0.0.669: the refresh-60 session lock (freed in free())
++	if (!refreshNum60) refreshNum60 = OSNumber::withNumber(60ull, 32);     // 0.0.669: the property values, kept for the kext's life
++	if (!refreshNum120) refreshNum120 = OSNumber::withNumber(120ull, 32);
+ 	pciDevice = OSDynamicCast(IOPCIDevice, provider);
+ 	gBringupPci = pciDevice;
+ 	gBringupSelf = this;
+@@ -7543,6 +7546,198 @@
+ // Apple's own TTL cannot initialise on gfx1201; it hangs inside start(), the
+ // graphics node never goes quiet, and the machine sits at the verbose console
+ // instead of reaching a login window. Measured.
++// ---- 0.0.669 (refresh-60): the 60 Hz scanout switch on Navi 44 --------------------------------------------------------------------------
++// The decisions and the locked sequence are in dcn/navi48_refresh_pure.h (host-tested: cobalt64/src/navi48-bringup/tests/refresh60_test.cpp).
++// The register callbacks are n48dcn::refresh_hw() (every write through the DCN allowlist). This file owns the gates, the session lock, the
++// automatic revert timer and the registry property the RDNA4FB framebuffer reads: "Navi48,RefreshHz" = 60 or 120 on the IOPCIDevice both
++// drivers share. The property is absent at boot (absent = 120 Hz, the 0.0.8 framebuffer behaviour). It is set to 60 only after the hardware
++// change verified, and back to 120 only after the restore verified. Scalar outputs of the verb: [3] code, [4] active Hz, [5] seconds to the
++// automatic revert, [6] V_TOTAL in lines, [7] MSA VTOTAL in lines, [8] phase (0 GOP, 1 pending confirmation, 2 confirmed), [9] witness maximum.
++// The property is set to one of two OSNumber objects this kext keeps for its whole life. The framebuffer reads the value with no reference of
++// its own, so a fresh OSNumber per call would let the registry free the object it is reading (setProperty releases the one it replaces).
++void Navi48Bringup::setRefreshProperty(uint32_t hz) {
++	OSNumber *value = (hz == 60u) ? refreshNum60 : (hz == 120u) ? refreshNum120 : nullptr;
++	if (pciDevice && value) pciDevice->setProperty("Navi48,RefreshHz", value);
++}
++
++bool Navi48Bringup::refreshEnsureTimer() {
++	if (refreshTimer) return true;
++	IOWorkLoop *wl = getWorkLoop();
++	if (!wl) return false;
++	refreshTimer = IOTimerEventSource::timerEventSource(this,
++	    OSMemberFunctionCast(IOTimerEventSource::Action, this, &Navi48Bringup::refreshTimerFired));
++	if (!refreshTimer) return false;
++	if (wl->addEventSource(refreshTimer) != kIOReturnSuccess) {
++		refreshTimer->release();
++		refreshTimer = nullptr;
++		return false;
++	}
++	return true;
++}
++
++// The automatic revert: runs on the work loop, takes refreshLock, and restores 120 Hz only from the pending state. A failed restore is
++// retried every 5 s, up to 12 times, and the property stays at 60 meanwhile (the hardware state is then uncertain).
++void Navi48Bringup::refreshTimerFired(IOTimerEventSource *) {
++	if (!refreshLock) return;
++	IOLockLock(refreshLock);
++	if (refreshSess.phase == n48rf::kPhasePending60) {
++		N48LOG("refresh60: no `refresh confirm` within %u s: reverting to 120 Hz (automatic)", refreshSess.timeoutS);
++		n48rf::Hw hw = n48dcn::refresh_hw();
++		const n48rf::Outcome o = n48rf::restore120(hw, n48rf::read_snap(hw));
++		if (o.code == n48rf::kOk) {
++			n48rf::session_gop(refreshSess);
++			refreshSess.reverts++;
++			refreshRetry = 0u;
++			setRefreshProperty(120);
++			N48LOG("refresh60: restored 120 Hz (automatic revert %u)", refreshSess.reverts);
++		} else if (refreshRetry < 12u && refreshTimer) {
++			refreshRetry++;
++			N48LOG("refresh60: AUTOMATIC RESTORE FAILED: code %u (%s); retry %u in 5 s; the 60 Hz property stays set",
++			       o.code, n48rf::code_name(o.code), refreshRetry);
++			refreshTimer->setTimeoutUS(5000000u);
++		} else {
++			N48LOG("refresh60: AUTOMATIC RESTORE FAILED: code %u (%s) after %u retries; state uncertain: `refresh 120` needed",
++			       o.code, n48rf::code_name(o.code), refreshRetry);
++		}
++	}
++	IOLockUnlock(refreshLock);
++}
++
++// The request under refreshLock. Returns the verb's code and fills the report (the outputs). Gates: Navi 44 (device 0x7590); the native display
++// pipe adopted (n48disp_pipe_adopted) and not failed (the HUNG latch, the thermal trip). Status and confirm need no hardware gate (confirm only
++// cancels a timer). The admin-only rule is the user client's: it opens for the privileged caller alone.
++uint32_t Navi48Bringup::refreshRequestLocked(const n48rf::Request &req, n48rf::Report &rep) {
++	rep = n48rf::Report{ n48rf::kOk, 0u, 0u, 0u, 0u, refreshSess.phase, 0u };
++	n48rf::Hw hw = n48dcn::refresh_hw();
++	const uint64_t now = hw.now_us(hw.ctx);
++	rep.remaining = n48rf::remaining_s(refreshSess, now);
++	if (req.kind == n48rf::kReqConfirm) {                       // no hardware: it only cancels the revert timer
++		if (refreshSess.phase == n48rf::kPhasePending60) {
++			if (refreshTimer) refreshTimer->cancelTimeout();
++			refreshSess.phase = n48rf::kPhaseConfirmed60;
++			refreshSess.confirms++;
++			refreshRetry = 0u;
++			N48LOG("refresh60: confirmed 60 Hz; the automatic revert is cancelled");
++		} else if (refreshSess.phase != n48rf::kPhaseConfirmed60) {
++			rep.code = n48rf::kNoPending;
++		}
++		rep.phase = refreshSess.phase;
++		rep.remaining = n48rf::remaining_s(refreshSess, now);
++		rep.hz = refreshSess.phase == n48rf::kPhaseGop120 ? 120u : 60u;
++		return rep.code;
++	}
++	// The DCN layer binds on its first native use (the native client's selectors call bind); this verb binds the same way. bind() is
++	// idempotent and touches no register on its way in (it arms the allowlist and reads the golden timing).
++	if (!n48dcn::refresh_bound()) (void)n48dcn::bind(this);
++	if (!n48dcn::refresh_bound()) { rep.code = n48rf::kNotArmed; return rep.code; }
++	if (req.kind == n48rf::kReqStatus) {
++		const n48rf::Snap s = n48rf::read_snap(hw);
++		const uint32_t live = n48rf::classify(s);
++		rep.hz = live == n48rf::kLiveTarget ? 60u : live == n48rf::kLiveGop ? 120u : 0u;
++		rep.vLines = n48rf::readable(s) ? (s.vTot + 1u) : 0u;
++		rep.msaLines = n48rf::readable(s) ? (s.msa1 & 0xFFFFu) : 0u;
++		rep.phase = refreshSess.phase;
++		return rep.code;
++	}
++	// the gates of set 60 and restore 120
++	if (!pciDevice || (pciDevice->configRead32(kIOPCIConfigVendorID) >> 16) != 0x7590u) { rep.code = n48rf::kNotNavi44; return rep.code; }
++	if (!n48disp_pipe_adopted()) { rep.code = n48rf::kNotAdopted; return rep.code; }
++	if (amdgpu::n1c_hung() || n4xs::refused()) { rep.code = n48rf::kPipeFailed; return rep.code; }
++	const n48rf::Snap snap = n48rf::read_snap(hw);
++	if (req.kind == n48rf::kReqSet60) {
++		const n48rf::Outcome o = n48rf::set60(hw, snap);
++		rep.code = o.code;
++		rep.vLines = o.vLines;
++		rep.msaLines = o.msaLines;
++		rep.witnessMax = o.witnessMax;
++		if (o.code != n48rf::kOk) {
++			N48LOG("refresh60: set 60 Hz refused or failed: code %u (%s)", o.code, n48rf::code_name(o.code));
++			return rep.code;
++		}
++		if (refreshSess.phase != n48rf::kPhaseConfirmed60) {
++			n48rf::session_begin(refreshSess, req.timeoutS, now);
++			refreshRetry = 0u;
++			refreshTimer->setTimeoutUS(req.timeoutS * 1000000u);
++		}
++		setRefreshProperty(60);
++		N48LOG("refresh60: 60 Hz active (V_TOTAL %u, MSA %u lines, witness %u); automatic revert in %u s unless `refresh confirm`",
++		       o.vLines, o.msaLines, o.witnessMax, req.timeoutS);
++		rep.phase = refreshSess.phase;
++		rep.hz = 60u;
++		rep.remaining = n48rf::remaining_s(refreshSess, now);
++		return rep.code;
++	}
++	// restore 120
++	const n48rf::Outcome o = n48rf::restore120(hw, snap);
++	rep.code = o.code;
++	rep.vLines = o.vLines;
++	rep.msaLines = o.msaLines;
++	rep.witnessMax = o.witnessMax;
++	if (o.code == n48rf::kOk) {
++		if (refreshTimer) refreshTimer->cancelTimeout();
++		n48rf::session_gop(refreshSess);
++		refreshRetry = 0u;
++		setRefreshProperty(120);
++		N48LOG("refresh60: 120 Hz restored (V_TOTAL %u, MSA %u lines)", o.vLines, o.msaLines);
++	} else {
++		N48LOG("refresh60: restore 120 Hz failed: code %u (%s)", o.code, n48rf::code_name(o.code));
++	}
++	rep.phase = refreshSess.phase;
++	rep.hz = o.code == n48rf::kOk ? 120u : 0u;
++	return rep.code;
++}
++
++// The verb. The timer is created before the lock (it needs the work loop), so a 60 Hz request without a revert timer is refused.
++IOReturn Navi48Bringup::refreshVerb(uint32_t action, uint64_t arg, uint64_t *outExtra) {
++	const n48rf::Request req = n48rf::parse(action, arg);
++	n48rf::Report rep{ n48rf::kOk, 0u, 0u, 0u, 0u, 0u, 0u };
++	if (req.kind == n48rf::kReqBad) {
++		rep.code = n48rf::kBadArg;
++	} else if (!refreshLock) {
++		rep.code = n48rf::kNotArmed;
++	} else if (req.kind == n48rf::kReqSet60 && !refreshEnsureTimer()) {
++		rep.code = n48rf::kNotArmed;
++		N48LOG("refresh60: 60 Hz refused: the revert timer cannot be created on this work loop");
++	} else {
++		IOLockLock(refreshLock);
++		refreshRequestLocked(req, rep);
++		IOLockUnlock(refreshLock);
++	}
++	if (outExtra) {
++		outExtra[0] = rep.code;
++		outExtra[1] = rep.hz;
++		outExtra[2] = rep.remaining;
++		outExtra[3] = rep.vLines;
++		outExtra[4] = rep.msaLines;
++		outExtra[5] = rep.phase;
++		outExtra[6] = rep.witnessMax;
++	}
++	N48LOG("refresh60: verb action %u arg %#llx -> code %u (%s)", action, (unsigned long long)arg, rep.code, n48rf::code_name(rep.code));
++	return rep.code == n48rf::kBadArg ? kIOReturnBadArgument : kIOReturnSuccess;
++}
++
++// Kext stop: a 60 Hz state is put back to 120 Hz BEFORE the registers are unmapped (best effort, logged); the timer goes after the lock.
++void Navi48Bringup::refreshShutdown() {
++	if (refreshLock) IOLockLock(refreshLock);
++	if (refreshSess.phase != n48rf::kPhaseGop120 && n48dcn::refresh_bound()) {
++		n48rf::Hw hw = n48dcn::refresh_hw();
++		const n48rf::Outcome o = n48rf::restore120(hw, n48rf::read_snap(hw));
++		N48LOG("refresh60: kext stop: restore 120 Hz -> code %u (%s)", o.code, n48rf::code_name(o.code));
++		if (o.code == n48rf::kOk) {
++			n48rf::session_gop(refreshSess);
++			setRefreshProperty(120);
++		}
++	}
++	if (refreshTimer) refreshTimer->cancelTimeout();
++	if (refreshLock) IOLockUnlock(refreshLock);
++	if (refreshTimer) {
++		IOWorkLoop *wl = getWorkLoop();
++		if (wl) wl->removeEventSource(refreshTimer);
++		refreshTimer->release();
++		refreshTimer = nullptr;
++	}
++}
++
+ IOReturn Navi48Bringup::accelExperiment(uint32_t action, uint64_t *outInstalled,
+                                         uint64_t *outTtlCalls, uint64_t *outFirstUnsupported,
+                                         uint64_t *outExtra, uint64_t argScalar) {
+@@ -7606,6 +7801,12 @@
+ 			for (unsigned i = 0; i < n48native::g4::kOutN && i < kAccelExtraScalars; i++) outExtra[i] = v[i];
+ 		return kr;
+ 	}
++	// 0.0.669 (refresh-60): `refresh 60 <timeout>` / `refresh 120` (109) and `refresh confirm` / `refresh status` (110). Exempt from the native-boot
++	// refusal below, exactly the well-formed requests (n48rf::native_exempt); a malformed one is BadArgument. The user client admits both actions.
++	if (n48rf::is_refresh_action(action)) {
++		if (!n48rf::native_exempt(action, argScalar)) return kIOReturnBadArgument;
++		return refreshVerb(action, argScalar, outExtra);
++	}
+ 	if (!n48scan::accel_exempt(action, argScalar) && !n48disp::native_exempt(n48disp_latched_on(), action, argScalar)) {
+ 	if (action != 0 && amdgpu::native_s1b_refuse(0)) return kIOReturnNotPermitted;
+ 	}
+@@ -9008,6 +9209,8 @@
+ void Navi48Bringup::stop(IOService *provider) {
+ 	// : never leave a patched className behind in a kext that is going away.
+ 	n48fbname::restore_on_unload();
++	// 0.0.669 (refresh-60): a 60 Hz state goes back to 120 Hz while the registers are still mapped; the revert timer is removed.
++	refreshShutdown();
+ 	// 0.0.603 (native S2a): the console plane back and every scanout watchdog thread finished BEFORE anything is unmapped (both need the registers).
+ 	n48dcn::scanShutdown();
+ 	// n4x safety: the watchdog thread ends before any register it reads is unmapped (no-op when it never started).
+@@ -9027,6 +9230,9 @@
+ }
+ 
+ void Navi48Bringup::free() {
++	if (refreshLock) { IOLockFree(refreshLock); refreshLock = nullptr; }   // 0.0.669
++	if (refreshNum60) { refreshNum60->release(); refreshNum60 = nullptr; }
++	if (refreshNum120) { refreshNum120->release(); refreshNum120 = nullptr; }
+ 	if (onDieDisc) { IOFree(onDieDisc, n48::kDiscTmrSize); onDieDisc = nullptr; }
+ 	super::free();
+ }

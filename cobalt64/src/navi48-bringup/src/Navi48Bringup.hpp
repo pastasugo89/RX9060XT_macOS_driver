@@ -26,6 +26,8 @@
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/IOWorkLoop.h>
+#include <IOKit/IOTimerEventSource.h>   // 0.0.669: the refresh-60 revert timer
+#include <IOKit/IOLocks.h>
 #include <IOKit/IOInterruptEventSource.h>
 #include <pexpert/pexpert.h>
 
@@ -34,6 +36,7 @@
 #include "amd/amdgpu_regs.h"
 #include "amd/n48log.h"
 #include "amd/rebar_pure.h"   // 0.0.663: Resizable BAR planning (pure)
+#include "dcn/navi48_refresh_pure.h"   // 0.0.669: the 60 Hz scanout switch (decisions and sequence, host-tested)
 #include "amd/amdgpu_init.h"
 struct Navi48Counters;
 
@@ -135,6 +138,23 @@ private:
 	void publishInterruptCounters();
 
 	IOWorkLoop             *workLoop  { nullptr };
+	// --- 0.0.669 (refresh-60): `accel refresh 60 <timeout>` / `refresh 120` (action 109), `refresh confirm` / `refresh status` (action 110).
+	// The session is guarded by refreshLock; the revert timer runs on this service's work loop and takes the same lock (never while a verb holds it
+	// and waits for the work loop: the timer is created before the lock is taken, and removed after it is released).
+	n48rf::Session         refreshSess  { n48rf::kPhaseGop120, 0u, 0u, 0u, 0u };
+	IOLock                *refreshLock  { nullptr };
+	IOTimerEventSource    *refreshTimer { nullptr };
+	uint32_t               refreshRetry { 0u };
+	// The two values of the registry property, kept for the kext's life: the framebuffer reads the property without a reference, so the
+	// object it reads must never be freed by a later setProperty (see setRefreshProperty).
+	OSNumber              *refreshNum60  { nullptr };
+	OSNumber              *refreshNum120 { nullptr };
+	IOReturn refreshVerb(uint32_t action, uint64_t arg, uint64_t *outExtra);
+	uint32_t refreshRequestLocked(const n48rf::Request &req, n48rf::Report &rep);
+	bool     refreshEnsureTimer();
+	void     refreshTimerFired(IOTimerEventSource *sender);
+	void     refreshShutdown();
+	void     setRefreshProperty(uint32_t hz);
 	IOInterruptEventSource *intSource { nullptr };
 	bool     intArmed     { false };
 	uint64_t irqCount     { 0 };   // times the handler ran

@@ -3261,3 +3261,27 @@ uint32_t scanXReport(uint64_t arg, uint64_t *v, unsigned n) {
 }
 
 }  // namespace n48dcn
+
+// ---- 0.0.669 (refresh-60): the register callbacks of the 60 Hz switch (navi48_refresh_pure.h) -----------------------------------------
+// The reads are dcn_rreg (ungated, counted); the writes are dcn_wreg (the allowlist gate, refused writes are logged by dcn_wreg itself).
+// The pure sequence logs every step through rf_log: "refresh60: <step> <abs>: <old> -> <new>".
+namespace n48dcn {
+namespace {
+uint32_t rf_rd(void *ctx, uint32_t abs) { return dcn_rreg(ctx, abs); }
+void rf_wr(void *ctx, uint32_t abs, uint32_t value) { dcn_wreg(ctx, abs, value); }
+void rf_delay(void *ctx, uint32_t us) { dcn_udelay(ctx, us); }
+uint64_t rf_now(void *) { return now_ns() / 1000u; }
+void rf_log(void *, const char *what, uint32_t abs, uint32_t a, uint32_t b) {
+	N48LOG("refresh60: %s %#010x: %#010x -> %#010x", what, abs, a, b);
+}
+}  // namespace
+
+n48rf::Hw refresh_hw() {
+	return n48rf::Hw{ &gDcn, rf_rd, rf_wr, rf_delay, rf_now, rf_log };
+}
+
+bool refresh_bound() {
+	return __atomic_load_n(&gDcn.armed, __ATOMIC_ACQUIRE) != 0;
+}
+
+}  // namespace n48dcn

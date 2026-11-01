@@ -45,6 +45,21 @@ OVERLAY = (
     'src/amd/production_vm_lease_pure.h',
     'src/amd/production_context_retire.h',
 )
+# 0.0.669 (refresh-60): built on the reviewed 0.0.668 candidate tree, not on the 665 baseline and not on HEAD. That tree's Navi48Bringup.cpp is
+# the 665-based file (HEAD's differs by 72 lines unrelated to refresh), so the refresh hunks go onto the 0.0.668 file, and the overlay
+# files are the ones HEAD already has identically (navi48_dcn.cpp/.hpp, Navi48Bringup.hpp, Navi48UserClient.cpp) plus the new pure header.
+REFRESH_VERSION = '0.0.669'
+REFRESH_BASE = ROOT / 'research/builds/macos-20261031/production/kernel-contexts-v4'
+REFRESH_OVERLAY = ('src/dcn/navi48_refresh_pure.h', 'src/dcn/navi48_dcn.cpp', 'src/dcn/navi48_dcn.hpp', 'src/Navi48Bringup.hpp', 'src/Navi48UserClient.cpp')
+REFRESH_PATCH = ROOT / 'tools/baremetal/navi44-desktop/refresh-60/navi48bringup-refresh60.patch'
+REFRESH_BRINGUP_SHA = 'b336315bc58661a83af488232cef21c92defc4fd824a5dc0914bde5e9a153fac'   # the 0.0.668 Navi48Bringup.cpp with the hunks applied
+REFRESH_TESTS = ('test-kernel-refresh60.py', 'test-kernel-refresh60-wiring.py')
+REFRESH_DIR = ROOT / 'tools/baremetal/navi44-desktop/refresh-60'
+REFRESH_REQUIRED_STRINGS = (b'refresh60: verb action', b'Navi48,RefreshHz')
+# 0.0.668 is the kernel that payload v4 installs (its candidate EFI holds exactly these hashes); 0.0.669 replaces it.
+INSTALLED_668 = {'bundle_path': 'Navi48Bringup-contexts-0.0.668.kext',
+                 'kernel_sha256': 'ab4c7fed6dd6c6ee52096da25d78f50bc515a51fdbfe8f591654143afe9ccb6d',
+                 'config_sha256': 'c8e2a26453bfcadb6afd716ad3a6927d9312c9fd290e49c37609f8d5ee8775ab', 'version': '0.0.668'}
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -108,7 +123,7 @@ def replace_exact(path, old, new, count):
 
 def release_build(version):
     """The build number that goes with a candidate version (0.0.666, 0.0.667, 0.0.668)."""
-    if not re.fullmatch(r'0\.0\.66[678]', version):
+    if not re.fullmatch(r'0\.0\.66[6-9]', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -126,15 +141,52 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version != '0.0.668':
+    if version not in ('0.0.668', REFRESH_VERSION):
         return recorded_active_baseline(path)
+    installed, before = (INSTALLED_667, '0.0.667') if version == '0.0.668' else (INSTALLED_668, '0.0.668')
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
-    kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % INSTALLED_667['bundle_path']
-    if (manifest.get('candidate_version') != '0.0.667' or efi.get('OC/config.plist') != INSTALLED_667['config_sha256']
-            or efi.get(kernel) != INSTALLED_667['kernel_sha256']):
-        raise ValueError('Manifest is not the installed 0.0.667 candidate (payload v3)')
-    return dict(INSTALLED_667)
+    kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
+    if (manifest.get('candidate_version') != before or efi.get('OC/config.plist') != installed['config_sha256']
+            or efi.get(kernel) != installed['kernel_sha256']):
+        raise ValueError('Manifest is not the installed %s candidate' % before)
+    return dict(installed)
+
+
+def refresh_base_verified(baseline):
+    """0.0.669's base: the reviewed 0.0.668 candidate tree and its binary, both checked against kernel-contexts-v4's manifest."""
+    base = json.loads((REFRESH_BASE / 'manifest.json').read_text())
+    if base.get('candidate_version') != '0.0.668' or base.get('candidate_binary_sha256') != INSTALLED_668['kernel_sha256']:
+        raise ValueError('kernel-contexts-v4 is not the reviewed 0.0.668 candidate')
+    if tree_files(baseline) != base['candidate_inputs']:
+        raise ValueError('The 0.0.668 candidate tree changed')
+    binary = REFRESH_BASE / 'candidate-source/build/Navi48Bringup.kext/Contents/MacOS/Navi48Bringup'
+    if sha(binary) != INSTALLED_668['kernel_sha256']:
+        raise ValueError('The 0.0.668 candidate binary changed')
+    return {'manifest': str((REFRESH_BASE / 'manifest.json').relative_to(ROOT)), 'candidate_inputs_checked': len(base['candidate_inputs']),
+            'binary_sha256': INSTALLED_668['kernel_sha256']}
+
+
+def refresh_overlay(candidate, source):
+    """0.0.669: the new pure header and the three HEAD-identical overlay files; the refresh hunks on the 0.0.668 Navi48Bringup.cpp
+    (applied with patch, result checked); the version markers 668 -> 669. Nothing else changes."""
+    before = tree_files(candidate)
+    for name in REFRESH_OVERLAY:
+        target = candidate / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / name, target)
+    subprocess.run(['patch', '-s', '--no-backup-if-mismatch', str(candidate / 'src/Navi48Bringup.cpp'), '-i', str(REFRESH_PATCH)], check=True)
+    if sha(candidate / 'src/Navi48Bringup.cpp') != REFRESH_BRINGUP_SHA:
+        raise ValueError('Navi48Bringup.cpp with the refresh hunks is not the reviewed file')
+    replace_exact(candidate / 'Info.plist', '<string>0.0.668</string>', '<string>' + REFRESH_VERSION + '</string>', 2)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 668;', 'kN1cKextBuild = 669;', 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 668u', 'sizeof(N48MetalOps), 669u', 2)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    allowed = set(REFRESH_OVERLAY) | {'Info.plist', 'src/Navi48Bringup.cpp', 'src/Navi48MetalNub.cpp', 'src/amd/native_s1c.h'}
+    if changed - allowed:
+        raise ValueError('Candidate changed files outside the reviewed refresh overlay')
+    return sorted(changed)
 
 
 def overlay_candidate(candidate, source, version=RELEASE):
@@ -185,30 +237,40 @@ def classify_overlay(committed, working, blobs, allow_working_tree):
     """The overlay inputs at HEAD (committed) against the working tree. Uncommitted files are refused unless the caller asks
     for them explicitly; then they are recorded with their sha256 and the git blob ids they will have once committed, so
     the commit can be checked against the candidate that was built from them."""
-    uncommitted = sorted(name for name in OVERLAY if committed[name] != working[name])
+    names = tuple(committed)   # the overlay inputs this call was given (OVERLAY, or the 0.0.669 refresh overlay)
+    uncommitted = sorted(name for name in names if committed[name] != working[name])
     if uncommitted and not allow_working_tree:
         raise ValueError('Overlay input is not committed: ' + uncommitted[0])
     return {'source': 'working-tree' if uncommitted else 'committed', 'uncommitted': uncommitted,
-            'sha256': {name: hashlib.sha256(working[name]).hexdigest() for name in OVERLAY},
+            'sha256': {name: hashlib.sha256(working[name]).hexdigest() for name in names},
             'blob_ids': dict(blobs)}
 
 
-def overlay_provenance(allow_working_tree=False):
+def overlay_provenance(allow_working_tree=False, names=OVERLAY):
     """Reject uncommitted inputs instead of silently bundling unrelated work (unless --worktree-overlay is given)."""
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     committed, working, blobs = {}, {}, {}
-    for name in OVERLAY:
+    for name in names:
         path = SOURCE / name
-        committed[name] = subprocess.check_output(['git', 'show', revision + ':' + str(path.relative_to(ROOT))], cwd=ROOT)
+        try:
+            committed[name] = subprocess.check_output(['git', 'show', revision + ':' + str(path.relative_to(ROOT))], cwd=ROOT,
+                                                      stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            committed[name] = None      # a new file: not committed
         working[name] = path.read_bytes()
         blobs[name] = subprocess.check_output(['git', 'hash-object', str(path)], cwd=ROOT, text=True).strip()
     return revision, classify_overlay(committed, working, blobs, allow_working_tree)
 
 
+def test_path(name):
+    """The CPU test script: a 0.0.666-0.0.668 test lives in navi44-gpu-diagnostics, the 0.0.669 tests in refresh-60."""
+    return (REFRESH_DIR if name in REFRESH_TESTS else ROOT / 'tools/baremetal/navi44-gpu-diagnostics') / name
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667 or 0.0.668')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668 or 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4)')
     parser.add_argument('--active-baseline-manifest', type=Path,
                         help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
                              'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
@@ -220,7 +282,9 @@ def main():
     out = output_directory(args.output)
     if sha(BASE / BASE_EXEC) != BASE_SHA:
         raise ValueError('Reference kernel binary changed')
-    if version == '0.0.668' and not args.active_baseline_manifest:
+    refresh = version == REFRESH_VERSION
+    tests = TESTS + (REFRESH_TESTS if refresh else ())
+    if version in ('0.0.668', REFRESH_VERSION) and not args.active_baseline_manifest:
         raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
@@ -228,7 +292,7 @@ def main():
     else:
         active = active_kernel(EFI)
         active_source = 'live-efi'
-    revision, overlay = overlay_provenance(args.worktree_overlay)
+    revision, overlay = overlay_provenance(args.worktree_overlay, REFRESH_OVERLAY if refresh else OVERLAY)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
     repro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repro)
@@ -236,8 +300,7 @@ def main():
     manifest = {'schema': 1, 'status': 'preparing-not-installable',
                 'source_commit': revision, 'overlay': overlay, 'active_baseline': active,
                 'preparer_sha256': sha(Path(__file__)),
-                'test_scripts': {name: sha(ROOT / 'tools/baremetal/navi44-gpu-diagnostics' / name)
-                                 for name in TESTS},
+                'test_scripts': {name: sha(test_path(name)) for name in tests},
                 'prepared_boot_uuid': subprocess.check_output(
                     ['sysctl', '-n', 'kern.bootsessionuuid'], text=True).strip(),
                 'compiler': subprocess.check_output(['clang++', '--version'], text=True),
@@ -262,26 +325,36 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(BASE, baseline)
+    copy_source(REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    bundle = build(baseline, 8, 'baseline-build.log')
-    sections = repro.mach_sections(bundle / 'Contents/MacOS/Navi48Bringup')
-    if sections != repro.mach_sections(BASE / BASE_EXEC):
-        raise ValueError('Rebuilt baseline sections differ from active kernel')
-    if tree_files(baseline) != manifest['baseline_inputs']:
-        raise ValueError('Baseline build changed recorded source inputs')
-    manifest['baseline_sections'] = {'/'.join(part.decode() for part in k): v
-                                     for k, v in sections.items()}
+    if refresh:
+        # 0.0.669: no 665 rebuild. The base is the reviewed 0.0.668 tree and binary (checked against its manifest).
+        manifest['base_verified'] = refresh_base_verified(baseline)
+    else:
+        bundle = build(baseline, 8, 'baseline-build.log')
+        sections = repro.mach_sections(bundle / 'Contents/MacOS/Navi48Bringup')
+        if sections != repro.mach_sections(BASE / BASE_EXEC):
+            raise ValueError('Rebuilt baseline sections differ from active kernel')
+        if tree_files(baseline) != manifest['baseline_inputs']:
+            raise ValueError('Baseline build changed recorded source inputs')
+        manifest['baseline_sections'] = {'/'.join(part.decode() for part in k): v
+                                         for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    manifest['changed_source_files'] = overlay_candidate(candidate, SOURCE, version)
-    committed = subprocess.check_output(['git', 'show', revision + ':' + str((SOURCE / KILL_SWITCH_FILE).relative_to(ROOT))],
-                                        cwd=ROOT, text=True)
-    if kill_switch_block(committed) not in (SOURCE / KILL_SWITCH_FILE).read_text():
-        raise ValueError('Working tree lacks the committed kill switch')
-    manifest['kill_switch'] = {'commit': revision, 'file': KILL_SWITCH_FILE,
-                               'block_sha256': apply_kill_switch(candidate / KILL_SWITCH_FILE, committed)}
-    manifest['changed_source_files'] = sorted(manifest['changed_source_files'] + [KILL_SWITCH_FILE])
+    if refresh:
+        manifest['changed_source_files'] = refresh_overlay(candidate, SOURCE)
+        manifest['refresh_overlay'] = {'patch': str(REFRESH_PATCH.relative_to(ROOT)), 'patch_sha256': sha(REFRESH_PATCH),
+                                       'navi48bringup_sha256': REFRESH_BRINGUP_SHA,
+                                       'files': {name: sha(SOURCE / name) for name in REFRESH_OVERLAY}}
+    else:
+        manifest['changed_source_files'] = overlay_candidate(candidate, SOURCE, version)
+        committed = subprocess.check_output(['git', 'show', revision + ':' + str((SOURCE / KILL_SWITCH_FILE).relative_to(ROOT))],
+                                            cwd=ROOT, text=True)
+        if kill_switch_block(committed) not in (SOURCE / KILL_SWITCH_FILE).read_text():
+            raise ValueError('Working tree lacks the committed kill switch')
+        manifest['kill_switch'] = {'commit': revision, 'file': KILL_SWITCH_FILE,
+                                   'block_sha256': apply_kill_switch(candidate / KILL_SWITCH_FILE, committed)}
+        manifest['changed_source_files'] = sorted(manifest['changed_source_files'] + [KILL_SWITCH_FILE])
     manifest['candidate_inputs'] = tree_files(candidate)
     save()
     bundle = build(candidate, 64, 'candidate-build.log')
@@ -290,13 +363,13 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    if any(text not in binary for text in REQUIRED_STRINGS):
+    required = REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh else ())
+    if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
-    manifest['required_strings'] = [text.decode() for text in REQUIRED_STRINGS]
+    manifest['required_strings'] = [text.decode() for text in required]
     manifest['cpu_tests'] = []
-    for test in TESTS:
-        command = ['python3', str(ROOT / 'tools/baremetal/navi44-gpu-diagnostics' / test),
-                   '--kernel-source', str(candidate)]
+    for test in tests:
+        command = ['python3', str(test_path(test)), '--kernel-source', str(candidate)]
         with (out / (test + '.log')).open('w') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
         manifest['cpu_tests'].append(test)

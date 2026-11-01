@@ -596,7 +596,10 @@ IOReturn Navi48UserClient::doAccelExperiment(IOExternalMethodArguments *args) {
 	//      103 = sessstat (0.0.627, GPU-apps G2: OPEN only with boot-arg navi48-multisession=1 latched; amd/native_g2_pure.h; read-only).
 	//      108 = vramstat (0.0.663, ReBAR + Stage 2 review S3: same latch as 83..90 and 106/107 - n48disp::action_admitted; READ-ONLY allocator / BAR0 report).
 	//      104 = appallow (0.0.640, GPU-apps G4: OPEN only with boot-args navi48-apps=1 AND navi48-multisession=1 latched; amd/native_g4_pure.h; this client is root-only).
-	if (n48native::g4::action_admitted(amdgpu::n1c_apps_enabled(), action)) {
+	if (n48rf::is_refresh_action(action)) {
+		// 0.0.669 (refresh-60): 109 (refresh 60 / 120) and 110 (confirm / status) are admitted here, with no latch. accelExperiment checks
+		// their argument shape (n48rf::native_exempt); this client opens for the privileged caller alone (the open check above).
+	} else if (n48native::g4::action_admitted(amdgpu::n1c_apps_enabled(), action)) {
 		// 104 is admitted: it skips the old bound below (the verb's own argument check is n48native::g4::native_exempt in accelExperiment)
 	} else
 	if (!n48native::g1::action_admitted(amdgpu::n1c_g1_latched_on(), action) && !n48native::g2::action_admitted(amdgpu::n1c_multi_latched_on(), action)) {

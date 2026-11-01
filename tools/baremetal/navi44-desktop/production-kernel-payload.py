@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare/check the logical-context kernel trial (0.0.666, 0.0.667 or 0.0.668) without changing EFI or the live system.
+"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.669) without changing EFI or the live system.
 
 `prepare --baseline-payload <verified earlier payload>` builds the baseline EFI from that payload's recorded hashes
 instead of the mounted EFI (the EFI is not mounted and must not be touched). Such a payload is marked
@@ -11,8 +11,10 @@ prepare again (`check --live` refuses a stale guard).
 import argparse
 import copy
 import hashlib
+import importlib.util
 import json
 import plistlib
+import re
 import shutil
 import struct
 import subprocess
@@ -51,6 +53,20 @@ BUNDLE_667 = 'Navi48Bringup-contexts-0.0.667.kext'
 KERNEL_667_SHA = '976b3375082c3f319f940b02f74fd5ff03155884a39feae771edfab62623f287'
 CONFIG_667_SHA = '5ea9932d7fd53e97062021a72c6613f76bb96a3ecccce12d942fa8b796d531c6'
 PROBE_667_SHA = '5afe2b52b0c0adc7a4bf1ea8f8e07437929ed9cfe066fa1f56a39240ceb000c5'   # the probe digest the 0.0.667 capability block pins
+# 0.0.669 (refresh-60): built on the reviewed 0.0.668 candidate. Its guard is the live 0.0.668 guard with the 0.0.669 capability block
+# and the refresh-60 hook (refresh-60/apply_refresh_guard.py, loaded by absolute path); its one system file is the refresh-60 navi48test;
+# its probe is the reused 0.0.667 probe (PROBE_667_SHA). KERNEL_669_SHA is the candidate binary of kernel-contexts-v5 as its manifest
+# records it now (a rebuild after a registry-property fix superseded 59d6ca43...).
+BUNDLE_668 = 'Navi48Bringup-contexts-0.0.668.kext'
+KERNEL_668_SHA = 'ab4c7fed6dd6c6ee52096da25d78f50bc515a51fdbfe8f591654143afe9ccb6d'
+CONFIG_668_SHA = 'c8e2a26453bfcadb6afd716ad3a6927d9312c9fd290e49c37609f8d5ee8775ab'
+GUARD_668_SHA = 'eaf88b0ab3a2711531c02efe22bc61bdf0012c1f0f2089fe8dd8ebd960ffd948'   # the 0.0.668 guard (payload v4's guard, live)
+KERNEL_669_SHA = 'cb6fd1067edf3ebd1f12ea20a91726698bdf2833591a86d50489d31626057def'
+NAVI48TEST_669_SHA = '83e7f3e3c9609ce636e138acf5a5186dbf6ef5c8951bcc6342eb21a1d058b94c'
+PROBE_SELF_TEST_LOG_SHA = '934011ce4b4a3f4ebaabe6b69247e06f13f39387976c790ccfc65fb95c2d75ed'   # payload v4's log of the reused probe
+BASE_668_MANIFEST = ROOT/'research/builds/macos-20261031/production/kernel-contexts-v4/manifest.json'
+REFRESH_SOURCE = Path(__file__).resolve().parent/'refresh-60/apply_refresh_guard.py'
+SYSTEM_SOURCES = {APP+'/navi48test': ROOT/'research/builds/macos-20261101/refresh-60/navi48test/navi48test'}
 # the Metal components the live bundle-33 guard pins (stage33-memtype-v1; its Info.plist version is 33)
 METAL_33 = {'Contents/MacOS/Navi48Metal': '85c7d8bdfe8c681503a5701afc09ce3b5cddf3ef124fca587913d261c7b4fd5f',
             'Contents/Resources/libvulkan_radeon.dylib': 'f6b2053d1b26731ff88c1def9ca2375cc7c0a9a34ebc8e7ab7e2533f6c30e155',
@@ -96,7 +112,31 @@ RELEASES = {
                 'recovery_entry': RECOVERY_ENTRY,
                 # the CURRENT live guard, which already holds the 0.0.667 capability block: only that block's kernel match moves
                 'guard': 'live-668', 'metal_version': '33', 'metal': METAL_33},
+    # 0.0.669 (refresh-60): the 0.0.668 release's EFI (payload v4 read as its candidate state) with kernel 0.0.669 and the 0.0.669 guard.
+    # Its base is the reviewed 0.0.668 candidate, not a rebuilt 665 base (see reviewed_base); its only system file is navi48test.
+    # binary_checks 'not-run': this preparation executes no research-tree binary (see DEFERRED_CHECKS).
+    '0.0.669': {'new': 'Navi48Bringup-contexts-0.0.669.kext', 'recovery': 'RECOVERY/pre-contexts-669-config.plist',
+                'from': BUNDLE_668, 'from_kernel_sha': KERNEL_668_SHA, 'from_config_sha': CONFIG_668_SHA,
+                'kernel_sha': KERNEL_669_SHA, 'tests': 8, 'base': 'reviewed-candidate', 'probe_reuse': PROBE_667_SHA,
+                'strings': ('navi48-off', 'application budget', 'open refused (NoResources)', 'the hi pool could not take it',
+                            'refresh60: verb action', 'Navi48,RefreshHz'),
+                'edits': [{'path': 'Kernel/Add/7/BundlePath', 'old': BUNDLE_668, 'new': 'Navi48Bringup-contexts-0.0.669.kext'}],
+                'extras': {'RECOVERY/pre-contexts-669-config.plist': 'baseline'},
+                # carried from payload v4's candidate state: the startup script, the 665 recovery copy and the 667 configuration copy
+                'carried': {STARTUP: STARTUP_SHA, 'RECOVERY/funzionante-665.plist': BASE_CONFIG_SHA,
+                            'RECOVERY/pre-contexts-667-config.plist': BASE_CONFIG_SHA},
+                'recovery_entry': RECOVERY_ENTRY,
+                'system_files': {APP+'/navi48test': NAVI48TEST_669_SHA},
+                'binary_checks': 'not-run', 'self_test_log_sha': PROBE_SELF_TEST_LOG_SHA,
+                # the live 0.0.668 guard is the base: its capability block moves to 0.0.669 and the refresh-60 hook is added
+                # Metal expectations are NOT static for 0.0.669: release_for_guard() reads them from the live guard at stage time
+                # (bundle version and the three Navi48Metal digests) and checks them against the bundle on disk.
+                'guard': 'live-669', 'metal_version': None, 'metal': None},
 }
+# binary_checks 'not-run' (0.0.669): the OpenCore validator and the probe's self-test are research-tree executables, so the preparation
+# does not run them. The payload records that; the installer must validate EFI/OC/config.plist before installing.
+DEFERRED_CHECKS = {'ocvalidate': 'not run: research-tree executable; validate EFI/OC/config.plist before installation',
+                   'probe_self_test': 'not re-run: research-tree executable; evidence/probe-self-test.log is the recorded log of the identical reused probe'}
 
 
 def sha(path):
@@ -231,6 +271,8 @@ fi
 '''
 # 0.0.668: the same block with its kernel match and its STOP text moved to 0.0.668 (the 0.0.665 branch stays).
 KERNEL_BRANCH_668 = KERNEL_BRANCH.replace(r'\(0\.0\.667\)', r'\(0\.0\.668\)').replace('STOP expected kernel 667 or 665', 'STOP expected kernel 668 or 665')
+# 0.0.669: the same block with its kernel match and its STOP text moved to 0.0.669 (the 0.0.665 branch stays).
+KERNEL_BRANCH_669 = KERNEL_BRANCH_668.replace(r'\(0\.0\.668\)', r'\(0\.0\.669\)').replace('STOP expected kernel 668 or 665', 'STOP expected kernel 669 or 665')
 
 
 def capability_block(branch, probe_sha):
@@ -247,6 +289,54 @@ def bump_guard(original, probe_sha):
     if original.count(old) != 1:
         raise ValueError('Activation guard lacks the reviewed 0.0.667 capability block')
     return original.replace(old, capability_block(KERNEL_BRANCH_668, probe_sha))
+
+
+def bump_guard_669(original, probe_sha):
+    """0.0.669: the 0.0.668 guard with its reviewed 0.0.668 capability block replaced by the 0.0.669 block. As in bump_guard, only
+    that block changes: its kernel match and STOP text move to 0.0.669, the 0.0.665 branch stays, the probe digest follows the probe."""
+    old = capability_block(KERNEL_BRANCH_668, PROBE_667_SHA)
+    if original.count(old) != 1:
+        raise ValueError('Activation guard lacks the reviewed 0.0.668 capability block')
+    return original.replace(old, capability_block(KERNEL_BRANCH_669, probe_sha))
+
+
+def refresh_patch(text):
+    """The refresh-60 hook (additions only) from tools/baremetal/navi44-desktop/refresh-60/apply_refresh_guard.py. The module is loaded
+    by its absolute path; sys.path is not changed."""
+    spec = importlib.util.spec_from_file_location('apply_refresh_guard', REFRESH_SOURCE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.apply_refresh_patch(text)
+
+
+METAL_COMPONENTS = ('Contents/MacOS/Navi48Metal', 'Contents/Resources/libvulkan_radeon.dylib', 'Contents/Resources/libn48xlate.dylib')
+
+
+def live_metal_pins(guard_text):
+    """The Metal bundle a guard expects, read from the guard itself: its bundle version and the digests of the three components."""
+    versions = re.findall(r'"\$bundle_version" == (\d+) \]\]', guard_text)
+    if len(versions) != 1:
+        raise ValueError('The guard must expect exactly one Metal bundle version')
+    pins = dict(re.findall(r'shasum -a 256 "/Library/GPUBundles/Navi48Metal\.bundle/(Contents/[^"]+)" \| cut -d " " -f 1\) == ([0-9a-f]{64})',
+                           guard_text))
+    if set(pins) != set(METAL_COMPONENTS):
+        raise ValueError('The guard pins %s, expected the three Navi48Metal components' % sorted(pins))
+    return versions[0], pins
+
+
+def release_for_guard(rel, guard_text):
+    """0.0.669: the release with the Metal bundle its guard expects (read from that guard; see live_metal_pins). Other releases unchanged."""
+    if rel['guard'] != 'live-669':
+        return rel
+    version, pins = live_metal_pins(guard_text)
+    return {**rel, 'metal': pins, 'metal_version': version}
+
+
+def guard_669(original, probe_sha):
+    """The 0.0.669 guard, derived at stage time from the LIVE guard: apply_refresh_patch(bump_guard_669(original)). The bump requires the
+    reviewed 0.0.668 capability block exactly once and changes nothing else; the refresh-60 hook adds lines only. Every other line of the
+    live guard (its profile, its Metal expectations) is kept byte for byte, so the derived guard expects whatever bundle the live guard expects."""
+    return refresh_patch(bump_guard_669(original, probe_sha))
 
 
 def guard_live(original, probe_sha, version):
@@ -269,6 +359,9 @@ def make_guard(rel, original, probe_sha, version):
     if rel['guard'] == 'live-668':
         if version != '0.0.668': raise ValueError('The live-668 guard is only derived for 0.0.668')
         return bump_guard(original, probe_sha)
+    if rel['guard'] == 'live-669':
+        if version != '0.0.669': raise ValueError('The live-669 guard is only derived for 0.0.669')
+        return guard_669(original, probe_sha)
     return guard_live(original, probe_sha, version) if rel['guard'] == 'live' else guard_text(original, probe_sha, version)
 
 
@@ -332,16 +425,20 @@ def verify(payload, live=False, efi=None, system_root=Path('/')):
     if m.get('schema') != 1 or m.get('profile') != PROFILE or m.get('status') != 'prepared-not-installed':
         raise ValueError('Unexpected kernel payload profile')
     version, rel = release_of(m)
+    if rel['guard'] == 'live-669':
+        rel = release_for_guard(rel, (payload/'system'/GUARD).read_text())
     actual = tree(payload); actual.pop('manifest.json')
     if actual != m['files'] or set(actual) != set(m['file_modes']): raise ValueError('Payload inventory changed')
     for name in actual:
         if not safe(name) or not name.startswith(('EFI/','system/','evidence/')) or (payload/name).stat().st_mode & 0o777 != m['file_modes'][name]:
             raise ValueError('Payload path/mode changed: '+name)
     system = {p[7:] for p in actual if p.startswith('system/')}
-    if system != {GUARD,PROBE} or set(m['system_before']) != system or set(m['critical_system_files']) != set(CRITICAL):
+    if system != {GUARD,PROBE,*rel.get('system_files',{})} or set(m['system_before']) != system or set(m['critical_system_files']) != set(CRITICAL):
         raise ValueError('Unexpected system write or dependency set')
     if any(m['file_modes']['system/'+name] != 0o755 for name in system):
         raise ValueError('System executables require mode 755')
+    for name, digest in rel.get('system_files',{}).items():
+        if sha(payload/'system'/name) != digest: raise ValueError('System file is not the reviewed file: '+name)
     base, staged = m['baseline_efi_files'], tree(payload/'EFI')
     if staged != m['candidate_efi_files'] or base['OC/config.plist'] != m['baseline_config_sha256'] or staged['OC/config.plist'] != m['candidate_config_sha256']:
         raise ValueError('EFI inventory changed')
@@ -388,6 +485,10 @@ def verify(payload, live=False, efi=None, system_root=Path('/')):
         raise ValueError('Activation guard differs from the reviewed transformation')
     if rel['metal'] and any(digest not in guard for digest in rel['metal'].values()):
         raise ValueError('Activation guard does not pin the reviewed Metal components')
+    if rel.get('binary_checks') == 'not-run':   # the record of the checks this release does not execute, and the reviewed self-test log
+        if (m.get('deferred_checks') != {**DEFERRED_CHECKS, 'probe_self_test_log_sha256': rel['self_test_log_sha']}
+                or sha(payload/'evidence/probe-self-test.log') != rel['self_test_log_sha']):
+            raise ValueError('Deferred binary checks differ from the reviewed record')
     subprocess.run(['/bin/bash','-n',str(payload/'system'/GUARD)],check=True)
     if m['efi_volume_uuid'] not in EFI_UUIDS: raise ValueError('Unexpected EFI volume identity')
     if live:
@@ -427,6 +528,19 @@ def same_except_uuid(a, b):
     return (s, e) == (s2, e2) and a[:s] + a[e:] == b[:s] + b[e:]
 
 
+def reviewed_base(build, rel):
+    """Whether the candidate's base is proven. 0.0.666-0.0.668 rebuild the 665 base and record its seven Mach-O sections. 0.0.669 does not
+    rebuild it: its base is the reviewed 0.0.668 candidate (kernel-contexts-v4), whose tree and binary the build recorded as base_verified."""
+    if rel.get('base') is None:
+        return len(build.get('baseline_sections', {})) == 7
+    proof = build.get('base_verified') or {}
+    base = json.loads(BASE_668_MANIFEST.read_text())
+    return (rel['base'] == 'reviewed-candidate' and proof.get('manifest') == str(BASE_668_MANIFEST.relative_to(ROOT))
+            and proof.get('binary_sha256') == rel['from_kernel_sha'] and proof.get('candidate_inputs_checked') == len(base.get('candidate_inputs', {}))
+            and base.get('candidate_version') == '0.0.668' and base.get('candidate_binary_sha256') == rel['from_kernel_sha']
+            and build.get('baseline_inputs') == base.get('candidate_inputs'))
+
+
 def prepare(candidate, output, baseline_payload=None, baseline_state='baseline'):
     buildroot = (ROOT/'research/builds').resolve()
     output = output.resolve(); candidate = candidate.resolve()
@@ -434,9 +548,12 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
         raise ValueError('Use a new output and existing candidate under research/builds')
     build = json.loads((candidate/'manifest.json').read_text())
     version, rel = release_of(build)
+    deferred = rel.get('binary_checks') == 'not-run'
+    if deferred and baseline_payload is None:
+        raise ValueError(version + ' is prepared only from a recorded payload (--baseline-payload), never from the mounted EFI')
     if (build.get('status') != 'built-cpu-tested-not-installed-hardware-unverified' or build.get('profile') != {'hardware_slots':8,'logical_contexts':64}
             or rel['kernel_sha'] is None or build.get('candidate_binary_sha256') != rel['kernel_sha'] or len(build.get('cpu_tests',[])) != rel['tests']
-            or len(build.get('baseline_sections',{})) != 7 or not set(rel['strings']) <= set(build.get('required_strings', []))):
+            or not reviewed_base(build, rel) or not set(rel['strings']) <= set(build.get('required_strings', []))):
         raise ValueError('Candidate is not the verified kernel-%s build' % version)
     if build['prepared_boot_uuid'].lower() != boot_uuid(): raise ValueError('Build belongs to another boot')
     source = candidate/'candidate-source'
@@ -461,10 +578,13 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
         raise ValueError('Candidate/recovery EFI paths already exist')
     if any(x.get('BundlePath') == rel['new'] for x in config['Kernel']['Add']): raise ValueError('Candidate already listed in config')
     original_guard = (Path('/')/GUARD).read_text()
-    baseline_system = {name:metadata(Path('/')/name) for name in (GUARD,PROBE)}
+    rel = release_for_guard(rel, original_guard)   # 0.0.669: the Metal bundle the LIVE guard expects
+    baseline_system = {name:metadata(Path('/')/name) for name in (GUARD,PROBE,*rel.get('system_files',{}))}
     critical = {name:metadata(Path('/')/name) for name in CRITICAL}
-    if any(v is None for v in critical.values()) or baseline_system[GUARD] is None: raise ValueError('Missing boot dependency')
+    if any(v is None for v in critical.values()) or baseline_system[GUARD] is None or any(baseline_system[name] is None for name in rel.get('system_files',{})): raise ValueError('Missing boot dependency')
     metal = tree(Path('/')/METAL)
+    if rel['guard'] == 'live-669' and any(metal.get(name) != digest for name, digest in rel['metal'].items()):
+        raise ValueError('The live Metal bundle is not the one the live guard expects (bundle %s)' % rel['metal_version'])
     output.mkdir(parents=True)
     (output/'evidence').mkdir()
     shutil.copyfile(candidate/'manifest.json',output/'evidence/build-manifest.json')
@@ -482,7 +602,8 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
         (efi_out/name).write_bytes(data)
     (efi_out/'OC/config.plist').write_bytes(plistlib.dumps(expected_config(config, rel), sort_keys=False))
     verifier = ROOT/'research/ext/navi44-baremetal-stage1-candidate-20261027/tools/ocvalidate'
-    subprocess.run([str(verifier), str(efi_out/'OC/config.plist')], check=True)
+    if not deferred:   # the validator is a research-tree executable: a deferred release leaves it to the installer (DEFERRED_CHECKS)
+        subprocess.run([str(verifier), str(efi_out/'OC/config.plist')], check=True)
     target = output/'system'/PROBE; target.parent.mkdir(parents=True)
     probe_source = ROOT/'tools/baremetal/navi44-gpu-diagnostics/context-isolation-probe.cpp'
     command = ['clang++','-std=c++17','-O2','-Wall','-Wextra','-Werror','-I',str(source/'src'),str(probe_source),'-framework','IOKit','-framework','CoreFoundation','-o',str(target)]
@@ -498,8 +619,20 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
         target.write_bytes(reviewed); target.chmod(0o755)
         probe_reuse_record = {'reviewed_sha256': rel['probe_reuse'], 'reviewed_from': str(reviewed_source),
                               'checked': 'identical to a fresh build of the probe source except LC_UUID'}
-    with (output/'evidence/probe-self-test.log').open('w') as log:
-        subprocess.run([str(target),'--self-test'],stdout=log,stderr=subprocess.STDOUT,check=True)
+    if deferred:   # not executed: the probe is a research-tree executable; its evidence is the recorded log of the identical reused binary
+        recorded_log = baseline_payload/'evidence/probe-self-test.log'
+        if sha(recorded_log) != rel['self_test_log_sha'] or sha(target) != rel['probe_reuse']:
+            raise ValueError('The recorded probe self-test is not the log of the reviewed probe')
+        shutil.copyfile(recorded_log, output/'evidence/probe-self-test.log')
+    else:
+        with (output/'evidence/probe-self-test.log').open('w') as log:
+            subprocess.run([str(target),'--self-test'],stdout=log,stderr=subprocess.STDOUT,check=True)
+    for name, digest in rel.get('system_files',{}).items():   # the reviewed system files of the release (navi48test): copied, never built
+        source_file = SYSTEM_SOURCES[name]
+        if source_file.is_symlink() or sha(source_file) != digest: raise ValueError('Not the reviewed file: '+name)
+        target_file = output/'system'/name
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        target_file.write_bytes(source_file.read_bytes()); target_file.chmod(0o755)
     guard = output/'system'/GUARD
     if rel['metal'] and ('"$bundle_version" == %s ' % rel['metal_version']) not in original_guard:
         raise ValueError('Live guard does not expect Metal bundle %s' % rel['metal_version'])
@@ -521,6 +654,7 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
          'candidate_kernel_sha256':rel['kernel_sha'],'probe_build_command':command,'probe_reuse':probe_reuse_record,
          'probe_source_sha256':sha(probe_source),'preparer_sha256':sha(Path(__file__)),
          'hardware_validation':'not performed','installation':'not performed'}
+    if deferred: m['deferred_checks'] = {**DEFERRED_CHECKS, 'probe_self_test_log_sha256': rel['self_test_log_sha']}
     (output/'manifest.json').write_text(json.dumps(m,indent=2,sort_keys=True)+'\n')
     verify(output, live=live)
     return m

@@ -1,0 +1,634 @@
+diff -ruN a/Info.plist b/Info.plist
+--- a/Info.plist	2026-10-27 07:40:11
++++ b/Info.plist	2026-11-01 10:41:33
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>0.0.8</string>
++	<string>0.0.9</string>
+ 	<key>CFBundleVersion</key>
+-	<string>0.0.8</string>
++	<string>0.0.9</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>OSBundleRequired</key>
+diff -ruN a/Makefile b/Makefile
+--- a/Makefile	2026-10-27 07:40:11
++++ b/Makefile	2026-11-01 10:41:34
+@@ -9,7 +9,7 @@
+ 
+ PRODUCT      := RDNA4FB
+ BUNDLE_ID    := com.hackintosh.RDNA4FB
+-VERSION      := 0.0.8
++VERSION      := 0.0.9
+ 
+ ARCH         := x86_64
+ DEPLOY       := 11.0
+diff -ruN a/src/framebuffer.cpp b/src/framebuffer.cpp
+--- a/src/framebuffer.cpp	2026-10-27 18:54:25
++++ b/src/framebuffer.cpp	2026-11-01 10:41:18
+@@ -7,6 +7,7 @@
+ #include "edid.hpp"
+ #include "dmub.hpp"
+ #include "vbl_period.h"
++#include "refresh_pure.h"
+ #include <IOKit/IOLib.h>
+ #include <IOKit/IODeviceMemory.h>
+ #include <IOKit/pwr_mgt/IOPM.h>
+@@ -1508,8 +1509,11 @@
+ 		}
+ 		vblProc(vblTarget, vblRef);
+ 	}
+-	if (sender && vblEnabled)
++	if (sender && vblEnabled) {
++		// Re-read the active refresh each tick: a change of Navi48,RefreshHz takes effect within one period.
++		vblPeriodUS = rdna4fb_refresh::vbl_period_us(activeRefreshHz());
+ 		sender->setTimeoutUS(vblPeriodUS);
++	}
+ }
+ 
+ IOReturn RDNA4FB::registerForInterruptType(IOSelect interruptType,
+@@ -1530,7 +1534,7 @@
+ 	uint32_t period = 0;
+ 	if (getCurrentDisplayMode(&mode, &depth) == kIOReturnSuccess &&
+ 	    getInformationForDisplayMode(mode, &info) == kIOReturnSuccess)
+-		period = rdna4_vbl_period_from_fixed(info.refreshRate);
++		period = rdna4fb_refresh::vbl_period_us(activeRefreshHz());   // the active refresh, as info.refreshRate
+ 	if (period) {
+ 		vblPeriodUS = period;
+ 		FBLOG("vbl: using advertised current mode 0x%x refresh 16.16=0x%x", mode, info.refreshRate);
+@@ -1587,8 +1591,10 @@
+ 	bool enable = (state == kEnabledInterruptState);
+ 	if (enable != vblEnabled)
+ 		FBLOG("vbl: interrupt state %s", enable ? "enabled" : "disabled");
+-	if (enable && !vblEnabled && vblTimer)
++	if (enable && !vblEnabled && vblTimer) {
++		vblPeriodUS = rdna4fb_refresh::vbl_period_us(activeRefreshHz());   // the refresh may have changed while disabled
+ 		vblTimer->setTimeoutUS(vblPeriodUS);
++	}
+ 	if (!enable && vblTimer)
+ 		vblTimer->cancelTimeout();
+ 	vblEnabled = enable;
+@@ -2166,7 +2172,7 @@
+ 
+ 	// Patch 0005: IOFBTimingRange must be on the entry before registerService (inside super::start).
+ 	if ((vd >> 16) == 0x7590)
+-		publishTimingRange();
++		publishTimingRange(activeRefreshHz());
+ 
+ 	if (!super::start(provider)) {
+ 		FBLOG("start: super::start failed");
+@@ -2277,12 +2283,27 @@
+ 	return kIOReturnSuccess;
+ }
+ 
+-// Refresh of the one exposed mode. Navi 44 (0x7590): the GOP leaves the scanout at 2560x1440 @ 120 Hz (the SINK-A CTA
+-// timing of research/display/gop_vm_readout_plan.md section 9), so the mode declares 120 Hz there. Navi 48 keeps 60 Hz.
+-static uint32_t rdna4_refresh_hz(IOPCIDevice *pci) {
+-	if (pci && (pci->configRead32(kIOPCIConfigVendorID) >> 16) == 0x7590)
+-		return 120;
+-	return 60;
++// Active refresh of the one exposed mode (refresh_pure.h). Navi 44 (0x7590) declares 120 Hz: the GOP leaves the scanout at
++// 2560x1440 @ 120 Hz (the SINK-A CTA timing of research/display/gop_vm_readout_plan.md section 9). The kernel side sets
++// Navi48,RefreshHz to 60 for the 60 Hz scanout and back to 120 on restore; the property is read on every call. Navi 48
++// keeps 60 Hz. The first call and each change log one line; on Navi 44 a change re-publishes IOFBTimingRange.
++uint32_t RDNA4FB::activeRefreshHz() {
++	const uint32_t devid = pciDevice ? (pciDevice->configRead32(kIOPCIConfigVendorID) >> 16) : 0;
++	OSNumber *prop = pciDevice ? OSDynamicCast(OSNumber, pciDevice->getProperty("Navi48,RefreshHz")) : nullptr;
++	const bool present = prop != nullptr;
++	const uint64_t value = present ? prop->unsigned64BitValue() : 0;
++	const uint32_t hz = rdna4fb_refresh::active_hz(present, value, devid);
++	if (hz != activeHz) {
++		const bool first = (activeHz == 0);
++		activeHz = hz;
++		if (present)
++			FBLOG("refresh: active %u Hz (Navi48,RefreshHz=%llu)", hz, (unsigned long long)value);
++		else
++			FBLOG("refresh: active %u Hz (Navi48,RefreshHz absent)", hz);
++		if (!first && devid == rdna4fb_refresh::kNavi44DeviceId)
++			publishTimingRange(hz);
++	}
++	return hz;
+ }
+ 
+ IOReturn RDNA4FB::getInformationForDisplayMode(IODisplayModeID displayMode,
+@@ -2293,7 +2314,7 @@
+ 	bzero(info, sizeof(*info));
+ 	info->nominalWidth  = fbWidth;
+ 	info->nominalHeight = fbHeight;
+-	info->refreshRate   = rdna4_refresh_hz(pciDevice) << 16;   // Hz in 16.16 fixed point (60 Navi 48, 120 Navi 44)
++	info->refreshRate   = activeRefreshHz() << 16;   // Hz in 16.16 fixed point (60 Navi 48; 120 Navi 44, or 60 with Navi48,RefreshHz = 60)
+ 	info->maxDepthIndex = 0;
+ 	info->flags = kDisplayModeValidFlag | kDisplayModeSafeFlag | kDisplayModeDefaultFlag;
+ 	return kIOReturnSuccess;
+@@ -2410,15 +2431,17 @@
+ 	bzero(&v, sizeof(v));
+ 	// SINK-A 2560x1440@120 (cobalt64/src/dcn41/dcn41_modes_navi44.h): H 2560 + 160 blanking (front 48, sync 32),
+ 	// V 1440 + 85 (front 3, sync 10), +H -V. minPixelClock = maxPixelClock = 0 keeps IOFramebuffer's VBL throttle off.
+-	v.pixelClock               = 497750000ull;     // Hz
+-	v.horizontalActive         = 2560;
+-	v.horizontalBlanking       = 160;
+-	v.horizontalSyncOffset     = 48;
+-	v.horizontalSyncPulseWidth = 32;
+-	v.verticalActive           = 1440;
+-	v.verticalBlanking         = 85;
+-	v.verticalSyncOffset       = 3;
+-	v.verticalSyncPulseWidth   = 10;
++	// At 60 Hz (Navi48,RefreshHz = 60) the clock and H timing are the same; V blanking is 1610 (V total 3050).
++	const rdna4fb_refresh::ScanoutTiming t = rdna4fb_refresh::scanout_timing_for_hz(activeRefreshHz());
++	v.pixelClock               = t.pixelClockHz;   // Hz
++	v.horizontalActive         = t.hActive;
++	v.horizontalBlanking       = t.hBlanking;
++	v.horizontalSyncOffset     = t.hSyncOffset;
++	v.horizontalSyncPulseWidth = t.hSyncPulse;
++	v.verticalActive           = t.vActive;
++	v.verticalBlanking         = t.vBlanking;
++	v.verticalSyncOffset       = t.vSyncOffset;
++	v.verticalSyncPulseWidth   = t.vSyncPulse;
+ 	v.horizontalSyncConfig     = kIOSyncPositivePolarity;
+ 	v.verticalSyncConfig       = 0;                // negative polarity
+ 	return kIOReturnSuccess;
+@@ -2439,20 +2462,28 @@
+ // Only the GOP timing is accepted. Nothing is programmed: the scanout stays the GOP's.
+ 
+ // The timing the GOP leaves on the SINK-A panel (the numbers of getTimingInfoForDisplayMode above): 2560x1440 with
+-// clock 497.75 MHz, which is 120.0 Hz. The clock is compared with a 0.1 % tolerance, the rest exactly.
+-static bool rdna4_is_gop_timing(const IODetailedTimingInformationV2 &v) {
+-	const uint64_t want = 497750000ull;
++// clock 497.75 MHz, which is 120.0 Hz; at 60 Hz the same with V blanking 1610. hz selects the variant. The clock is
++// compared with a 0.1 % tolerance, the rest exactly.
++static bool rdna4_is_gop_timing(const IODetailedTimingInformationV2 &v, uint32_t hz) {
++	const rdna4fb_refresh::ScanoutTiming t = rdna4fb_refresh::scanout_timing_for_hz(hz);
++	const uint64_t want = t.pixelClockHz;
+ 	const uint64_t tol  = want / 1000ull;
+ 	const uint64_t clk  = v.pixelClock;
+ 	const bool clockOk  = (clk + tol >= want) && (clk <= want + tol);
+ 	return clockOk
+-	    && v.horizontalActive == 2560 && v.horizontalBlanking == 160
+-	    && v.horizontalSyncOffset == 48 && v.horizontalSyncPulseWidth == 32
+-	    && v.verticalActive == 1440 && v.verticalBlanking == 85
+-	    && v.verticalSyncOffset == 3 && v.verticalSyncPulseWidth == 10
++	    && v.horizontalActive == t.hActive && v.horizontalBlanking == t.hBlanking
++	    && v.horizontalSyncOffset == t.hSyncOffset && v.horizontalSyncPulseWidth == t.hSyncPulse
++	    && v.verticalActive == t.vActive && v.verticalBlanking == t.vBlanking
++	    && v.verticalSyncOffset == t.vSyncOffset && v.verticalSyncPulseWidth == t.vSyncPulse
+ 	    && v.horizontalSyncConfig == kIOSyncPositivePolarity && v.verticalSyncConfig == 0;
+ }
+ 
++// Either refresh's GOP timing: the session pruning removes both, so a stale timing of the other refresh is not kept.
++static bool rdna4_is_any_gop_timing(const IODetailedTimingInformationV2 &v) {
++	return rdna4_is_gop_timing(v, rdna4fb_refresh::kRefreshLowHz) ||
++	       rdna4_is_gop_timing(v, rdna4fb_refresh::kRefreshHighHz);
++}
++
+ // Patch 0004 (Navi 44 only). IOFramebuffer::open() publishes IOFBIntegrated = Yes when the PCI device of the controller
+ // is on bus 0 (IOFramebuffer.cpp:1379 computes fIntegrated = getBusNumber() == 0; :9031 sets the property in open()). In
+ // this VM the GPU is on the root bus 0, so the flag is set; a discrete card on a real bus is not integrated. Nothing in
+@@ -2506,7 +2537,8 @@
+ 		return kIOReturnBadArgument;
+ 	}
+ 
+-	if (!rdna4_is_gop_timing(*timing)) {
++	const uint32_t hz = activeRefreshHz();
++	if (!rdna4_is_gop_timing(*timing, hz)) {
+ 		// Log the 2560x1440 candidates (the 120 Hz one is the open question): bounded, patch 0006.
+ 		if (validateRefuseLogs < 16 && timing->horizontalActive == 2560 && timing->verticalActive == 1440) {
+ 			validateRefuseLogs++;
+@@ -2524,11 +2556,11 @@
+ 	// One link: CheckTimingWithRange rejects numLinks 2 against maxNumLinks (coredisplay_re.md section 7.2). The preflight
+ 	// output is copied back only after that check, so the descriptor's numLinks is set here for IOFBInstallMode as well.
+ 	timing->numLinks = 0;
+-	timing->pixelClock = 497750000ull;   // canonical clock (the candidate was within 0.1 %)
++	timing->pixelClock = rdna4fb_refresh::kPixelClockHz;   // canonical clock (the candidate was within 0.1 %)
+ 	if (desc) {
+ 		desc->info.nominalWidth  = 2560;
+ 		desc->info.nominalHeight = 1440;
+-		desc->info.refreshRate   = 120 << 16;   // 16.16 fixed point, as getInformationForDisplayMode
++		desc->info.refreshRate   = hz << 16;   // 16.16 fixed point, as getInformationForDisplayMode
+ 		desc->info.maxDepthIndex = 0;
+ 		desc->info.flags         = kDisplayModeValidFlag | kDisplayModeSafeFlag;
+ 	}
+@@ -2548,6 +2580,7 @@
+ 	aliasModeCount = 0;
+ 	if (!array)
+ 		return kIOReturnSuccess;
++	const uint32_t hz = activeRefreshHz();
+ 	const unsigned count = array->getCount();
+ 	for (unsigned i = 0; i < count; i++) {
+ 		OSData *data = OSDynamicCast(OSData, array->getObject(i));
+@@ -2556,7 +2589,7 @@
+ 		const IODetailedTimingInformationV2 *t =
+ 		    static_cast<const IODetailedTimingInformationV2 *>(data->getBytesNoCopy());
+ 		const IODisplayModeID id = (IODisplayModeID)t->__reservedA[0];   // detailedTimingModeID
+-		if (!rdna4_is_gop_timing(*t) || id == 0 || id == kRDNA4DisplayModeID ||
++		if (!rdna4_is_gop_timing(*t, hz) || id == 0 || id == kRDNA4DisplayModeID ||
+ 		    aliasModeCount >= kRDNA4MaxAliasModes)
+ 			continue;
+ 		aliasModes[aliasModeCount++] = id;
+@@ -2609,7 +2642,7 @@
+ 
+ // The defaults: the GOP timing only. maxNumLinks 0 = one link (IODisplayTimingRangeV2 header comment), which
+ // CheckTimingWithRange reads as "no dual-link limit" (coredisplay_re.md section 7.2).
+-static void rdna4_default_timing_range(IODisplayTimingRangeV2 *r) {
++static void rdna4_default_timing_range(IODisplayTimingRangeV2 *r, uint32_t hz) {
+ 	bzero(r, sizeof(*r));
+ 	r->version = kIOTimingRangeV2;
+ 
+@@ -2626,11 +2659,13 @@
+ 	r->supportedSignalLevels = 0;
+ 	r->supportedSignalConfigs = 0;
+ 
+-	// Rates and totals of the GOP timing: 2720 x 1525 at 497.75 MHz = 120.0 Hz, line rate 183.0 kHz.
+-	r->minFrameRate = 119;      r->maxFrameRate = 121;
++	// Rates and totals of the timing: 2720 x V total at 497.75 MHz, line rate 183.0 kHz. V total 1525 = 120.0 Hz (the
++	// GOP timing); 3050 = 60.0 Hz (Navi48,RefreshHz = 60). Frame rate +/- 1 Hz around the active refresh.
++	const rdna4fb_refresh::RangeValues rv = rdna4fb_refresh::range_for_hz(hz);
++	r->minFrameRate = rv.minFrameRate;      r->maxFrameRate = rv.maxFrameRate;
+ 	r->minLineRate = 182800;    r->maxLineRate = 183200;
+ 	r->maxHorizontalTotal = 2720;
+-	r->maxVerticalTotal = 1525;
++	r->maxVerticalTotal = rv.maxVerticalTotal;
+ 
+ 	// Granularity: every count is a multiple of 1 (a 0 divisor would fail the range check).
+ 	r->charSizeHorizontalActive = 1;     r->charSizeHorizontalBlanking = 1;
+@@ -2641,13 +2676,14 @@
+ 	r->charSizeVerticalBorderTop = 1;    r->charSizeVerticalBorderBottom = 1;
+ 	r->charSizeHorizontalTotal = 1;      r->charSizeVerticalTotal = 1;
+ 
+-	// Min = max: only the GOP timing (H 2560 + 160, sync 48/32; V 1440 + 85, sync 3/10). No borders.
++	// Min = max: only the timing of the active refresh (H 2560 + 160, sync 48/32; V 1440 + 85 at 120 Hz or + 1610 at 60 Hz,
++	// sync 3/10). No borders.
+ 	r->minHorizontalActiveClocks = 2560;      r->maxHorizontalActiveClocks = 2560;
+ 	r->minHorizontalBlankingClocks = 160;     r->maxHorizontalBlankingClocks = 160;
+ 	r->minHorizontalSyncOffsetClocks = 48;    r->maxHorizontalSyncOffsetClocks = 48;
+ 	r->minHorizontalPulseWidthClocks = 32;    r->maxHorizontalPulseWidthClocks = 32;
+ 	r->minVerticalActiveClocks = 1440;        r->maxVerticalActiveClocks = 1440;
+-	r->minVerticalBlankingClocks = 85;        r->maxVerticalBlankingClocks = 85;
++	r->minVerticalBlankingClocks = rv.minVerticalBlanking;  r->maxVerticalBlankingClocks = rv.maxVerticalBlanking;
+ 	r->minVerticalSyncOffsetClocks = 3;       r->maxVerticalSyncOffsetClocks = 3;
+ 	r->minVerticalPulseWidthClocks = 10;      r->maxVerticalPulseWidthClocks = 10;
+ 
+@@ -2765,7 +2801,7 @@
+ 	return true;
+ }
+ 
+-void RDNA4FB::publishTimingRange() {
++void RDNA4FB::publishTimingRange(uint32_t hz) {
+ 	static_assert(sizeof(IODisplayTimingRangeV2) == 0x138, "IOFBTimingRange is the 0x138-byte V2 range");
+ 
+ 	if (rdna4_prop_flag(pciDevice, "rdna4fb-tr-disable")) {
+@@ -2774,7 +2810,7 @@
+ 	}
+ 
+ 	IODisplayTimingRangeV2 r;
+-	rdna4_default_timing_range(&r);
++	rdna4_default_timing_range(&r, hz);
+ 	const char *source = "default";
+ 	if (rdna4_tr_blob(pciDevice, &r)) {
+ 		source = "blob";
+@@ -2827,7 +2863,8 @@
+ //   newUserClient()  starts one: a successful server connection (kIOFBServerConnectType, IOFramebuffer.cpp:4013-4020)
+ //                    is the next WindowServer session.
+ // Only what this driver installed is removed: IOFBModes entries whose id is in the reserved range (0x80000000..0xFFFFFEFF:
+-// the CoreDisplay-generated and alias ids), and IOFBDetailedTimings entries that are the GOP timing. The mode-1 entries
++// the CoreDisplay-generated and alias ids), and IOFBDetailedTimings entries that are the GOP timing of either refresh
++// (60 or 120 Hz), so a stale timing of the other refresh does not survive a session. The mode-1 entries
+ // (getConfigMode(1, DM) feeds uiScale, IOFramebuffer.cpp:10709) and every other key stay: the user's settings survive.
+ // The driver's alias list is emptied at session end (close) only: a newUserClient is not a session boundary for live state, since
+ // matchFramebuffer may have installed an alias between two sessions. Every pruning is logged.
+@@ -2872,7 +2909,7 @@
+ 				OSObject *entry = timings->getObject(i);
+ 				OSData *data = OSDynamicCast(OSData, entry);
+ 				if (data && data->getLength() == sizeof(IODetailedTimingInformationV2) &&
+-				    rdna4_is_gop_timing(*static_cast<const IODetailedTimingInformationV2 *>(data->getBytesNoCopy()))) {
++				    rdna4_is_any_gop_timing(*static_cast<const IODetailedTimingInformationV2 *>(data->getBytesNoCopy()))) {
+ 					timingsRemoved++;
+ 					continue;
+ 				}
+diff -ruN a/src/framebuffer.hpp b/src/framebuffer.hpp
+--- a/src/framebuffer.hpp	2026-10-27 11:46:28
++++ b/src/framebuffer.hpp	2026-11-01 10:41:25
+@@ -277,6 +277,7 @@
+ 	void              *vblRef    { nullptr };
+ 	IOTimerEventSource *vblTimer { nullptr };
+ 	uint32_t           vblPeriodUS { 16667 };  // refined from advertised mode or EDID fallback
++	uint32_t           activeHz { 0 };         // last active refresh seen (0 = none yet), see activeRefreshHz()
+ 	bool               vblEnabled { false };
+ 	uint32_t           vblFireCount { 0 };  // bounded diagnostics
+ 	void fireVBL(IOTimerEventSource *sender);
+@@ -290,7 +291,8 @@
+ 	uint8_t            validateAcceptLogs { 0 };   // patch 0006: bounded log of accepted GOP timings
+ 	uint8_t            validateRefuseLogs { 0 };   // patch 0006: bounded log of refused 2560x1440 candidates
+ 	bool ownsDisplayMode(IODisplayModeID displayMode) const;
+-	void publishTimingRange();               // patch 0005: IOFBTimingRange (Navi 44 only)
++	uint32_t activeRefreshHz();              // 60 or 120 Hz, from Navi48,RefreshHz (refresh_pure.h); logs and re-publishes on change
++	void publishTimingRange(uint32_t hz);    // patch 0005: IOFBTimingRange for refresh hz (Navi 44 only)
+ 	void pruneSessionConfig(const char *where, bool clearAliases);   // patch 0007: drop what this driver installed from IOFBConfig
+ 
+ public:
+diff -ruN a/src/kmod_info.c b/src/kmod_info.c
+--- a/src/kmod_info.c	2026-10-21 19:21:50
++++ b/src/kmod_info.c	2026-11-01 10:41:35
+@@ -33,7 +33,7 @@
+ 	return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.8", _start, _stop)
++KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.9", _start, _stop)
+ 
+ __private_extern__ kmod_start_func_t *_realmain = rdna4_kmod_start;
+ __private_extern__ kmod_stop_func_t  *_antimain = rdna4_kmod_stop;
+diff -ruN a/src/refresh_pure.h b/src/refresh_pure.h
+--- a/src/refresh_pure.h	1970-01-01 01:00:00
++++ b/src/refresh_pure.h	2026-11-01 10:40:07
+@@ -0,0 +1,93 @@
++//
++//  refresh_pure.h
++//  RDNA4FB
++//
++//  Pure helpers for the refresh of the one exposed mode: 60 Hz or 120 Hz on Navi 44 (0x7590).
++//  No kernel headers: tests/test_refresh_pure.cpp compiles this file on the host.
++//
++//  The refresh is the IORegistry property "Navi48,RefreshHz" on the PCI nub, an OSNumber written by
++//  the kernel side: 60 for the 60 Hz scanout, 120 on restore. Absent, or any other value, gives the
++//  0.0.8 default. Only Navi 44 honours the property: its 2560x1440 timing path is the only one that
++//  depends on the refresh.
++//
++//  Scanout timing (Navi 44): the pixel clock (497.75 MHz) and the horizontal timing (2560 + 160) are
++//  the same at both refreshes. Only the vertical blanking differs: 85 lines at 120 Hz (V total 1525,
++//  119.998 Hz) and 1610 lines at 60 Hz (V total 3050, 59.999 Hz). The sync position (3 + 10) is the same.
++//
++
++#pragma once
++
++#include <stdint.h>
++#include "vbl_period.h"
++
++namespace rdna4fb_refresh {
++
++constexpr uint32_t kNavi44DeviceId = 0x7590u;   // RX 9060 XT
++constexpr uint32_t kRefreshLowHz   = 60u;       // the value that selects the 60 Hz timing on Navi 44
++constexpr uint32_t kRefreshHighHz  = 120u;      // the 0.0.8 Navi 44 default
++
++// The 0.0.8 default for a PCI device id: 120 Hz on Navi 44, 60 Hz otherwise.
++constexpr uint32_t default_hz(uint32_t deviceId) {
++    return deviceId == kNavi44DeviceId ? kRefreshHighHz : kRefreshLowHz;
++}
++
++// Active refresh in Hz. present: the property exists and is an OSNumber. value: its unsigned 64-bit
++// value. On Navi 44 exactly 60 gives 60 and exactly 120 gives 120; everything else gives the default.
++// A 64-bit value that only truncates to 60 or 120 (such as 2^32 + 60) is junk.
++constexpr uint32_t active_hz(bool present, uint64_t value, uint32_t deviceId) {
++    return (present && deviceId == kNavi44DeviceId && value == kRefreshLowHz)  ? kRefreshLowHz
++         : (present && deviceId == kNavi44DeviceId && value == kRefreshHighHz) ? kRefreshHighHz
++         : default_hz(deviceId);
++}
++
++// VBL emulation period in microseconds, with the 0.0.8 rounding (rdna4_vbl_period_from_fixed).
++// 60 Hz: 16667 us. 120 Hz: 8333 us.
++inline unsigned int vbl_period_us(uint32_t hz) {
++    return rdna4_vbl_period_from_fixed(hz << 16);
++}
++
++// Vertical timing of the Navi 44 mode. The active lines and the sync position are the same at both refreshes.
++constexpr uint32_t kVActiveLines = 1440u;
++constexpr uint32_t kVSyncOffset  = 3u;
++constexpr uint32_t kVSyncPulse   = 10u;
++
++constexpr uint32_t v_blanking_for_hz(uint32_t hz) {
++    return hz == kRefreshLowHz ? 1610u : 85u;
++}
++
++constexpr uint32_t v_total_for_hz(uint32_t hz) {
++    return kVActiveLines + v_blanking_for_hz(hz);
++}
++
++// Scanout timing of the custom Navi 44 mode (the detailed timing, the GOP check and the timing range).
++struct ScanoutTiming {
++    uint32_t pixelClockHz;
++    uint32_t hActive, hBlanking, hSyncOffset, hSyncPulse;
++    uint32_t vActive, vBlanking, vSyncOffset, vSyncPulse;
++};
++
++constexpr uint32_t kPixelClockHz = 497750000u;   // 497.75 MHz at both refreshes
++
++constexpr ScanoutTiming scanout_timing_for_hz(uint32_t hz) {
++    return ScanoutTiming{kPixelClockHz, 2560u, 160u, 48u, 32u,
++                         kVActiveLines, v_blanking_for_hz(hz), kVSyncOffset, kVSyncPulse};
++}
++
++// The vertical blanking of a GOP-family timing: the session pruning accepts the timing of either refresh.
++constexpr bool is_gop_vertical_blanking(uint32_t vBlanking) {
++    return vBlanking == v_blanking_for_hz(kRefreshHighHz) || vBlanking == v_blanking_for_hz(kRefreshLowHz);
++}
++
++// The programmable timing range (IODisplayTimingRangeV2): frame rate +/- 1 Hz around the refresh, and the
++// vertical total and blanking of the one timing.
++struct RangeValues {
++    uint32_t minFrameRate, maxFrameRate;
++    uint32_t maxVerticalTotal;
++    uint32_t minVerticalBlanking, maxVerticalBlanking;
++};
++
++constexpr RangeValues range_for_hz(uint32_t hz) {
++    return RangeValues{hz - 1u, hz + 1u, v_total_for_hz(hz), v_blanking_for_hz(hz), v_blanking_for_hz(hz)};
++}
++
++}  // namespace rdna4fb_refresh
+diff -ruN a/tests/test_refresh_pure.cpp b/tests/test_refresh_pure.cpp
+--- a/tests/test_refresh_pure.cpp	1970-01-01 01:00:00
++++ b/tests/test_refresh_pure.cpp	2026-11-01 10:40:22
+@@ -0,0 +1,192 @@
++//
++//  test_refresh_pure.cpp
++//  RDNA4FB
++//
++//  Host test of src/refresh_pure.h (plain asserts, no kernel headers). Build and run on the Mac:
++//    clang++ -std=c++17 -Wall -Wextra -Werror -I src tests/test_refresh_pure.cpp -o <dir>/test_refresh_pure
++//    <dir>/test_refresh_pure
++//  Exit status 0 when every check passes.
++//
++
++#include "refresh_pure.h"
++
++#include <cstdint>
++#include <cstdio>
++
++namespace R = rdna4fb_refresh;
++
++static int g_checks = 0;
++static int g_failures = 0;
++
++#define CHECK(cond)                                                                  \
++    do {                                                                             \
++        ++g_checks;                                                                  \
++        if (!(cond)) {                                                               \
++            ++g_failures;                                                            \
++            std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond);              \
++        }                                                                            \
++    } while (0)
++
++#define CHECK_EQ(actual, expected)                                                   \
++    do {                                                                             \
++        ++g_checks;                                                                  \
++        const unsigned long long got_ = static_cast<unsigned long long>(actual);     \
++        const unsigned long long want_ = static_cast<unsigned long long>(expected);  \
++        if (got_ != want_) {                                                         \
++            ++g_failures;                                                            \
++            std::printf("FAIL %s:%d: %s = %llu, want %llu\n", __FILE__, __LINE__,    \
++                        #actual, got_, want_);                                       \
++        }                                                                            \
++    } while (0)
++
++// Property selection: absent, 60, 120, junk. Navi 44 is 0x7590, Navi 48 is 0x7550 and R9700 is 0x7551.
++static void test_property_selection() {
++    CHECK_EQ(R::default_hz(0x7590), 120);
++    CHECK_EQ(R::default_hz(0x7550), 60);
++    CHECK_EQ(R::default_hz(0x7551), 60);
++    CHECK_EQ(R::default_hz(0), 60);
++
++    // Absent: the 0.0.8 default, whatever the value that is passed with it.
++    CHECK_EQ(R::active_hz(false, 0, 0x7590), 120);
++    CHECK_EQ(R::active_hz(false, 60, 0x7590), 120);
++    CHECK_EQ(R::active_hz(false, 0, 0x7550), 60);
++    CHECK_EQ(R::active_hz(false, 0, 0x7551), 60);
++
++    // Navi 44: exactly 60 selects 60, exactly 120 selects 120.
++    CHECK_EQ(R::active_hz(true, 60, 0x7590), 60);
++    CHECK_EQ(R::active_hz(true, 120, 0x7590), 120);
++
++    // Junk on Navi 44: the default. Includes values that only truncate to 60 or 120 in 32 bits.
++    const uint64_t junk[] = {0, 1, 59, 61, 90, 119, 121, 240, 0xFFFFFFFFull,
++                             (1ull << 32) | 60ull, (1ull << 32) | 120ull, 1ull << 63, ~0ull};
++    for (uint64_t v : junk) {
++        CHECK_EQ(R::active_hz(true, v, 0x7590), 120);
++        CHECK_EQ(R::active_hz(true, v, 0x7550), 60);
++    }
++}
++
++// Navi 48 and R9700 keep 60 Hz whatever the property says: the custom timing path is Navi 44 only.
++static void test_navi48_ignores_property() {
++    CHECK_EQ(R::active_hz(true, 60, 0x7550), 60);
++    CHECK_EQ(R::active_hz(true, 120, 0x7550), 60);
++    CHECK_EQ(R::active_hz(true, 120, 0x7551), 60);
++    CHECK_EQ(R::active_hz(true, 60, 0x7551), 60);
++}
++
++static void test_vbl_period() {
++    CHECK_EQ(R::vbl_period_us(60), 16667);
++    CHECK_EQ(R::vbl_period_us(120), 8333);
++    // Same rounding as the 0.0.8 advertised-mode path (refresh in 16.16 fixed point).
++    CHECK_EQ(rdna4_vbl_period_from_fixed(60u << 16), 16667);
++    CHECK_EQ(rdna4_vbl_period_from_fixed(120u << 16), 8333);
++    // Absent property on Navi 44: the 0.0.8 period. Property 60: 16667 us.
++    CHECK_EQ(R::vbl_period_us(R::active_hz(false, 0, 0x7590)), 8333);
++    CHECK_EQ(R::vbl_period_us(R::active_hz(true, 60, 0x7590)), 16667);
++}
++
++static void test_vertical_totals() {
++    CHECK_EQ(R::v_blanking_for_hz(60), 1610);
++    CHECK_EQ(R::v_blanking_for_hz(120), 85);
++    CHECK_EQ(R::v_total_for_hz(60), 3050);
++    CHECK_EQ(R::v_total_for_hz(120), 1525);
++    CHECK_EQ(R::v_total_for_hz(R::active_hz(false, 0, 0x7590)), 1525);
++    CHECK_EQ(R::v_total_for_hz(R::active_hz(true, 60, 0x7590)), 3050);
++    CHECK(R::is_gop_vertical_blanking(85));
++    CHECK(R::is_gop_vertical_blanking(1610));
++    CHECK(!R::is_gop_vertical_blanking(84));
++    CHECK(!R::is_gop_vertical_blanking(86));
++    CHECK(!R::is_gop_vertical_blanking(1525));
++}
++
++// The 60 Hz variant keeps the pixel clock and the horizontal timing; only V blanking changes.
++static void test_scanout_timing() {
++    const R::ScanoutTiming t120 = R::scanout_timing_for_hz(120);
++    const R::ScanoutTiming t60 = R::scanout_timing_for_hz(60);
++
++    // The 0.0.8 120 Hz timing.
++    CHECK_EQ(t120.pixelClockHz, 497750000);
++    CHECK_EQ(t120.hActive, 2560);
++    CHECK_EQ(t120.hBlanking, 160);
++    CHECK_EQ(t120.hSyncOffset, 48);
++    CHECK_EQ(t120.hSyncPulse, 32);
++    CHECK_EQ(t120.vActive, 1440);
++    CHECK_EQ(t120.vBlanking, 85);
++    CHECK_EQ(t120.vSyncOffset, 3);
++    CHECK_EQ(t120.vSyncPulse, 10);
++
++    // The 60 Hz variant: same clock, same H timing, same V active and sync. Only V blanking differs.
++    CHECK_EQ(t60.pixelClockHz, t120.pixelClockHz);
++    CHECK_EQ(t60.hActive, t120.hActive);
++    CHECK_EQ(t60.hBlanking, t120.hBlanking);
++    CHECK_EQ(t60.hSyncOffset, t120.hSyncOffset);
++    CHECK_EQ(t60.hSyncPulse, t120.hSyncPulse);
++    CHECK_EQ(t60.vActive, t120.vActive);
++    CHECK_EQ(t60.vSyncOffset, t120.vSyncOffset);
++    CHECK_EQ(t60.vSyncPulse, t120.vSyncPulse);
++    CHECK_EQ(t60.vBlanking, 1610);
++    CHECK_EQ(t60.vActive + t60.vBlanking, 3050);
++    CHECK_EQ(t120.vActive + t120.vBlanking, 1525);
++
++    // The refresh each total gives, from the clock and the totals (integer arithmetic, milli-Hz).
++    const uint64_t hTotal = static_cast<uint64_t>(t60.hActive) + t60.hBlanking;   // 2720 at both refreshes
++    const uint64_t milliHz60 =
++        static_cast<uint64_t>(t60.pixelClockHz) * 1000ull / (hTotal * (t60.vActive + t60.vBlanking));
++    const uint64_t milliHz120 =
++        static_cast<uint64_t>(t120.pixelClockHz) * 1000ull / (hTotal * (t120.vActive + t120.vBlanking));
++    CHECK(milliHz60 >= 59000 && milliHz60 <= 61000);
++    CHECK(milliHz120 >= 119000 && milliHz120 <= 121000);
++
++    // Line rate: 183.0 kHz at both refreshes (the range allows 182800..183200 Hz).
++    const uint64_t line60 = static_cast<uint64_t>(t60.pixelClockHz) / hTotal;
++    const uint64_t line120 = static_cast<uint64_t>(t120.pixelClockHz) / hTotal;
++    CHECK(line60 >= 182800 && line60 <= 183200);
++    CHECK_EQ(line60, line120);
++}
++
++static void test_range() {
++    const R::RangeValues r120 = R::range_for_hz(120);
++    const R::RangeValues r60 = R::range_for_hz(60);
++
++    // The 0.0.8 range.
++    CHECK_EQ(r120.minFrameRate, 119);
++    CHECK_EQ(r120.maxFrameRate, 121);
++    CHECK_EQ(r120.maxVerticalTotal, 1525);
++    CHECK_EQ(r120.minVerticalBlanking, 85);
++    CHECK_EQ(r120.maxVerticalBlanking, 85);
++
++    // The 60 Hz range: 59..61 Hz, V total 3050, V blanking exactly the 60 Hz timing.
++    CHECK_EQ(r60.minFrameRate, 59);
++    CHECK_EQ(r60.maxFrameRate, 61);
++    CHECK_EQ(r60.maxVerticalTotal, 3050);
++    CHECK_EQ(r60.minVerticalBlanking, 1610);
++    CHECK_EQ(r60.maxVerticalBlanking, 1610);
++
++    // The absent-property path (and junk) keeps the 0.0.8 range.
++    const R::RangeValues absent = R::range_for_hz(R::active_hz(false, 0, 0x7590));
++    CHECK_EQ(absent.minFrameRate, 119);
++    CHECK_EQ(absent.maxVerticalTotal, 1525);
++    const R::RangeValues junk = R::range_for_hz(R::active_hz(true, 7, 0x7590));
++    CHECK_EQ(junk.maxVerticalTotal, 1525);
++}
++
++int main() {
++    test_property_selection();
++    test_navi48_ignores_property();
++    test_vbl_period();
++    test_vertical_totals();
++    test_scanout_timing();
++    test_range();
++
++    std::printf("Navi 44, property absent: %u Hz, VBL %u us, V total %u, range %u..%u Hz\n",
++                R::active_hz(false, 0, 0x7590), R::vbl_period_us(R::active_hz(false, 0, 0x7590)),
++                R::v_total_for_hz(R::active_hz(false, 0, 0x7590)),
++                R::range_for_hz(R::active_hz(false, 0, 0x7590)).minFrameRate,
++                R::range_for_hz(R::active_hz(false, 0, 0x7590)).maxFrameRate);
++    std::printf("Navi 44, property 60:     %u Hz, VBL %u us, V total %u, range %u..%u Hz\n",
++                R::active_hz(true, 60, 0x7590), R::vbl_period_us(R::active_hz(true, 60, 0x7590)),
++                R::v_total_for_hz(R::active_hz(true, 60, 0x7590)),
++                R::range_for_hz(R::active_hz(true, 60, 0x7590)).minFrameRate,
++                R::range_for_hz(R::active_hz(true, 60, 0x7590)).maxFrameRate);
++    std::printf("refresh_pure: %d checks, %d failures\n", g_checks, g_failures);
++    return g_failures == 0 ? 0 : 1;
++}

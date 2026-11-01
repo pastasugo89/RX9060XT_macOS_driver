@@ -1333,6 +1333,67 @@ static int cmd_vramstat(const char *a1) {
     else printf("  hi pool     : not created\n");
     return 0;
 }
+// ---- 60 Hz scanout (kernel actions 109 and 110). `accel refresh 60 [5..600]` arms 60 Hz; the kernel reverts to 120 Hz after the timeout
+//      (default 15 s) unless `accel refresh confirm` arrives. `accel refresh 120` goes back to 120 Hz at once; `accel refresh status` is read-only.
+//      Layout (out[3..9]): refresh code, active Hz, seconds left before the revert, OTG0 V_TOTAL (lines), MSA VTOTAL (lines),
+//      state (0 = 120 Hz GOP timing, 1 = pending confirmation, 2 = confirmed), largest vertical line counter.
+static const char refresh_usage[] =
+    "usage: accel refresh 60 [5..600]   (60 Hz; reverts to 120 Hz after the timeout, default 15 s, unless confirmed)\n"
+    "       accel refresh 120           (120 Hz again at once)\n"
+    "       accel refresh confirm       (keep 60 Hz: ends the pending automatic revert)\n"
+    "       accel refresh status        (read-only)\n";
+static const char *const refresh_code_names[] = {
+    "ok", "not Navi 44", "native display pipe not adopted", "display pipe failed",
+    "live timing differs from the GOP timing", "bad argument", "OTG lock timeout", "write refused",
+    "readback mismatch", "not armed", "restore failed", "no pending confirmation", "state changed under us",
+};
+static const char *refresh_code_name(uint64_t code) {
+    return code < sizeof(refresh_code_names) / sizeof(refresh_code_names[0]) ? refresh_code_names[code] : "unknown code";
+}
+static const char *refresh_state_name(uint64_t state) {
+    return state == 0 ? "120 Hz GOP" : state == 1 ? "pending" : state == 2 ? "confirmed" : "unknown";
+}
+// Action 109 argument: 120 (no timeout), or 60 | (timeout_s << 16) with 5 <= timeout_s <= 600. Returns 0, or -1 when refused.
+static int refresh_pack(unsigned long hz, unsigned long timeout_s, uint64_t *arg) {
+    if (hz == 120ul) { if (timeout_s) return -1; *arg = 120u; return 0; }
+    if (hz != 60ul || timeout_s < 5ul || timeout_s > 600ul) return -1;
+    *arg = 60u | ((uint64_t)timeout_s << 16);
+    return 0;
+}
+// The arguments after `refresh`: action 109 (60 [timeout] or 120), action 110 (confirm = argument 0, status = argument 1). -1 = usage.
+static int refresh_request(const char *a1, const char *a2, const char *a3, uint64_t *action, uint64_t *arg) {
+    char *end = NULL;
+    unsigned long t = 15;
+    if (!a1 || a3) return -1;
+    if (!strcmp(a1, "confirm") || !strcmp(a1, "status")) {
+        if (a2) return -1;
+        *action = 110;
+        *arg = !strcmp(a1, "status");
+        return 0;
+    }
+    if (!strcmp(a1, "120")) {
+        if (a2) return -1;
+        *action = 109;
+        return refresh_pack(120ul, 0ul, arg);
+    }
+    if (strcmp(a1, "60")) return -1;
+    if (a2) { t = strtoul(a2, &end, 10); if (end == a2 || *end) return -1; }
+    *action = 109;
+    return refresh_pack(60ul, t, arg);
+}
+static int cmd_refresh(const char *a1, const char *a2, const char *a3) {
+    uint64_t action = 0, arg = 0;
+    if (refresh_request(a1, a2, a3, &action, &arg) != 0) { fprintf(stderr, "%s", refresh_usage); return 2; }
+    uint64_t o[16];
+    if (dr_call(action, arg, o) != 0) return 1;       // dr_call prints the kern_return_t in hex
+    const uint64_t *v = o + 3;
+    printf("refresh: code %llu (%s) active %llu Hz V_TOTAL %llu MSA %llu state %s",
+           (unsigned long long)v[0], refresh_code_name(v[0]), (unsigned long long)v[1],
+           (unsigned long long)v[3], (unsigned long long)v[4], refresh_state_name(v[5]));
+    if (v[2]) printf(", auto-revert in %llu s", (unsigned long long)v[2]);
+    printf("\n  largest vertical line counter after the change: %llu\n", (unsigned long long)v[6]);
+    return v[0] == 0 ? 0 : 3;
+}
 // ---- 0.0.659 (M6 Stage 1a): `accel m6stat [0|1|2|3]` (action 106). READ-ONLY report of the multi-display routing (boot-arg navi48-m6=1 and navi48-metal-disp=1): the per-pipe submits, the IOSurface IDs the kernel learned (3 per pipe are expected), the
 // ambiguous ones, the refused presents and their reasons, the performs completed without a copy (pipes on the monitor A / the monitor B), the vblank stamps per OTG and the AGDC answers. No argument prints all four pages (0.0.660: page 3 = per-pipe last-transaction age and the table's self-healing counters). Layout: native_disp.cpp n48disp_verb.
 static int m6stat_page(unsigned page) {
@@ -1852,6 +1913,8 @@ static int cmd_accel(const char *what, const char *arg, const char *arg2, const 
     else if (what && !strcmp(what, "m6xstat")) in = 107;
     // 108 - 0.0.663 (ReBAR + Stage 2 review S3): `vramstat` - READ-ONLY: the kernel allocator's free visible-VRAM bytes and the visible / hi pool sizes, vramLimit, the mapped BAR0 bytes and BAR0's physical address. No argument. Same latch as the pipe verbs (boot-arg navi48-metal-disp=1).
     else if (what && !strcmp(what, "vramstat")) in = 108;
+    // 109 / 110 - the 60 Hz refresh: `refresh 60 [5..600]` / `refresh 120` (action 109), `refresh confirm` / `refresh status` (action 110). See cmd_refresh.
+    else if (what && !strcmp(what, "refresh")) in = (arg && (!strcmp(arg, "confirm") || !strcmp(arg, "status"))) ? 110 : 109;
     // 51 — 0.0.239, `shadercache [1|2|3]` (milestone 3 step 2, an earlier analysis).
     // Arms the hash-keyed substitution of gfx1201 code for Apple's GFX10 shaders at
     // the residency copy: kernsub's seam, with kernsub's one hard-coded kernel at one
@@ -1927,10 +1990,10 @@ static int cmd_accel(const char *what, const char *arg, const char *arg2, const 
         fprintf(stderr, "accel: unknown verb \"%s\"\n", what);
         fprintf(stderr, "  known: status fire memenable synctables enablerings "
                         "startengines ringstate dumpring programqueue ringhooks "
-                        "dumpib rebaseib enablequeue kickdoorbell ringrefs queuestate opengate neuterpoll chanstate pokecompletion signalcompletion bindchannel schedstate stampstate signalstamp stampgap runcheckts runadvance xlatregs srbmprobe resume pm4powerup setvspace kiqenable kiqstamp kiqchan gfxmap gfxstate sdmamap sdmastate faultclear vmstate vmib ringib pagecopy flushdrop kernsub vmpage renderxlat eopbridge bootchain shadercache vmroots ringmap vmctx rootwrite rearmdrain pairing drain flushhook scanout gfxcensus gfxneuter finishread gfxcapture gfxprobe pipeguard agdc agdchold cqprobe ucprobe fbbench fbwc pipeshim pipemode emcensus routea dcnstate dcnvbl dcnflip dcnmode fbname sdmadcc pipeadopt pipearm pipestat pipestamps pipeshortcut pipeagdc pipevbl pipereload ddcread dmubring dispcensus region4read region4dump dmubsend dmubmode dmubctx disp2 hangtest hangrecover hangstat sessstat scdcread appallow fbpublish m6stat m6xstat vramstat\n");
+                        "dumpib rebaseib enablequeue kickdoorbell ringrefs queuestate opengate neuterpoll chanstate pokecompletion signalcompletion bindchannel schedstate stampstate signalstamp stampgap runcheckts runadvance xlatregs srbmprobe resume pm4powerup setvspace kiqenable kiqstamp kiqchan gfxmap gfxstate sdmamap sdmastate faultclear vmstate vmib ringib pagecopy flushdrop kernsub vmpage renderxlat eopbridge bootchain shadercache vmroots ringmap vmctx rootwrite rearmdrain pairing drain flushhook scanout gfxcensus gfxneuter finishread gfxcapture gfxprobe pipeguard agdc agdchold cqprobe ucprobe fbbench fbwc pipeshim pipemode emcensus routea dcnstate dcnvbl dcnflip dcnmode fbname sdmadcc pipeadopt pipearm pipestat pipestamps pipeshortcut pipeagdc pipevbl pipereload ddcread dmubring dispcensus region4read region4dump dmubsend dmubmode dmubctx disp2 hangtest hangrecover hangstat sessstat scdcread appallow fbpublish m6stat m6xstat vramstat refresh\n");
         return 2;
     }
-    const char *verb = in == 108 ? "vramstat" : in == 107 ? "m6xstat" : in == 106 ? "m6stat" : in == 105 ? "fbpublish" : in == 104 ? "appallow" : in == 103 ? "sessstat" : in == 99 ? "scdcread" : in == 102 ? "hangstat" : in == 101 ? "hangrecover" : in == 100 ? "hangtest" : in == 98 ? "disp2" : in == 97 ? "dmubctx" : in == 96 ? "dmubmode" : in == 95 ? "dmubsend" : in == 94 ? "region4read" : in == 93 ? "dispcensus" : in == 92 ? "dmubring" : in == 91 ? "ddcread" : in == 90 ? "pipereload" : in == 89 ? "pipevbl" : in == 88 ? "pipeagdc" : in == 87 ? "pipeshortcut" : in == 86 ? "pipestamps" : in == 85 ? "pipestat" : in == 84 ? "pipearm" : in == 83 ? "pipeadopt" : in == 82 ? "sdmadcc" : in == 81 ? "ucprobe" : in == 80 ? "cqprobe" : in == 79 ? "agdchold" : in == 78 ? "fbname" : in == 77 ? "dcnmode" : in == 76 ? "dcnflip" : in == 75 ? "dcnvbl" : in == 74 ? "dcnstate" : in == 73 ? "routea" : in == 72 ? "emcensus" : in == 71 ? "pipemode" : in == 70 ? "pipeshim" : in == 69 ? "fbwc" : in == 68 ? "fbbench" : in == 67 ? "agdc" : in == 66 ? "pipeguard" : in == 65 ? "gfxprobe" : in == 64 ? "gfxcapture" : in == 63 ? "finishread" : in == 62 ? "gfxneuter" : in == 61 ? "gfxcensus" : in == 60 ? "scanout" : in == 59 ? "flushhook" : in == 58 ? "drain" : in == 57 ? "pairing" : in == 56 ? "rearmdrain" : in == 55 ? "rootwrite" : in == 54 ? "vmctx" : in == 53 ? "ringmap" : in == 52 ? "vmroots" : in == 51 ? "shadercache" : in == 50 ? "bootchain" : in == 49 ? "eopbridge" : in == 48 ? "renderxlat" : in == 47 ? "vmpage" : in == 46 ? "kernsub" : in == 45 ? "flushdrop" : in == 44 ? "pagecopy" : in == 43 ? "ringib" : in == 42 ? "vmib" : in == 41 ? "vmstate" : in == 40 ? "faultclear"
+    const char *verb = in == 110 || in == 109 ? "refresh" : in == 108 ? "vramstat" : in == 107 ? "m6xstat" : in == 106 ? "m6stat" : in == 105 ? "fbpublish" : in == 104 ? "appallow" : in == 103 ? "sessstat" : in == 99 ? "scdcread" : in == 102 ? "hangstat" : in == 101 ? "hangrecover" : in == 100 ? "hangtest" : in == 98 ? "disp2" : in == 97 ? "dmubctx" : in == 96 ? "dmubmode" : in == 95 ? "dmubsend" : in == 94 ? "region4read" : in == 93 ? "dispcensus" : in == 92 ? "dmubring" : in == 91 ? "ddcread" : in == 90 ? "pipereload" : in == 89 ? "pipevbl" : in == 88 ? "pipeagdc" : in == 87 ? "pipeshortcut" : in == 86 ? "pipestamps" : in == 85 ? "pipestat" : in == 84 ? "pipearm" : in == 83 ? "pipeadopt" : in == 82 ? "sdmadcc" : in == 81 ? "ucprobe" : in == 80 ? "cqprobe" : in == 79 ? "agdchold" : in == 78 ? "fbname" : in == 77 ? "dcnmode" : in == 76 ? "dcnflip" : in == 75 ? "dcnvbl" : in == 74 ? "dcnstate" : in == 73 ? "routea" : in == 72 ? "emcensus" : in == 71 ? "pipemode" : in == 70 ? "pipeshim" : in == 69 ? "fbwc" : in == 68 ? "fbbench" : in == 67 ? "agdc" : in == 66 ? "pipeguard" : in == 65 ? "gfxprobe" : in == 64 ? "gfxcapture" : in == 63 ? "finishread" : in == 62 ? "gfxneuter" : in == 61 ? "gfxcensus" : in == 60 ? "scanout" : in == 59 ? "flushhook" : in == 58 ? "drain" : in == 57 ? "pairing" : in == 56 ? "rearmdrain" : in == 55 ? "rootwrite" : in == 54 ? "vmctx" : in == 53 ? "ringmap" : in == 52 ? "vmroots" : in == 51 ? "shadercache" : in == 50 ? "bootchain" : in == 49 ? "eopbridge" : in == 48 ? "renderxlat" : in == 47 ? "vmpage" : in == 46 ? "kernsub" : in == 45 ? "flushdrop" : in == 44 ? "pagecopy" : in == 43 ? "ringib" : in == 42 ? "vmib" : in == 41 ? "vmstate" : in == 40 ? "faultclear"
                      : in == 39 ? "sdmastate" : in == 38 ? "sdmamap"
                      : in == 37 ? "gfxstate" : in == 36 ? "gfxmap"
                      : in == 35 ? "kiqchan" : in == 34 ? "kiqstamp" : in == 33 ? "kiqenable" : in == 32 ? "setvspace" : in == 31 ? "pm4powerup" : in == 30 ? "resume" : in == 29 ? "srbmprobe" : in == 28 ? "xlatregs" : in == 27 ? "runadvance" : in == 26 ? "runcheckts" : in == 25 ? "stampgap" : in == 24 ? "signalstamp" : in == 23 ? "stampstate" : in == 22 ? "schedstate" : in == 21 ? "bindchannel" : in == 20 ? "signalcompletion" : in == 19 ? "pokecompletion" : in == 18 ? "chanstate" : in == 17 ? "neuterpoll" : in == 16 ? "opengate" : in == 15 ? "queuestate" : in == 14 ? "ringrefs" : in == 13 ? "kickdoorbell" : in == 12 ? "enablequeue" : in == 11 ? "rebaseib" : in == 10 ? "dumpib" : in == 9 ? "ringhooks" : in == 8 ? "programqueue" : in == 7 ? "dumpring" : in == 6 ? "ringstate" : in == 5 ? "startengines" : in == 4 ? "enablerings" : in == 3 ? "synctables"
@@ -1948,6 +2011,7 @@ static int cmd_accel(const char *what, const char *arg, const char *arg2, const 
     if (in == 97) return cmd_dmubctx(arg, arg2, arg3);
     if (in == 105) return cmd_fbpublish(arg);               // 0.0.652 (M5): own layout (Navi48DisplayOps.h)
     if (in == 108) return cmd_vramstat(arg);                // 0.0.663: own layout (Navi48Bringup.cpp accelExperiment, action 108)
+    if (in == 109 || in == 110) return cmd_refresh(arg, arg2, arg3);
     if (in == 107) return cmd_m6xstat(arg, arg2);           // 0.0.661 (M6 Stage 1b): own layout (dcn/navi48_dcn.cpp scanXReport); 0.0.662: arg2 = the page after an instance
     if (in == 106) return cmd_m6stat(arg);                  // 0.0.659 (M6 Stage 1a): own layout (native_disp.cpp n48disp_verb)
     if (in == 98) return cmd_disp2(arg, arg2);             // 0.0.631: own layout (navi48_disp2.h); 0.0.633: arg2 = the instance (1 monitor A, 2 monitor B)
@@ -3575,7 +3639,7 @@ static int cmd_accel(const char *what, const char *arg, const char *arg2, const 
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "usage: %s info|counters|reg <dw>|regs (list on stdin)|poke|submit|log|metrics|power <n>|logreset|\n       accel [status|fire [1 gate closed|2 gate open]|memenable|synctables|enablerings|startengines|ringstate|dumpring|programqueue|ringhooks|dumpib|rebaseib|enablequeue|kickdoorbell|ringrefs|queuestate|opengate|neuterpoll|chanstate|pokecompletion|signalcompletion|bindchannel|schedstate|stampstate|signalstamp|stampgap|runcheckts|runadvance|xlatregs|srbmprobe|resume|pm4powerup|setvspace|kiqenable|kiqstamp|kiqchan|gfxmap|gfxstate|sdmamap|sdmastate|faultclear|vmstate|vmib [va]|ringib [chan]|pagecopy [1]|flushdrop|kernsub [1|2|3]|vmpage [va]|renderxlat [0|1|3|4|5|0x101|base|flags|n<<4|6 or 7]|eopbridge [1|2]|bootchain [mode]|shadercache [1|2|3]|vmroots [addr]|ringmap [0|1]|vmctx|rootwrite [0|1]|rearmdrain [0|1]|pairing [1|2]|drain|flushhook [1|2|3]|scanout [0|1|2|3|4|5|6|7 <vramOff> [gcr]|8|full [file]|10]|sdmadcc [0|1|2]|gfxcensus [1|2]|gfxneuter [1|2]|finishread|gfxcapture [1|2]|gfxprobe [1|2]|pipeguard [1]|agdc [1]|agdchold [ms 1..5000]|cqprobe|ucprobe [0|1|2]|fbbench [rows]|fbwc [1]|pipeshim [0|1|2|3|4|5]|pipemode [0|1]|emcensus [0|1|2]|routea [0|1|2]|dcnstate [1]|dcnvbl [0|1|2]|dcnflip [0|1|2..30|1002..1240]|dcnmode [0|1..30|101..130]|fbname [0|1]|pipeadopt|pipearm [0|1]|pipestat [0|1|2|3|4]|pipestamps|pipeshortcut [0|1]|pipeagdc [0|1]|pipevbl [0|1]|pipereload [0|1]|ddcread <line 2|3> <block 0..3>|dmubring [0|1..25|0x80]|dispcensus [0|1|2..9]|region4read <off> [1..64]|region4dump|dmubsend detect <ctx>/begin/end/setmode <ctx>/enable <ctx>/disable <0x7000|0x7800>/replay <slot_off>/pclk otg3-on|otg3-off|otg1-on|otg1-off/phyc enable|disable/digc setup|dmubmode save/restore/0x1a6/0x1d4|dmubctx <ctx> status <v>|disp2 [timing|timing1440|connect|off|status [1|2]|plane|show|flipA|flipB|crc|planeoff 2]|hangtest [1]|hangrecover <0..4>|hangstat [0..8]|sessstat [0..9]|scdcread <line 2|3> <off 0..0x5f> [len 1..16]|appallow add <name>/remove <name>/list/strikes]|fbpublish 2|1|m6stat [0|1|2|3]|m6xstat [0|1|2]|vramstat|capstream <file> [ms] [s] [stopfile]|bigmem [mb]|test <id> <iters> [us]|suite [iters]\n", argv[0]);
+        fprintf(stderr, "usage: %s info|counters|reg <dw>|regs (list on stdin)|poke|submit|log|metrics|power <n>|logreset|\n       accel [status|fire [1 gate closed|2 gate open]|memenable|synctables|enablerings|startengines|ringstate|dumpring|programqueue|ringhooks|dumpib|rebaseib|enablequeue|kickdoorbell|ringrefs|queuestate|opengate|neuterpoll|chanstate|pokecompletion|signalcompletion|bindchannel|schedstate|stampstate|signalstamp|stampgap|runcheckts|runadvance|xlatregs|srbmprobe|resume|pm4powerup|setvspace|kiqenable|kiqstamp|kiqchan|gfxmap|gfxstate|sdmamap|sdmastate|faultclear|vmstate|vmib [va]|ringib [chan]|pagecopy [1]|flushdrop|kernsub [1|2|3]|vmpage [va]|renderxlat [0|1|3|4|5|0x101|base|flags|n<<4|6 or 7]|eopbridge [1|2]|bootchain [mode]|shadercache [1|2|3]|vmroots [addr]|ringmap [0|1]|vmctx|rootwrite [0|1]|rearmdrain [0|1]|pairing [1|2]|drain|flushhook [1|2|3]|scanout [0|1|2|3|4|5|6|7 <vramOff> [gcr]|8|full [file]|10]|sdmadcc [0|1|2]|gfxcensus [1|2]|gfxneuter [1|2]|finishread|gfxcapture [1|2]|gfxprobe [1|2]|pipeguard [1]|agdc [1]|agdchold [ms 1..5000]|cqprobe|ucprobe [0|1|2]|fbbench [rows]|fbwc [1]|pipeshim [0|1|2|3|4|5]|pipemode [0|1]|emcensus [0|1|2]|routea [0|1|2]|dcnstate [1]|dcnvbl [0|1|2]|dcnflip [0|1|2..30|1002..1240]|dcnmode [0|1..30|101..130]|fbname [0|1]|pipeadopt|pipearm [0|1]|pipestat [0|1|2|3|4]|pipestamps|pipeshortcut [0|1]|pipeagdc [0|1]|pipevbl [0|1]|pipereload [0|1]|ddcread <line 2|3> <block 0..3>|dmubring [0|1..25|0x80]|dispcensus [0|1|2..9]|region4read <off> [1..64]|region4dump|dmubsend detect <ctx>/begin/end/setmode <ctx>/enable <ctx>/disable <0x7000|0x7800>/replay <slot_off>/pclk otg3-on|otg3-off|otg1-on|otg1-off/phyc enable|disable/digc setup|dmubmode save/restore/0x1a6/0x1d4|dmubctx <ctx> status <v>|disp2 [timing|timing1440|connect|off|status [1|2]|plane|show|flipA|flipB|crc|planeoff 2]|hangtest [1]|hangrecover <0..4>|hangstat [0..8]|sessstat [0..9]|scdcread <line 2|3> <off 0..0x5f> [len 1..16]|appallow add <name>/remove <name>/list/strikes]|fbpublish 2|1|m6stat [0|1|2|3]|m6xstat [0|1|2]|vramstat|refresh 60 [5..600]|refresh 120|refresh confirm|refresh status|capstream <file> [ms] [s] [stopfile]|bigmem [mb]|test <id> <iters> [us]|suite [iters]\n", argv[0]);
         return 2;
     }
     if (open_service() < 0) return 1;

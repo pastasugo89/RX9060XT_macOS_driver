@@ -8,6 +8,7 @@
 #ifndef Navi48Dcn_hpp
 #define Navi48Dcn_hpp
 
+#include "navi48_refresh_pure.h"   // 0.0.669: the 60 Hz scanout switch (n48rf::Hw, Session, Report)
 #include <stdint.h>
 
 class Navi48Bringup;
@@ -183,6 +184,11 @@ void scanXShutdown();                                                   // kext 
 // `dcnflip 0` on a native boot: the same restore, and it also acts when nothing is acquired but HUBP0 is off the console learned earlier.
 void scanEscape(const char *why);
 void scanLogState();
+
+// 0.0.669 (refresh-60): the register callbacks of the 60 Hz switch (navi48_refresh_pure.h). Every write goes through dcn_wreg, i.e. the DCN
+// write allowlist. refresh_bound() is true once bind() has armed the DCN device on this boot.
+n48rf::Hw refresh_hw();
+bool refresh_bound();
 
 }  // namespace n48dcn
 
