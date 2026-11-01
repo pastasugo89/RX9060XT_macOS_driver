@@ -321,7 +321,7 @@ static BOOL n48_headless(void) {
     X(vkCreateFramebuffer) X(vkDestroyFramebuffer) X(vkCreateShaderModule) X(vkDestroyShaderModule) \
     X(vkCreatePipelineLayout) X(vkDestroyPipelineLayout) X(vkCreateDescriptorSetLayout) X(vkDestroyDescriptorSetLayout) X(vkCreateGraphicsPipelines) X(vkDestroyPipeline) \
     X(vkCmdBeginRenderPass) X(vkCmdEndRenderPass) X(vkCmdBindPipeline) X(vkCmdSetViewport) X(vkCmdSetScissor) \
-    X(vkCmdDraw) X(vkCmdPipelineBarrier) X(vkCmdCopyImageToBuffer) X(vkCmdCopyBuffer) X(vkCmdFillBuffer) \
+    X(vkCmdDraw) X(vkCmdPipelineBarrier) X(vkCmdCopyImageToBuffer) X(vkCmdCopyBuffer) X(vkCmdFillBuffer) X(vkCmdClearColorImage) \
     X(vkCreateSampler) X(vkDestroySampler) X(vkCreateDescriptorPool) X(vkDestroyDescriptorPool) X(vkAllocateDescriptorSets) X(vkUpdateDescriptorSets) \
     X(vkCmdBindDescriptorSets) X(vkCmdBindVertexBuffers) X(vkCmdBindIndexBuffer) X(vkCmdDrawIndexed) X(vkCmdCopyBufferToImage) X(vkCmdPushConstants) \
     X(vkCmdDispatch) X(vkCreateComputePipelines) X(vkCmdSetBlendConstants) X(vkCmdCopyImage) X(vkCmdBlitImage) X(vkResetFences) \
@@ -1101,6 +1101,42 @@ static BOOL n48_oneshot(NSError **err, void (^rec)(VkCommandBuffer cmd)) {
     vkDestroyFence(N48R.dev, f, NULL);
     n48_qlock(); vkFreeCommandBuffers(N48R.dev, N48R.opool, 1, &c); pthread_mutex_unlock(&N48R.qlock);
     return YES;
+}
+// ---- bundle 34: zero-initialised device-local resources. n48_zinit.h decides; the clear is one-shot and WAITED (as replaceRegion: is), so the
+// resource holds zeros before its first GPU use. Kill file /private/tmp/n48m-nozinit (latched once per process) restores bundle 33's behaviour.
+#include "n48_zinit.h"
+#define N48_NOZINIT_FILE "/private/tmp/n48m-nozinit"
+static int n48zi_killed(void) {
+    static int k; static dispatch_once_t once;
+    dispatch_once(&once, ^{ struct stat st; k = stat(N48_NOZINIT_FILE, &st) == 0;
+        N48LOG("zinit: device-local textures and buffers are %s before first use (kill file " N48_NOZINIT_FILE " %s; latched for the life of this process)", k ? "NOT cleared" : "cleared to zero", k ? "exists" : "absent"); });
+    return k;
+}
+static int n48zi_ws(void) { return n48_is_ws() ? 1 : 0; }
+static void n48zi_note(const char *what, BOOL ok, NSError *e) {
+    if (!ok) N48LOG("zinit: clear of a new device-local %s failed: %s (it keeps the contents it had)", what, e ? e.localizedDescription.UTF8String : "?");
+}
+static BOOL n48zi_fill_buffer(VkBuffer buf, uint64_t size) {
+    uint64_t n = n48zi_fill_bytes(size);
+    if (!n) return NO;
+    NSError *e = nil;
+    BOOL ok = n48_oneshot(&e, ^(VkCommandBuffer cmd) { vkCmdFillBuffer(cmd, buf, 0, (VkDeviceSize)n, 0); });
+    n48zi_note("buffer", ok, e);
+    return ok;
+}
+static BOOL n48zi_clear_image(VkImage img, uint32_t levels, uint32_t layers) {
+    VkImageSubresourceRange rg = { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, layers };
+    NSError *e = nil;
+    BOOL ok = n48_oneshot(&e, ^(VkCommandBuffer cmd) {
+        VkImageMemoryBarrier b = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, .srcAccessMask = 0, .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .image = img, .subresourceRange = rg };
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &b);
+        VkClearColorValue z = { .uint32 = { 0, 0, 0, 0 } };
+        vkCmdClearColorImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &z, 1, &rg);
+    });
+    n48zi_note("texture", ok, e);
+    return ok;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -2216,6 +2252,8 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
         if (r != VK_SUCCESS) { if (err) *err = n48_err(24, [NSString stringWithFormat:@"vkMapMemory = %d", r]); return nil; }
     }
     }
+    if (sm == 2 && n48zi_decide_buffer(n48zi_killed(), n48zi_ws(), 0, (uint64_t)mr.size) == N48ZI_CLEAR)
+        (void)n48zi_fill_buffer(_vkbuf, (uint64_t)mr.size);   // bundle 34: a new private buffer is zero-filled before any GPU use (n48_zinit.h)
     N48LOGR("N48Buffer %p: %lu bytes (alloc %llu, memtype %d) mapped at %p", (__bridge void *)self, (unsigned long)len,
            (unsigned long long)mr.size, mt, _ptr);
     return self;
@@ -2649,6 +2687,10 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     _size = (NSUInteger)mr.size; _acct = mr.size; atomic_fetch_add(&n48_alloc_total, _acct);
     r = vkBindImageMemory(N48R.dev, _img, _mem, 0);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(35, [NSString stringWithFormat:@"vkBindImageMemory = %d", r]); return nil; }
+    }
+    {   // bundle 34: a new device-local colour texture is zeroed before any GPU use (n48_zinit.h); it stays in TRANSFER_DST_OPTIMAL, tracked as such
+        if (n48zi_decide_texture(n48zi_killed(), n48zi_ws(), isDS, (uint32_t)ti.samples, (uint64_t)mr.size) == N48ZI_CLEAR &&
+            n48zi_clear_image(_img, (uint32_t)_levels, (uint32_t)ti.layers)) [self setLayout:VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL];
     }
     VkComponentMapping cm = n48_view_map(_fmt, _swz); _viewSwz = !n48_is_identity_map(&cm);
     VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = _img,

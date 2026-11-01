@@ -127,7 +127,11 @@ int main(int argc, char **argv) {
           has(m, "N48LOG(\"T1 vidmem/10s [%s pid %d]: %s; GPU-only memory-type fallbacks %llu\""),
           "wiring: the budget is read per heap and logged as the T1 vidmem line");
     check(count(m, "n48_vidmem_report();") == 1 && has(m, "static void n48_vidmem_report(void) {"), "wiring: the vidmem line is printed from the 10 s T1 tick");
-    check(has(pl, "<key>CFBundleVersion</key>\n\t<string>33</string>"), "wiring: Info.plist CFBundleVersion is 33");
+    {   /* bundle 34 bumps CFBundleVersion: this check only guards against a revert below the bundle-33 value (as bundle 33 did for bundle 32) */
+        const char *vk = "<key>CFBundleVersion</key>\n\t<string>";
+        const char *v = pl ? strstr(pl, vk) : NULL;
+        check(v != NULL && strtol(v + strlen(vk), NULL, 10) >= 33, "wiring: Info.plist CFBundleVersion >= 33 (relaxed from == 33 by bundle 34)");
+    }
 
     // ------------------------------------------------------------------------------------------- part 2: the pure choice
     VkPhysicalDeviceMemoryProperties mp = device_table();
