@@ -54,6 +54,7 @@
 #include "n48_m6route.h"    // bundle 11 (M6 Stage 1a): which display an IOSurface belongs to (the kernel's IOSurface ID -> instance table; host test: test-m6route.c)
 #include "n48_texdesc.h"    // bundle 9 (app crash study item 2): descriptor -> Vulkan image mapping incl. cube and 2D array (host tests: test-texdesc.c, test-vkimage.c)
 #include "n48_depth.h"      // bundle 10: depth/stencil formats and pipeline state, MSAA, multisample resolve (host tests: test-depth.c, test-vkimage.c)
+#include "n48_nm272.h"       // bundle nm272 candidate (NullMoth 2.7-2.7.2 items 1, 2, 3, 8): pure decisions, host-tested (test-nm272-items.c)
 #include "n48_cienv.h"      // bundle 9 (app crash study item 1): CI_USE_MTL_DAG_FOR_CIKL_SRC=0 unless the process already set it (host test: test-cienv.c)
 #include "n48_xlate.h"      // bundle 14: in-process shader translation for admitted applications (NATIVE-S8-INPROC.md; host tests: test-xlate.c, test-xlate-corpus.sh)
 #include "n48_gate.h"       // GPU-apps G4 (kext 0.0.640): the pure load policy outside WindowServer - fail-closed gates, the kernel probe, the per-process cache path (host test: test-gate.c)
@@ -329,7 +330,7 @@ static BOOL n48_headless(void) {
     X(vkCmdDraw) X(vkCmdPipelineBarrier) X(vkCmdCopyImageToBuffer) X(vkCmdCopyBuffer) X(vkCmdFillBuffer) X(vkCmdClearColorImage) \
     X(vkCreateSampler) X(vkDestroySampler) X(vkCreateDescriptorPool) X(vkDestroyDescriptorPool) X(vkAllocateDescriptorSets) X(vkUpdateDescriptorSets) \
     X(vkCmdBindDescriptorSets) X(vkCmdBindVertexBuffers) X(vkCmdBindIndexBuffer) X(vkCmdDrawIndexed) X(vkCmdCopyBufferToImage) X(vkCmdPushConstants) \
-    X(vkCmdDispatch) X(vkCreateComputePipelines) X(vkCmdSetBlendConstants) X(vkCmdCopyImage) X(vkCmdBlitImage) X(vkResetFences) \
+    X(vkCmdDispatch) X(vkCmdDispatchIndirect) X(vkCmdSetDepthBounds) X(vkCreateComputePipelines) X(vkCmdSetBlendConstants) X(vkCmdCopyImage) X(vkCmdBlitImage) X(vkResetFences) \
     X(vkEnumerateDeviceExtensionProperties) X(vkGetPhysicalDeviceFeatures2) \
     X(vkGetImageSubresourceLayout) X(vkGetPhysicalDeviceProperties2) X(vkGetDeviceProcAddr) \
     X(vkGetPhysicalDeviceFormatProperties) X(vkGetPhysicalDeviceImageFormatProperties) \
@@ -348,6 +349,7 @@ static struct {
     void *lib; VkInstance inst; VkPhysicalDevice pd; VkDevice dev; VkQueue q; uint32_t qfi;
     VkPhysicalDeviceMemoryProperties mp; pthread_mutex_t qlock; VkPhysicalDeviceLimits lim; VkCommandPool opool; VkPipelineCache pc;   // pc: T2 persisted pipeline cache (VK_NULL_HANDLE = none)
     BOOL occPrecise, occOK;   // build 18 (P2): occlusionQueryPrecise enabled on the device; every query entry point resolved
+    BOOL dbBounds;   // bundle nm272 candidate: the depthBounds feature (setDepthTestMinBound:maxBound:)
     BOOL dbClamp;   // bundle 10: depthBiasClamp enabled on the device (a non-zero clamp in setDepthBias is passed on only then)
     BOOL dualSrc;   // bundle 32: dualSrcBlend enabled on the device (and maxFragmentDualSrcAttachments >= 1): Source1* blend factors are mapped only then
     BOOL hostExt; uint64_t hostAlign; uint64_t impTotal;   // 11h.6: external_memory_host enabled, minImportedHostPointerAlignment, bytes currently imported
@@ -638,11 +640,12 @@ static BOOL n48_radv_open_once(NSError **err) {
         // bundle 32: dualSrcBlend is enabled when RADV has it (the Source1* blend factors and the second fragment output need it)
         VkPhysicalDeviceFeatures ef = { .dualSrcBlend = pf.dualSrcBlend, .shaderInt64 = pf.shaderInt64, .fragmentStoresAndAtomics = pf.fragmentStoresAndAtomics, .shaderStorageImageReadWithoutFormat = pf.shaderStorageImageReadWithoutFormat,
                                         .shaderStorageImageWriteWithoutFormat = pf.shaderStorageImageWriteWithoutFormat,
-                                        .depthBiasClamp = pf.depthBiasClamp,   // bundle 10: setDepthBias:slopeScale:clamp:
+                                        .depthBiasClamp = pf.depthBiasClamp, .depthBounds = pf.depthBounds,   // bundle 10: setDepthBias:slopeScale:clamp:
                                         .occlusionQueryPrecise = pf.occlusionQueryPrecise };   // build 18 (P2): Counting visibility mode
         N48LOG("radv: apiVersion %u.%u shaderInt64 supported %u, storage image read/write without format %u/%u", VK_API_VERSION_MAJOR(pp.apiVersion), VK_API_VERSION_MINOR(pp.apiVersion), pf.shaderInt64,
                pf.shaderStorageImageReadWithoutFormat, pf.shaderStorageImageWriteWithoutFormat);
         N48R.lim = pp.limits; N48R.dbClamp = pf.depthBiasClamp ? YES : NO;
+        N48R.dbBounds = pf.depthBounds ? YES : NO; N48LOG("radv: depthBounds %s (setDepthTestMinBound:maxBound:)", N48R.dbBounds ? "on" : "off");
         N48R.occPrecise = pf.occlusionQueryPrecise ? YES : NO;
         N48R.dualSrc = (pf.dualSrcBlend && pp.limits.maxFragmentDualSrcAttachments >= 1) ? YES : NO;   // bundle 32
         N48LOG("radv: dual-source blending %s (dualSrcBlend %u, maxFragmentDualSrcAttachments %u)", N48R.dualSrc ? "on" : "off", pf.dualSrcBlend, pp.limits.maxFragmentDualSrcAttachments);
@@ -2212,6 +2215,8 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
 // assigned, the bytes it was charged and the block id; the budget goes back to the heap at -makeAliasable or at dealloc, whichever is first.
 @interface N48Heap : _MTLHeap
 - (void)n48Free:(uint64_t)bid;
+- (void)n48Track:(id)m;   // bundle nm272 candidate: a live member of this heap (weak), for useHeap:
+- (NSArray *)n48LiveMembers;
 @end
 #define N48_RES_IVARS NSUInteger _prot; int _respPid; BOOL _respSet; uint64_t _uid; N48Heap *_hpHeap; NSUInteger _hpOff, _hpSize; uint64_t _hpId; BOOL _hpAl;
 #define N48_HEAP_DEALLOC if (_hpHeap && !_hpAl) { _hpAl = YES; [_hpHeap n48Free:_hpId]; }
@@ -2362,7 +2367,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
 - (BOOL)n48NCFallback { return _ncFallback; }
 - (void)n48NCSync { if (_ncFallback && _ncOrig && _ptr && _len) memcpy(_ptr, _ncOrig, _len); }
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid {
-    _hpHeap = h; _hpOff = o; _hpSize = sz; _hpId = bid;
+    _hpHeap = h; _hpOff = o; _hpSize = sz; _hpId = bid; [h n48Track:self];
     if (!_noacct && !_imported) { atomic_fetch_sub(&n48_alloc_total, (uint64_t)_asz); _noacct = YES; }
 }
 - (void)dealloc {
@@ -2801,7 +2806,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     }
 }
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid {
-    _hpHeap = h; _hpOff = o; _hpSize = sz; _hpId = bid;
+    _hpHeap = h; _hpOff = o; _hpSize = sz; _hpId = bid; [h n48Track:self];
     if (_acct) { atomic_fetch_sub(&n48_alloc_total, _acct); _acct = 0; }   // the heap's size is what counts
 }
 - (void)dealloc {
@@ -3261,6 +3266,22 @@ N48_RESOURCE_SPI
 - (id)newTextureViewWithPixelFormat:(MTLPixelFormat)pf textureType:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl swizzle:(MTLTextureSwizzleChannels)sw {
     return [self n48View:pf type:tt levels:lv slices:sl swizzle:sw];
 }
+// bundle nm272 candidate (NullMoth bc467c8, item 3; macOS 26): the view an MTLTextureViewDescriptor describes. Read by key (the bundle is built for macOS 12); the defaults are n48nm_tvd_resolve's,
+// and the view itself is the existing n48View, which still answers only a single-level, single-slice 2D view (other ranges are refused with a log, as before).
+- (id)newTextureViewWithDescriptor:(id)d {
+    if (!d) return nil;
+    n48nm_tvd_t in, out; memset(&in, 0, sizeof in);
+    in.pf = [[d valueForKey:@"pixelFormat"] unsignedIntegerValue]; in.tt = [[d valueForKey:@"textureType"] unsignedIntegerValue];
+    NSRange lv = [[d valueForKey:@"levelRange"] rangeValue], sl = [[d valueForKey:@"sliceRange"] rangeValue];
+    in.lvLoc = lv.location; in.lvLen = lv.length; in.slLoc = sl.location; in.slLen = sl.length;
+    id sv = [d valueForKey:@"swizzle"];
+    if ([sv isKindOfClass:[NSValue class]] && !strcmp([(NSValue *)sv objCType], @encode(MTLTextureSwizzleChannels))) { MTLTextureSwizzleChannels s; [(NSValue *)sv getValue:&s]; in.sw[0] = s.red; in.sw[1] = s.green; in.sw[2] = s.blue; in.sw[3] = s.alpha; }
+    const NSUInteger slices = ([self textureType] == MTLTextureTypeCube || [self textureType] == MTLTextureTypeCubeArray) ? 6 * [self arrayLength] : [self arrayLength];
+    n48nm_tvd_resolve(&in, self.pixelFormat, [self mipmapLevelCount], slices, &out);
+    MTLTextureSwizzleChannels osw = { (MTLTextureSwizzle)out.sw[0], (MTLTextureSwizzle)out.sw[1], (MTLTextureSwizzle)out.sw[2], (MTLTextureSwizzle)out.sw[3] };
+    return [self newTextureViewWithPixelFormat:(MTLPixelFormat)out.pf textureType:(MTLTextureType)out.tt levels:NSMakeRange((NSUInteger)out.lvLoc, (NSUInteger)out.lvLen)
+                                        slices:NSMakeRange((NSUInteger)out.slLoc, (NSUInteger)out.slLen) swizzle:osw];
+}
 - (instancetype)initViewOf:(N48Texture *)root pixelFormat:(MTLPixelFormat)pf swizzle:(MTLTextureSwizzleChannels)swz error:(NSError **)err {
     self = [super init]; if (!self) return nil;
     #define VFAIL(code, ...) do { if (err) *err = n48_err(code, [NSString stringWithFormat:__VA_ARGS__]); return nil; } while (0)
@@ -3332,7 +3353,11 @@ static BOOL n48_heap_tex_sa(MTLTextureDescriptor *d, NSUInteger *size, NSUIntege
 }
 @implementation N48Heap {
     id _dev; NSString *_lbl; NSUInteger _size, _purge; unsigned _st, _cc, _hz; N48HeapAlloc _ha;
+    NSHashTable *_mem;   // bundle nm272 candidate: the live members (weak)
 }
+// bundle nm272 candidate (NullMoth 0aacf15, item 6): every buffer or texture placed in this heap registers here; a useHeap: retains the live ones.
+- (void)n48Track:(id)m { @synchronized (self) { if (!_mem) _mem = [NSHashTable weakObjectsHashTable]; [_mem addObject:m]; } }
+- (NSArray *)n48LiveMembers { @synchronized (self) { return _mem ? [_mem allObjects] : @[]; } }
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLHeapDescriptor *)d {
     self = [super init]; if (!self) return nil;
     NSUInteger sz = d.size; unsigned st = (unsigned)d.storageMode, cc = (unsigned)d.cpuCacheMode, hz = (unsigned)d.hazardTrackingMode;
@@ -3531,14 +3556,6 @@ N48_DNR(N48Fence)
 
 // Residency / fence calls that are satisfied by the rules above, shared by all three encoders.
 #define N48_ENCODER_NOOPS \
-    - (void)useResource:(id)r usage:(NSUInteger)u { (void)r; (void)u; N48_ONCE("useResource: memory is always resident; ignored"); } \
-    - (void)useResource:(id)r usage:(NSUInteger)u stages:(NSUInteger)st { (void)r; (void)u; (void)st; N48_ONCE("useResource:stages: ignored"); } \
-    - (void)useResources:(const id __unsafe_unretained *)r count:(NSUInteger)n usage:(NSUInteger)u { (void)r; (void)n; (void)u; N48_ONCE("useResources: ignored"); } \
-    - (void)useResources:(const id __unsafe_unretained *)r count:(NSUInteger)n usage:(NSUInteger)u stages:(NSUInteger)st { (void)r; (void)n; (void)u; (void)st; N48_ONCE("useResources:stages: ignored"); } \
-    - (void)useHeap:(id)h { (void)h; N48_ONCE("useHeap: ignored"); } \
-    - (void)useHeap:(id)h stages:(NSUInteger)st { (void)h; (void)st; N48_ONCE("useHeap:stages: ignored"); } \
-    - (void)useHeaps:(const id __unsafe_unretained *)h count:(NSUInteger)n { (void)h; (void)n; N48_ONCE("useHeaps: ignored"); } \
-    - (void)useHeaps:(const id __unsafe_unretained *)h count:(NSUInteger)n stages:(NSUInteger)st { (void)h; (void)n; (void)st; N48_ONCE("useHeaps:stages: ignored"); } \
     - (void)useResourceGroup:(id)g usage:(NSUInteger)u stages:(NSUInteger)st { (void)g; (void)u; (void)st; N48_ONCE("useResourceGroup: ignored"); }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -4423,14 +4440,16 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         .cullMode = cull, .frontFace = front, .lineWidth = 1.0f, .depthBiasEnable = _pc.depthBias ? VK_TRUE : VK_FALSE };   // bundle 10: the bias VALUES are dynamic (setDepthBias:), on for depth pipelines only
     VkPipelineMultisampleStateCreateInfo ms = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = (VkSampleCountFlagBits)_pc.samples, .alphaToCoverageEnable = _pc.alphaToCoverage ? VK_TRUE : VK_FALSE };
     n48ds_vk_t dv; n48ds_decode(dk, &dv);
+    const BOOL dbt = (dk & N48NM_DS_DEPTH_BOUNDS) != 0;   // bundle nm272 candidate: the depth bounds test is dynamic state of this variant (vkCmdSetDepthBounds sets the range per draw)
     const BOOL inv = n48_pl_fb_invisible(_fallback, n48_magenta_kill());   // bundle 30: an invisible fallback writes no depth and no stencil
     VkPipelineDepthStencilStateCreateInfo dss = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = dv.depthTest ? VK_TRUE : VK_FALSE, .depthWriteEnable = (dv.depthWrite && !inv) ? VK_TRUE : VK_FALSE, .depthCompareOp = (VkCompareOp)dv.depthCompareOp, .stencilTestEnable = (dv.stencilTest && !inv) ? VK_TRUE : VK_FALSE,
+        .depthTestEnable = dv.depthTest ? VK_TRUE : VK_FALSE, .depthWriteEnable = (dv.depthWrite && !inv) ? VK_TRUE : VK_FALSE, .depthCompareOp = (VkCompareOp)dv.depthCompareOp, .depthBoundsTestEnable = dbt ? VK_TRUE : VK_FALSE, .minDepthBounds = 0.0f, .maxDepthBounds = 1.0f, .stencilTestEnable = (dv.stencilTest && !inv) ? VK_TRUE : VK_FALSE,
         .front = { (VkStencilOp)dv.front.failOp, (VkStencilOp)dv.front.passOp, (VkStencilOp)dv.front.depthFailOp, (VkCompareOp)dv.front.compareOp, 0, 0, 0 },
         .back = { (VkStencilOp)dv.back.failOp, (VkStencilOp)dv.back.passOp, (VkStencilOp)dv.back.depthFailOp, (VkCompareOp)dv.back.compareOp, 0, 0, 0 } };
     VkPipelineColorBlendStateCreateInfo cb = { .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, .attachmentCount = _na, .pAttachments = _cba };
-    VkDynamicState dyn[8]; for (unsigned i = 0; i < _pc.ndyn && i < 8; i++) dyn[i] = (VkDynamicState)_pc.dyn[i];   // bundle 10: viewport, scissor, blend constants (+ stencil masks / reference and depth bias for a depth/stencil pipeline)
-    VkPipelineDynamicStateCreateInfo ds = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = _pc.ndyn, .pDynamicStates = dyn };
+    VkDynamicState dyn[9]; for (unsigned i = 0; i < _pc.ndyn && i < 8; i++) dyn[i] = (VkDynamicState)_pc.dyn[i];   // bundle 10: viewport, scissor, blend constants (+ stencil masks / reference and depth bias for a depth/stencil pipeline)
+    if (dbt) dyn[_pc.ndyn] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;   // bundle nm272 candidate: the range is set per draw, after the config's states
+    VkPipelineDynamicStateCreateInfo ds = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = _pc.ndyn + (dbt ? 1u : 0u), .pDynamicStates = dyn };
     VkGraphicsPipelineCreateInfo gpc = { .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, .stageCount = n48_pl_stage_count(_fs != VK_NULL_HANDLE), .pStages = st, .pVertexInputState = &vi,
         .pInputAssemblyState = &ia, .pViewportState = &vps, .pRasterizationState = &rs, .pMultisampleState = &ms, .pDepthStencilState = _pc.hasDS ? &dss : NULL, .pColorBlendState = &cb,
         .pDynamicState = &ds, .layout = _pl, .renderPass = _rp };
@@ -4564,12 +4583,14 @@ static int n48_plan(const uint32_t threads[3], const uint32_t nom[3], N48Region 
     uint32_t _local[3]; int _mode; uint32_t _pcOff; char _ep[128]; NSMutableDictionary *_variants; NSLock *_lock; NSMutableArray *_owned; BOOL _noop;
     id _hsFn; _Atomic(uintptr_t) _realp;   // hot-swap (placeholder only): the kernel function to rebuild from; the published real object (+1, written once)
     N48LinkCtx *_hsLk;   // build 18 (P3): the kernel's link context at creation (nil = none); the rebuild on the watcher thread installs it
+    MTLSize _reqTG;   // bundle nm272 candidate: the descriptor's requiredThreadsPerThreadgroup (zero when none; macOS 26)
 }
 - (instancetype)initWithDevice:(id)dev function:(id)fn error:(NSError **)err;
 - (instancetype)initPlaceholderWithDevice:(id)dev function:(id)fn;   // #12 R1: valid state whose dispatches encode nothing (hot-swapped when the .spv + .meta.json appear)
 - (N48ComputePipelineState *)n48Real;
 - (BOOL)n48HotRebuild;
 - (BOOL)noop;
+- (MTLSize)requiredThreadsPerThreadgroup; - (void)n48SetRequired:(MTLSize)s;   // bundle nm272 candidate (NullMoth bc467c8, item 1)
 - (VkPipeline)pipelineForLocal:(const uint32_t *)l;
 - (VkPipelineLayout)layout; - (VkDescriptorSetLayout)dsl; - (const N48PB *)pb; - (uint32_t)npb;
 - (const uint32_t *)nominalLocal; - (int)mode; - (uint32_t)pcOffset; - (uint32_t)pcSize;
@@ -4669,7 +4690,9 @@ N48_DNR(N48ComputePipelineState)
 - (id)device { return _dev; }
 - (NSString *)label { return _lbl; }
 - (void)setLabel:(NSString *)l { _lbl = [l copy]; }
-- (NSUInteger)maxTotalThreadsPerThreadgroup { return 1024; }
+- (NSUInteger)maxTotalThreadsPerThreadgroup { return (NSUInteger)n48nm_max_total_tg(1024, n48nm_required_product(_reqTG.width, _reqTG.height, _reqTG.depth)); }   // bundle nm272 candidate: a required size bounds the total
+- (MTLSize)requiredThreadsPerThreadgroup { return _reqTG; }   // bundle nm272 candidate (macOS 26): the size the pipeline was created with
+- (void)n48SetRequired:(MTLSize)s { _reqTG = s; }
 - (NSUInteger)threadExecutionWidth { return 32; }
 - (NSUInteger)staticThreadgroupMemoryLength { return 0; }
 - (NSUInteger)imageblockMemoryLengthForDimensions:(MTLSize)d { (void)d; return 0; }
@@ -5191,6 +5214,9 @@ N48_DNR(N48CommandBuffer)
     else if ([o isKindOfClass:[N48Texture class]]) fb = [(N48Texture *)o n48NCHostBuffer];
     if (fb && [fb n48NCFallback]) [self n48NCNote:fb];
 }
+// bundle nm272 candidate (item 6): a residency set a command buffer names stays alive until the command buffer completes (the inherited default of Apple's base class answers these).
+- (void)useResidencySet:(id)s { [self n48Retain:s]; }
+- (void)useResidencySets:(const id __unsafe_unretained *)s count:(NSUInteger)n { for (NSUInteger i = 0; i < n; i++) [self n48Retain:s[i]]; }
 - (void)n48NCNote:(N48Buffer *)b {
     if (!_ncbufs) _ncbufs = [NSMutableArray array];
     if ([_ncbufs indexOfObjectIdenticalTo:b] == NSNotFound) [_ncbufs addObject:b];
@@ -5487,6 +5513,35 @@ static VkRenderPass n48_mk_rp_c(const VkAttachmentDescription *ads, uint32_t na,
     return rp;
 }
 
+// ---- bundle nm272 candidate (NullMoth 0aacf15 / 0dab177 / 9a05b0a; items 6 and 8) ----
+// useResource: and useHeap: name what the GPU may reach without a binding. The command buffer retains each one until it completes, as it does every bound object. A heap
+// names every live member it holds at that moment. A compute encoder also records its declared textures with their usage, for the indirect dispatch's preparation.
+static void n48_use_one(N48CommandBuffer *cb, NSMutableDictionary *decl, id r, NSUInteger usage, BOOL heap) {
+    if (!cb || !r) return;
+    if (heap) {
+        if (![r isKindOfClass:[N48Heap class]]) return;
+        [cb n48Retain:r];
+        for (id m in [(N48Heap *)r n48LiveMembers]) [cb n48Retain:m];
+        return;
+    }
+    if (![r isKindOfClass:[N48Buffer class]] && ![r isKindOfClass:[N48Texture class]]) return;
+    [cb n48Retain:r];
+    if (decl && [r isKindOfClass:[N48Texture class]]) decl[[NSValue valueWithNonretainedObject:r]] = @[ r, @(usage) ];
+}
+static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const id __unsafe_unretained *o, NSUInteger n, NSUInteger usage, BOOL heap) {
+    if (!o) return;
+    for (NSUInteger i = 0; i < n; i++) n48_use_one(cb, decl, o[i], usage, heap);
+}
+#define N48_ENCODER_USE(DECL) \
+    - (void)useResource:(id)r usage:(NSUInteger)u { n48_use_one(self->_cb, (DECL), r, u, NO); } \
+    - (void)useResource:(id)r usage:(NSUInteger)u stages:(NSUInteger)st { (void)st; n48_use_one(self->_cb, (DECL), r, u, NO); } \
+    - (void)useResources:(const id __unsafe_unretained *)r count:(NSUInteger)n usage:(NSUInteger)u { n48_use_many(self->_cb, (DECL), r, n, u, NO); } \
+    - (void)useResources:(const id __unsafe_unretained *)r count:(NSUInteger)n usage:(NSUInteger)u stages:(NSUInteger)st { (void)st; n48_use_many(self->_cb, (DECL), r, n, u, NO); } \
+    - (void)useHeap:(id)h { n48_use_one(self->_cb, nil, h, 0, YES); } \
+    - (void)useHeap:(id)h stages:(NSUInteger)st { (void)st; n48_use_one(self->_cb, nil, h, 0, YES); } \
+    - (void)useHeaps:(const id __unsafe_unretained *)h count:(NSUInteger)n { n48_use_many(self->_cb, nil, h, n, 0, YES); } \
+    - (void)useHeaps:(const id __unsafe_unretained *)h count:(NSUInteger)n stages:(NSUInteger)st { (void)st; n48_use_many(self->_cb, nil, h, n, 0, YES); }
+
 @interface N48RenderEncoder : _MTLCommandEncoder {
     N48CommandBuffer *_cb; BOOL _ended, _inPass, _begun; uint32_t _w, _h, _na; NSString *_lbl;
     VkRenderPass _rp1; BOOL _rp1c; VkFramebuffer _fb, _fbf; VkClearValue _cvs[9]; VkAttachmentDescription _ads[9];
@@ -5494,6 +5549,7 @@ static VkRenderPass n48_mk_rp_c(const VkAttachmentDescription *ads, uint32_t na,
     uint32_t _nd; VkFormat _dsVkFmt; unsigned _encSamples;   // bundle 10: depth/stencil attachment present; its VkFormat (UNDEFINED = none); the pass's sample count (0 until the first attachment, then >= 1)
     id _rtex[8]; uint32_t _slvl[8], _sslice[8], _rlvl[8], _rslice[8]; NSUInteger _sact[8];   // bundle 10: per colour attachment the resolve texture (+ level, slice), its source level / slice and the store action
     N48DSInfo _dsi; uint32_t _sref[2]; float _bias[3];   // bundle 10: the bound MTLDepthStencilState, the stencil reference values (front, back) and depth bias (constant, clamp, slope)
+    BOOL _dbOn; float _dbLo, _dbHi;   // bundle nm272 candidate: setDepthTestMinBound:maxBound: (the range is clamped to [0, 1] when recorded)
     N48RenderPipelineState *_pso; N48StageState _sv, _sf; MTLViewport _vp; MTLScissorRect _sr; float _blend[4]; MTLCullMode _cull; MTLWinding _wind;
     n48dc_enc _dc; BOOL _dcOn;   // P5b: per-draw redundancy state (_dcOn = the n48m-drawopt switch as latched at device creation)
     n48occ *_occ; VkQueryPool _qp; uint32_t _qbase;   // build 18 (P2): this pass's occlusion bookkeeping (owned by the command buffer), its query pool and the first of its N48OCC_MAXQ reserved query indices
@@ -5733,6 +5789,15 @@ N48_DNR(N48RenderEncoder)
 - (void)setBlendColorRed:(float)r green:(float)g blue:(float)b alpha:(float)a { _blend[0] = r; _blend[1] = g; _blend[2] = b; _blend[3] = a; }
 - (void)setTriangleFillMode:(MTLTriangleFillMode)m { if (m != MTLTriangleFillModeFill) N48LOG("setTriangleFillMode %lu: NOT IMPLEMENTED (fill)", (unsigned long)m); }
 - (void)setDepthClipMode:(NSUInteger)m { if (m) N48_ONCE("setDepthClipMode: Clamp is not implemented (depth clip stays on)"); }
+// bundle nm272 candidate (NullMoth bc467c8, item 2): the depth bounds test (macOS 26). Setting a range turns the test on for the rest of this encoder: a fragment whose STORED depth
+// lies outside [min, max] is discarded. Apple applies no test until this is called. Vulkan's depth bounds test is the same comparison (n48_nm272.h clamps the range to [0, 1]).
+- (void)setDepthTestMinBound:(float)lo maxBound:(float)hi {
+    if (!N48R.dbBounds) { N48_ONCE("setDepthTestMinBound:maxBound: refused: this device has no depthBounds feature, the test is not applied"); return; }
+    _dbOn = YES; _dbLo = n48nm_db_lo(lo); _dbHi = n48nm_db_hi(hi);
+}
+// bundle nm272 candidate (NullMoth bc467c8, item 4): a logical-to-physical colour attachment map (macOS 26). A Metal 3 render pipeline always uses the identity mapping, so the
+// Apple GPUs accept the map and change nothing (only Metal 4 pipelines inherit it). The same rule here: accepted, logged once, identity kept.
+- (void)setColorAttachmentMap:(id)map { if (map) N48_ONCE("setColorAttachmentMap: accepted and ignored (a Metal 3 render pipeline always uses the identity mapping)"); }
 - (void)setDepthBias:(float)a slopeScale:(float)b clamp:(float)c { _bias[0] = a; _bias[1] = N48R.dbClamp ? c : 0.0f; _bias[2] = b; if (c != 0.0f && !N48R.dbClamp) N48_ONCE("setDepthBias: a non-zero clamp is ignored (the device lacks depthBiasClamp)"); }   // bundle 10
 - (void)setStencilReferenceValue:(uint32_t)v { _sref[0] = _sref[1] = v; }
 - (void)setDepthStencilState:(id)s {   // bundle 10: recorded; read at every draw of a pipeline that has a depth/stencil attachment (a colour-only pipeline never looks at it)
@@ -5762,6 +5827,7 @@ N48_DNR(N48RenderEncoder)
 - (void)setStencilStoreActionOptions:(NSUInteger)a { (void)a; }
 - (void)setStencilFrontReferenceValue:(uint32_t)f backReferenceValue:(uint32_t)b { _sref[0] = f; _sref[1] = b; }
 N48_ENCODER_NOOPS
+N48_ENCODER_USE(nil)
 - (void)pushDebugGroup:(NSString *)s { (void)s; }
 - (void)popDebugGroup {}
 - (void)insertDebugSignpost:(NSString *)s { (void)s; }
@@ -5873,10 +5939,12 @@ N48_ENCODER_NOOPS
     VkFrontFace front = _wind == MTLWindingCounterClockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;   // both are window-space (y down) senses
     if ([_pso n48DSVk] != _dsVkFmt || [_pso n48SampleCount] != _encSamples) {   // bundle 10: the pipeline's attachments must be the pass's (Metal validation; a Vulkan render-pass compatibility rule)
         [_cb n48Fail:[NSString stringWithFormat:@"the render pipeline's depth/stencil format (vk %d) or sample count (%u) differs from the pass's (vk %d, %u)", (int)[_pso n48DSVk], [_pso n48SampleCount], (int)_dsVkFmt, _encSamples]]; return NO; }
+    const BOOL dbOn = _dbOn && [_pso n48HasDepth];   // bundle nm272 candidate: the depth bounds test applies to a pipeline with a depth attachment only
     uint32_t dk = [_pso n48DSKey:&_dsi];   // bundle 10: 0 for a colour-only pipeline
+    if (dbOn) dk |= N48NM_DS_DEPTH_BOUNDS;   // bundle nm272 candidate: the depth bounds variant
     uint32_t fkey = (uint32_t)front | (dk << 1);   // the last-answer cache compares (topology, cull, front, pso): the depth/stencil variant rides in the front word
     VkPipeline vkp;
-    if (_dcOn) {   // P5b item 3: the last (topology, cull, front, pso) -> VkPipeline answer skips pipelineForTopology's NSNumber / NSLock / NSDictionary
+    if (_dcOn && !dbOn) {   // P5b item 3 (a depth bounds variant is looked up in pipelineForTopology, whose key carries bit 31; this word does not): the last (topology, cull, front, pso) -> VkPipeline answer skips pipelineForTopology's NSNumber / NSLock / NSDictionary
         uint64_t pp;
         if (n48dc_enc_pc_get(&_dc, (uint32_t)topo, (uint32_t)cull, fkey, (__bridge const void *)_pso, &pp)) vkp = (VkPipeline)(uintptr_t)pp;
         else { vkp = [_pso pipelineForTopology:topo cull:cull front:front ds:dk]; n48dc_enc_pc_put(&_dc, (uint32_t)topo, (uint32_t)cull, fkey, (__bridge const void *)_pso, (uint64_t)(uintptr_t)vkp); }
@@ -5954,6 +6022,7 @@ N48_ENCODER_NOOPS
         vkCmdSetStencilWriteMask(cmd, VK_STENCIL_FACE_FRONT_BIT, _dsi.fWrite); vkCmdSetStencilWriteMask(cmd, VK_STENCIL_FACE_BACK_BIT, _dsi.bWrite);
         vkCmdSetStencilReference(cmd, VK_STENCIL_FACE_FRONT_BIT, _sref[0]); vkCmdSetStencilReference(cmd, VK_STENCIL_FACE_BACK_BIT, _sref[1]);
         if ([_pso n48HasDepth]) vkCmdSetDepthBias(cmd, _bias[0], _bias[1], _bias[2]);
+        if (dbOn) vkCmdSetDepthBounds(cmd, _dbLo, _dbHi);   // bundle nm272 candidate
     }
     for (uint32_t i = 0; i < nn; i++) {
         N48Buffer *b; NSUInteger off;
@@ -6019,7 +6088,7 @@ N48_ENCODER_NOOPS
 // ---------------------------------------------------------------------------------------------------------------
 // N48ComputeEncoder (11e R2)
 // ---------------------------------------------------------------------------------------------------------------
-@interface N48ComputeEncoder : _MTLCommandEncoder { N48CommandBuffer *_cb; BOOL _ended; NSString *_lbl; N48ComputePipelineState *_pso; N48StageState _st; }
+@interface N48ComputeEncoder : _MTLCommandEncoder { N48CommandBuffer *_cb; BOOL _ended; NSString *_lbl; N48ComputePipelineState *_pso; N48StageState _st; NSMutableDictionary *_decl; /* bundle nm272 candidate: declared textures (useResource:usage:) */ }
 - (instancetype)initWithCommandBuffer:(id)cb compute:(int)dummy;
 @end
 
@@ -6027,7 +6096,7 @@ N48_ENCODER_NOOPS
 - (instancetype)initWithCommandBuffer:(id)cb compute:(int)dummy {
     (void)dummy;
     self = [super initWithCommandBuffer:cb]; if (!self) return nil;
-    _cb = cb; N48LOGR("N48ComputeEncoder %p", (__bridge void *)self);
+    _cb = cb; _decl = [NSMutableDictionary dictionary]; N48LOGR("N48ComputeEncoder %p", (__bridge void *)self);
     return self;
 }
 N48_DNR(N48ComputeEncoder)
@@ -6067,6 +6136,7 @@ N48_DNR(N48ComputeEncoder)
 - (void)updateFence:(id)f { (void)f; N48_ONCE("compute updateFence: ordered by submission order; ignored"); }
 - (void)waitForFence:(id)f { (void)f; N48_ONCE("compute waitForFence: ordered by submission order; ignored"); }
 N48_ENCODER_NOOPS
+N48_ENCODER_USE(self->_decl)
 - (void)pushDebugGroup:(NSString *)s { (void)s; }
 - (void)popDebugGroup {}
 - (void)insertDebugSignpost:(NSString *)s { (void)s; }
@@ -6125,6 +6195,40 @@ N48_ENCODER_NOOPS
 }
 - (void)dispatchThreadgroups:(MTLSize)g threadsPerThreadgroup:(MTLSize)t { [self n48Dispatch:g tpt:t exactThreads:NO]; }
 - (void)dispatchThreads:(MTLSize)g threadsPerThreadgroup:(MTLSize)t { [self n48Dispatch:g tpt:t exactThreads:YES]; }
+// bundle nm272 candidate (NullMoth 9a05b0a, item 8): the group counts are read on the GPU (vkCmdDispatchIndirect) from the 12 bytes at the offset. The local size is the
+// kernel's own, as for a direct dispatch. A ThreadsDynamic kernel needs its grid on the CPU (push constants), so it is refused (4 of the 230 cached kernels).
+- (void)dispatchThreadgroupsWithIndirectBuffer:(id)ib indirectBufferOffset:(NSUInteger)io threadsPerThreadgroup:(MTLSize)tpt {
+    if (_ended) { [_cb n48Fail:@"indirect dispatch after endEncoding"]; return; }
+    if ([_cb n48Error]) return;
+    if (!_pso) { [_cb n48Fail:@"indirect dispatch without a compute pipeline state"]; return; }
+    { N48ComputePipelineState *r = [_pso n48Real];
+      if (r) { _pso = r; [_cb n48Retain:r]; } }
+    if ([_pso noop]) { N48LOGR("COMPUTE FALLBACK: indirect dispatch skipped, placeholder pipeline encodes nothing"); return; }
+    if (![ib isKindOfClass:[N48Buffer class]] || !n48nm_indirect_ok((uint64_t)io, (uint64_t)[(N48Buffer *)ib length])) {
+        [_cb n48Fail:@"indirect dispatch: the arguments are not in an N48Buffer, or the offset is not 4-byte aligned, or its 12 bytes lie outside the buffer"]; return; }
+    if ([_pso mode] != 0) { [_cb n48Fail:@"indirect dispatch of a ThreadsDynamic kernel is not supported (its grid size is needed on the CPU)"]; return; }
+    const uint32_t *nom = [_pso nominalLocal];
+    if (tpt.width != nom[0] || tpt.height != nom[1] || tpt.depth != nom[2]) {
+        [_cb n48Fail:[NSString stringWithFormat:@"indirect dispatch: threadsPerThreadgroup %lux%lux%lu != the SPIR-V local size %ux%ux%u the kernel was translated with",
+                      (unsigned long)tpt.width, (unsigned long)tpt.height, (unsigned long)tpt.depth, nom[0], nom[1], nom[2]]]; return; }
+    id dev = [_cb device];
+    VkCommandBuffer cmd = [_cb vk];
+    n48_each_tex([_pso pb], [_pso npb], &_st, dev, ^(N48Texture *t, VkImageLayout l) { n48_ios_usek(self->_cb, t, YES, l == VK_IMAGE_LAYOUT_GENERAL, N48DF_W_COMPUTE); n48_tex_to([self->_cb vk], t, l); });
+    // NullMoth 9a05b0a: the textures declared with useResource:usage: are brought in before the GPU reads the counts; GENERAL when they may be written, read-only otherwise.
+    [_decl enumerateKeysAndObjectsUsingBlock:^(id k, id v, BOOL *stop) {
+        (void)k; (void)stop;
+        NSArray *pair = v; N48Texture *t = pair[0]; const BOOL w = ([pair[1] unsignedIntegerValue] & MTLResourceUsageWrite) != 0;
+        n48_ios_usek(self->_cb, t, YES, w, N48DF_W_COMPUTE); n48_tex_to([self->_cb vk], t, w ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); }];
+    VkDescriptorSet s = VK_NULL_HANDLE;
+    if ([_pso npb]) { s = [_cb n48AllocSet:[_pso dsl]]; if (!s || ![_cb n48FillSet:s bindings:[_pso pb] count:[_pso npb] state:&_st stage:"compute"]) return; }
+    n48_full_barrier(cmd);   // the counts were written by earlier work: every earlier write is visible to the indirect read
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, [_pso pipelineForLocal:nom]);
+    if (s) vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, [_pso layout], 0, 1, &s, 0, NULL);
+    [_cb n48Retain:ib];
+    vkCmdDispatchIndirect(cmd, [(N48Buffer *)ib vkBuffer], (VkDeviceSize)io);
+    n48_full_barrier(cmd);
+    N48LOGR("compute dispatch: indirect, local %u,%u,%u", nom[0], nom[1], nom[2]);
+}
 - (void)endEncoding {
     if (_ended) return;
     _ended = YES;
@@ -6228,6 +6332,7 @@ N48_DNR(N48BlitEncoder)
 - (void)updateFence:(id)f { (void)f; N48_ONCE("blit updateFence: ordered by submission order; ignored"); }
 - (void)waitForFence:(id)f { (void)f; N48_ONCE("blit waitForFence: ordered by submission order; ignored"); }
 N48_ENCODER_NOOPS
+N48_ENCODER_USE(nil)
 // m11h9: a box-filtered chain, level L-1 -> L with vkCmdBlitImage (linear filter when RADV can filter the format, else nearest) inside one GENERAL-layout image (source and
 // destination are different levels, so the regions never overlap); each blit is ordered after the previous by a full memory barrier.
 - (void)generateMipmapsForTexture:(id)tex {
@@ -6459,14 +6564,22 @@ static void n48_census_log(void) {
 // native #12 luma: QuartzCore's CA::OGL::MetalContext::get_compute_pipeline (compute_average_luma, glass backdrop tint, Reduce Transparency off) sends
 // -newComputePipelineStateWithDescriptor:error: (CONFIRMED: selector reference at QuartzCore 0x7ff80d2e6c74 resolves through the cache). That selector was not
 // implemented here, the inherited one returned nil although the spvcache has the kernel, and QuartzCore aborts on nil (abort_with_payload, function=compute_average_luma).
+// bundle nm272 candidate (NullMoth bc467c8, item 1): the descriptor's requiredThreadsPerThreadgroup (a macOS 26 property, read by key: the bundle is built for macOS 12). Zero when none.
+static void n48_set_required(id pipe, id desc) {
+    if (![pipe isKindOfClass:[N48ComputePipelineState class]] || ![desc respondsToSelector:NSSelectorFromString(@"requiredThreadsPerThreadgroup")]) return;
+    NSValue *v = [desc valueForKey:@"requiredThreadsPerThreadgroup"]; MTLSize s = { 0, 0, 0 };
+    if ([v isKindOfClass:[NSValue class]]) [v getValue:&s size:sizeof s];
+    [(N48ComputePipelineState *)pipe n48SetRequired:s];
+}
+- (id)n48NewComputePipelineD:(MTLComputePipelineDescriptor *)d error:(NSError **)error { id p = [self n48NewComputePipeline:d.computeFunction error:error]; n48_set_required(p, d); return p; }
 - (id)newComputePipelineStateWithDescriptor:(MTLComputePipelineDescriptor *)d error:(NSError **)error {
-    n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:error:"); return [self n48NewComputePipeline:d.computeFunction error:error]; }
+    n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:error:"); return [self n48NewComputePipelineD:d error:error]; }
 - (void)newComputePipelineStateWithDescriptor:(MTLComputePipelineDescriptor *)d completionHandler:(void (^)(id, NSError *))h {
-    n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:completionHandler:"); NSError *e = nil; id p = [self n48NewComputePipeline:d.computeFunction error:&e]; if (h) h(p, e); }
+    n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:completionHandler:"); NSError *e = nil; id p = [self n48NewComputePipelineD:d error:&e]; if (h) h(p, e); }
 - (id)newComputePipelineStateWithDescriptor:(MTLComputePipelineDescriptor *)d options:(NSUInteger)o reflection:(void *)r error:(NSError **)error {
-    (void)o; (void)r; n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:options:reflection:error:"); return [self n48NewComputePipeline:d.computeFunction error:error]; }
+    (void)o; (void)r; n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:options:reflection:error:"); return [self n48NewComputePipelineD:d error:error]; }
 - (void)newComputePipelineStateWithDescriptor:(MTLComputePipelineDescriptor *)d options:(NSUInteger)o completionHandler:(void (^)(id, id, NSError *))h {
-    (void)o; n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:options:completionHandler:"); NSError *e = nil; id p = [self n48NewComputePipeline:d.computeFunction error:&e]; if (h) h(p, nil, e); }
+    (void)o; n48x_linkage_compute(d); N48LOG("newComputePipelineStateWithDescriptor:options:completionHandler:"); NSError *e = nil; id p = [self n48NewComputePipelineD:d error:&e]; if (h) h(p, nil, e); }
 
 // ---- 10c: textures ----
 - (id)newTextureWithDescriptor:(MTLTextureDescriptor *)d {
