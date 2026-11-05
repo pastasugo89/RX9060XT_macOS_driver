@@ -156,3 +156,11 @@ Al posto dello Stage20 ancora non avviato, predisposto Stage21/bundle23: 212 sha
 - Primo avvio in modalità software: il verificatore del profilo accettava solo la build 666. Corretto (`b312552`), latch archiviato dopo la revisione.
 - Secondo avvio: `CONTEXT_PROFILE_VERIFIED` (dynamic_vmids true), `LOGICAL_CONTEXT_CAPACITY_VERIFIED=64`, `login-window-stable-300s`. Registro del driver: 71 aperture ammesse, nessun rifiuto; ammesse anche app prima escluse (Brave, Mappe, App Store, Dov'è, Libri, Calcolatrice). L'utente conferma accelerazione e app funzionanti.
 - **Ancora aperto**: icone a livelli (Finder, App Store, Mappe). Le pipeline con solo vertex funzionano; restano 8479 letture di texture mai collegate in iconservicesagent. Ipotesi in verifica: texture passate tramite argument buffer / `gpuResourceID`, non implementati nel bundle.
+
+### 1-5 novembre 2026 — bundle 34, kernel 0.0.671, 60 Hz
+
+- **Bundle 34** (azzeramento della memoria video nuova, WindowServer escluso) installato. Le icone sono ancora sbagliate: indagine in corso sul lato WindowServer.
+- **Blocco dopo circa 25 minuti di uptime (<1 fps), risolto in 0.0.671:** i buffer GTT erano allocati fisicamente contigui (fino a 64 MiB) sotto il lock globale dei client. Con la RAM frammentata, `vm_page_find_contiguous(num=1024)` falliva scandendo tutta la memoria (~150 ms per tentativo, 418 volte in 3 minuti), mentre ogni client GPU restava fermo. 0.0.671 usa pagine sparse allocate fuori dai lock (`644c07d`). Da verificare su un uptime lungo.
+- **60 Hz funzionanti** (0.0.670/0.0.671 + RDNA4FB 0.0.9): `refresh 60` allunga V_TOTAL da 1525 a 3050 righe con lo stesso clock; il monitor LG lo accetta, l'utente conferma che la banda nera in alto è sparita. Il flag `/Library/Application Support/Navi44/accelerated-trial/refresh-60` attiva i 60 Hz a ogni avvio; cancellarlo riporta a 120 Hz.
+- Issue #1 (riproducibilità della baseline 0.0.665): `baselines/0.0.665/` pubblicata (`2c34dd1`), issue chiusa.
+
