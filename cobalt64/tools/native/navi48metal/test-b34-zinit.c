@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     check(fBPool > 0 && fBNon > 0 && fill > 0 && fLog > 0, "buffer: bind (pooled and direct), fill and log found");
     check(fBPool < fill && fBNon < fill && fill < fLog, "buffer: the fill runs after BOTH memory binds and before the log line");
     check(count(m, "static BOOL n48zi_clear_image(") == 1 && count(m, "static BOOL n48zi_fill_buffer(") == 1, "helpers defined once");
-    check(plist && count(plist, "<key>CFBundleVersion</key>\n\t<string>34</string>") == 1, "Info.plist CFBundleVersion is 34");
+    check(plist && (count(plist, "<key>CFBundleVersion</key>\n\t<string>34</string>") == 1 || count(plist, "<key>CFBundleVersion</key>\n\t<string>35</string>") == 1), "Info.plist CFBundleVersion is 34 or later (bundle 35 relaxes the pin, as bundle 33 did for 32)");
 
     printf("== part 2: pure decisions (src/n48_zinit.h)\n");
     check(n48zi_decide_texture(0, 0, 0, 1, 262144) == N48ZI_CLEAR, "texture: colour, single-sampled, app -> clear");

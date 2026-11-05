@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     const char *fm = at(m_, "static const N48Fmt *n48_fmt(MTLPixelFormat f) {"), *fme = fm ? at(fm, "\n}") : NULL, *fmk = fm ? at(fm, "N48F_UINT) && n48_nouint()") : NULL;
     CHECK("pin: n48_fmt() (the one colour lookup) answers NULL for an N48F_UINT entry when the kill file exists", fm && fme && fmk && fmk < fme, "the kill file restores today's nil everywhere n48_fmt is used");
     // clear site
-    const char *cl = at(m_, "MTLClearColor c = ca.clearColor;"), *cu = cl ? at(cl, "if ([t n48IsUInt]) {") : NULL, *cu32 = cl ? at(cl, ".uint32 = { n48if_clear_u(c.red, 16)") : NULL, *cf = cl ? at(cl, ".float32 = { (float)c.red") : NULL;
+    const char *cl = at(m_, "MTLClearColor c = ca.clearColor;"), *cu = cl ? at(cl, "if ([t n48IsUInt]) {") : NULL, *cu32 = cl ? at(cl, ".uint32 = { n48if_clear_u(c.red, ub)") : NULL, *cf = cl ? at(cl, ".float32 = { (float)c.red") : NULL;
     CHECK("pin: the colour clear takes the .uint32 branch for an integer attachment BEFORE the .float32 fill (reachable: same loop, no early exit between)", cl && cu && cu32 && cf && cu > cl && cu32 > cu && cf > cu32 && cf - cl < 900, "order clear < isUInt < .uint32 < .float32");
     CHECK("pin: the uint branch is an if/else: the float32 fill is the else arm", cu && cf && at(cu, "} else\n        _cvs[na] = (VkClearValue){ .color = { .float32") != NULL, "else arm");
     CHECK("pin: exactly one colour clear value site (.float32) and one .uint32 site in the file", count(m_, ".color = { .float32") == 1 && count(m_, ".color = { .uint32") == 1, "no other clear site");
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     CHECK("pin: the rule uses the pipeline's own `fb` (fallback) flag and the attachment's table flag", count(m_, "n48if_write_mask(fb, (f->flags & N48F_UINT) != 0, wm)") == 1 && at(m_, "BOOL fb = NO;") != NULL, "same fb that selects n48_fb_fs_spv");
     const char *fbs = at(m_, "_fs = fb ? n48_spv_module(n48_fb_fs_spv"), *fbd = at(m_, "BOOL fb = NO;");
     CHECK("pin: `fb` is set (declared) before both the fallback shader choice and the mask rule", fbd && fbs && wmr && fbd < fbs && fbs < wmr, "declared < module < rule");
-    CHECK("pin: all four clear channels go through n48if_clear_u (blue / alpha are invisible in RG16Uint, so only the text can show it)", count(m_, "n48if_clear_u(c.red, 16)") == 1 && count(m_, "n48if_clear_u(c.green, 16)") == 1 && count(m_, "n48if_clear_u(c.blue, 16)") == 1 && count(m_, "n48if_clear_u(c.alpha, 16)") == 1, "4 of 4");
+    CHECK("pin: all four clear channels go through n48if_clear_u (blue / alpha are invisible in RG16Uint, so only the text can show it; bundle 35: the width is the format's own, ub)", count(m_, "n48if_clear_u(c.red, ub)") == 1 && count(m_, "n48if_clear_u(c.green, ub)") == 1 && count(m_, "n48if_clear_u(c.blue, ub)") == 1 && count(m_, "n48if_clear_u(c.alpha, ub)") == 1, "4 of 4");
     { char *h_ = slurp(dir, "n48_intfmt.h"); CHECK("pin: the converter's NaN guard is `!(v > 0.0)` (a UB cast of NaN gives 0 on arm64 but not on x86, so the value test cannot see it)", h_ && count(h_, "if (!(v > 0.0)) return 0;") == 1, "present"); free(h_); }
     CHECK("pin: the include of n48_intfmt.h", count(m_, "#include \"n48_intfmt.h\"") == 1, "present");
     CHECK("pin: the RADV feature gate is untouched (texture create + pipeline create still check n48_fmt_feats)", count(m_, "n48_fmt_feats(f)") >= 1 && count(m_, "RADV features 0x%x lack") >= 1 && count(m_, "canRT = isDS ?") == 1, "fail-closed gate stays");

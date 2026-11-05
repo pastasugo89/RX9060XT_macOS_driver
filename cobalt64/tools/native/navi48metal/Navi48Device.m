@@ -27,6 +27,11 @@
 #include <crt_externs.h>
 #include <CommonCrypto/CommonDigest.h>
 #include <dispatch/dispatch.h>
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include <mach/vm_region.h>
+#include <execinfo.h>
+#include "n48_nocopy.h"   // bundle 35: refused no-copy imports are served by a copy (rules, host test test-b35-nocopy.c)
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
@@ -355,6 +360,42 @@ static _Atomic uint64_t n48_mt_fallbacks;
 
 static NSError *n48_err(NSInteger code, NSString *msg) {
     return [NSError errorWithDomain:@"Navi48Metal" code:code userInfo:@{ NSLocalizedDescriptionKey: msg }];
+}
+// bundle 35 (n48_nocopy.h): a refused no-copy import, described for the log. Rate limited (n48nc_log_due); the first three refusals of a process also log
+// their callers. The region query is read-only (mach_vm_region_recurse on this task): protection, max protection, sharing mode and VM tag of the mapping at
+// the pointer, and whether the whole range lies inside that one mapping. Read-only mappings (CoreUI's Assets.car) are the refused kind (the kernel's
+// kIODirectionInOut wiring needs write access).
+static void n48nc_refusal_note(const void *p, NSUInteger len, int code, const char *what) {
+    static _Atomic uint32_t refusals;
+    const uint32_t k = atomic_fetch_add(&refusals, 1) + 1;
+    if (!n48nc_log_due(k)) return;
+    mach_vm_address_t a = (mach_vm_address_t)(uintptr_t)p; mach_vm_size_t rsz = 0; natural_t depth = 1000;
+    vm_region_submap_info_data_64_t info; mach_msg_type_number_t cnt = VM_REGION_SUBMAP_INFO_COUNT_64;
+    const kern_return_t kr = mach_vm_region_recurse(mach_task_self(), &a, &rsz, &depth, (vm_region_recurse_info_t)&info, &cnt);
+    const char pr[4] = { (info.protection & VM_PROT_READ) ? 'r' : '-', (info.protection & VM_PROT_WRITE) ? 'w' : '-', (info.protection & VM_PROT_EXECUTE) ? 'x' : '-', 0 };
+    const char mp[4] = { (info.max_protection & VM_PROT_READ) ? 'r' : '-', (info.max_protection & VM_PROT_WRITE) ? 'w' : '-', (info.max_protection & VM_PROT_EXECUTE) ? 'x' : '-', 0 };
+    const uintptr_t lo = (uintptr_t)p, hi = lo + (uintptr_t)len;
+    const int inside = kr == KERN_SUCCESS && (uintptr_t)a <= lo && hi <= (uintptr_t)(a + rsz);
+    N48LOG("newBufferWithBytesNoCopy refused #%u (%s, code %d): process %s pid %d, pointer %p, %lu bytes; mapping [%#llx,%#llx) prot %s max %s share %u tag %u; the whole range is %s that mapping",
+           k, what, code, getprogname(), (int)getpid(), p, (unsigned long)len, (unsigned long long)a, (unsigned long long)(a + rsz), pr, mp,
+           (unsigned)info.share_mode, (unsigned)info.user_tag, inside ? "in" : "NOT in");
+    if (k <= 3) {
+        void *bt[12]; const int nb = backtrace(bt, 12); char **sy = backtrace_symbols(bt, nb);
+        for (int i = 1; sy && i < nb; i++) N48LOG("  refusal #%u caller %d: %s", k, i, sy[i]);
+        free(sy);
+    }
+}
+// bundle 35: the copy-fallback switch. Kill file /private/tmp/n48m-nocopy-nofallback (latched once per process): the refusal stays nil, as in bundle 34.
+static int n48nc_fallback_on(void) {
+    static int on; static dispatch_once_t once;
+    dispatch_once(&once, ^{ struct stat st; on = stat("/private/tmp/n48m-nocopy-nofallback", &st) != 0;
+        N48LOG("no-copy fallback %s (kill file /private/tmp/n48m-nocopy-nofallback %s; latched for the life of this process)", on ? "ON" : "OFF", on ? "absent" : "exists"); });
+    return on;
+}
+// bundle 35: the copies made in this process, counted for the log (rate limited).
+static void n48nc_fallback_note(NSUInteger len) {
+    static _Atomic uint32_t copies; const uint32_t k = atomic_fetch_add(&copies, 1) + 1;
+    if (n48nc_log_due(k)) N48LOG("no-copy fallback #%u: %lu bytes copied from the caller's pages (a refused import; refreshed before every submission that uses it)", k, (unsigned long)len);
 }
 
 static uint64_t n48_now(void);
@@ -2204,10 +2245,14 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
     BOOL _noacct;   // heap resource: the heap's size is in n48_alloc_total, not this buffer's memory
     N48Mem _pm; BOOL _pooled;   // P1: the memory comes from the pool (slab range / recycled allocation / own allocation made through n48_mem_alloc); _vkmem is then NULL
     void (^_deallocator)(void *, NSUInteger); BOOL _imported;   // no-copy buffer: client memory imported as host memory; the block is called once, at release
+    void *_ncOrig; BOOL _ncFallback;   // bundle 35: a refused import served by a copy. _ncOrig = the caller's pages (copied into _ptr before each submission that uses this buffer); the deallocator gets _ncOrig
 }
 - (instancetype)initWithDevice:(id)dev length:(NSUInteger)len options:(NSUInteger)opts error:(NSError **)err;
 - (instancetype)initWithDevice:(id)dev bytesNoCopy:(void *)p length:(NSUInteger)len options:(NSUInteger)opts deallocator:(void (^)(void *, NSUInteger))d error:(NSError **)err;
 - (BOOL)n48Imported;
++ (instancetype)n48NoCopyFallbackOn:(id)dev ptr:(void *)p length:(NSUInteger)len options:(NSUInteger)o deallocator:(void (^)(void *, NSUInteger))d error:(NSError **)err;
+- (BOOL)n48NCFallback;
+- (void)n48NCSync;
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid;
 - (VkBuffer)vkBuffer;
 @end
@@ -2263,7 +2308,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
 // (host-visible import: the memory type is host coherent). Anything else (unaligned pointer, length not a page multiple, Private storage, > 64 MiB) returns nil.
 - (instancetype)initWithDevice:(id)dev bytesNoCopy:(void *)p length:(NSUInteger)len options:(NSUInteger)opts deallocator:(void (^)(void *, NSUInteger))d error:(NSError **)err {
     self = [super init]; if (!self) return nil;
-    #define NCFAIL(code, ...) do { NSString *m_ = [NSString stringWithFormat:__VA_ARGS__]; N48LOG("newBufferWithBytesNoCopy: refused: %s", m_.UTF8String); if (err) *err = n48_err(code, m_); return nil; } while (0)
+    #define NCFAIL(code, ...) do { NSString *m_ = [NSString stringWithFormat:__VA_ARGS__]; N48LOG("newBufferWithBytesNoCopy: refused: %s", m_.UTF8String); n48nc_refusal_note(p, len, code, m_.UTF8String); if (err) *err = n48_err(code, m_); return nil; } while (0)
     _dev = dev; _len = len; _opts = opts;
     if (!p || !len) NCFAIL(110, @"NULL pointer or zero length");
     if (((opts >> 4) & 0xF) > 1) NCFAIL(111, @"storage mode %lu: only Shared and Managed client memory can be wrapped", (unsigned long)((opts >> 4) & 0xF));
@@ -2302,6 +2347,20 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
     return self;
 }
 - (BOOL)n48Imported { return _imported; }
+// bundle 35: the copy that stands in for a refused import (n48_nocopy.h). The copy is Shared and host-visible; it is filled from the caller's pages now and
+// refreshed from them before every submission that uses it (n48NCSync, called by the command buffer). Limits: the GPU's writes into the copy are not copied
+// back to the caller's pages; a write the caller makes to its pages while a submission that uses the copy is executing may be missed by that submission.
++ (instancetype)n48NoCopyFallbackOn:(id)dev ptr:(void *)p length:(NSUInteger)len options:(NSUInteger)o deallocator:(void (^)(void *, NSUInteger))d error:(NSError **)err {
+    (void)o;   // the copy is always Shared (the caller's storage mode is only a hint for the import)
+    N48Buffer *c = [[N48Buffer alloc] initWithDevice:dev length:len options:(MTLResourceStorageModeShared | N48_OPT_NOZERO) error:err];
+    if (!c) return nil;
+    if (!c->_ptr) { if (err) *err = n48_err(120, @"no-copy fallback: the copy has no CPU mapping"); return nil; }
+    memcpy(c->_ptr, p, len);
+    c->_ncOrig = p; c->_ncFallback = YES; c->_deallocator = d ? [d copy] : nil;
+    return c;
+}
+- (BOOL)n48NCFallback { return _ncFallback; }
+- (void)n48NCSync { if (_ncFallback && _ncOrig && _ptr && _len) memcpy(_ptr, _ncOrig, _len); }
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid {
     _hpHeap = h; _hpOff = o; _hpSize = sz; _hpId = bid;
     if (!_noacct && !_imported) { atomic_fetch_sub(&n48_alloc_total, (uint64_t)_asz); _noacct = YES; }
@@ -2313,7 +2372,7 @@ static _Atomic uint64_t n48_alloc_total;   // bytes of VkDeviceMemory held by li
         if (_pooled) { n48_mem_free(&_pm); if (!_noacct) atomic_fetch_sub(&n48_alloc_total, (uint64_t)_asz); }   // P1
         else if (_vkmem) { vkFreeMemory(N48R.dev, _vkmem, NULL); if (_imported) { @synchronized ([Navi48Device class]) { N48R.impTotal -= _len; } } else if (!_noacct) atomic_fetch_sub(&n48_alloc_total, (uint64_t)_asz); }
     }
-    if (_deallocator) { void (^d)(void *, NSUInteger) = _deallocator; _deallocator = nil; d(_ptr, _len); }
+    if (_deallocator) { void (^d)(void *, NSUInteger) = _deallocator; _deallocator = nil; d(_ncFallback ? _ncOrig : _ptr, _len); }   // bundle 35: a copy-served buffer hands back the caller's pointer
 }
 - (void)doesNotRecognizeSelector:(SEL)sel {
     N48LOG("UNRECOGNIZED selector %s on N48Buffer", sel_getName(sel));
@@ -2383,6 +2442,10 @@ static const N48Fmt n48_fmts[] = {
     // bundle 19 (NATIVE-S8-MENUS.md): pixel format 63. Core Animation's large-shadow distance-field pass (brim_init / brim_jump / brim_outline) ping-pongs two of these; the refusal made
     // emit_large_brim return without drawing, so the whole menu / Spotlight layer vanished. The RADV feature check at texture / pipeline creation stays the fail-closed gate.
     { MTLPixelFormatRG16Uint,        VK_FORMAT_R16G16_UINT,              4, N48F_UINT },
+    // bundle 35: R8Uint (13) and R32Uint (53) are integer colour formats too. App Store and Music (and mediaanalysisd, PhotosReliveWidget) asked for them as
+    // IOSurface-backed shader-write textures and were refused: "pixel format 53 is not in the format table" (bundle 34 logs, 2026-11-01 and 2026-11-05).
+    { MTLPixelFormatR8Uint,          VK_FORMAT_R8_UINT,                  1, N48F_UINT },
+    { MTLPixelFormatR32Uint,         VK_FORMAT_R32_UINT,                 4, N48F_UINT },
     { (MTLPixelFormat)84,            VK_FORMAT_R8G8B8A8_UNORM,           4, N48F_ARGB },   // bundle 29 fix 4 (ARGB8, private format value): sampling only; refused as a colour attachment
 };
 #define N48_NOUINT_FILE "/private/tmp/n48m-nouint"   // bundle 19: exists -> the integer formats are refused as before (nil), read ONCE per process
@@ -2415,6 +2478,8 @@ static const N48Fmt *n48_fmt(MTLPixelFormat f) {
     for (size_t i = 0; i < sizeof n48_fmts / sizeof *n48_fmts; i++) if (n48_fmts[i].mtl == f) return ((n48_fmts[i].flags & N48F_UINT) && n48_nouint()) ? NULL : &n48_fmts[i];
     return NULL;
 }
+// bundle 35: the bits per channel of an unsigned-integer colour format (the Metal clear converts each channel to that width). R8Uint = 8, R32Uint = 32, RG16Uint (and any other) = 16.
+static unsigned n48_uint_bits(MTLPixelFormat f) { return f == MTLPixelFormatR8Uint ? 8u : f == MTLPixelFormatR32Uint ? 32u : 16u; }
 // bundle 10: the depth / stencil formats live in their OWN table, so n48_fmt (colour targets, IOSurface- and buffer-backed textures, views, heaps' colour sizing) answers for them exactly as before: NULL.
 // Depth24Unorm_Stencil8 is not in it (AMD has no D24S8 on this path).  The numbers are tied to n48_depth.h by the asserts below.
 #define N48F_DS 2u
@@ -2531,6 +2596,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (IOSurfaceRef)n48IOSRef;
 - (BOOL)n48IOSLinear;
 - (VkBuffer)n48IOSBuffer;
+- (N48Buffer *)n48NCHostBuffer;   // bundle 35: the buffer behind a texture made over a buffer (a copy-served one is refreshed at submission)
 - (size_t)n48IOSBytesPerRow;
 - (VkImage)vkImage;
 - (VkImageView)vkView;
@@ -3036,6 +3102,7 @@ N48_DNR(N48Texture)
 }
 - (BOOL)n48IOSLinear { return _iosLinear; }
 - (VkBuffer)n48IOSBuffer { return _hostBuf ? [_hostBuf vkBuffer] : _ibuf; }
+- (N48Buffer *)n48NCHostBuffer { return _hostBuf; }
 - (size_t)n48IOSBytesPerRow { return _ibpr; }
 // 11e CPU access. Shared and Managed textures accept replaceRegion:/getBytes: (Managed has no separate CPU copy here: both are the one
 // DEVICE_LOCAL image reached through a host-visible staging buffer + a one-shot copy that is WAITED, so the data is in place when the call
@@ -4658,7 +4725,7 @@ static n48crc_rec_t *n48s_crc_check(N48Texture *dt, int slot, uint64_t seq) {
 
 @interface N48CommandBuffer : _MTLCommandBuffer {
     VkCommandBuffer _vk; VkFence _fence; BOOL _ended; NSMutableArray *_rps; NSMutableArray *_fbs; N48CommandQueue *_nq;
-    NSMutableArray *_refs; N48Buffer *_ring; NSUInteger _ringUsed; NSMutableArray *_pools; VkDescriptorPool _pool; NSError *_encErr;
+    NSMutableArray *_refs; /* bundle 35: _ncbufs = copy-served no-copy buffers this command buffer uses */ NSMutableArray *_ncbufs; N48Buffer *_ring; NSUInteger _ringUsed; NSMutableArray *_pools; VkDescriptorPool _pool; NSError *_encErr;
     NSMutableArray *_iot, *_iow;   // 11h.6: IOSurface textures touched / written by this command buffer
     uint64_t _dseq;   // S5.2a/#12: frame sequence, taken at submission (under the submit lock) = GPU order
     uint32_t _dsid;   // #12: IOSurface id of the display surface this cb writes (0 = unknown)
@@ -4701,6 +4768,8 @@ static n48crc_rec_t *n48s_crc_check(N48Texture *dt, int slot, uint64_t seq) {
 - (VkFence)fence;
 - (void)setFence:(VkFence)f;
 - (void)n48Retain:(id)o;
+- (void)n48NCNote:(N48Buffer *)b;   // bundle 35: a copy-served buffer this command buffer uses (refreshed before submission)
+- (void)n48NCSync;
 - (void)n48Fail:(NSString *)why;
 - (NSError *)n48Error;
 - (BOOL)n48Bytes:(const void *)p length:(NSUInteger)n buffer:(N48Buffer * __strong *)ob offset:(NSUInteger *)oo;
@@ -4769,6 +4838,7 @@ N48_DNR(N48CommandQueue)
             [cb setFence:fence];
             VkCommandBuffer vcb = [cb vk];
             VkSubmitInfo si = { .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .commandBufferCount = 1, .pCommandBuffers = &vcb };
+            [cb n48NCSync];   // bundle 35: copy-served no-copy buffers are refreshed from the caller's pages before the GPU reads them (n48_nocopy.h)
             n48_qlock();
             [cb n48DispSeq];
             [cb n48CBSubmit:t0];   // Stage 0b
@@ -5112,7 +5182,20 @@ N48_DNR(N48CommandBuffer)
 - (void)keepRenderPass:(VkRenderPass)rp framebuffer:(VkFramebuffer)fb {
     [_rps addObject:[NSValue valueWithPointer:(void *)rp]]; [_fbs addObject:[NSValue valueWithPointer:(void *)fb]];
 }
-- (void)n48Retain:(id)o { if (o) [_refs addObject:o]; }
+- (void)n48Retain:(id)o {
+    if (o) [_refs addObject:o];
+    if (!o) return;
+    // bundle 35: a copy-served no-copy buffer, or a texture made over one, is refreshed before this command buffer is submitted
+    N48Buffer *fb = nil;
+    if ([o isKindOfClass:[N48Buffer class]]) fb = (N48Buffer *)o;
+    else if ([o isKindOfClass:[N48Texture class]]) fb = [(N48Texture *)o n48NCHostBuffer];
+    if (fb && [fb n48NCFallback]) [self n48NCNote:fb];
+}
+- (void)n48NCNote:(N48Buffer *)b {
+    if (!_ncbufs) _ncbufs = [NSMutableArray array];
+    if ([_ncbufs indexOfObjectIdenticalTo:b] == NSNotFound) [_ncbufs addObject:b];
+}
+- (void)n48NCSync { for (N48Buffer *b in _ncbufs) [b n48NCSync]; }
 - (void)n48Fail:(NSString *)why {
     N48LOG("ENCODE ERROR (command buffer will complete with an error): %s", why.UTF8String);
     if (!_encErr) _encErr = n48_err(66, why);
@@ -5456,7 +5539,8 @@ static VkRenderPass n48_mk_rp_c(const VkAttachmentDescription *ads, uint32_t na,
         views[na] = [t n48AttViewLevel:(uint32_t)lvl layer:(uint32_t)ca.slice]; _views[na] = views[na]; _tex[na] = t; _sf.att[na] = t;
         MTLClearColor c = ca.clearColor;
         if ([t n48IsUInt]) {   // bundle 19: an integer attachment is cleared through .uint32 with Metal's conversion (truncate, saturate; measured on an Apple-silicon Mac, n48_intfmt.h); .float32 would put float bits in the texture
-            _cvs[na] = (VkClearValue){ .color = { .uint32 = { n48if_clear_u(c.red, 16), n48if_clear_u(c.green, 16), n48if_clear_u(c.blue, 16), n48if_clear_u(c.alpha, 16) } } };
+            const unsigned ub = n48_uint_bits([t pixelFormat]);   // bundle 35: the channel width of THIS format (was 16 for every integer format; R8Uint saturates at 255, R32Uint at 2^32-1)
+            _cvs[na] = (VkClearValue){ .color = { .uint32 = { n48if_clear_u(c.red, ub), n48if_clear_u(c.green, ub), n48if_clear_u(c.blue, ub), n48if_clear_u(c.alpha, ub) } } };
         } else
         _cvs[na] = (VkClearValue){ .color = { .float32 = { (float)c.red, (float)c.green, (float)c.blue, (float)c.alpha } } };
         [t setLayout:VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL];
@@ -6409,6 +6493,11 @@ static void n48_census_log(void) {
 - (id)newBufferWithBytesNoCopy:(void *)p length:(NSUInteger)len options:(MTLResourceOptions)o deallocator:(void (^)(void *, NSUInteger))d {
     N48LOGR("newBufferWithBytesNoCopy:length:%lu options:0x%lx", (unsigned long)len, (unsigned long)o);
     NSError *e = nil; N48Buffer *b = [[N48Buffer alloc] initWithDevice:self bytesNoCopy:p length:len options:o deallocator:d error:&e];
+    if (!b && n48nc_falls_back((int)e.code) && n48nc_size_ok(len) && n48nc_fallback_on()) {   // bundle 35: the kernel refused the import (read-only pages): serve it from a copy (n48_nocopy.h)
+        NSError *ce = nil; b = [N48Buffer n48NoCopyFallbackOn:self ptr:p length:len options:o deallocator:d error:&ce];
+        if (b) { n48nc_fallback_note(len); return b; }   // the copy owns the deallocator from here: it runs when the buffer dies
+        N48LOG("newBufferWithBytesNoCopy: no-copy fallback failed: %s", ce ? ce.localizedDescription.UTF8String : "?");
+    }
     if (!b) N48LOG("newBufferWithBytesNoCopy: NIL: %s", e.localizedDescription.UTF8String);   // a refused buffer never owned the memory: the deallocator is NOT called
     return b;
 }
