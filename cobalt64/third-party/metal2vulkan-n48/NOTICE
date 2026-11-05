@@ -29,7 +29,7 @@ How it is used: tools/native/navi48metal loads Resources/libn48xlate.dylib at ru
 the Mesa patches or the MIT-licensed bundle sources; the library is a separate shared
 object loaded dynamically. Anyone who builds and distributes libn48xlate.dylib must
 follow the LGPL for that library and offer its source: the NullMoth tag above plus
-patches/0003 (or ceba63c plus patches/0002 for bundles 29 to 34), including these changes.
+patches/0003 (or ceba63c plus patches/0002 for bundles 29 to 35), including these changes.
 
 No build outputs and no test data derived from Apple software are included. The test
 programs in n48xlate/tests need a corpus directory you generate yourself

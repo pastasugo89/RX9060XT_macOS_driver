@@ -27,7 +27,7 @@ and refuses a module that still needs a BufferAddressTable: the Metal bundle doe
 The C ABI version stays 2.
 
 Earlier bases, kept for reference:
-- patches/0002 on ceba63c (NullMoth 2.6.5): bundles 29 to 34.
+- patches/0002 on ceba63c (NullMoth 2.6.5): bundles 29 to 35.
     git clone https://github.com/nullmoth/nvidia-macos-driver
     cd nvidia-macos-driver && git checkout ceba63c15ba9d81deea7cd1c5dcc4c79497bea8f
     patch -p1 < /path/to/rx9060xt_metal_driver/cobalt64/third-party/metal2vulkan-n48/patches/0002-n48xlate-on-nullmoth-translator-ceba63c.patch
