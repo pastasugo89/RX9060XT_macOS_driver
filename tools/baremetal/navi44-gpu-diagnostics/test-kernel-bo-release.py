@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Exercise the actual normal BO release block with failed TLB acknowledgments.
+"""Exercise the actual normal BO release block with failed TLB acknowledgments, and the 0.0.671 GTT BO.
 
 MMIO, backing allocations and descriptors are tracked stubs. This checks that
 uncertain translation cannot recycle GTT, host imports or either VRAM pool.
+0.0.671: a GTT BO's memory is wired and NOT contiguous (sysmem_free_scattered); the release block is run for it
+here, and tests/native_gtt_test.cpp (admission, the per-page page list and GPU map, fence PTEs, the lifecycle,
+and source pins of BoCreate / GEM VA / fence / CPU map) is compiled and run against the same kernel tree.
 """
 from pathlib import Path
 import argparse
@@ -32,7 +35,7 @@ static bool privateAck,fenceAck;
 struct Descriptor { void release() { ++descriptorReleased; } };
 struct Allocation {};
 struct Pool { void free(Allocation &) { ++freed; } };
-struct Bo { unsigned kind; Descriptor *vmd; int sm; Allocation a; };
+struct Bo { unsigned kind; Descriptor *vmd; int gtt; Allocation a; };
 struct Session { uint64_t rootPa; VaEnt maps[kMaxMaps]; FenceSlot fslot[N48N_FENCE_SLOTS]; unsigned vmid; };
 static Session session;
 struct PtMem { Session *s; };
@@ -52,7 +55,7 @@ static void bar0_memcpy_to_vram(Device &,uint64_t,const void *p,size_t size) { a
 static void budget_release(Bo &) { ++budgetFreed; }
 static void sys_release(Bo &) { ++sysFreed; }
 static void host_release(Bo &) { ++hostFreed; }
-static void sysmem_free(int) { ++freed; }
+static void sysmem_free_scattered(int &) { ++freed; }
 static void normal_release(Session *s,Bo &b,uint32_t h,const Window &win) {
 '''
 suffix = r'''
@@ -90,3 +93,11 @@ with tempfile.TemporaryDirectory(prefix='navi44-kernel-bo-release-') as director
                     '-I'+str(headers), '-I'+str(headers.parent),
                     str(tmp / 'probe.cpp'), '-o', str(tmp / 'probe')], check=True)
     subprocess.run([str(tmp / 'probe')], check=True)
+    # 0.0.671: the GTT BO host test (pure header + source pins) against the same kernel tree. The test file is the repo's; the sources are the tree's.
+    gtt_test = root / 'cobalt64/src/navi48-bringup/tests/native_gtt_test.cpp'
+    subprocess.run(['clang++', '-std=c++17', '-O1', '-Wall', '-Wextra', '-Werror',
+                    '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
+                    '-I'+str(headers.parent), '-I'+str(headers),
+                    str(gtt_test), '-o', str(tmp / 'native_gtt_test')], check=True)
+    result = subprocess.run([str(tmp / 'native_gtt_test'), str(headers.parent.parent)], check=True, capture_output=True, text=True)
+    print(result.stdout.strip())

@@ -690,7 +690,7 @@ static void u12_pins(const std::string &root) {
         const size_t bo = eng.find("static void bo_release(Session *s, uint32_t h, RelMode mode) {"), cl = eng.find("if (mode == kRelClosing) {", bo), nm = eng.find("mode == kRelNormal", bo), lk = eng.find("} else {\n        // Leak:", bo);
         const size_t r1 = eng.find("b.vmd->release()", bo), r2 = eng.find("b.vmd->release()", r1 + 1);
         expect(cl < r1 && r1 < nm && nm < r2 && r2 < lk, "one release in the closing branch, one in the normal branch, none in the leak branch (leaked with the BO)");
-        expect(eng.find("b.vmd->release(); b.vmd = nullptr; }   // the descriptor is released once, before the range it names is freed\n        if (b.kind == kBoGtt) { sysmem_free(b.sm); sys_release(b); }", bo) != std::string::npos, "released before the memory it names is freed");
+        expect(eng.find("b.vmd->release(); b.vmd = nullptr; }   // the descriptor is released once, before the range it names is freed\n        if (b.kind == kBoGtt) { sysmem_free_scattered(b.gtt); sys_release(b); }", bo) != std::string::npos, "released before the memory it names is freed");
     }
     // build plumbing
     expect(mk.find("src/Navi48NativeClient.cpp") != std::string::npos, "the Makefile builds the client");

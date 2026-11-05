@@ -602,8 +602,10 @@ static void t12_pins(const std::string &root) {
     expect(in_order(fn_body(eng, "static bool g2_recover("), { "const bool ok = recovery_ok(r == kIOReturnSuccess, put, ret);", "gG2.recoveries++;", "else gG2.failed++;" }), "R3: every attempt is counted");
     // R4
     const std::string bc = fn_body(eng, "IOReturn n1c_bo_create(");
-    expect(in_order(bc, { "would_exceed(s->gttUsed, p.size, kGttCap)", "if (!n48native::g2::sys_budget_ok(multi, s->ws, gSysHeld, p.size)) {", "rc = kIOReturnNoMemory; break;", "sysmem_alloc(sm, p.size, p.align)", "if (multi) { b.sysCounted = 1u; gSysHeld += p.size; }" }),
-           "R4: BoCreate (GTT): the global cap before the allocation, the charge after it");
+    // 0.0.671: the pages are allocated BEFORE the session and gCliLock (sysmem_alloc_scattered, outside every lock); under the locks the per-client
+    // cap and the global cap are checked, the record takes the pages, and the charge follows. A refused BO's pages are freed after the unlock.
+    expect(in_order(bc, { "sysmem_alloc_scattered(gm, p.size)", "sess_lock(ref, true)", "IOLockLock(gCliLock)", "gtt_admit(p.size, s->gttUsed)", "if (!n48native::g2::sys_budget_ok(multi, s->ws, gSysHeld, p.size)) {", "rc = kIOReturnNoMemory; break;", "b.gtt = gm;", "if (multi) { b.sysCounted = 1u; gSysHeld += p.size; }", "IOLockUnlock(gCliLock)", "sysmem_free_scattered(gm)" }),
+           "R4: BoCreate (GTT): the pages are allocated before the locks; the global cap is checked under gCliLock before the record and the charge, and a refused BO's pages are freed after the unlock");
     const std::string im = fn_body(eng, "IOReturn n1c_bo_import_host(");
     expect(in_order(im, { "if (s != nullptr) IOLockLock(gCliLock);", "const ImportChk c = import_check(", "if (!n48native::g2::sys_budget_ok(multi_on(), s->ws, gSysHeld, size)) {", "rc = kIOReturnNoMemory; break;", "pt_map_pages(", "if (multi_on()) { b.sysCounted = 1u; gSysHeld += size; }" }),
            "R4: import: the global cap under gCliLock before anything is mapped, the charge with the record");

@@ -11,9 +11,9 @@ import re
 root = Path(__file__).resolve().parents[4]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--kernel-source', type=Path, required=True)
-parser.add_argument('--version', default='0.0.669', help='the candidate CFBundleVersion the markers must carry (0.0.669 or 0.0.670)')
+parser.add_argument('--version', default='0.0.669', help='the candidate CFBundleVersion the markers must carry (0.0.669, 0.0.670 or 0.0.671)')
 args = parser.parse_args()
-if args.version not in ('0.0.669', '0.0.670'):
+if args.version not in ('0.0.669', '0.0.670', '0.0.671'):
     raise SystemExit('unsupported --version: ' + args.version)
 build_marker = int(args.version.rsplit('.', 1)[1])
 src = args.kernel_source.resolve()

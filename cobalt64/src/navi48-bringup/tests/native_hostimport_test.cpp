@@ -386,9 +386,10 @@ static void h5_pins(const std::string &root) {
     expect(fn_body(eng, "IOReturn n1c_memory_for_handle(").find("if (b.kind == kBoHi || b.kind == kBoHost) rc = kIOReturnNotPermitted;") != std::string::npos, "a host BO is never CPU-mapped by clientMemoryForType (it would map bogus VRAM)");
     // GemVa
     const std::string gv = fn_body(eng, "IOReturn n1c_gem_va(");
-    expect(gv.find("host ? pt_map_pages(s->rootPa, q.stripped, in->map_size / kPage, b.hpages + in->offset_in_bo / kPage, leaf_flags(in->flags, b.uc, sys), mem)") != std::string::npos && gv.find(": pt_map(s->rootPa, q.stripped, in->map_size / kPage, basePa, leaf_flags(in->flags, b.uc, sys), mem);") != std::string::npos,
+    // 0.0.671: the GTT branch (gtt_map over b.gtt.pages) sits between the host branch and the VRAM pt_map; the host and VRAM branches keep their meaning
+    expect(gv.find("if (host) r = pt_map_pages(s->rootPa, q.stripped, in->map_size / kPage, b.hpages + in->offset_in_bo / kPage, leaf_flags(in->flags, b.uc, sys), mem);") != std::string::npos && gv.find("r = pt_map(s->rootPa, q.stripped, in->map_size / kPage, pa_of_mc(b.mc) + in->offset_in_bo, leaf_flags(in->flags, b.uc, sys), mem);") != std::string::npos,
            "GemVa MAP of a host BO maps the slice of its scattered page list; every other BO still goes through pt_map unchanged");
-    expect(gv.find("const bool sys = b.kind == kBoGtt || host;") != std::string::npos, "a host BO is SYSTEM|SNOOPED like a GTT BO");
+    expect(gv.find("const bool sys = host || gtt;") != std::string::npos && gv.find("const bool gtt = b.kind == kBoGtt;") != std::string::npos, "a host BO is SYSTEM|SNOOPED like a GTT BO");
     // the Bo record and the session
     expect(eng.find("kBoHost = 4") != std::string::npos && eng.find("IOMemoryDescriptor *hmd;") != std::string::npos && eng.find("uint64_t *hpages;") != std::string::npos && eng.find("uint64_t  importedBytes;") != std::string::npos, "the BO record and the session carry the import state");
     expect(eng.find("static_assert(kRelNormal == kHostRelNormal && kRelLeak == kHostRelLeak && kRelClosing == kHostRelClosing") != std::string::npos, "the pure release modes are the kernel's RelMode");
@@ -551,7 +552,7 @@ static void h5_pins2(const std::string &root) {
         expect(normal.find("bool memOk = true;") != std::string::npos, "D: a memOk flag starts true");
         expect(normal.find("memOk = memory_may_free_after_flush(session_flush_locked(s)) && memOk;") != std::string::npos && normal.find("memOk = memory_may_free_after_flush(flush_vmid(0)) && memOk;") != std::string::npos, "D: both flushes (the VMID-8 TLB after the unmap, the GART TLB after a fence slot) feed memOk");
         expect(normal.find("else if (b.kind == kBoHost && host_may_release(kHostRelNormal) && memOk) { host_release(b); sys_release(b); }") != std::string::npos, "D: the host pages are completed and released only when memOk");
-        expect(normal.find("if (b.kind == kBoGtt) { if (memOk) { sysmem_free(b.sm); sys_release(b); } }") != std::string::npos, "D: the GTT pages are freed only when memOk");
+        expect(normal.find("if (b.kind == kBoGtt) { if (memOk) { sysmem_free_scattered(b.gtt); sys_release(b); } }") != std::string::npos, "D: the GTT pages are freed only when memOk");
         expect(at(normal, "memOk = memory_may_free_after_flush(session_flush_locked(s))") < at(normal, "host_release(b)") && at(normal, "memOk = memory_may_free_after_flush(flush_vmid(0))") < at(normal, "host_release(b)"), "D: the flush verdicts are taken BEFORE the memory is released");
         expect(normal.find("(void)flush_vmid") == std::string::npos, "D: no flush result is ignored in the Normal branch");
     }

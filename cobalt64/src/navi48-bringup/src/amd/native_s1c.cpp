@@ -31,6 +31,7 @@
 
 #include "native_s1c.h"
 #include "native_hostimport_pure.h"   // 0.0.612 (ABI 1.9): BoImportHost
+#include "native_gtt_pure.h"          // 0.0.671: GTT BOs (scattered pages): admission, page list, per-page GPU mapping, fence PTE addresses
 #include "Navi48MetalNub.hpp"        // 0.0.612: hungLatched() writes Navi48,Ready = 0
 #include <IOKit/IOMemoryDescriptor.h>
 #include "dcn/navi48_dcn.hpp"     // build 0.0.603: n48dcn::scan* (the scanout path behind selectors 9..14)
@@ -94,7 +95,7 @@ struct Bo {
     uint8_t   budgeted;    // 0.0.627 (G2): this VRAM BO is counted in gVramOthers (a non-WindowServer session, switch ON); taken off when its memory is freed
     uint8_t   sysCounted;  // 0.0.629 (R4): this GTT / host-import BO is counted in gSysHeld (switch ON, any session); taken off only when its memory is really freed
     uint8_t   visCounted;  // 0.0.641 (G4 review): this VISIBLE-pool BO is counted in gVisOthers (a non-WindowServer session, apps ON); taken off when its memory is freed
-    SysMem    sm;          // gtt
+    ScatteredMem gtt;      // gtt (0.0.671): wired, zeroed, NOT contiguous; gtt.md is the CPU and user mapping, gtt.pages the physical address of each page (sysmem_alloc_scattered, outside every lock)
     IODeviceMemory *vmd;   // vis: the ONE CPU-map descriptor of this BO (0.0.602), created on first clientMemoryForType, released at BoFree / close, leaked with the BO when HUNG
     IOMemoryDescriptor *hmd;   // host (0.0.612): the prepare()d descriptor of the caller's range; complete() + release() at BoFree / close, LEAKED when HUNG
     uint64_t *hpages;          // host: the physical page list (heap, hpageCount entries), freed with the descriptor
@@ -1216,7 +1217,7 @@ static void bo_release(Session *s, uint32_t h, RelMode mode) {
         // navi48-apps: as 0.0.632 (always freed). By now the client's close has already removed the mappings it could (n1c_unmap_for_close): what is still counted here is the fallback.
         const bool vramReturnOk = n48native::g4::close_vram_return_ok(apps_on(), b.kind == kBoVis, b.vmd != nullptr, b.vmd != nullptr ? (uint32_t)b.vmd->getRetainCount() : 0u);
         if (b.vmd != nullptr) { b.vmd->release(); b.vmd = nullptr; }   // the descriptor is released once, before the range it names is freed
-        if (b.kind == kBoGtt) { sysmem_free(b.sm); sys_release(b); }
+        if (b.kind == kBoGtt) { sysmem_free_scattered(b.gtt); sys_release(b); }
         else if (b.kind == kBoHi) { gCtx->gmc.vram_alloc_hi.free(b.a); budget_release(b); }
         else if (b.kind == kBoVis && !vramReturnOk) {
             // LEAKED until reboot, and still COUNTED: gVramOthers keeps these bytes (they are never taken off the budget), so the 25 % cap reflects what the pool really lost.
@@ -1246,7 +1247,7 @@ static void bo_release(Session *s, uint32_t h, RelMode mode) {
         }
         if (slotCleared) { amdgpu_hdp_flush(*gCtx->dev); memOk = memory_may_free_after_flush(flush_vmid(0)) && memOk; }
         if (b.vmd != nullptr) { b.vmd->release(); b.vmd = nullptr; }   // the descriptor is released once, before the range it names is freed
-        if (b.kind == kBoGtt) { if (memOk) { sysmem_free(b.sm); sys_release(b); } }   // review item D: a flush that did not acknowledge leaks the GTT pages (they stay counted, R4)
+        if (b.kind == kBoGtt) { if (memOk) { sysmem_free_scattered(b.gtt); sys_release(b); } }   // review item D: a flush that did not acknowledge leaks the GTT pages (they stay counted, R4)
         else if (b.kind == kBoHi) { if (memOk) { gCtx->gmc.vram_alloc_hi.free(b.a); budget_release(b); } }
         else if (b.kind == kBoVis) { if (memOk) { gCtx->gmc.vram_alloc.free(b.a); budget_release(b); } }
         else if (b.kind == kBoHost && host_may_release(kHostRelNormal) && memOk) { host_release(b); sys_release(b); }   // 0.0.612: AFTER pt_unmap and flush_vmid above (unmap before complete)
@@ -1355,12 +1356,38 @@ static __attribute__((noinline)) void place_fallback_log(uint32_t slot, uint64_t
     N1C_LOG("BoCreate: GPU-only VRAM BO of %llu KiB (slot %u) is in the CPU-visible pool: the hi pool could not take it", (unsigned long long)(bytes >> 10), slot);
 }
 
+// 0.0.671: a GTT BO whose wired pages could not be allocated. Rate limited like the other BoCreate lines (log_gate_step). The request is refused at once and
+// never retried inside the kext: the caller decides whether to ask again.
+static uint64_t gGttLogGate;
+static __attribute__((noinline)) void gtt_refused_log(uint64_t bytes, kern_return_t kr) {
+    bool admit = false;
+    uint32_t suppressed = 0;
+    const uint64_t sec = now_ns() / 1000000000ull;
+    uint64_t w = __atomic_load_n(&gGttLogGate, __ATOMIC_RELAXED);
+    for (;;) {
+        const uint64_t nw = n48native::g4::log_gate_step(w, sec, &admit, &suppressed);
+        if (__atomic_compare_exchange_n(&gGttLogGate, &w, nw, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) break;
+    }
+    if (!admit) return;
+    if (suppressed != 0u) N1C_LOG("BoCreate: %u GTT allocation line(s) dropped by the rate limit", suppressed);
+    N1C_LOG("BoCreate refused (NoMemory): the %llu KiB GTT BO could not be given wired pages (kr=%#x); not retried", (unsigned long long)(bytes >> 10), (unsigned)kr);
+}
+
 IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t out[4]) {
     if (!sess_hello(ref)) return kIOReturnNotReady;
     const Place p = place_decide(in->bo_size, in->alignment, in->domains, in->domain_flags);
     if (p.rc != kOk) return (IOReturn)p.rc;
+    // 0.0.671: a GTT BO's wired pages are allocated HERE, under no lock: the allocation may take a while (it may block), and it must never sit under
+    // gCliLock or a session lock (0.0.670 did, and every GPU client waited behind it). The record takes the pages below, under the locks, after the
+    // admission is checked again; whatever the record does not take is freed after the unlock.
+    ScatteredMem gm {};
+    if (p.kind == kPlaceGtt) {
+        if (gtt_admit(p.size, 0ull) != kOk) return kIOReturnNoMemory;   // the per-BO maximum: nothing allocated
+        const kern_return_t kr = sysmem_alloc_scattered(gm, p.size);
+        if (kr != kIOReturnSuccess || !gm.valid()) { sysmem_free_scattered(gm); gtt_refused_log(p.size, kr); return kIOReturnNoMemory; }
+    }
     Session *s = sess_lock(ref, true);
-    if (s == nullptr) return kIOReturnNotReady;   // closed while we waited for the lock
+    if (s == nullptr) { sysmem_free_scattered(gm); return kIOReturnNotReady; }   // closed while we waited for the lock
     DeviceContext &dev = *gCtx->dev;
     IOReturn rc = (IOReturn)gpu_gate(s);
     const bool multi = multi_on();
@@ -1412,15 +1439,15 @@ IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t
             } else { rc = kIOReturnNoMemory; break; }
             if (multi && !s->ws) { b.budgeted = 1u; gVramOthers += p.size; }
         } else {
-            if (p.size > kGttMaxBo || would_exceed(s->gttUsed, p.size, kGttCap)) { rc = kIOReturnNoMemory; break; }
+            // 0.0.671: the admission is decided again under the locks, with the running total; the pages were allocated before them (gm, above).
+            if (gtt_admit(p.size, s->gttUsed) != kOk) { rc = kIOReturnNoMemory; break; }
             if (!n48native::g2::sys_budget_ok(multi, s->ws, gSysHeld, p.size)) {   // 0.0.629 (R4): GTT + imports of all sessions <= 6 GiB (WindowServer: per-session caps only)
                 N1C_LOG("BoCreate refused (NoMemory): slot %u: GTT + host imports of all sessions would pass the global %llu MiB (%llu MiB held, %llu KiB asked)", s->slot,
                         (unsigned long long)(n48native::g2::kSysGlobalCap >> 20), (unsigned long long)(gSysHeld >> 20), (unsigned long long)(p.size >> 10));
                 rc = kIOReturnNoMemory; break;
             }
-            SysMem sm {};
-            if (sysmem_alloc(sm, p.size, p.align) != kIOReturnSuccess || !sm.valid()) { sysmem_free(sm); rc = kIOReturnNoMemory; break; }
-            b.kind = kBoGtt; b.sm = sm;
+            if (!gm.valid() || gm.size != p.size) { rc = kIOReturnNoMemory; break; }   // cannot happen: a GTT placement allocated its pages above
+            b.kind = kBoGtt; b.gtt = gm; gm = ScatteredMem();   // the record owns the pages from here on (nothing below can refuse)
             s->gttUsed += p.size;
             if (multi) { b.sysCounted = 1u; gSysHeld += p.size; }
             bits = N48N_PLACED_CPU_MAPPABLE | N48N_PLACED_ZEROED;
@@ -1431,6 +1458,7 @@ IOReturn n1c_bo_create(const N1cRef &ref, const n48n_gem_create_in *in, uint64_t
     } while (false);
     IOLockUnlock(gCliLock);
     sess_unlock(s);
+    sysmem_free_scattered(gm);   // 0.0.671: the pages of a refused GTT BO, freed outside every lock (an empty record when the BO was created)
     return rc;
 }
 
@@ -1676,14 +1704,16 @@ IOReturn n1c_gem_va(const N1cRef &ref, const n48n_gem_va *in) {
         if (in->operation == N48N_VA_OP_MAP) {
             if (va_overlap(s->maps, kMaxMaps, q.stripped, in->map_size) >= 0) { rc = kIOReturnBadArgument; break; }
             const bool host = b.kind == kBoHost;                      // 0.0.612: scattered pages (b.hpages), mapped SYSTEM|SNOOPED like a GTT BO
-            const bool sys = b.kind == kBoGtt || host;
-            const uint64_t basePa = host ? 0ull : (sys ? b.sm.bus : pa_of_mc(b.mc)) + in->offset_in_bo;
+            const bool gtt = b.kind == kBoGtt;                        // 0.0.671: scattered pages (b.gtt.pages), one PTE per page, SYSTEM|SNOOPED
+            const bool sys = host || gtt;
             uint32_t slot = 0xFFFFFFFFu;
             for (uint32_t i = 0; i < kMaxMaps; i++) if (!va_ent_used(s->maps[i])) { slot = i; break; }
             if (slot == 0xFFFFFFFFu) { rc = kIOReturnNoResources; break; }
             IOLockLock(gCliLock);   // 0.0.627: the page-table reserve is shared
-            const uint32_t r = host ? pt_map_pages(s->rootPa, q.stripped, in->map_size / kPage, b.hpages + in->offset_in_bo / kPage, leaf_flags(in->flags, b.uc, sys), mem)
-                                    : pt_map(s->rootPa, q.stripped, in->map_size / kPage, basePa, leaf_flags(in->flags, b.uc, sys), mem);
+            uint32_t r;
+            if (host) r = pt_map_pages(s->rootPa, q.stripped, in->map_size / kPage, b.hpages + in->offset_in_bo / kPage, leaf_flags(in->flags, b.uc, sys), mem);
+            else if (gtt) r = gtt_map(s->rootPa, q.stripped, in->map_size, in->offset_in_bo, b.size, b.gtt.pages, b.gtt.npages, leaf_flags(in->flags, b.uc, sys), mem);
+            else r = pt_map(s->rootPa, q.stripped, in->map_size / kPage, pa_of_mc(b.mc) + in->offset_in_bo, leaf_flags(in->flags, b.uc, sys), mem);
             IOLockUnlock(gCliLock);
             if (r != kOk) { rc = (IOReturn)r; break; }
             s->maps[slot] = VaEnt{ q.stripped, in->map_size, in->offset_in_bo, in->handle, in->flags };
@@ -1754,7 +1784,10 @@ static uint32_t resolve_fence(Session *s, uint32_t handle, uint32_t off, uint64_
     if (isNew) {
         // U3: gmc_bind_existing only bumps, gart_bind_existing runs a different allocator; so the slot's PTE is written directly with the
         // encoding gmc_bind_existing uses (PTEFlags::SYSMEM_RW on the page's bus address), inside the window reserved at first open.
-        const uint64_t pte = ((b.sm.bus + (uint64_t)page * kPage) & ~0xFFFull) | PTEFlags::SYSMEM_RW;
+        // 0.0.671: the page's own physical address (the pages of a GTT BO are not one run); the flags are unchanged.
+        const uint64_t pa = gtt_fence_pte_pa(b.gtt.pages, b.gtt.npages, page);
+        if (pa == 0ull) return kBadArg;
+        const uint64_t pte = (pa & ~0xFFFull) | PTEFlags::SYSMEM_RW;
         bar0_memcpy_to_vram(*gCtx->dev, gCtx->gmc.gart_pt_vram_offset + (win.gartOff / kPage + (uint64_t)slot) * 8ull, &pte, sizeof(pte));
         amdgpu_hdp_flush(*gCtx->dev);
         const uint32_t f = flush_vmid(0);
@@ -2086,8 +2119,9 @@ IOReturn n1c_memory_for_handle(const N1cRef &ref, uint32_t handle, IOOptionBits 
         Bo &b = s->bo[handle];
         if (b.kind == kBoHi || b.kind == kBoHost) rc = kIOReturnNotPermitted;   // 0.0.612: a host import is already in the caller's own address space
         else if (b.kind == kBoGtt) {
-            b.sm.md->retain();
-            *memory = b.sm.md;
+            // 0.0.671: the wired descriptor itself, scattered or not: IOKit maps any memory descriptor into the client (RADV: IOConnectMapMemory64).
+            b.gtt.md->retain();
+            *memory = b.gtt.md;
         } else {
             // ONE descriptor per BO (0.0.602): IOConnectUnmapMemory64 finds the existing mapping by descriptor identity, so a fresh object per call
             // could never be unmapped. Created on first use, kept in the BO record, retained for each caller, released once at BoFree / close.

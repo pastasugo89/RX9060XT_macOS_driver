@@ -65,6 +65,15 @@ INSTALLED_669 = {'bundle_path': 'Navi48Bringup-contexts-0.0.669.kext',
 INSTALLED_668 = {'bundle_path': 'Navi48Bringup-contexts-0.0.668.kext',
                  'kernel_sha256': 'ab4c7fed6dd6c6ee52096da25d78f50bc515a51fdbfe8f591654143afe9ccb6d',
                  'config_sha256': 'c8e2a26453bfcadb6afd716ad3a6927d9312c9fd290e49c37609f8d5ee8775ab', 'version': '0.0.668'}
+# 0.0.671 (refresh-60b + the GTT fix): built on the reviewed 0.0.670 candidate TREE (kernel-contexts-v6, checked against its manifest), not on HEAD
+# and not on the 0.0.668 base. The fix is GTT BOs that are wired and NOT physically contiguous (amdgpu_sysmem.cpp, native_s1c.cpp, the new pure
+# header): taken from the working tree (--worktree-overlay, recorded with sha256 and blob ids). Version markers 670 -> 671. Payload v7 replaces the
+# 0.0.669 kernel that payload v5 installs; the 0.0.670 kernel was never installed.
+FIX_VERSION = '0.0.671'
+FIX_BASE = ROOT / 'research/builds/macos-20261101/refresh-60b/kernel-contexts-v6'
+FIX_BASE_SHA = 'c212c7310fb5a506d128d72dd5798725ecc2d6aaf84d7cee27dc0f6b88959eb3'   # the 0.0.670 candidate binary (kernel-contexts-v6's manifest)
+FIX_OVERLAY = ('src/amd/native_s1c.cpp', 'src/amd/amdgpu_sysmem.cpp', 'src/amd/amdgpu_sysmem.h', 'src/amd/native_gtt_pure.h')
+FIX_REQUIRED_STRINGS = (b'GTT BO could not be given wired pages',)   # 0.0.671: the refusal log of native_s1c.cpp gtt_refused_log
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -127,8 +136,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.670)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|670)', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.671)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[01])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -146,10 +155,11 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION):
         return recorded_active_baseline(path)
+    # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed.
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
-                         '0.0.670': (INSTALLED_669, '0.0.669')}[version]
+                         '0.0.670': (INSTALLED_669, '0.0.669'), FIX_VERSION: (INSTALLED_669, '0.0.669')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -193,6 +203,40 @@ def refresh_overlay(candidate, source, version):
     allowed = set(REFRESH_OVERLAY) | {'Info.plist', 'src/Navi48Bringup.cpp', 'src/Navi48MetalNub.cpp', 'src/amd/native_s1c.h'}
     if changed - allowed:
         raise ValueError('Candidate changed files outside the reviewed refresh overlay')
+    return sorted(changed)
+
+
+def fix_base_verified(baseline):
+    """0.0.671's base: the reviewed 0.0.670 candidate tree and its binary (kernel-contexts-v6), both checked against its manifest."""
+    base = json.loads((FIX_BASE / 'manifest.json').read_text())
+    if base.get('candidate_version') != '0.0.670' or base.get('candidate_binary_sha256') != FIX_BASE_SHA:
+        raise ValueError('kernel-contexts-v6 is not the reviewed 0.0.670 candidate')
+    if tree_files(baseline) != base['candidate_inputs']:
+        raise ValueError('The 0.0.670 candidate tree changed')
+    binary = FIX_BASE / 'candidate-source/build/Navi48Bringup.kext/Contents/MacOS/Navi48Bringup'
+    if sha(binary) != FIX_BASE_SHA:
+        raise ValueError('The 0.0.670 candidate binary changed')
+    return {'manifest': str((FIX_BASE / 'manifest.json').relative_to(ROOT)), 'candidate_inputs_checked': len(base['candidate_inputs']),
+            'binary_sha256': FIX_BASE_SHA}
+
+
+def fix_overlay(candidate, source, version):
+    """0.0.671: the GTT fix's files over the 0.0.670 candidate (the working-tree copies), the version markers 670 -> the candidate's version.
+    Nothing else changes: the refresh hunks and the rest of the 0.0.670 tree are already in the base."""
+    before = tree_files(candidate)
+    for name in FIX_OVERLAY:
+        target = candidate / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / name, target)
+    build = release_build(version)
+    replace_exact(candidate / 'Info.plist', '<string>0.0.670</string>', '<string>' + version + '</string>', 2)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 670;', 'kN1cKextBuild = %d;' % build, 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 670u', 'sizeof(N48MetalOps), %du' % build, 2)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    allowed = set(FIX_OVERLAY) | {'Info.plist', 'src/Navi48MetalNub.cpp', 'src/amd/native_s1c.h'}
+    if changed - allowed:
+        raise ValueError('Candidate changed files outside the reviewed GTT overlay')
     return sorted(changed)
 
 
@@ -277,7 +321,7 @@ def test_path(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4) or 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5)')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5) or 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay)')
     parser.add_argument('--active-baseline-manifest', type=Path,
                         help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
                              'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
@@ -290,8 +334,9 @@ def main():
     if sha(BASE / BASE_EXEC) != BASE_SHA:
         raise ValueError('Reference kernel binary changed')
     refresh = version in REFRESH_VERSIONS
-    tests = TESTS + (REFRESH_TESTS if refresh else ())
-    if version in ('0.0.668', *REFRESH_VERSIONS) and not args.active_baseline_manifest:
+    fix = version == FIX_VERSION   # 0.0.671: built on the 0.0.670 candidate tree (no 665 or 0.0.668 rebuild); the refresh tests run too
+    tests = TESTS + (REFRESH_TESTS if refresh or fix else ())
+    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION) and not args.active_baseline_manifest:
         raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
@@ -299,7 +344,9 @@ def main():
     else:
         active = active_kernel(EFI)
         active_source = 'live-efi'
-    revision, overlay = overlay_provenance(args.worktree_overlay, REFRESH_OVERLAY if refresh else OVERLAY)
+    if fix and not args.worktree_overlay:
+        raise ValueError('0.0.671 overlays the GTT fix, which is uncommitted review work: pass --worktree-overlay (recorded with sha256 and blob ids)')
+    revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
     repro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repro)
@@ -332,9 +379,12 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
+    copy_source(FIX_BASE / 'candidate-source' if fix else REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if refresh:
+    if fix:
+        # 0.0.671: no rebuild of any base. The base is the reviewed 0.0.670 candidate tree and binary (checked against its manifest).
+        manifest['base_verified'] = fix_base_verified(baseline)
+    elif refresh:
         # 0.0.669: no 665 rebuild. The base is the reviewed 0.0.668 tree and binary (checked against its manifest).
         manifest['base_verified'] = refresh_base_verified(baseline)
     else:
@@ -348,7 +398,11 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if refresh:
+    if fix:
+        manifest['changed_source_files'] = fix_overlay(candidate, SOURCE, version)
+        manifest['fix_overlay'] = {'base': str(FIX_BASE.relative_to(ROOT)), 'base_binary_sha256': FIX_BASE_SHA,
+                                   'files': {name: sha(SOURCE / name) for name in FIX_OVERLAY}}
+    elif refresh:
         manifest['changed_source_files'] = refresh_overlay(candidate, SOURCE, version)
         manifest['refresh_overlay'] = {'patch': str(REFRESH_PATCH.relative_to(ROOT)), 'patch_sha256': sha(REFRESH_PATCH),
                                        'navi48bringup_sha256': REFRESH_BRINGUP_SHA,
@@ -370,7 +424,7 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    required = REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh else ())
+    required = REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix else ()) + (FIX_REQUIRED_STRINGS if fix else ())
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]

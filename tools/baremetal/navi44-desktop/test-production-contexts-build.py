@@ -138,7 +138,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.668'), 668)
         self.assertEqual(build.release_build('0.0.669'), 669)   # refresh-60 (0.0.669 is a supported candidate since the refresh overlay)
         self.assertEqual(build.release_build('0.0.670'), 670)   # refresh-60b: the same overlay with the frame-total fix
-        for version in ('0.0.665', '0.0.671', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.671'), 671)   # refresh-60b + the GTT fix (wired, non-contiguous GTT BOs): built on the 0.0.670 tree
+        for version in ('0.0.665', '0.0.672', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
