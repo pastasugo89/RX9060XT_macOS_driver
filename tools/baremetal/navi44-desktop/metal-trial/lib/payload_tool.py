@@ -21,9 +21,10 @@ BUNDLE = 'Navi48Metal.bundle'
 GUARD_NAME = 'accelerated-reboot-trial.sh'
 MANIFEST_NAME = 'manifest.json'
 MAIN_KEY = 'Contents/MacOS/Navi48Metal'
+XLATE_KEY = 'Contents/Resources/libn48xlate.dylib'
 KEYS = (MAIN_KEY,
         'Contents/Resources/libvulkan_radeon.dylib',
-        'Contents/Resources/libn48xlate.dylib')
+        XLATE_KEY)
 GUARD_RE = re.compile(
     r'shasum -a 256 "/Library/GPUBundles/Navi48Metal\.bundle/([^"]+)" \| cut -d " " -f 1\) == ([0-9a-f]{64}) \]\]')
 # Exact text of the CFBundleVersion check line (@V@ = version number).
@@ -208,7 +209,8 @@ def cmd_edit_guard(args):
     #   1. the PROFILE= line (OLD_PROFILE -> NEW_PROFILE)
     #   2. the bundle_version check line, including its message (OLD_VERSION -> NEW_VERSION)
     #   3. the hash constant of Contents/MacOS/Navi48Metal (taken from NEW_BUNDLE)
-    # NEW_VERSION must be OLD_VERSION + 1. The two dylib constants must already equal NEW_BUNDLE's files.
+    #   4. only when NEW_BUNDLE ships a different translator: the libn48xlate.dylib constant (taken from NEW_BUNDLE)
+    # NEW_VERSION must be OLD_VERSION + 1. The libvulkan_radeon.dylib constant must already equal NEW_BUNDLE's file.
     live, new_bundle, out_guard, out_diff, old_prof, new_prof, old_ver, new_ver = args
     old_number = version_int(old_ver, 'live bundle version')
     if new_ver != str(old_number + 1):
@@ -220,7 +222,12 @@ def cmd_edit_guard(args):
     old_lines = Path(live).read_text().splitlines(keepends=True)
     actual = tree(new_bundle)
     live_constants = guard_hashes(live)
+    xlate_changes = live_constants[XLATE_KEY] != actual.get(XLATE_KEY)
+    if xlate_changes and not actual.get(XLATE_KEY):
+        die('new bundle has no ' + XLATE_KEY)
     for key in KEYS[1:]:
+        if key == XLATE_KEY:
+            continue
         if live_constants[key] != actual.get(key):
             die('bundle %s differs from the live guard constant; the guard edit only changes the main binary' % key)
     new_main = actual[MAIN_KEY]
@@ -231,7 +238,7 @@ def cmd_edit_guard(args):
     new_profile_line = 'PROFILE=' + new_prof
     old_version_line = VERSION_LINE.replace('@V@', old_ver)
     new_version_line = VERSION_LINE.replace('@V@', new_ver)
-    counts = {'profile': 0, 'version': 0, 'main': 0}
+    counts = {'profile': 0, 'version': 0, 'main': 0, 'xlate': 0}
     new_lines = []
     for line in old_lines:
         eol = '\n' if line.endswith('\n') else ''
@@ -246,15 +253,18 @@ def cmd_edit_guard(args):
         elif match and match.group(1) == MAIN_KEY:
             counts['main'] += 1
             new_lines.append(body[:match.start(2)] + new_main + body[match.end(2):] + eol)
+        elif xlate_changes and match and match.group(1) == XLATE_KEY:
+            counts['xlate'] += 1
+            new_lines.append(body[:match.start(2)] + actual[XLATE_KEY] + body[match.end(2):] + eol)
         else:
             new_lines.append(line)
-    if counts != {'profile': 1, 'version': 1, 'main': 1}:
+    if counts != {'profile': 1, 'version': 1, 'main': 1, 'xlate': 1 if xlate_changes else 0}:
         die('live guard does not contain each expected line exactly once: %s' % counts)
 
     # Structural check: the only differences are three one-line replacements, nothing else.
     matcher = difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False)
     changes = [op for op in matcher.get_opcodes() if op[0] != 'equal']
-    if len(changes) != 3 or any(tag != 'replace' or i2 - i1 != 1 or j2 - j1 != 1
+    if len(changes) != (4 if xlate_changes else 3) or any(tag != 'replace' or i2 - i1 != 1 or j2 - j1 != 1
                                 for tag, i1, i2, j1, j2 in changes):
         die('guard diff contains lines other than the three allowed ones')
     removed = [old_lines[i1] for _, i1, _, _, _ in changes]
@@ -262,7 +272,10 @@ def cmd_edit_guard(args):
     removed_bodies = sorted(line.rstrip('\n') for line in removed)
     expected_bodies = sorted([old_profile_line, old_version_line,
                               next(line for line in old_lines if GUARD_RE.search(line)
-                                   and GUARD_RE.search(line).group(1) == MAIN_KEY).rstrip('\n')])
+                                   and GUARD_RE.search(line).group(1) == MAIN_KEY).rstrip('\n')]
+                             + ([next(line for line in old_lines if GUARD_RE.search(line)
+                                      and GUARD_RE.search(line).group(1) == XLATE_KEY).rstrip('\n')]
+                                if xlate_changes else []))
     if removed_bodies != expected_bodies:
         die('guard diff removes unexpected lines')
 

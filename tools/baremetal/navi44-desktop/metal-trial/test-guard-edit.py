@@ -260,6 +260,14 @@ def run_live_refusals(work, live):
     refused('a changed libvulkan_radeon in the new bundle is refused', LIVE_GUARD,
             make_bundle(d / 'vk-changed', new, b'x', b'changed', live['xl']), 'r2',
             'libvulkan_radeon.dylib')
+    xl_bundle = make_bundle(d / 'xl-changed', new, b'x', live['vk'], b'xl-new')
+    r = run_tool('edit-guard', LIVE_GUARD, xl_bundle, d / 'xl.sh', d / 'xl.diff', old_profile, good_profile, str(n), str(new))
+    xl_text = (d / 'xl.sh').read_text() if r.returncode == 0 else ''
+    check('a changed libn48xlate is accepted and only its constant changes besides the three lines',
+          r.returncode == 0 and hashlib.sha256(b'xl-new').hexdigest() in xl_text
+          and hashlib.sha256(live['xl']).hexdigest() not in xl_text
+          and hashlib.sha256(live['vk']).hexdigest() in xl_text,
+          'rc=%s err=%s' % (r.returncode, r.stderr.strip()))
     bad = d / 'bad-version.sh'
     bad.write_text(live['text'].replace(version_line(n), version_line(n - 1), 1))
     refused('guard whose version line differs is refused', bad,
