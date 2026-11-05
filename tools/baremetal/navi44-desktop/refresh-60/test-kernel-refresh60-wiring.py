@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""0.0.669 CPU test: the wiring of the 60 Hz verb in the candidate kernel source (static checks, no execution).
+"""0.0.669/0.0.670 CPU test: the wiring of the 60 Hz verb in the candidate kernel source (static checks, no execution).
 Checks: the verb is dispatched BEFORE the native-boot refusal and only for well-formed requests; the user client admits 109 and 110; the
 lock is taken after the timer is created and released before the timer is removed; the stop path restores 120 Hz before the registers
-are unmapped; the RDNA4FB property name is the one RDNA4FB 0.0.9 reads; the version markers are 0.0.669.
+are unmapped; the RDNA4FB property name is the one RDNA4FB 0.0.9 reads; the version markers are those of --version (default 0.0.669).
 """
 from pathlib import Path
 import argparse
@@ -11,7 +11,11 @@ import re
 root = Path(__file__).resolve().parents[4]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--kernel-source', type=Path, required=True)
+parser.add_argument('--version', default='0.0.669', help='the candidate CFBundleVersion the markers must carry (0.0.669 or 0.0.670)')
 args = parser.parse_args()
+if args.version not in ('0.0.669', '0.0.670'):
+    raise SystemExit('unsupported --version: ' + args.version)
+build_marker = int(args.version.rsplit('.', 1)[1])
 src = args.kernel_source.resolve()
 bringup = (src / 'src/Navi48Bringup.cpp').read_text()
 client = (src / 'src/Navi48UserClient.cpp').read_text()
@@ -71,12 +75,12 @@ check('n48rf::Hw refresh_hw()' in dcn and 'dcn_wreg(ctx, abs, value)' in dcn, 'r
 check('rf_wr' in dcn and 'dcn_rreg(ctx, abs)' in dcn, 'the refresh reads do not go through dcn_rreg')
 
 # 8. version markers
-check(re.search(r'<string>0\.0\.669</string>', plist) is not None and plist.count('<string>0.0.669</string>') == 2, 'Info.plist is not 0.0.669')
-check('kN1cKextBuild = 669;' in s1c, 'kN1cKextBuild is not 669')
+check(plist.count('<string>%s</string>' % args.version) == 2, 'Info.plist is not ' + args.version)
+check('kN1cKextBuild = %d;' % build_marker in s1c, 'kN1cKextBuild is not %d' % build_marker)
 
 if failures:
     print('FAIL test-kernel-refresh60-wiring.py')
     for f in failures:
         print(' -', f)
     raise SystemExit(1)
-print('PASS test-kernel-refresh60-wiring.py: 0.0.669 verb dispatch, admission, lock order, shutdown order, property name, callbacks and markers')
+print('PASS test-kernel-refresh60-wiring.py: %s verb dispatch, admission, lock order, shutdown order, property name, callbacks and markers' % args.version)

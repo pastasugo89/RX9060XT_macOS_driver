@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""0.0.669 CPU test: compile and run the 60 Hz host test (cobalt64/src/navi48-bringup/tests/refresh60_test.cpp) against the PURE HEADER OF
+"""0.0.669/0.0.670 CPU test: compile and run the 60 Hz host test (cobalt64/src/navi48-bringup/tests/refresh60_test.cpp) against the PURE HEADER OF
 THE CANDIDATE being built, not the repo copy. The test drives the real decisions and sequences (classify, set 60, restore 120, rollback,
 session) against a register model, checks every written register against the real dcn41 write allowlist, and carries a planted defect
 (a writer that skips the OTG lock must be caught). Sanitizers: ASan, UBSan (fail on the first report).
@@ -61,4 +61,4 @@ if failures:
     for f in failures:
         print(' -', f)
     raise SystemExit(1)
-print('PASS test-kernel-refresh60.py: the host test of the 0.0.669 pure header passed on the candidate, with ASan/UBSan and the allowlist')
+print('PASS test-kernel-refresh60.py: the host test of the candidate pure header passed, with ASan/UBSan and the allowlist')

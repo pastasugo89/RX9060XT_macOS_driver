@@ -41,6 +41,7 @@ GUARD_668 = 'eaf88b0ab3a2711531c02efe22bc61bdf0012c1f0f2089fe8dd8ebd960ffd948'
 HOOK_668_GUARD = '95777cd184daca0ef5bb9c2b460d1bcd61713839700e400f2f0468d0bd6397fd'
 KERNEL_669 = 'cb6fd1067edf3ebd1f12ea20a91726698bdf2833591a86d50489d31626057def'
 GUARD_669 = '36ab536ab8368d54713fd1c82fe69023bb27c56659c26e3e82d4e60b56d05cf0'   # stage-time derivation of the CURRENT live guard (profile stage34-zinit-v1, Metal bundle 34)
+GUARD_669_STAGE = '8cc406859e1e3c5d4265dbb0cf1a39df1bb7c6bebe8b1ca5739cc4451055dcd1'   # the stage34 guard the 0.0.669 guard was derived from (payload v5 evidence)
 LIVE_GUARD = Path('/Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh')
 PROBE = '5afe2b52b0c0adc7a4bf1ea8f8e07437929ed9cfe066fa1f56a39240ceb000c5'
 NAVI48TEST_SHA = '83e7f3e3c9609ce636e138acf5a5186dbf6ef5c8951bcc6342eb21a1d058b94c'
@@ -138,10 +139,14 @@ class Release669(unittest.TestCase):
 
 class Guard669(unittest.TestCase):
     def setUp(self):
-        self.live = LIVE_GUARD.read_text()   # the stage-time input: whatever the live guard is now (read only)
+        # the stage-time input, read from payload v5's evidence copy: the live file is the 0.0.669 guard once installed (it is no longer the input)
+        self.live = (V5 / 'evidence/original-guard.sh').read_text()
         # the hook applied to the same live guard (the stage33 hooked file of the earlier review is historical, not an input any more)
         self.reviewed = hook.apply_refresh_patch(self.live)
         self.derived = m.make_guard(R669, self.live, m.PROBE_667_SHA, '0.0.669')
+
+    def test_the_stage_time_input_is_the_pinned_stage34_guard(self):
+        self.assertEqual(hashlib.sha256(self.live.encode('utf-8')).hexdigest(), GUARD_669_STAGE)
 
     def test_the_input_has_the_reviewed_0_0_668_capability_block_once(self):
         self.assertEqual(self.live.count(m.capability_block(m.KERNEL_BRANCH_668, m.PROBE_667_SHA)), 1)
@@ -310,7 +315,9 @@ class Payload669(unittest.TestCase):
         self.assertNotEqual(INSTALLED_NAVI48TEST_SHA, NAVI48TEST_SHA)
 
     def test_the_guard_in_the_payload_is_the_derived_guard_for_its_evidence(self):
-        self.assertEqual(m.sha(V5 / 'evidence/original-guard.sh'), hashlib.sha256(LIVE_GUARD.read_bytes()).hexdigest())
+        self.assertEqual(m.sha(V5 / 'evidence/original-guard.sh'), GUARD_669_STAGE)
+        # the live file is the stage-time guard (before the install) or the installed 0.0.669 guard; anything else is a change to review
+        self.assertIn(hashlib.sha256(LIVE_GUARD.read_bytes()).hexdigest(), {GUARD_669_STAGE, GUARD_669})
         expected = m.make_guard(R669, (V5 / 'evidence/original-guard.sh').read_text(), m.sha(V5 / 'system' / m.PROBE), '0.0.669')
         self.assertEqual((V5 / 'system' / m.GUARD).read_text(), expected)
         self.assertEqual(m.sha(V5 / 'system' / m.GUARD), GUARD_669)

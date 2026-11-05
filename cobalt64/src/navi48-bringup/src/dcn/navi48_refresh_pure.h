@@ -1,28 +1,37 @@
 //
-//  navi48_refresh_pure.h - kext 0.0.669: the 60 Hz scanout switch on Navi 44 (approach A). Decisions and sequences only; no kernel
+//  navi48_refresh_pure.h - kext 0.0.670: the 60 Hz scanout switch on Navi 44 (approach A). Decisions and sequences only; no kernel
 //  header, so tests/refresh60_test.cpp compiles this on the host Mac and drives the exact code the kext runs. The kext supplies the
 //  register callbacks (dcn/navi48_dcn.cpp refresh_hw(): every write goes through the DCN allowlist) and the lock, timer and registry
 //  property (Navi48Bringup.cpp: refreshVerb, refreshTimerFired, refreshShutdown).
 //
 //  WHAT CHANGES. The GOP scans 2560x1440 as a 2720 x 1525 raster at a 497.75 MHz pixel clock (120.00 Hz). The 60 Hz target keeps the pixel
 //  clock, the H timing and the DP link, and makes the frame 3050 lines: 497.75e6 / (2720 x 3050) = 59.9988 Hz. Exactly these registers change:
-//    OTG0_OTG_V_TOTAL, OTG0_OTG_V_TOTAL_MIN, OTG0_OTG_V_TOTAL_MAX   (total - 1: 1524 -> 3049; MIN and MAX equal V_TOTAL in the GOP golden)
+//    OTG0_OTG_V_TOTAL                             (total - 1: 1524 -> 3049), always
+//    OTG0_OTG_V_TOTAL_MIN, OTG0_OTG_V_TOTAL_MAX   (total - 1), only when they are non-zero in the snapshot (DRR on)
 //    DP MSA_TIMING_PARAM1 VTOTAL field (low 16 bits, the TOTAL line count: 1525 -> 3050; the high half is the H total, kept)
+//  THE FRAME-TOTAL PAIR. The live Navi 44 GOP (0.0.669 live read, 120 Hz) has V_TOTAL_MIN = V_TOTAL_MAX = 0: DRR is off. 0.0.669 required
+//  MIN = MAX = V_TOTAL and refused that GOP (kTimingDiffers). This header accepts two pairs: (0, 0), DRR off, which is kept as it is (the
+//  sequence never enables DRR), and (V, V), DRR on. A mixed pair is other. Linux writes the (V, V) pair on every timing program
+//  (optc1_program_timing, dcn10_optc.c:230) and writes (0, 0) when DRR is disabled (optc401_set_drr, dcn401_optc.c:357-363).
 //  The MSA field is not optional: the GOP golden (navi48_modetrial_tables.h kGold120 [19]) carries the total there (0x0AA005F5 = 2720 x 1525),
 //  and the 60 Hz golden carries 1481 (0x0AA005C9). DTO, H timing, VTG, the DLG/TTU set and the stream enable are not written.
+//  The MSA address 0x5622 is confirmed by the 0.0.669 live read (0x0AA005F5 at 0x5622).
 //
 //  SEQUENCE (apply(), used by set 60 and by restore 120; the values differ, the order is the same):
 //    preflight (reads only): classify() must say the GOP timing (set) or the 60 Hz target (restore); anything else refuses with no write.
-//    1. OTG_DOUBLE_BUFFER_CONTROL DRR_TIMING_DBUF_UPDATE_MODE = 2 (start of frame), as the row-120 apply of navi48_modetrial_pure.h does
+//    1. OTG_DOUBLE_BUFFER_CONTROL DRR_TIMING_DBUF_UPDATE_MODE = 2 (DP start of frame). It is the double-buffer point of V_TOTAL itself
+//       (optc1_set_timing_double_buffer, dcn10_optc.c:404-405), so it holds with DRR off too; Linux writes 2 at TG init (optc3_tg_init,
+//       dcn30_optc.c:361-364, used by DCN 4.0.1 through dcn401_optc.c tg_init). The as-found mode (0) is written back at step 8.
 //    2. OTG_MASTER_UPDATE_LOCK = 1 and wait for UPDATE_LOCK_STATUS (<= 10 ms)
-//    3. V_TOTAL, V_TOTAL_MIN, V_TOTAL_MAX under the lock: each one recorded BEFORE its write, read back after it
+//    3. V_TOTAL under the lock, and V_TOTAL_MIN and V_TOTAL_MAX too when they are non-zero: each one recorded BEFORE its write, read back after it
 //    4. OTG_MASTER_UPDATE_LOCK = 0 and wait for the status to clear (a stuck unlock stops the sequence: state uncertain, no rollback)
 //    5. wait for the double-buffer pending bits and PIPE_UPDATE pending to clear (<= 100 ms)
 //    6. witness: VERT_COUNT sampled for 40 ms (about two 60 Hz frames). Set 60 needs a count above 1525 (the 3050-line frame is live);
 //       restore needs a count at or below 1524 and above 100 (the 1525-line frame is live again)
 //    7. MSA_TIMING_PARAM1 with the new VTOTAL field, read back
 //    8. DRR mode back to 0 (the GOP value), read back
-//    9. final classify(): must be the target state; otherwise the rollback runs
+//    9. final classify() must be the target state, and MIN and MAX must hold exactly the values derived here (a zero stays zero);
+//       otherwise the rollback runs
 //  ROLLBACK (every failure after the first write, and every failed final check): under the lock, every recorded write is put back to
 //  its old value in REVERSE order, then unlock, pending wait, DRR mode 0, and a final classify() that must equal the state before the apply.
 //  If the rollback cannot verify, the result is kRestoreFailed and the session keeps its phase (the kext logs it and leaves the property at 60).
@@ -163,6 +172,12 @@ constexpr bool readable(const Snap &s) {
            s.lock != kUnreadable && s.pipe != kUnreadable;
 }
 enum Live : uint32_t { kLiveGop = 0, kLiveTarget = 1, kLiveOther = 2 };
+// The frame-total registers of a timing with `lines` total lines: V_TOTAL = lines - 1, and MIN and MAX either both 0 (DRR off) or both
+// equal to V_TOTAL (DRR on). A mixed pair matches neither.
+constexpr bool frame_total_ok(const Snap &s, uint32_t lines) {
+    const uint32_t v = lines - 1u;
+    return s.vTot == v && ((s.vMin == 0u && s.vMax == 0u) || (s.vMin == v && s.vMax == v));
+}
 // Exact classification. Every field of the golden must match; no lock, no pending flag, no DRR mode 2 may be left behind.
 inline uint32_t classify(const Snap &s) {
     if (!readable(s)) return kLiveOther;
@@ -171,8 +186,8 @@ inline uint32_t classify(const Snap &s) {
                        (s.db & kDbInstantly) == 0u && (s.drr == 0u || s.drr == 2u);
     const bool clocks = s.hTot == kHTotalReg && s.dtoPhase == kDtoPhaseGop && s.dtoMod == kDtoModuloGop && (s.rateDiv & kRateDivMask) == 0u;
     if (!quiet || !clocks) return kLiveOther;
-    if (s.vTot == kLinesGop - 1u && s.vMin == kLinesGop - 1u && s.vMax == kLinesGop - 1u && s.msa1 == kMsaGop) return kLiveGop;
-    if (s.vTot == kLinesTarget - 1u && s.vMin == kLinesTarget - 1u && s.vMax == kLinesTarget - 1u && s.msa1 == kMsaTarget) return kLiveTarget;
+    if (frame_total_ok(s, kLinesGop) && s.msa1 == kMsaGop) return kLiveGop;
+    if (frame_total_ok(s, kLinesTarget) && s.msa1 == kMsaTarget) return kLiveTarget;
     return kLiveOther;
 }
 
@@ -181,7 +196,8 @@ struct Entry { uint32_t abs, oldv, newv; };
 struct Journal { Entry e[kMaxJournal]; uint32_t n; };
 struct Outcome { uint32_t code; uint32_t vLines; uint32_t msaLines; uint32_t witnessMax; uint32_t witnessN; };
 
-// DRR_TIMING_DBUF_UPDATE_MODE: 2 = start of frame (the lock holds the write until then), 0 = the GOP value. Pending flags are written 0.
+// DRR_TIMING_DBUF_UPDATE_MODE: 2 = DP start of frame (dcn42_optc.c:150-152; the lock holds the write until then), 0 = any time (the GOP value).
+// Pending flags are written 0.
 inline uint32_t drr_set(const Hw &hw, uint32_t mode) {
     const uint32_t cur = hw.rd(hw.ctx, kRegDbCtrl);
     if (cur == kUnreadable) return kReadbackMismatch;
@@ -270,12 +286,18 @@ inline uint32_t rollback(const Hw &hw, const Snap &before, const Journal &j) {
     return bad ? kRestoreFailed : kOk;
 }
 
-// apply(): the sequence above. `cur` is the snapshot the decision was taken from; `lines` is the new frame total; `growth` is true for set 60.
+// The MIN or MAX value at the new total: a zero stays zero (DRR off, never enabled here); a non-zero one follows V_TOTAL (DRR on).
+inline uint32_t bound_for(uint32_t cur, uint32_t newV) { return cur == 0u ? 0u : newV; }
+
+// apply(): the sequence above. `cur` is the snapshot the decision was taken from (classify() accepted it: MIN and MAX are both 0, or both
+// equal to V_TOTAL); `lines` is the new frame total; `growth` is true for set 60.
 inline Outcome apply(const Hw &hw, const Snap &cur, uint32_t lines, bool growth) {
     Outcome o{ kOk, 0u, 0u, 0u, 0u };
     Journal j{};
     j.n = 0u;
+    if ((cur.vMin == 0u) != (cur.vMax == 0u)) { o.code = kTimingDiffers; return o; }   // a mixed pair is never written
     const uint32_t newV = lines - 1u;
+    const uint32_t newMin = bound_for(cur.vMin, newV), newMax = bound_for(cur.vMax, newV);
     const uint32_t newMsa = (cur.msa1 & 0xFFFF0000u) | lines;
     uint32_t rc = drr_set(hw, 2u);                                  // step 1
     bool locked = false;
@@ -283,9 +305,9 @@ inline Outcome apply(const Hw &hw, const Snap &cur, uint32_t lines, bool growth)
         rc = lock_set(hw, true);                                    // step 2 (the request is out even when the wait timed out: it is cleared below)
         locked = true;
     }
-    if (rc == kOk) rc = write_verify(hw, j, kRegVTotal, cur.vTot, newV);                // step 3
-    if (rc == kOk) rc = write_verify(hw, j, kRegVTotalMin, cur.vMin, newV);
-    if (rc == kOk) rc = write_verify(hw, j, kRegVTotalMax, cur.vMax, newV);
+    if (rc == kOk) rc = write_verify(hw, j, kRegVTotal, cur.vTot, newV);                             // step 3
+    if (rc == kOk && cur.vMin != 0u) rc = write_verify(hw, j, kRegVTotalMin, cur.vMin, newMin);     // DRR on only
+    if (rc == kOk && cur.vMax != 0u) rc = write_verify(hw, j, kRegVTotalMax, cur.vMax, newMax);     // DRR on only
     if (locked) {                                                   // step 4: the unlock happens on every exit of the writes
         const uint32_t u = lock_set(hw, false);
         if (u != kOk) { o.code = kLockTimeout; return o; }          // state uncertain: no further write, the kext reports it
@@ -305,7 +327,7 @@ inline Outcome apply(const Hw &hw, const Snap &cur, uint32_t lines, bool growth)
     if (rc == kOk) {                                                                // step 9
         const Snap after = read_snap(hw);
         const uint32_t want = growth ? kLiveTarget : kLiveGop;
-        if (classify(after) != want || after.drr != cur.drr) rc = kReadbackMismatch;
+        if (classify(after) != want || after.drr != cur.drr || after.vMin != newMin || after.vMax != newMax) rc = kReadbackMismatch;
     }
     if (rc != kOk) {
         const uint32_t rb = rollback(hw, cur, j);
