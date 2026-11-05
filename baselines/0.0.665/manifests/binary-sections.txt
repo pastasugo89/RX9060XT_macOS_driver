@@ -1,0 +1,16 @@
+# Mach-O section contents of the two preserved kernel binaries (name, section, size in bytes, sha256 of the contents).
+# Only loaded sections are listed: symbol table, string table, UUID and code signature are not, see README.md.
+unified-bringup-model-097b9b9f __TEXT,__text 576221 d02701b743349b5144645f14c56dc8cf3fca00ef331689746f4218cbe0fdfa79
+unified-bringup-model-097b9b9f __TEXT,__cstring 275683 74043430c33801ea515b618aa2452ef5aba956b9a4d387e11de3e713ab791b79
+unified-bringup-model-097b9b9f __TEXT,__const 3396966 6c3432e428f9c0f038cb9ce854e165034972804831021be3e2ab7980087f9f1b
+unified-bringup-model-097b9b9f __DATA,__got 152 917458dce6d99d4ef63f8010fcf72a78c6eb0c0b3c4c705b786d3fdd9acb9f91
+unified-bringup-model-097b9b9f __DATA,__mod_init_func 48 baa43b6698fa8f0a97ad0874d4f6facb283b3c2827798ffd3c1515b8c76df90b
+unified-bringup-model-097b9b9f __DATA,__const 43344 fad7e6afd2fb1868e09b8d0c20fb9db1a2484b536b64c3a078b4a6cc7705782b
+unified-bringup-model-097b9b9f __DATA,__data 3128 448d111996189f053dd3a60a86c45ed81991d48228987657ec913e7b9ac753e7
+gpu-eight-repro-v6-607fd051 __TEXT,__text 576577 2b4ea22ec46c67e8d2092274815c8211bd90475e9b684af91926cb1e93bdce9d
+gpu-eight-repro-v6-607fd051 __TEXT,__cstring 275896 4cb4ef0045252f3859f633012a9f1ac287a18510655bcc291eab6d6a5e6a6c22
+gpu-eight-repro-v6-607fd051 __TEXT,__const 3396966 6c3432e428f9c0f038cb9ce854e165034972804831021be3e2ab7980087f9f1b
+gpu-eight-repro-v6-607fd051 __DATA,__got 152 9fb3e82c2c4b79dfe178498284542cd8c37723bc5d167836d560f7bfcf5a12bd
+gpu-eight-repro-v6-607fd051 __DATA,__mod_init_func 48 c01ae708be26355e5e9097e7fea58f441ef166246f3792e66f39974339f06fef
+gpu-eight-repro-v6-607fd051 __DATA,__const 43344 13b3d86784825251c0d67d1da23496d085c6fa8153318662b15d1c3901913f13
+gpu-eight-repro-v6-607fd051 __DATA,__data 3160 8857c8d851d1c9b7a423741ff8adc8768e7d80c9065b58eff2e5d0baa1d83d77

@@ -1,0 +1,464 @@
+diff --git a/src/Navi48Bringup.cpp b/src/Navi48Bringup.cpp
+index edda23d..a08d9d7 100644
+--- a/src/Navi48Bringup.cpp
++++ b/src/Navi48Bringup.cpp
+@@ -574,6 +574,15 @@ void Navi48Bringup::stagePSP() {
+ 	uint32_t on = 0;
+ 	if (!PE_parse_boot_argn("navi48-psp", &on, sizeof(on)) || on == 0) on = targetStage >= 5;
+ 	if (!on) return;
++	// Gate PSP entry on a running watchdog with a valid, OK sample. This
++	// does not interrupt the chain if a later temperature change occurs.
++	for (unsigned i = 0; i < 200 && !n4xs::ready_for_psp() && !n4xs::refused(); ++i)
++		IOSleep(10);
++	if (!n4xs::ready_for_psp()) {
++		N48LOG("psp-stage: refused: watchdog not running, no valid sample, WARN or TRIP");
++		setProperty("PSP,Stage", "safety-refused");
++		return;
++	}
+ 	N48LOG("psp-stage: requested (navi48-psp=1) — this stage WRITES to VRAM and the PSP mailbox");
+ 	setProperty("PSP,Stage", "requested");
+ 
+@@ -7404,6 +7413,23 @@ bool Navi48Bringup::start(IOService *provider) {
+ 		// polled path, which is unchanged.
+ 		uint32_t wantIrq = 1;
+ 		PE_parse_boot_argn("navi48-interrupts", &wantIrq, sizeof(wantIrq));
++		// n4x safety: the thermal watchdog (boot-arg navi48-safety; default ON on the Navi 44 profile). It only READS THM_TCON_CUR_TMP.
++		// Without a resolved sensor it starts in TRIP (fail closed) and refuses the writing entry points; navi48-safety=0 turns it off.
++		{
++	#if defined(N4X_ASIC_NAVI48)
++			const bool safetyDefault = false;
++	#else
++			const bool safetyDefault = true;
++	#endif
++			n4xs::Thresholds safetyTh {};
++			if (n4xs::config(safetyDefault, &safetyTh)) {
++				uint32_t thmByte = 0, sensorDword = 0;
++				if (ipDiscovery.isValid() && ipDiscovery.regByteOffset(IpDiscovery::HwThm, 0, n4xs::kThmSeg, n4xs::kThmCurTmpDword, thmByte) && thmByte != 0)
++					sensorDword = thmByte / 4u;   // the byte offset is (base + 0) * 4; RREG32 takes dwords
++				dev.rmmio = rmmio; dev.rmmioSize = rmmioSize;
++				n4xs::start(dev, sensorDword, safetyTh);
++			}
++		}
+ 		if (wantIrq != 0) gBringup.wantInterrupts = armInterrupts();
+ 		stagePSP();        // no-op unless navi48-psp=1 or navi48-stage>=5
+ 		publishInterruptCounters();
+@@ -7411,23 +7437,6 @@ bool Navi48Bringup::start(IOService *provider) {
+ 	// build 0.0.515: the read-only raster device the AGDC LINKCFG reply reads through
+ 	// (n48dcn::liveRaster), built here - after stagePSP built the device context, before the Phase 4 block below can install
+ 	// any hook that calls it. No register is read or written by attach; it arms nothing (bind() still does that, on verbs 74-77).
+-	// n4x safety: the thermal watchdog (boot-arg navi48-safety; default ON on the Navi 44 profile). It only READS THM_TCON_CUR_TMP.
+-	// Without a resolved sensor it starts in TRIP (fail closed) and refuses the writing entry points; navi48-safety=0 turns it off.
+-	{
+-#if defined(N4X_ASIC_NAVI48)
+-		const bool safetyDefault = false;
+-#else
+-		const bool safetyDefault = true;
+-#endif
+-		n4xs::Thresholds safetyTh {};
+-		if (n4xs::config(safetyDefault, &safetyTh)) {
+-			uint32_t thmByte = 0, sensorDword = 0;
+-			if (ipDiscovery.isValid() && ipDiscovery.regByteOffset(IpDiscovery::HwThm, 0, n4xs::kThmSeg, n4xs::kThmCurTmpDword, thmByte) && thmByte != 0)
+-				sensorDword = thmByte / 4u;   // the byte offset is (base + 0) * 4; RREG32 takes dwords
+-			dev.rmmio = rmmio; dev.rmmioSize = rmmioSize;
+-			n4xs::start(dev, sensorDword, safetyTh);
+-		}
+-	}
+ 	n48dcn::attach(this);
+ 	// ---- Phase 4 route experiment (navi48-accel-experiment=1) ----
+ 	// Apple's accelerator personalities all carry IOPropertyMatch
+diff --git a/src/amd/n4x_safety.cpp b/src/amd/n4x_safety.cpp
+index dd6c7f5..fa806bd 100644
+--- a/src/amd/n4x_safety.cpp
++++ b/src/amd/n4x_safety.cpp
+@@ -13,7 +13,7 @@ namespace n4xs {
+ namespace {
+ 
+ // Written by start() before the thread exists; read by the thread. Level, reason and the last sample are published atomically.
+-amdgpu::DeviceContext *gDev         = nullptr;
++volatile uint32_t      *gRmmio      = nullptr;  // stable mapping captured before thread start
+ uint32_t               gSensorDword = 0;
+ bool                   gSensorOk    = false;
+ Thresholds             gTh          = { kDefaultWarnC, kDefaultTripC };
+@@ -26,6 +26,7 @@ uint32_t gReason   = kReasonNone;
+ uint32_t gHot      = 0;     // last decoded hotspot (int32 bits)
+ uint32_t gHotValid = 0;
+ uint32_t gRaw      = 0;     // last THM dword
++uint64_t gPspSample = 0;   // single atomic snapshot: monotonic time and eligibility
+ 
+ uint64_t uptime_ms() {
+     uint64_t t = 0, ns = 0;
+@@ -60,7 +61,7 @@ void watchdog_loop(void *, wait_result_t) {
+         ThmDecode d { false, 0, 0, 0 };
+         uint32_t raw = 0;
+         if (gSensorOk) {
+-            raw = RREG32(*gDev, gSensorDword);   // a read: no register is written here
++            raw = gRmmio[gSensorDword];   // validated once before thread start; read only
+             d = decode_thm_cur_temp(raw);
+             monitor_step(m, gTh, d);
+         }
+@@ -69,11 +70,12 @@ void watchdog_loop(void *, wait_result_t) {
+         __atomic_store_n(&gHotValid, d.valid ? 1u : 0u, __ATOMIC_RELEASE);
+         __atomic_store_n(&gReason, m.reason, __ATOMIC_RELEASE);
+         __atomic_store_n(&gLevel, m.level, __ATOMIC_RELEASE);   // TRIP latches inside monitor_step
++        const uint64_t now = uptime_ms();
++        __atomic_store_n(&gPspSample, psp_gate_sample(now, d.valid, m.level), __ATOMIC_RELEASE);
+         if (m.level == kLevelTrip && !tripLogged) {
+             tripLogged = true;
+             IOLog("N4X-SAFETY event=TRIP reason=%s hotspot=%d thm=%#x\n", reason_name(m.reason), (int)d.tempC, raw);
+         }
+-        const uint64_t now = uptime_ms();
+         if (first || now - lastHb >= kHeartbeatMs) {
+             emit(false, now);
+             lastHb = now;
+@@ -105,9 +107,10 @@ bool config(bool defaultOn, Thresholds *th) {
+ 
+ void start(amdgpu::DeviceContext &dev, uint32_t sensorDword, const Thresholds &th) {
+     if (__atomic_exchange_n(&gStarted, 1u, __ATOMIC_ACQ_REL) != 0) return;
+-    gDev = &dev;
++    gRmmio = dev.rmmio;
+     gSensorDword = sensorDword;
+-    gSensorOk = (sensorDword != 0) && (dev.rmmio != nullptr);
++    gSensorOk = sensorDword != 0 && gRmmio != nullptr &&
++                (uint64_t(sensorDword) * 4u + 4u <= dev.rmmioSize);
+     gTh = thresholds_valid(th) ? th : Thresholds { kDefaultWarnC, kDefaultTripC };
+     IOLog("N4X-SAFETY event=START sensor=%s dword=%#x warn=%d trip=%d\n",
+           gSensorOk ? "THM_TCON_CUR_TMP" : "unresolved (fail closed)", sensorDword, gTh.warnC, gTh.tripC);
+@@ -127,8 +130,23 @@ void start(amdgpu::DeviceContext &dev, uint32_t sensorDword, const Thresholds &t
+ void stop() {
+     if (__atomic_load_n(&gRunning, __ATOMIC_ACQUIRE) == 0) return;
+     __atomic_store_n(&gStop, 1u, __ATOMIC_RELEASE);
+-    for (int i = 0; i < 3000 && __atomic_load_n(&gRunning, __ATOMIC_ACQUIRE) != 0; i++) IOSleep(1);
+-    if (__atomic_load_n(&gRunning, __ATOMIC_ACQUIRE) != 0) IOLog("N4X-SAFETY event=STOP-TIMEOUT\n");
++    // Keep BAR5 mapped until the worker has actually stopped. A stuck worker
++    // can delay shutdown indefinitely; logging is bounded to once per 3 s.
++    unsigned waited = 0;
++    while (__atomic_load_n(&gRunning, __ATOMIC_ACQUIRE) != 0) {
++        IOSleep(1);
++        if (++waited == 3000) {
++            IOLog("N4X-SAFETY event=STOP-DELAYED retaining BAR5\n");
++            waited = 0;
++        }
++    }
++}
++
++bool ready_for_psp() {
++    // This is an entry gate, not a guarantee that PSP can be interrupted.
++    const uint64_t sample = __atomic_load_n(&gPspSample, __ATOMIC_ACQUIRE);
++    const bool running = __atomic_load_n(&gRunning, __ATOMIC_ACQUIRE) != 0;
++    return psp_entry_permitted(running, sample, uptime_ms());
+ }
+ 
+ bool active() {
+diff --git a/src/amd/n4x_safety.h b/src/amd/n4x_safety.h
+index d5d73f4..a768bb0 100644
+--- a/src/amd/n4x_safety.h
++++ b/src/amd/n4x_safety.h
+@@ -27,12 +27,15 @@ namespace n4xs {
+ bool config(bool defaultOn, Thresholds *th);
+ 
+ // Starts the watchdog thread (idempotent). sensorDword is the dword index of THM_TCON_CUR_TMP in BAR5 (0 = not resolved: fail closed).
+-// The thread reads dev.rmmio while it runs: the caller must call stop() before the registers are unmapped.
++// The thread reads the BAR5 pointer captured at start: the caller must stop it before unmapping.
+ void start(amdgpu::DeviceContext &dev, uint32_t sensorDword, const Thresholds &th);
+ 
+-// Writes the STOP heartbeat and waits (at most ~3 s) for the thread to finish. Safe when never started.
++// Writes the STOP heartbeat and waits until the worker exits; a stuck worker can delay shutdown indefinitely.
+ void stop();
+ 
++// True only after a valid sample with the watchdog running and state OK.
++bool ready_for_psp();
++
+ // True while the watchdog thread is running.
+ bool active();
+ 
+diff --git a/src/amd/n4x_safety_pure.h b/src/amd/n4x_safety_pure.h
+index 904c067..2f80d1b 100644
+--- a/src/amd/n4x_safety_pure.h
++++ b/src/amd/n4x_safety_pure.h
+@@ -69,6 +69,15 @@ inline ThmDecode decode_thm_cur_temp(uint32_t reg) {
+ 
+ // ---- decision -----------------------------------------------------------------------------------------------------------
+ enum Level : uint32_t { kLevelOk = 0, kLevelWarn = 1, kLevelTrip = 2 };
++
++// A precondition for entering PSP, not a guarantee during the chain.
++inline uint64_t psp_gate_sample(uint64_t sampleMs, bool valid, uint32_t level) {
++    return (sampleMs << 1) | ((valid && level == kLevelOk) ? 1u : 0u);
++}
++inline bool psp_entry_permitted(bool running, uint64_t sample, uint64_t nowMs) {
++    const uint64_t sampleMs = sample >> 1;
++    return running && (sample & 1u) != 0 && nowMs >= sampleMs && nowMs - sampleMs <= 1000;
++}
+ enum Reason : uint32_t {
+     kReasonNone = 0, kReasonWarnTemp = 1, kReasonTripTemp = 2, kReasonSensorInvalid = 3, kReasonNoSensor = 4,
+ };
+diff --git a/tools/build-shader.sh b/tools/build-shader.sh
+deleted file mode 100755
+index 0ac1aa9..0000000
+--- a/tools/build-shader.sh
++++ /dev/null
+@@ -1,204 +0,0 @@
+-#!/bin/bash
+-#
+-# build-shader.sh — assemble shaders/store_magic.s for gfx1201 (Navi 48,
+-# GC 12.0.1) and embed the resulting machine code into the kext.
+-#
+-# Run it from anywhere; it locates the repo by its own path. Re-run it after
+-# any edit to shaders/store_magic.s, then `make`.
+-#
+-# Outputs (all generated — do not hand-edit):
+-#   shaders/store_magic.o            ELF relocatable (intermediate, kept)
+-#   shaders/store_magic.bin          raw .text bytes = what the GPU executes
+-#   shaders/store_magic.dis          llvm-objdump -d, for the record
+-#   shaders/store_magic.encoding.txt llvm-mc --show-encoding, for the record
+-#   shaders/store_magic.kd.txt       the HSA kernel descriptor LLVM computed,
+-#                                    decoded into COMPUTE_PGM_RSRC1/2/3. These
+-#                                    are the authoritative values that
+-#                                    src/amd/compute_test.cpp hardcodes.
+-#   firmware/shader_store_magic.bin  copy of the blob; the Makefile's
+-#                                    `firmware/%.bin -> src/fw/fw_%.c` rule
+-#                                    picks it up automatically, so no Makefile
+-#                                    change is needed.
+-#   firmware/WHENCE.shader_store_magic.txt  provenance (it is OURS, not vendor
+-#                                    firmware — the rest of firmware/ is
+-#                                    linux-firmware).
+-#   src/fw/fw_shader_store_magic.c   `const uint8_t fw_shader_store_magic[]`
+-#                                    + `const size_t fw_shader_store_magic_size`
+-#
+-# Toolchain: Homebrew LLVM (the Xcode Command Line Tools clang has no AMDGPU
+-# backend).  brew install llvm
+-#
+-set -euo pipefail
+-
+-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+-SHADER_DIR="$REPO/shaders"
+-FW_BIN_DIR="$REPO/firmware"
+-FW_SRC_DIR="$REPO/src/fw"
+-
+-# Which shader to build. No argument = store_magic, exactly as before.
+-#   build-shader.sh                 -> shaders/store_magic.s   (hand-written)
+-#   build-shader.sh store_magic_hsa -> shaders/store_magic_hsa.s (LLVM-compiled,
+-#                                      standard HSA kernarg ABI — see
+-#                                      notes/B1-COMPILER-BRIDGE.md)
+-NAME="${1:-store_magic}"
+-SRC="$SHADER_DIR/$NAME.s"
+-SYMBOL="fw_shader_$NAME"
+-if [ ! -f "$SRC" ]; then echo "build-shader.sh: no such shader source: $SRC" >&2; exit 1; fi
+-MCPU="gfx1201"
+-TRIPLE="amdgcn-amd-amdhsa"
+-
+-# ---- toolchain -------------------------------------------------------------
+-LLVM_BIN="${LLVM_BIN:-/opt/homebrew/opt/llvm/bin}"
+-if [ ! -x "$LLVM_BIN/llvm-mc" ]; then
+-    # Fall back to whatever is on PATH (e.g. an Intel-Homebrew prefix).
+-    LLVM_BIN="$(dirname "$(command -v llvm-mc || true)")" || true
+-fi
+-MC="$LLVM_BIN/llvm-mc"
+-OBJCOPY="$LLVM_BIN/llvm-objcopy"
+-OBJDUMP="$LLVM_BIN/llvm-objdump"
+-for t in "$MC" "$OBJCOPY" "$OBJDUMP"; do
+-    if [ ! -x "$t" ]; then
+-        echo "build-shader.sh: missing $t" >&2
+-        echo "  install with: brew install llvm   (or set LLVM_BIN=<llvm>/bin)" >&2
+-        exit 1
+-    fi
+-done
+-
+-echo "build-shader.sh: $("$MC" --version | sed -n '2p' | tr -s ' ')"
+-echo "build-shader.sh: target $TRIPLE -mcpu=$MCPU"
+-echo "build-shader.sh: source $SRC"
+-
+-# Refuse to run if the assembler cannot even see the AMDGPU backend, rather
+-# than emitting a plausible-looking empty blob.
+-if ! "$MC" -triple="$TRIPLE" -mcpu="$MCPU" -show-encoding </dev/null >/dev/null 2>&1; then
+-    echo "build-shader.sh: $MC has no working $TRIPLE/$MCPU support" >&2
+-    exit 1
+-fi
+-
+-mkdir -p "$SHADER_DIR" "$FW_BIN_DIR" "$FW_SRC_DIR"
+-
+-# ---- 1. assemble -----------------------------------------------------------
+-"$MC" -triple="$TRIPLE" -mcpu="$MCPU" -filetype=obj "$SRC" \
+-      -o "$SHADER_DIR/$NAME.o"
+-
+-# ---- 2. records: encodings + disassembly -----------------------------------
+-{
+-    echo "# llvm-mc -triple=$TRIPLE -mcpu=$MCPU -show-encoding $NAME.s"
+-    echo "# generated by tools/build-shader.sh — do not edit"
+-    echo
+-    "$MC" -triple="$TRIPLE" -mcpu="$MCPU" -show-encoding "$SRC"
+-} > "$SHADER_DIR/$NAME.encoding.txt"
+-
+-{
+-    echo "# llvm-objdump -d --mcpu=$MCPU $NAME.o"
+-    echo "# generated by tools/build-shader.sh — do not edit"
+-    echo
+-    "$OBJDUMP" -d --mcpu="$MCPU" "$SHADER_DIR/$NAME.o"
+-} > "$SHADER_DIR/$NAME.dis"
+-
+-# ---- 3. extract the executable bytes ---------------------------------------
+-# Only .text: the .rodata kernel descriptor is metadata for a HSA loader and
+-# must NOT be part of the blob the CP points COMPUTE_PGM_LO at.
+-"$OBJCOPY" -O binary --only-section=.text \
+-           "$SHADER_DIR/$NAME.o" "$SHADER_DIR/$NAME.bin"
+-
+-BYTES=$(wc -c < "$SHADER_DIR/$NAME.bin" | tr -d ' ')
+-if [ "$BYTES" -eq 0 ]; then
+-    echo "build-shader.sh: .text is empty — nothing was assembled" >&2
+-    exit 1
+-fi
+-if [ $((BYTES % 4)) -ne 0 ]; then
+-    echo "build-shader.sh: .text is $BYTES bytes, not a whole number of dwords" >&2
+-    exit 1
+-fi
+-
+-# The shader must END. A shader that falls off the end hangs the queue, so this
+-# check is not optional.
+-#
+-# Two shapes are valid:
+-#   hand-written : the last dword IS s_endpgm (0xBFB00000 -> bytes 00 00 b0 bf)
+-#   LLVM-compiled: s_endpgm, then s_code_end padding (0xBF9F0000 -> 00 00 9f bf)
+-#                  out to the instruction-prefetch granule. That padding is
+-#                  expected on gfx10+ and must not be mistaken for a shader that
+-#                  runs off the end.
+-# So: require an s_endpgm, and require everything after it to be s_code_end.
+-python3 - "$SHADER_DIR/$NAME.bin" <<'ENDCHK'
+-import sys, struct, pathlib
+-b = pathlib.Path(sys.argv[1]).read_bytes()
+-w = [struct.unpack_from("<I", b, i)[0] for i in range(0, len(b), 4)]
+-S_ENDPGM, S_CODE_END = 0xBFB00000, 0xBF9F0000
+-if S_ENDPGM not in w:
+-    sys.exit("build-shader.sh: no s_endpgm anywhere in .text")
+-i = len(w) - 1 - w[::-1].index(S_ENDPGM)
+-tail = w[i+1:]
+-bad = [x for x in tail if x != S_CODE_END]
+-if bad:
+-    sys.exit(f"build-shader.sh: {len(bad)} non-padding dword(s) after the last "
+-             f"s_endpgm (first 0x{bad[0]:08x}) — the shader may run off the end")
+-print(f"build-shader.sh: s_endpgm at dword {i} ({(i+1)*4} bytes of code)"
+-      + (f", + {len(tail)} s_code_end padding dwords" if tail else ""))
+-ENDCHK
+-
+-# ---- 4. the kernel descriptor LLVM computed --------------------------------
+-# AMDGPUUsage.rst kernel-descriptor layout:
+-#   bytes 44-47 COMPUTE_PGM_RSRC3, 48-51 COMPUTE_PGM_RSRC1,
+-#   bytes 52-55 COMPUTE_PGM_RSRC2, 56-57 KERNEL_CODE_PROPERTIES.
+-KD="$SHADER_DIR/.$NAME.kd.bin"
+-"$OBJCOPY" -O binary --only-section=.rodata "$SHADER_DIR/$NAME.o" "$KD"
+-kd_u32() { od -An -tx4 -j "$1" -N 4 "$KD" | tr -d ' \n'; }
+-RSRC3="0x$(kd_u32 44)"
+-RSRC1="0x$(kd_u32 48)"
+-RSRC2="0x$(kd_u32 52)"
+-{
+-    echo "# HSA kernel descriptor computed by LLVM for $NAME (gfx1201)."
+-    echo "# generated by tools/build-shader.sh — do not edit"
+-    echo "#"
+-    echo "# src/amd/compute_test.cpp MUST program these three values:"
+-    echo "#   kComputePgmRsrc1 = $RSRC1"
+-    echo "#   kComputePgmRsrc2 = $RSRC2"
+-    echo "#   kComputePgmRsrc3 = $RSRC3"
+-    echo "#"
+-    echo "# raw 64-byte descriptor (.rodata):"
+-    od -Ad -tx1 "$KD"
+-} > "$SHADER_DIR/$NAME.kd.txt"
+-rm -f "$KD"
+-
+-# ---- 5. embed --------------------------------------------------------------
+-cp "$SHADER_DIR/$NAME.bin" "$FW_BIN_DIR/shader_$NAME.bin"
+-
+-cat > "$FW_BIN_DIR/WHENCE.shader_$NAME.txt" <<WHENCE
+-Blob:     shader_$NAME.bin
+-Symbol:   $SYMBOL  (src/fw/fw_shader_$NAME.c)
+-Size:     $BYTES bytes
+-Origin:   NOT vendor firmware. Unlike every other blob in this directory
+-          (which comes from linux-firmware — see the other WHENCE files),
+-          this one is ours: it is the assembled machine code of
+-          shaders/$NAME.s, a gfx1201 compute shader written for this project.
+-Build:    tools/build-shader.sh
+-          llvm-mc -triple=amdgcn-amd-amdhsa -mcpu=gfx1201 -filetype=obj
+-          llvm-objcopy -O binary --only-section=.text
+-License:  same as the rest of this repository (see ../LICENSE).
+-Note:     it lives in firmware/ purely so the Makefile's
+-          firmware/%.bin -> src/fw/fw_%.c rule embeds it without a Makefile
+-          change. Regenerate it, never hand-edit it.
+-WHENCE
+-
+-# Run from the repo root with RELATIVE paths, exactly as the Makefile's
+-# `firmware/%.bin -> src/fw/fw_%.c` rule does, so a later `make` regenerating
+-# this file produces byte-identical output (the generator records its input
+-# path in a header comment).
+-( cd "$REPO" && \
+-  python3 tools/embed-firmware.py \
+-          "firmware/shader_$NAME.bin" "src/fw/fw_shader_$NAME.c" "$SYMBOL" && \
+-  python3 tools/embed-firmware.py --verify \
+-          "firmware/shader_$NAME.bin" "src/fw/fw_shader_$NAME.c" )
+-
+-# ---- 6. summary ------------------------------------------------------------
+-echo
+-echo "build-shader.sh: $BYTES bytes of gfx1201 machine code"
+-echo "build-shader.sh:   COMPUTE_PGM_RSRC1 = $RSRC1"
+-echo "build-shader.sh:   COMPUTE_PGM_RSRC2 = $RSRC2"
+-echo "build-shader.sh:   COMPUTE_PGM_RSRC3 = $RSRC3"
+-echo "build-shader.sh: first dwords:"
+-od -An -tx4 -N 32 "$SHADER_DIR/$NAME.bin" | sed 's/^/build-shader.sh:   /'
+-echo "build-shader.sh: now run  make"
+diff --git a/tools/build-vadd-ir.sh b/tools/build-vadd-ir.sh
+deleted file mode 100755
+index 181d45f..0000000
+--- a/tools/build-vadd-ir.sh
++++ /dev/null
+@@ -1,55 +0,0 @@
+-#!/usr/bin/env bash
+-# Extract the executable text from the pinned gfx1200 HSACO and embed it.
+-# The object symbol/descriptor are checked so a stale assembly listing or a
+-# different compiler output cannot silently change the kernel ABI.
+-set -euo pipefail
+-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+-HSACO="$REPO/../../../research/artifacts/compute/kernels/vadd_ir.hsaco"
+-LLVM_BIN="${LLVM_BIN:-/usr/bin}"
+-OBJCOPY="$LLVM_BIN/llvm-objcopy"
+-READELF="$LLVM_BIN/llvm-readelf"
+-for tool in "$OBJCOPY" "$READELF"; do
+-  [[ -x "$tool" ]] || { echo "missing tool: $tool" >&2; exit 1; }
+-done
+-[[ -f "$HSACO" ]] || { echo "missing pinned artifact: $HSACO" >&2; exit 1; }
+-"$READELF" -n "$HSACO" | grep -q 'amdhsa.target:.*gfx1200' || {
+-  echo "vadd HSACO target is not gfx1200" >&2; exit 1;
+-}
+-"$READELF" -s "$HSACO" | grep -Eq '196 FUNC .* vadd_ir$' || {
+-  echo "vadd_ir symbol is not the audited 196-byte function" >&2; exit 1;
+-}
+-tmp="$(mktemp -d)"
+-trap 'rm -rf "$tmp"' EXIT
+-"$OBJCOPY" -O binary --only-section=.text "$HSACO" "$tmp/text.bin"
+-"$OBJCOPY" -O binary --only-section=.rodata "$HSACO" "$tmp/rodata.bin"
+-python3 - "$tmp/text.bin" "$tmp/rodata.bin" <<'PY'
+-import pathlib, struct, sys
+-text, rodata = (pathlib.Path(p).read_bytes() for p in sys.argv[1:])
+-if len(text) != 640 or len(rodata) != 64:
+-    raise SystemExit(f"unexpected vadd sections: text={len(text)}, descriptor={len(rodata)}")
+-rsrc3, rsrc1, rsrc2 = struct.unpack_from("<III", rodata, 44)
+-props = struct.unpack_from("<H", rodata, 56)[0]
+-kernarg_size = struct.unpack_from("<I", rodata, 8)[0]
+-user_sgprs = (rsrc2 >> 1) & 0x1f
+-if (rsrc3, rsrc1, rsrc2, props, kernarg_size, user_sgprs) != (0x20, 0xE00F0000, 0x88, 0x040a, 28, 4):
+-    raise SystemExit(f"unexpected gfx1200 descriptor RSRC {rsrc3:#x}/{rsrc1:#x}/{rsrc2:#x}")
+-if not (props & (1 << 1) and props & (1 << 3) and props & (1 << 10)):
+-    raise SystemExit(f"descriptor missing dispatch_ptr/kernarg_ptr/wave32 properties: {props:#x}")
+-print("vadd_ir: gfx1200 HSACO validated; text=640B (symbol=196B), kernarg=28B, "
+-      "user_sgprs=4, dispatch_ptr+kernarg_ptr+wave32, RSRC=0x20/0xe00f0000/0x88")
+-PY
+-cp "$tmp/text.bin" "$REPO/shaders/vadd_ir.bin"
+-cat > "$REPO/firmware/WHENCE.shader_vadd_ir.txt" <<'EOF'
+-Blob:     shader_vadd_ir.bin
+-Symbol:   fw_shader_vadd_ir (src/fw/fw_shader_vadd_ir.c)
+-Size:     640 bytes extracted from the pinned gfx1200 HSACO .text section
+-Origin:   project compute test artifact research/artifacts/compute/kernels/vadd_ir.hsaco
+-License:  project repository license; this is not vendor firmware.
+-ABI:      vadd_ir.kd descriptor: 28-byte kernarg, three global pointers and u32 n.
+-          RSRC3/1/2 = 0x20/0xe00f0000/0x88; code symbol length 196 bytes.
+-Build:    tools/build-vadd-ir.sh
+-EOF
+-python3 "$REPO/tools/embed-firmware.py" "$REPO/shaders/vadd_ir.bin" \
+-  "$REPO/src/fw/fw_shader_vadd_ir.c" fw_shader_vadd_ir
+-python3 "$REPO/tools/embed-firmware.py" --verify "$REPO/shaders/vadd_ir.bin" \
+-  "$REPO/src/fw/fw_shader_vadd_ir.c"
