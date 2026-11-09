@@ -7,8 +7,15 @@
 // renderers rely on it, and an icon composed on top of a recycled texture shows the previous icon through it. Device-local
 // memory is also not zeroed by the kernel or RADV on this stack (fresh allocations hold stale data), so the bundle clears it.
 //
-// Scope: textures created by -initWithDevice:descriptor: (colour, single-sampled) and every private buffer. Depth/stencil and
-// multisample textures are not cleared (vkCmdClearColorImage does not apply to them). WindowServer is not changed by this step.
+// Scope (bundle 34): textures created by -initWithDevice:descriptor: (colour, single-sampled) and every private buffer.
+// Multisample textures are not cleared (vkCmdClearColorImage does not apply to them). WindowServer is not changed by this step.
+//
+// Bundle 37: single-sampled depth/stencil textures are cleared too (vkCmdClearDepthStencilImage; n48zi_decide_depth_stencil below).
+// The gap was measured (research/builds/macos-20261109/icons-ws/bin/stencil_recycle_test, evidence/stencil-recycle-run-bundle36.txt):
+// a new Stencil8 texture whose memory came from a released one held the old 0xFF stencil in 19 of 20 rounds with LoadAction Load or
+// DontCare (0 of 9216 pixels pass EQUAL 0); with a zero clear first, 8 of 8 rounds read zero (9216 of 9216).
+// In the icon log (research/builds/macos-20261109/evidence/isa-cold-probe-counts.txt) 3 of 5 first uses of a depth/stencil texture
+// were LoadAction DontCare, and Navi48Device.m turns a Load in the UNDEFINED layout into DontCare too: both read the memory as it was.
 #ifndef N48_ZINIT_H
 #define N48_ZINIT_H
 #include <stdint.h>
@@ -29,6 +36,16 @@ static inline n48zi_verdict n48zi_decide_texture(int killed, int ws, int isDepth
     if (ws) return N48ZI_SKIP_WINDOWSERVER;
     if (allocSize == 0) return N48ZI_SKIP_EMPTY;
     if (isDepthStencil) return N48ZI_SKIP_DEPTH;
+    if (samples > 1) return N48ZI_SKIP_MULTISAMPLE;
+    return N48ZI_CLEAR;
+}
+
+// Bundle 37: a single-sampled depth/stencil texture is zeroed like a colour one. Its aspects are cleared by vkCmdClearDepthStencilImage
+// (the caller checks TRANSFER_DST usage). Multisample is still skipped: it needs a render-pass clear, which is not implemented.
+static inline n48zi_verdict n48zi_decide_depth_stencil(int killed, int ws, uint32_t samples, uint64_t allocSize) {
+    if (killed) return N48ZI_SKIP_KILL;
+    if (ws) return N48ZI_SKIP_WINDOWSERVER;
+    if (allocSize == 0) return N48ZI_SKIP_EMPTY;
     if (samples > 1) return N48ZI_SKIP_MULTISAMPLE;
     return N48ZI_CLEAR;
 }

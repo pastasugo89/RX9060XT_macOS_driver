@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     check(count(m, "n48zi_fill_buffer(_vkbuf,") == 1, "buffer fill called once");
     check(count(m, "vkCmdClearColorImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &z, 1, &rg);") == 1, "vkCmdClearColorImage recorded in the one-shot");
     check(count(m, "vkCmdFillBuffer(cmd, buf, 0, (VkDeviceSize)n, 0);") == 1, "vkCmdFillBuffer recorded in the one-shot");
-    check(count(m, "[self setLayout:VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL]") == 1, "texture layout tracked after the clear");
+    check(count(m, "[self setLayout:VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL]") == 2, "texture layout tracked after the clear (colour and, bundle 37, depth/stencil)");
     check(count(m, "n48_oneshot(&e, ^(VkCommandBuffer cmd) {") >= 2, "clears use the waited one-shot helper");
     long bPool = at(m, "vkBindImageMemory(N48R.dev, _img, _pm.mem, _pm.off)");
     long bNon = at(m, "vkBindImageMemory(N48R.dev, _img, _mem, 0)");
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     check(fBPool > 0 && fBNon > 0 && fill > 0 && fLog > 0, "buffer: bind (pooled and direct), fill and log found");
     check(fBPool < fill && fBNon < fill && fill < fLog, "buffer: the fill runs after BOTH memory binds and before the log line");
     check(count(m, "static BOOL n48zi_clear_image(") == 1 && count(m, "static BOOL n48zi_fill_buffer(") == 1, "helpers defined once");
-    check(plist && (count(plist, "<key>CFBundleVersion</key>\n\t<string>34</string>") == 1 || count(plist, "<key>CFBundleVersion</key>\n\t<string>35</string>") == 1), "Info.plist CFBundleVersion is 34 or later (bundle 35 relaxes the pin, as bundle 33 did for 32)");
+    check(plist && (count(plist, "<key>CFBundleVersion</key>\n\t<string>34</string>") == 1 || count(plist, "<key>CFBundleVersion</key>\n\t<string>35</string>") == 1 || count(plist, "<key>CFBundleVersion</key>\n\t<string>37</string>") == 1), "Info.plist CFBundleVersion is 34 or later (bundle 35 relaxes the pin, as bundle 33 did for 32)");
 
     printf("== part 2: pure decisions (src/n48_zinit.h)\n");
     check(n48zi_decide_texture(0, 0, 0, 1, 262144) == N48ZI_CLEAR, "texture: colour, single-sampled, app -> clear");

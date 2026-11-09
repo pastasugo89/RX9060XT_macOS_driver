@@ -327,7 +327,7 @@ static BOOL n48_headless(void) {
     X(vkCreateFramebuffer) X(vkDestroyFramebuffer) X(vkCreateShaderModule) X(vkDestroyShaderModule) \
     X(vkCreatePipelineLayout) X(vkDestroyPipelineLayout) X(vkCreateDescriptorSetLayout) X(vkDestroyDescriptorSetLayout) X(vkCreateGraphicsPipelines) X(vkDestroyPipeline) \
     X(vkCmdBeginRenderPass) X(vkCmdEndRenderPass) X(vkCmdBindPipeline) X(vkCmdSetViewport) X(vkCmdSetScissor) \
-    X(vkCmdDraw) X(vkCmdPipelineBarrier) X(vkCmdCopyImageToBuffer) X(vkCmdCopyBuffer) X(vkCmdFillBuffer) X(vkCmdClearColorImage) \
+    X(vkCmdDraw) X(vkCmdPipelineBarrier) X(vkCmdCopyImageToBuffer) X(vkCmdCopyBuffer) X(vkCmdFillBuffer) X(vkCmdClearColorImage) X(vkCmdClearDepthStencilImage) \
     X(vkCreateSampler) X(vkDestroySampler) X(vkCreateDescriptorPool) X(vkDestroyDescriptorPool) X(vkAllocateDescriptorSets) X(vkUpdateDescriptorSets) \
     X(vkCmdBindDescriptorSets) X(vkCmdBindVertexBuffers) X(vkCmdBindIndexBuffer) X(vkCmdDrawIndexed) X(vkCmdCopyBufferToImage) X(vkCmdPushConstants) \
     X(vkCmdDispatch) X(vkCmdDispatchIndirect) X(vkCmdSetDepthBounds) X(vkCreateComputePipelines) X(vkCmdSetBlendConstants) X(vkCmdCopyImage) X(vkCmdBlitImage) X(vkResetFences) \
@@ -1180,6 +1180,25 @@ static BOOL n48zi_clear_image(VkImage img, uint32_t levels, uint32_t layers) {
         vkCmdClearColorImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &z, 1, &rg);
     });
     n48zi_note("texture", ok, e);
+    return ok;
+}
+// bundle 37: a single-sampled depth/stencil texture is zeroed over the aspects it has (n48_depth.h N48DP_ASP_*), in TRANSFER_DST_OPTIMAL like the
+// colour clear. The caller checks that the image has TRANSFER_DST usage. Zero depth is 0.0 (the zeros a fresh Metal texture reads as).
+static VkImageAspectFlags n48zi_ds_aspects(unsigned asp) {
+    return (VkImageAspectFlags)(((asp & N48DP_ASP_DEPTH) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) | ((asp & N48DP_ASP_STENCIL) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0));
+}
+static BOOL n48zi_clear_depth_stencil(VkImage img, VkImageAspectFlags aspects, uint32_t levels, uint32_t layers) {
+    VkImageSubresourceRange rg = { aspects, 0, levels, 0, layers };
+    NSError *e = nil;
+    BOOL ok = n48_oneshot(&e, ^(VkCommandBuffer cmd) {
+        VkImageMemoryBarrier b = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, .srcAccessMask = 0, .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .image = img, .subresourceRange = rg };
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &b);
+        VkClearDepthStencilValue z = { 0.0f, 0 };
+        vkCmdClearDepthStencilImage(cmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &z, 1, &rg);
+    });
+    n48zi_note("depth/stencil texture", ok, e);
     return ok;
 }
 
@@ -2759,7 +2778,13 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     r = vkBindImageMemory(N48R.dev, _img, _mem, 0);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(35, [NSString stringWithFormat:@"vkBindImageMemory = %d", r]); return nil; }
     }
-    {   // bundle 34: a new device-local colour texture is zeroed before any GPU use (n48_zinit.h); it stays in TRANSFER_DST_OPTIMAL, tracked as such
+    if (isDS) {   // bundle 37: a new single-sampled depth/stencil texture is zeroed before any GPU use (n48_zinit.h), then tracked in TRANSFER_DST_OPTIMAL
+        // Without a clear, the first pass reads the memory the pool last gave away (a DontCare pass, or a Load that n48rp_ds turns into DontCare on the UNDEFINED layout).
+        if (n48zi_decide_depth_stencil(n48zi_killed(), n48zi_ws(), (uint32_t)ti.samples, (uint64_t)mr.size) == N48ZI_CLEAR) {
+            if (!(iu & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) N48_ONCE("zinit: depth/stencil texture (pixel format %lu) has no TRANSFER_DST usage on this RADV: not zeroed", (unsigned long)_pf);
+            else if (n48zi_clear_depth_stencil(_img, n48zi_ds_aspects(_aspects), (uint32_t)_levels, (uint32_t)ti.layers)) [self setLayout:VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL];
+        }
+    } else {   // bundle 34: a new device-local colour texture is zeroed before any GPU use (n48_zinit.h); it stays in TRANSFER_DST_OPTIMAL, tracked as such
         if (n48zi_decide_texture(n48zi_killed(), n48zi_ws(), isDS, (uint32_t)ti.samples, (uint64_t)mr.size) == N48ZI_CLEAR &&
             n48zi_clear_image(_img, (uint32_t)_levels, (uint32_t)ti.layers)) [self setLayout:VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL];
     }
