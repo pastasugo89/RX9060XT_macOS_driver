@@ -127,7 +127,8 @@ int main(int argc, char **argv) {
           "item 8: the refusal comes before any command is recorded");
 
     // the bundle's identity
-    check(plist && count(squash(plist), "<key>CFBundleVersion</key><string>35</string>") == 1, "Info.plist keeps CFBundleVersion 35");
+    { int pinned = 0; for (int v = 35; v <= 38; v++) { char k[64]; snprintf(k, sizeof k, "<key>CFBundleVersion</key><string>%d</string>", v); pinned += count(squash(plist ? plist : ""), k); }
+      check(plist && pinned == 1, "Info.plist CFBundleVersion is 35 or later (later bundles relax the pin)"); }
 
     // ---- Part 2: the pure decisions ----
     check(n48nm_required_product(0, 1, 1) == 0 && n48nm_required_product(64, 0, 1) == 0 && n48nm_required_product(64, 1, 1) == 64

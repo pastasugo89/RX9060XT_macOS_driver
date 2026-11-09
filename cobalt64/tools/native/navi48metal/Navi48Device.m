@@ -1149,6 +1149,7 @@ static BOOL n48_oneshot(NSError **err, void (^rec)(VkCommandBuffer cmd)) {
 // ---- bundle 34: zero-initialised device-local resources. n48_zinit.h decides; the clear is one-shot and WAITED (as replaceRegion: is), so the
 // resource holds zeros before its first GPU use. Kill file /private/tmp/n48m-nozinit (latched once per process) restores bundle 33's behaviour.
 #include "n48_zinit.h"
+#include "n48_swz.h"
 #define N48_NOZINIT_FILE "/private/tmp/n48m-nozinit"
 static int n48zi_killed(void) {
     static int k; static dispatch_once_t once;
@@ -2498,6 +2499,19 @@ static BOOL n48_is_identity_map(const VkComponentMapping *m) {
     return (m->r == VK_COMPONENT_SWIZZLE_R || m->r == VK_COMPONENT_SWIZZLE_IDENTITY) && (m->g == VK_COMPONENT_SWIZZLE_G || m->g == VK_COMPONENT_SWIZZLE_IDENTITY) &&
            (m->b == VK_COMPONENT_SWIZZLE_B || m->b == VK_COMPONENT_SWIZZLE_IDENTITY) && (m->a == VK_COMPONENT_SWIZZLE_A || m->a == VK_COMPONENT_SWIZZLE_IDENTITY);
 }
+// bundle 38: the descriptor-swizzled SAMPLED view (n48_swz.h decides) for every texture creation path: ordinary, IOSurface-backed and buffer-backed textures.
+// vc is the texture's sampling-view create info; the result is VK_NULL_HANDLE when no view is wanted or vkCreateImageView failed (identity mapping kept, logged once per path).
+static VkImageView n48_desc_swizzle_view(MTLTextureDescriptor *d, const N48Fmt *f, const VkImageViewCreateInfo *vc, BOOL isDS, BOOL isTexBuf, NSUInteger samples, const char *where) {
+    if (![d respondsToSelector:@selector(swizzle)]) return VK_NULL_HANDLE;
+    MTLTextureSwizzleChannels dsw = d.swizzle;
+    if (!n48sw_wants_view(dsw.red, dsw.green, dsw.blue, dsw.alpha, isDS ? 1 : 0, isTexBuf ? 1 : 0, (unsigned)samples)) return VK_NULL_HANDLE;
+    VkImageViewCreateInfo sv = *vc; sv.components = n48_view_map(f, dsw);
+    VkImageView v = VK_NULL_HANDLE; VkResult sr = vkCreateImageView(N48R.dev, &sv, NULL, &v);
+    if (sr != VK_SUCCESS) { N48LOG("swizzled sampled view (%s): vkCreateImageView = %d; sampled reads keep the identity mapping", where, sr); return VK_NULL_HANDLE; }
+    static _Atomic int nlog; if (atomic_fetch_add(&nlog, 1) < 8)
+        N48LOG("swizzled sampled view (%s): pixel format %lu descriptor swizzle %u%u%u%u applied to sampled reads only", where, (unsigned long)d.pixelFormat, (unsigned)dsw.red, (unsigned)dsw.green, (unsigned)dsw.blue, (unsigned)dsw.alpha);
+    return v;
+}
 static const N48Fmt *n48_fmt(MTLPixelFormat f) {
     for (size_t i = 0; i < sizeof n48_fmts / sizeof *n48_fmts; i++) if (n48_fmts[i].mtl == f) return ((n48_fmts[i].flags & N48F_UINT) && n48_nouint()) ? NULL : &n48_fmts[i];
     return NULL;
@@ -2796,16 +2810,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     if (r != VK_SUCCESS) { if (err) *err = n48_err(36, [NSString stringWithFormat:@"vkCreateImageView = %d", r]); return nil; }
     // bundle 29 fix 2: a non-identity MTLTextureDescriptor.swizzle gets its own sampled view (same image, range and format; the client mapping composed with the format's own).
     // Not for depth/stencil, texture buffers or multisample textures. A failure logs once and keeps the identity mapping.
-    if ([d respondsToSelector:@selector(swizzle)]) {
-        MTLTextureSwizzleChannels dsw = d.swizzle;
-        const BOOL dflt = dsw.red == MTLTextureSwizzleRed && dsw.green == MTLTextureSwizzleGreen && dsw.blue == MTLTextureSwizzleBlue && dsw.alpha == MTLTextureSwizzleAlpha;
-        if (!dflt && !isDS && tt != MTLTextureTypeTextureBuffer && ti.samples <= 1) {
-            VkImageViewCreateInfo sv = vc; sv.components = n48_view_map(_fmt, dsw);
-            VkResult sr = vkCreateImageView(N48R.dev, &sv, NULL, &_smpView);
-            if (sr != VK_SUCCESS) { N48_ONCE("swizzled sampled view: vkCreateImageView = %d; sampled reads keep the identity mapping", sr); _smpView = VK_NULL_HANDLE; }
-            else N48_ONCE("swizzled sampled view: descriptor swizzle %u%u%u%u applied to sampled reads only", (unsigned)dsw.red, (unsigned)dsw.green, (unsigned)dsw.blue, (unsigned)dsw.alpha);
-        }
-    }
+    _smpView = n48_desc_swizzle_view(d, _fmt, &vc, isDS, tt == MTLTextureTypeTextureBuffer, ti.samples, "texture");   // bundle 38: shared with the IOSurface / buffer paths
     N48LOGR("N48Texture %p: %lux%lu%s pf %lu vkformat %d levels %lu (alloc %llu, memtype %d)%s", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, is3D ? [NSString stringWithFormat:@"x%lu (3D)", (unsigned long)_depth].UTF8String : "",
            (unsigned long)_pf, _fmt->vk, (unsigned long)_levels, (unsigned long long)mr.size, mt, _viewSwz ? " [sampled through a swizzled view]" : "");
     return self;
@@ -2938,6 +2943,7 @@ N48_DNR(N48Texture)
             .format = _fmt->vk, .components = nbm, .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
         nr = vkCreateImageView(N48R.dev, &nvc, NULL, &_view);
         if (nr != VK_SUCCESS) IOSFAIL(91, @"vkCreateImageView = %d", nr);
+        _smpView = n48_desc_swizzle_view(d, _fmt, &nvc, NO, NO, 1, "iosurface, no CPU mapping");   // bundle 38: the descriptor swizzle was dropped here
         _iosNoBase = YES; _ios = (IOSurfaceRef)CFRetain(s); n48_led_add(self, s, 0, spf, (uint32_t)pc, YES); _led = YES;   // retained (F3: not use-counted for its life) and entered in the ledger; set last so a failed init above never releases
         N48LOGR("newTexture(iosurface) %p: plane %lu %zux%zu bpr %zu pf %lu -> GPU-ONLY (no CPU mapping): optimal VkImage, not backed by the surface's memory", (__bridge void *)self, (unsigned long)plane, sw, sh, bpr, (unsigned long)_pf);
         // P6: same rule as the mapped surfaces (n48s_classify: geometry/pitch vs the plane + the DisplaySurface::GetMTLTexture backtrace). Inputs: width/height/pixel format/bytesPerRow/allocSize from the IOSurface
@@ -3042,6 +3048,7 @@ N48_DNR(N48Texture)
         .format = _fmt->vk, .components = icm, .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) IOSFAIL(91, @"vkCreateImageView = %d", r);
+    _smpView = n48_desc_swizzle_view(d, _fmt, &vc, NO, NO, 1, "iosurface");   // bundle 38: RG8 gray+alpha icon layers come with swizzle (R,R,R,G); it was dropped here
     N48LOGR("newTexture(iosurface) %p: plane %lu offset %lu %zux%zu bpr %zu pf %lu -> PATH (%s): %s", (__bridge void *)self, (unsigned long)plane, (unsigned long)poff, sw, sh, bpr, (unsigned long)_pf, _iosLinear ? "a" : "b",
            _iosLinear ? "LINEAR VkImage bound directly to the imported IOSurface pages" : "optimal VkImage + copies to/from a VkBuffer over the imported pages (bufferRowLength = bytesPerRow/4)");
     // S5.2a: is this one of CoreDisplay's display surfaces (D-copy source)? A buffer over the import is the copy's source (path (b) already has _ibuf).
@@ -3111,6 +3118,7 @@ N48_DNR(N48Texture)
     VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = _img, .viewType = VK_IMAGE_VIEW_TYPE_2D, .format = _fmt->vk, .components = bcm, .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
     r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) BFAIL(130, @"vkCreateImageView = %d", r);
+    _smpView = n48_desc_swizzle_view(d, _fmt, &vc, NO, NO, 1, "buffer");   // bundle 38: the descriptor swizzle was dropped here
     _hostBuf = b; _hoff = off; _ibase = (uint8_t *)[b contents] + off; _ibpr = bpr;
     N48LOGR("N48Texture %p: %lux%lu pf %lu over buffer %p offset %lu bytesPerRow %lu (%s memory; copy path b)", (__bridge void *)self, (unsigned long)_w, (unsigned long)_h, (unsigned long)_pf,
            (__bridge void *)b, (unsigned long)off, (unsigned long)bpr, [b n48Imported] ? "client" : "bundle");

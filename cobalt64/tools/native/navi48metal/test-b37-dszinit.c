@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     check(dsBranch < dsGuard && dsGuard < dsClear && dsClear < vcm, "depth/stencil: branch, guard, clear, then the view");
     check(at(m, "N48DP_ASP_DEPTH") > 0 && count(m, "_aspects = df.aspects;") == 1, "texture aspects come from the depth/stencil descriptor (bundle 10 table)");
     check(count(m, "static void n48rp_ds(") == 0 && count(m, "n48rp_ds(asp, dtI != nil,") == 1, "the render-pass load mapping is still n48rp_ds (unchanged)");
-    check(plist && count(plist, "<key>CFBundleVersion</key>\n\t<string>37</string>") == 1, "Info.plist CFBundleVersion is 37");
+    check(plist && (count(plist, "<key>CFBundleVersion</key>\n\t<string>37</string>") == 1 || count(plist, "<key>CFBundleVersion</key>\n\t<string>38</string>") == 1), "Info.plist CFBundleVersion is 37 or later (bundle 38 relaxes the pin)");
 
     printf("== part 2: pure decisions (src/n48_zinit.h)\n");
     check(n48zi_decide_depth_stencil(0, 0, 1, 262144) == N48ZI_CLEAR, "depth/stencil: single-sampled, app -> clear");

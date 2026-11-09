@@ -43,7 +43,8 @@ int main(int argc, char **argv) {
     check(at(s, "sd.sAddressMode = MTLSamplerAddressModeClampToEdge;") != NULL, "fix5: default sampler is clamp-to-edge");
 
     // fix 2: sampled view with the descriptor swizzle; storage and attachments keep identity; destroyed with the texture
-    check(at(s, "if ([d respondsToSelector:@selector(swizzle)])") != NULL && at(s, "tt != MTLTextureTypeTextureBuffer && ti.samples <= 1") != NULL, "fix2: created only for a non-identity swizzle, not for buffers / multisample");
+    // bundle 38: the decision moved to n48_swz.h (n48sw_wants_view, host-tested by test-b38-swz.c); the ordinary path passes the texture-buffer type and the sample count
+    check(at(s, "if (![d respondsToSelector:@selector(swizzle)]) return VK_NULL_HANDLE;") != NULL && at(s, "tt == MTLTextureTypeTextureBuffer, ti.samples, \"texture\")") != NULL, "fix2: created only for a non-identity swizzle, not for buffers / multisample");
     check(at(s, "- (VkImageView)n48SampleView { return _smpView ? _smpView : _view; }") != NULL, "fix2: sampled-view accessor falls back to the identity view");
     check(at(s, "if (_smpView) vkDestroyImageView(N48R.dev, _smpView, NULL);") != NULL, "fix2: destroyed with the texture");
     check(at(s, "n48AttViewLevel:0], VK_IMAGE_LAYOUT_GENERAL }") != NULL, "fix2: storage images still use the identity attachment view");
