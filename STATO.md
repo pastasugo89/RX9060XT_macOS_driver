@@ -164,3 +164,8 @@ Al posto dello Stage20 ancora non avviato, predisposto Stage21/bundle23: 212 sha
 - **60 Hz funzionanti** (0.0.670/0.0.671 + RDNA4FB 0.0.9): `refresh 60` allunga V_TOTAL da 1525 a 3050 righe con lo stesso clock; il monitor LG lo accetta, l'utente conferma che la banda nera in alto è sparita. Il flag `/Library/Application Support/Navi44/accelerated-trial/refresh-60` attiva i 60 Hz a ogni avvio; cancellarlo riporta a 120 Hz.
 - Issue #1 (riproducibilità della baseline 0.0.665): `baselines/0.0.665/` pubblicata (`2c34dd1`), issue chiusa.
 
+
+### 9 novembre 2026 — bundle 38: icone risolte
+
+- **Bundle 38** (profilo `stage38-swz-v1`, `50f2597`) installato. Causa delle icone sbagliate: IconServices passa i livelli grigio + alfa come texture RG8 su IOSurface o buffer con swizzle (R,R,R,G); il bundle applicava lo swizzle solo alle texture ordinarie, quindi il vetro diventava giallo (blu a 0) e ogni livello un quadrato nero (alfa a 1). L'utente conferma il Dock corretto in tutti gli stili, anche trasparente e tinto. Le icone già in cache dentro Impostazioni di Sistema restano vecchie fino al rinnovo della cache. Residuo minore nel confronto in-process: blocchi su Dov'è (stile predefinito) e punta del razzo di Giochi in scuro.
+- **Banda nera in alto**: con i 60 Hz è molto più rara ma ricompare ogni tanto. Indagine sul percorso di presentazione (flip, slot di scanout, copia D) in corso.
