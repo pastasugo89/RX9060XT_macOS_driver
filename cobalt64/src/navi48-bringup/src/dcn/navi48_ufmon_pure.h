@@ -11,6 +11,10 @@
 //  earlier session, the 60 Hz transition) and is cleared but not counted.
 //  Output: kernel log lines "ufmon: UNDERFLOW #n ..." (navi48test log) and the registry property Navi48,DisplayUnderflow (ioreg, no root).
 //  Kill switch: boot-arg navi48-ufmon=0 (nothing is read or written).
+//  0.0.674: an OPTC status with the plane's HUBP status clean (the sticky ODM flag, event #4 of the 0.0.673 boot: HUBP0_DCHUBP_CNTL 0x000f0002, ODM 0x400)
+//  is STILL one event, as in 0.0.673, and is also counted apart in optcOnly (a diagnostic). The brief asked for it not to be an event. That was not
+//  applied: a status is only ever counted after a clean read, so an OPTC-only event is a fresh OPTC status, not the stale bit; and on the 0.0.673 boot
+//  of 2026-11-12 the events were 3 = hubp 2 + OPTC alone 1 (46 s after login), so excluding it would have held the fallback at two events.
 #pragma once
 #include <stdint.h>
 #include "navi48_modetrial_pure.h"   // n48mt::uf (the bit layout and the strobe values, pinned by tests/native_s2d_test.cpp)
@@ -22,7 +26,7 @@ constexpr uint32_t kLogFirst = 20u, kLogEvery = 64u;
 struct Mon {
     uint32_t gen;              // the scanout acquisition the counters belong to (a new one restarts the baseline, not the totals)
     bool baselined, uncleared;   // uncleared: an event was counted while busy and is still set (not counted again)
-    uint64_t polls, events, hubpEvents, optcEvents, baselineStale, clears, clearRefused, unreadable, busySkips;
+    uint64_t polls, events, hubpEvents, optcEvents, optcOnly, baselineStale, clears, clearRefused, unreadable, busySkips;
     uint64_t firstNs, lastNs, lastFrame;
     uint32_t lastHubp, lastOptc;
 };
@@ -50,7 +54,7 @@ inline Step step(Mon &m, uint32_t gen, uint32_t hubp, uint32_t optc, uint64_t no
     if (!hb && !ob) { m.uncleared = false; return s; }
     // A status counted while busy (not cleared) is still the same event on the next sample: count it once.
     if (!m.uncleared) {
-        m.events++; if (hb) m.hubpEvents++; if (ob) m.optcEvents++;
+        m.events++; if (hb) m.hubpEvents++; if (ob) m.optcEvents++; if (!hb) m.optcOnly++;   // 0.0.674: optcOnly is diagnostic; the event is counted (as 0.0.673)
         if (!m.firstNs) m.firstNs = nowNs;
         m.lastNs = nowNs; m.lastFrame = frame; m.lastHubp = hubp; m.lastOptc = optc;
         s.counted = true; s.log = should_log(m.events);

@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
     // ---- an event ----
     s = step(m, 1, H0, Obad, 3000, 12, false);
     expect(s.counted && s.log && s.act == kClear && m.events == 1 && m.optcEvents == 1 && m.hubpEvents == 0 && m.lastFrame == 12 && m.firstNs == 3000, "OPTC event counted, logged, cleared");
+    expect(m.optcOnly == 1, "0.0.674: an OPTC-only status is still an event (as 0.0.673) and counted apart in optcOnly (diagnostic)");
     after_clear(m, true, false);
     s = step(m, 1, Hbad, Obad, 4000, 13, false);
     expect(s.counted && m.events == 2 && m.hubpEvents == 1 && m.optcEvents == 2, "HUBP + OPTC event");
@@ -98,6 +99,15 @@ int main(int argc, char **argv) {
     expect(mon.find("if (on) ufmon_poll(monGen);") != std::string::npos, "the display monitor calls ufmon_poll while the display is on");
     expect(mon.find("IOLockLock(") == std::string::npos && mon.find("IOLockTryLock(") == std::string::npos, "with no lock held (gMtLock is taken by try-lock inside ufmon_poll only)");
     expect(body.find("(gUf.polls % 200u) == 1u") != std::string::npos, "Navi48,DisplayUnderflow is published every 10 s too (the watch is visible without root)");
+    // 0.0.674: the registry texts are not truncated. The buffers are sized for their worst case (uclkPinDescribe about 560 bytes, the ufmon line about 360)
+    expect(d.find("OPTC alone %llu") != std::string::npos, "Navi48,DisplayUnderflow reports the OPTC-alone count (diagnostic)");
+    expect(d.find("char t[384];   // 0.0.674") != std::string::npos, "Navi48,DisplayUnderflow: the buffer is 384 bytes");
+    expect(d.find("static void uclk_publish() {") != std::string::npos && d.find("char t[640];   // 0.0.674") != std::string::npos &&
+           d.find("uclkPinDescribe(t, sizeof(t));\n\tgDcn.owner->setProperty(\"Navi48,UclkPin\", t);") != std::string::npos,
+           "Navi48,UclkPin: the monitor's buffer is 640 bytes");
+    const std::string bringup = slurp(root + "/src/Navi48Bringup.cpp");
+    expect(bringup.find("char t[640];   // 0.0.674") != std::string::npos && bringup.find("n48dcn::uclkPinDescribe(t, sizeof(t));") != std::string::npos,
+           "Navi48,UclkPin: the kext's buffer is 640 bytes too");
     std::printf("%s: %d checks, %d failed\n", gFail ? "FAIL" : "PASS", gRun, gFail);
     return gFail ? 1 : 0;
 }

@@ -1,4 +1,4 @@
-// blackband_uclkpin_test.cpp - build 0.0.672 (black band): the display UCLK pin. Compiles the REAL amd/smu_v14_0.cpp on the host (the tests/dalshim
+// blackband_uclkpin_test.cpp - build 0.0.674 (black band): the display UCLK pin. Compiles the REAL amd/smu_v14_0.cpp on the host (the tests/dalshim
 // KPI shims, as native_s2_dal_test.cpp does) against a simulated PMFW on the PPSMC mailbox, and drives smu_pin_uclk_for_display / smu_hw_init.
 //   clang++ -std=c++17 -Wall -Wextra -Werror -O1 -fsanitize=address,undefined -fno-sanitize-recover=all -pthread '-D__asm__=0;' '-D__volatile__(...)=' \
 //       -I src/navi48-bringup/tests/dalshim -I src/navi48-bringup/src -I src/navi48-bringup/src/amd \
@@ -7,6 +7,8 @@
 // implausible reply, set refused, PMFW without reply); I smu_hw_init calls the pin only on the full setup and before the protection gate.
 // 0.0.673: the default is AUTO (no message at SMU init), navi48-uclkpin=1 FORCE is the 0.0.672 pin; D the run-time pin / release
 // (smu_uclk_display_pin) of the display monitor's fallback; F the fallback state machine (n48uclk::fb).
+// 0.0.674: F has two stages before any pin (stage 1 = the stutter forced off again, no pin; stage 2 = the pin on the next trigger) and the one
+// time-limited release of an AUTO pin (10 min with the display on and no counted underflow; re-armed at stage 2, never latched by it).
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -155,30 +157,101 @@ int main() {
     // ---- F: the fallback state machine ----
     {
         using namespace n48uclk::fb;
+        const uint64_t Q = kQuietReleaseMs;
+        auto is = [](const char *a, const char *b) { return std::strcmp(a, b) == 0; };
+        expect(kTriggerEvents == 3u && kWindowMs == 10000u && kOffReleaseMs == 2000u && kRetryMs == 10000u && Q == 600000u,
+               "the constants: 3 events within 10 s, 2 s display off, 10 s retry, 10 min quiet");
+        expect(kStageNone == 0u && kStageStutterOff == 1u && kStagePinned == 2u && kStutterOff == 3u && kWhyQuiet == 4u, "stages, actions and the quiet why");
+        // ---- the start: AUTO (stage 0, the one time-limited release allowed), FORCE (stage 2, pinned, never quiet-released), OFF ----
+        State a; init(a, kModeAuto, false);
+        expect(a.stage == kStageNone && !a.pinned && !a.latched && a.quietAllowed && !a.everPinned && is(status_text(a), "stage 0 (not triggered)"), "auto at boot: stage 0");
+        // ---- stage 1: the first trigger forces the stutter off again, NO pin ----
         State f; init(f, kModeAuto, false);
-        expect(step(f, kModeAuto, 1000, 5, true) == kNone, "not armed (the arbitration has not run): underflows do not pin");
+        expect(step(f, kModeAuto, 1000, 5, true) == kNone, "not armed (the arbitration has not run): underflows do not act");
         f.armed = true;
         expect(step(f, kModeAuto, 2000, 1, true) == kNone && step(f, kModeAuto, 3000, 1, true) == kNone, "2 events: not yet");
-        expect(step(f, kModeAuto, 4000, 1, true) == kPin && f.why == kWhyUnderflow, "3 events within 10 s: PIN");
-        done(f, kPin, true, 4000);
-        expect(f.pinned && f.latched && f.triggers == 1u && step(f, kModeAuto, 4050, 9, true) == kNone, "pinned: nothing more");
-        expect(step(f, kModeAuto, 5000, 0, false) == kNone && step(f, kModeAuto, 6900, 0, false) == kNone, "display off < 2 s: kept");
-        expect(step(f, kModeAuto, 7000, 0, false) == kRelease && f.why == kWhyDisplayOff, "display off 2 s: RELEASE");
-        done(f, kRelease, true, 7000);
-        expect(!f.pinned && f.releases == 1u && step(f, kModeAuto, 8000, 0, false) == kNone, "released, stays released while off");
-        expect(step(f, kModeAuto, 9000, 0, true) == kPin && f.why == kWhyWake, "display back after an underflow pin: PIN again at once");
-        done(f, kPin, false, 9000);
-        expect(f.failures == 1u && step(f, kModeAuto, 9050, 0, true) == kNone && step(f, kModeAuto, 19000, 0, true) == kPin, "a failed pin is retried after 10 s, not before");
+        expect(step(f, kModeAuto, 4000, 1, true) == kStutterOff && f.why == kWhyUnderflow, "3 events within 10 s: STAGE 1 (the stutter off, no pin)");
+        done(f, kStutterOff, true, 4000);
+        expect(f.stage == kStageStutterOff && f.stage1s == 1u && f.stage1AtMs == 4000u && f.triggers == 1u && !f.pinned && !f.latched,
+               "stage 1 done: not pinned, not latched, counted");
+        expect(is(status_text(f), "fallback stage 1 (stutter off, no pin)"), "the registry's words for stage 1");
+        expect(step(f, kModeAuto, 4500, 0, false) == kNone && step(f, kModeAuto, 5000, 0, true) == kNone, "stage 1 is not latched: the display off and on pins nothing");
+        // ---- stage 2: the next trigger, counted from the stage 1 action, pins ----
+        expect(step(f, kModeAuto, 5100, 2, true) == kNone && step(f, kModeAuto, 6000, 0, true) == kNone, "after stage 1: 2 events do not pin");
+        expect(step(f, kModeAuto, 6100, 1, true) == kPin && f.why == kWhyUnderflow, "stage 2: 3 events within 10 s after stage 1 PIN");
+        done(f, kPin, true, 6100);
+        expect(f.pinned && f.latched && f.stage == kStagePinned && f.triggers == 2u && f.repins == 0u && f.pinAtMs == 6100u,
+               "pinned at stage 2: the first pin is a trigger, not a repin");
+        expect(is(status_text(f), "fallback stage 2 (pinned)"), "the registry's words for stage 2");
+        expect(step(f, kModeAuto, 6150, 9, true) == kNone, "pinned: an underflow changes nothing but the quiet clock");
+        expect(step(f, kModeAuto, 7000, 0, false) == kNone && step(f, kModeAuto, 8900, 0, false) == kNone, "display off < 2 s: kept");
+        expect(step(f, kModeAuto, 9000, 0, false) == kRelease && f.why == kWhyDisplayOff, "display off 2 s: RELEASE (as 0.0.673)");
+        done(f, kRelease, true, 9000);
+        expect(!f.pinned && f.releases == 1u && f.quietReleases == 0u && step(f, kModeAuto, 9500, 0, false) == kNone, "released, stays released while off");
+        expect(step(f, kModeAuto, 10000, 0, true) == kPin && f.why == kWhyWake, "display back after an underflow pin: PIN again at once");
+        done(f, kPin, true, 10000);
+        expect(f.pinned && f.repins == 1u && f.triggers == 2u, "the wake pin is a repin");
+        // ---- a failed stage 1 is retried after 10 s, not before, and is not a stage ----
+        State r; init(r, kModeAuto, false); r.armed = true;
+        expect(step(r, kModeAuto, 1000, 3, true) == kStutterOff, "a failing stage 1 is asked for");
+        done(r, kStutterOff, false, 1000);
+        expect(r.failures == 1u && r.stage == kStageNone && !r.pinned && r.stage1s == 0u, "a failed stage 1: nothing done, counted");
+        expect(step(r, kModeAuto, 5000, 3, true) == kNone && step(r, kModeAuto, 10999, 3, true) == kNone, "not retried sooner than 10 s");
+        expect(step(r, kModeAuto, 11000, 3, true) == kStutterOff, "retried at 10 s");
+        done(r, kStutterOff, true, 11000);
+        expect(r.stage == kStageStutterOff && r.stage1s == 1u && r.failures == 1u, "the retry succeeded");
+        // ---- a failed stage 2 pin keeps stage 1 ----
+        State p; init(p, kModeAuto, false); p.armed = true;
+        expect(step(p, kModeAuto, 1000, 3, true) == kStutterOff, "a trigger at stage 0 asks for stage 1"); done(p, kStutterOff, true, 1000);
+        expect(step(p, kModeAuto, 2000, 3, true) == kPin, "a trigger at stage 1 asks for the pin"); done(p, kPin, false, 2000);
+        expect(p.stage == kStageStutterOff && !p.pinned && p.failures == 1u && p.triggers == 1u, "a failed stage 2 pin: still stage 1, counted");
+        // ---- the window: 3 events spread over more than 10 s do not trigger ----
         State g; init(g, kModeAuto, false); g.armed = true;
         expect(step(g, kModeAuto, 1000, 1, true) == kNone && step(g, kModeAuto, 2000, 1, true) == kNone && step(g, kModeAuto, 13000, 1, true) == kNone,
-               "3 events spread over more than 10 s: no pin (the window restarts)");
+               "3 events spread over more than 10 s: no trigger (the window restarts)");
+        expect(g.winEvents == 1u, "the window restarted at 13 s");
         expect(step(g, kModeAuto, 14000, 0, false) == kNone && step(g, kModeAuto, 15000, 1, true) == kNone && g.winEvents == 1u, "a display-off period clears the window");
+        // ---- 0.0.674: the one time-limited release of an AUTO pin: 10 min with the display on and no counted underflow ----
+        State q; init(q, kModeAuto, false); q.armed = true;
+        expect(step(q, kModeAuto, 1000, 3, true) == kStutterOff, "quiet case: stage 1"); done(q, kStutterOff, true, 1000);
+        expect(step(q, kModeAuto, 2000, 3, true) == kPin, "quiet case: stage 2 pin"); done(q, kPin, true, 2000);
+        expect(step(q, kModeAuto, 2000 + Q - 1, 0, true) == kNone, "pinned: not released 1 ms before 10 min without an underflow");
+        expect(step(q, kModeAuto, 2000 + Q, 0, true) == kRelease && q.why == kWhyQuiet, "10 min with the display on and no counted underflow: RELEASE (time-limited)");
+        done(q, kRelease, true, 2000 + Q);
+        expect(!q.pinned && q.quietReleases == 1u && q.releases == 1u && !q.quietAllowed && !q.latched && q.stage == kStagePinned,
+               "released once: re-armed at stage 2, NOT latched (the display back does not pin it)");
+        expect(is(status_text(q), "fallback stage 2 (released after 10 min without underflow, re-armed)"), "the registry's words for the quiet release");
+        const uint64_t t1 = 2000 + Q;
+        expect(step(q, kModeAuto, t1 + 100, 0, false) == kNone && step(q, kModeAuto, t1 + 3000, 0, true) == kNone,
+               "released: the display off and on does not re-pin (no underflow proved the need)");
+        expect(step(q, kModeAuto, t1 + 4000, 1, true) == kNone && step(q, kModeAuto, t1 + 4500, 2, true) == kPin && q.why == kWhyUnderflow,
+               "re-armed at stage 2: 3 underflows PIN again");
+        done(q, kPin, true, t1 + 4500);
+        expect(q.pinned && q.latched && q.triggers == 3u && q.repins == 1u && q.quietReleases == 1u, "the re-arm pin: a trigger and a repin");
+        expect(step(q, kModeAuto, t1 + 4500 + 10 * Q, 0, true) == kNone, "pinned for the rest of the boot: no second time-limited release");
+        const uint64_t t2 = t1 + 4500 + 10 * Q;
+        expect(step(q, kModeAuto, t2 + 1000, 0, false) == kNone && step(q, kModeAuto, t2 + 3000, 0, false) == kRelease && q.why == kWhyDisplayOff,
+               "the display-off release still applies after the quiet re-pin (0.0.673)");
+        // an underflow while pinned restarts the quiet clock
+        State e; init(e, kModeAuto, false); e.armed = true;
+        expect(step(e, kModeAuto, 1000, 3, true) == kStutterOff, "restart case: stage 1"); done(e, kStutterOff, true, 1000);
+        expect(step(e, kModeAuto, 2000, 3, true) == kPin, "restart case: stage 2 pin"); done(e, kPin, true, 2000);
+        expect(step(e, kModeAuto, 300000, 1, true) == kNone, "an underflow while pinned restarts the quiet clock");
+        expect(step(e, kModeAuto, 2000 + Q, 0, true) == kNone, "the clock from the pin would have released here: not now");
+        expect(step(e, kModeAuto, 300000 + Q, 0, true) == kRelease && e.why == kWhyQuiet, "10 min after that underflow: RELEASE");
+        // ---- FORCE (navi48-uclkpin=1): pinned at boot, the display-off release and the wake pin as 0.0.672, never quiet-released ----
         State h; init(h, kModeForce, true); h.armed = true;
-        expect(h.latched && h.pinned && step(h, kModeForce, 1000, 0, false) == kNone && step(h, kModeForce, 3000, 0, false) == kRelease, "force: released while the display is off");
+        expect(h.latched && h.pinned && h.stage == kStagePinned && !h.quietAllowed && h.everPinned, "force: pinned at boot (stage 2), no time-limited release");
+        expect(step(h, kModeForce, 1000 + 20 * Q, 0, true) == kNone, "force: never released by the quiet rule");
+        expect(step(h, kModeForce, 1000, 0, false) == kNone && step(h, kModeForce, 3000, 0, false) == kRelease && h.why == kWhyDisplayOff,
+               "force: released while the display is off");
         done(h, kRelease, true, 3000);
         expect(step(h, kModeForce, 4000, 0, true) == kPin && h.why == kWhyWake, "force: pinned again when the display is back");
+        done(h, kPin, true, 4000);
+        expect(h.repins == 1u && h.quietReleases == 0u, "force: the wake pin is a repin");
         State o; init(o, kModeOff, false); o.armed = true;
         expect(step(o, kModeOff, 1000, 50, true) == kNone && step(o, kModeOff, 1100, 50, true) == kNone, "off: never");
+        expect(std::strcmp(why_name(kWhyQuiet), "10 min without underflow (time-limited release, once per boot)") == 0, "the quiet release's name");
     }
 
     // ---- I: smu_hw_init wiring ----

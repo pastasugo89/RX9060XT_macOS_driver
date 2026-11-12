@@ -141,7 +141,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.671'), 671)   # refresh-60b + the GTT fix (wired, non-contiguous GTT BOs): built on the 0.0.670 tree
         self.assertEqual(build.release_build('0.0.672'), 672)   # black band: the 0.0.671 tree plus the reviewed black-band patch
         self.assertEqual(build.release_build('0.0.673'), 673)   # display arbitration: the 0.0.672 tree plus the reviewed 0.0.673 patch
-        for version in ('0.0.665', '0.0.674', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.674'), 674)   # two-stage fallback: the 0.0.673 tree plus the reviewed 0.0.674 patch
+        for version in ('0.0.665', '0.0.675', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
@@ -174,6 +175,25 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.sha(patch), build.DISPARB_PATCH_SHA)
         touched = sorted(line.split()[-1][2:] for line in patch.read_text().splitlines() if line.startswith('diff -ruN '))
         self.assertEqual(touched, sorted(build.DISPARB_FILES))
+
+    def test_fallback_overlay_refuses_another_version_and_an_unreviewed_patch(self):
+        candidate = self.root / 'candidate-fallback'
+        candidate.mkdir()
+        patch = self.root / 'unreviewed-674.diff'
+        patch.write_text('not the reviewed two-stage fallback patch\n')
+        with self.assertRaises(ValueError):
+            build.fallback_overlay(candidate, patch, '0.0.673')
+        with self.assertRaises(ValueError):   # the pinned sha256 of kernel-0.0.674-over-0.0.673.diff does not match this file
+            build.fallback_overlay(candidate, patch, '0.0.674')
+        self.assertEqual(sorted(p.name for p in candidate.iterdir()), [])   # nothing written before the checks pass
+
+    def test_fallback_patch_is_the_pinned_file_and_touches_only_the_reviewed_files(self):
+        patch = build.ROOT / 'research/builds/macos-20261112/kernel-674/PATCHES/kernel-0.0.674-over-0.0.673.diff'
+        if not patch.exists():
+            self.skipTest('the 0.0.674 patch is a local (git-ignored) research file')
+        self.assertEqual(build.sha(patch), build.FALLBACK_PATCH_SHA)
+        touched = sorted(line.split()[-1][2:] for line in patch.read_text().splitlines() if line.startswith('diff -ruN '))
+        self.assertEqual(touched, sorted(build.FALLBACK_FILES))
 
     def test_668_overlay_sets_its_version_and_build_number(self):
         baseline, source, candidate = (self.root / name for name in ('baseline668', 'source668', 'candidate668'))

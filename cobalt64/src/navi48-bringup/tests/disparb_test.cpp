@@ -216,9 +216,13 @@ int main(int argc, char **argv) {
     expect(lp.find("ufmon_poll(monGen);") != std::string::npos && lp.find("IOLockLock(") == std::string::npos, "the monitor runs ufmon and takes no lock itself");
     expect(lp.find("smu_uclk_display_pin(*gDcn.dev, pin, gFb.why)") != std::string::npos, "the fallback pin / release goes through smu_uclk_display_pin");
     expect(lp.find("ms - t0 >= 2000u") != std::string::npos, "the arbitration waits 2 s after the start");
-    expect(lp.find("if (pin && gFb.why == n48uclk::kWhyUnderflow) arb_sr_revert();") != std::string::npos, "an underflow trigger also takes the stutter allow back");
+    expect(lp.find("if (act == n48uclk::fb::kStutterOff) {") != std::string::npos && lp.find("const bool ok = arb_sr_revert();") != std::string::npos &&
+           lp.find("arb_sr_revert();") < lp.find("} else if (act != n48uclk::fb::kNone) {"), "0.0.674 stage 1: the stutter forced off again, in its own branch before the pin branch");
+    const size_t s1 = lp.find("if (act == n48uclk::fb::kStutterOff) {"), s2 = lp.find("} else if (act != n48uclk::fb::kNone) {");
+    expect(s1 != std::string::npos && s2 != std::string::npos && s1 < s2 && lp.substr(s1, s2 - s1).find("smu_uclk_display_pin") == std::string::npos,
+           "0.0.674 stage 1 sends no PPSMC message (no pin in its branch)");
     expect(lp.find("up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode") != std::string::npos, "no fallback when this boot did not enable the SMU features");
-    const std::string sr = body(d, "static void arb_sr_revert() {");
+    const std::string sr = body(d, "static bool arb_sr_revert() {");
     expect(sr.find("IOLockLock(gMtLock);") != std::string::npos && sr.find("arb_wr(nullptr, kRegDramState,") > sr.find("IOLockLock(gMtLock);") && sr.find("IOLockUnlock(gMtLock);") > sr.find("arb_wr(nullptr, kRegDramState,"),
            "the stutter revert: under gMtLock, through the allowlisted write");
     expect(sr.find("(d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop") != std::string::npos, "it restores exactly the GOP's two SELF_REFRESH_FORCE bits");

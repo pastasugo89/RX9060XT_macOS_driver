@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.673) without changing EFI or the live system.
+"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.674) without changing EFI or the live system.
 
 `prepare --baseline-payload <verified earlier payload>` builds the baseline EFI from that payload's recorded hashes
 instead of the mounted EFI (the EFI is not mounted and must not be touched). Such a payload is marked
@@ -92,6 +92,15 @@ BASE_671_MANIFEST = ROOT/'research/builds/macos-20261105/kernel-671/kernel-conte
 # (bump_guard_673), nothing else. Its only system file is still the 0.0.669 navi48test; its probe is the reused 0.0.667 probe.
 KERNEL_673_SHA = 'f53efdb50e4884c2a51c0d2cc2b9ab8d820527ea16851de4201698083dfda8f8'   # the candidate binary of kernel-contexts-v9
 BASE_672_MANIFEST = ROOT/'research/builds/macos-20261112/kernel-672/kernel-contexts-v8/manifest.json'
+# 0.0.674 (payload v10, the two-stage UCLK fallback): payload v9 (0.0.673) is the kernel INSTALLED now (its guard, EFI and probe are the live ones, read and checked
+# at stage time). 0.0.674 replaces it exactly as 0.0.673 replaced 0.0.671: the 0.0.673 release's EFI (payload v9's candidate state) with kernel 0.0.674 and the 0.0.674
+# guard. Its base is the reviewed 0.0.673 candidate TREE (kernel-contexts-v9, checked by reviewed_base) with kernel-0.0.674-over-0.0.673.diff and the 674 markers.
+# Its guard: the live guard with the 673 references moved to 674 (bump_guard_674), nothing else. Its only system file is still the 0.0.669 navi48test; its probe is
+# the reused 0.0.667 probe.
+KERNEL_674_SHA = 'b71f535783f95c92dae163953c3579da7b0479a7841ebac120529d88f1399036'   # the candidate binary of kernel-contexts-v10
+BUNDLE_673 = 'Navi48Bringup-contexts-0.0.673.kext'
+CONFIG_673_SHA = 'd3a39e1a8d281e5685187a156fd03cd2803dd9393c8dac5befc40219b276272c'   # payload v9's candidate configuration (v10's baseline)
+BASE_673_MANIFEST = ROOT/'research/builds/macos-20261112/kernel-673/kernel-contexts-v9/manifest.json'
 REFRESH_SOURCE = Path(__file__).resolve().parent/'refresh-60/apply_refresh_guard.py'
 SYSTEM_SOURCES = {APP+'/navi48test': ROOT/'research/builds/macos-20261101/refresh-60/navi48test/navi48test'}
 # the Metal components the live bundle-33 guard pins (stage33-memtype-v1; its Info.plist version is 33)
@@ -240,6 +249,30 @@ RELEASES = {
                 'binary_checks': 'not-run', 'self_test_log_sha': PROBE_SELF_TEST_LOG_SHA,
                 # Metal expectations are read from the live guard at stage time (release_for_guard), as for 0.0.669 to 0.0.672
                 'guard': 'live-673', 'metal_version': None, 'metal': None},
+    # 0.0.674 (payload v10; the two-stage UCLK fallback): the 0.0.673 release's EFI (payload v9's candidate state, the live EFI) with kernel 0.0.674 and the 0.0.674
+    # guard. Its base is the reviewed 0.0.673 candidate tree (reviewed-candidate-673). The change: a display underflow first forces the stutter off again (stage 1,
+    # no pin); the next trigger pins the memory clock (stage 2); an AUTO pin is released once after 10 min with the display on and no counted underflow (navi48-uclkpin=1
+    # keeps its pin); an OPTC-only status is still one event (diagnostic optcOnly count; the brief's exclusion was not applied, see navi48_ufmon_pure.h). Its guard is derived at stage time from the LIVE guard
+    # (payload v9's guard, installed): bump_guard_674 moves the 673 references to 674, nothing else.
+    '0.0.674': {'new': 'Navi48Bringup-contexts-0.0.674.kext', 'recovery': 'RECOVERY/pre-contexts-674-config.plist',
+                'from': BUNDLE_673, 'from_kernel_sha': KERNEL_673_SHA, 'from_config_sha': CONFIG_673_SHA,
+                'base': 'reviewed-candidate-673', 'base_kernel_sha': KERNEL_673_SHA,
+                'kernel_sha': KERNEL_674_SHA, 'tests': 8, 'probe_reuse': PROBE_667_SHA,
+                'strings': ('navi48-off', 'application budget', 'open refused (NoResources)', 'the hi pool could not take it',
+                            'refresh60: verb action', 'Navi48,RefreshHz', 'GTT BO could not be given wired pages',
+                            'Navi48,UclkPin', 'Navi48,DisplayUnderflow', 'Navi48,DisplayArb', 'disparb: display monitor started', 'ufmon: UCLK fallback',
+                            '10 min without underflow', 'OPTC alone %llu', 'fallback stage 1 (stutter off, no pin)'),
+                'edits': [{'path': 'Kernel/Add/7/BundlePath', 'old': BUNDLE_673, 'new': 'Navi48Bringup-contexts-0.0.674.kext'}],
+                'extras': {'RECOVERY/pre-contexts-674-config.plist': 'baseline'},
+                # carried from payload v9's candidate state: the startup script, the 665 recovery copy, and the 667, 669, 671 and 673 configuration copies
+                'carried': {STARTUP: STARTUP_SHA, 'RECOVERY/funzionante-665.plist': BASE_CONFIG_SHA,
+                            'RECOVERY/pre-contexts-667-config.plist': BASE_CONFIG_SHA, 'RECOVERY/pre-contexts-669-config.plist': CONFIG_668_SHA,
+                            'RECOVERY/pre-contexts-671-config.plist': CONFIG_669_SHA, 'RECOVERY/pre-contexts-673-config.plist': CONFIG_671_SHA},
+                'recovery_entry': RECOVERY_ENTRY,
+                'system_files': {APP+'/navi48test': NAVI48TEST_669_SHA},
+                'binary_checks': 'not-run', 'self_test_log_sha': PROBE_SELF_TEST_LOG_SHA,
+                # Metal expectations are read from the live guard at stage time (release_for_guard), as for 0.0.669 to 0.0.673
+                'guard': 'live-674', 'metal_version': None, 'metal': None},
 }
 # binary_checks 'not-run' (0.0.669): the OpenCore validator and the probe's self-test are research-tree executables, so the preparation
 # does not run them. The payload records that; the installer must validate EFI/OC/config.plist before installing.
@@ -522,6 +555,28 @@ def bump_guard_673(original, probe_sha):
     return text
 
 
+# 0.0.674 (payload v10): the 0.0.673 rule applied to the LIVE (0.0.673) guard, with 674 in place of 673: the capability block's kernel match and STOP text
+# and the three refresh-60 hook lines that name 0.0.673 move to 0.0.674. Nothing else changes.
+KERNEL_BRANCH_674 = KERNEL_BRANCH_673.replace(r'\(0\.0\.673\)', r'\(0\.0\.674\)').replace('STOP expected kernel 673 or 665', 'STOP expected kernel 674 or 665')
+HOOK_673_TO_674_LINES = tuple((after, after.replace('0.0.673', '0.0.674').replace(r'0\.0\.673', r'0\.0\.674')) for _, after in HOOK_671_TO_673_LINES)
+
+
+def bump_guard_674(original, probe_sha):
+    """0.0.674: the live 0.0.673 guard with every reference to kernel 0.0.673 moved to 0.0.674, exactly as bump_guard_673 does for 0.0.673 (each
+    replacement must find its line exactly once, no 0.0.673 reference may remain, the bundle Metal expectations are kept byte for byte)."""
+    old = capability_block(KERNEL_BRANCH_673, PROBE_667_SHA)
+    if original.count(old) != 1:
+        raise ValueError('Activation guard lacks the reviewed 0.0.673 capability block')
+    text = original.replace(old, capability_block(KERNEL_BRANCH_674, probe_sha))
+    for before, after in HOOK_673_TO_674_LINES:
+        if text.count(before) != 1:
+            raise ValueError('Activation guard lacks the reviewed refresh-60 hook line: ' + before[:60])
+        text = text.replace(before, after)
+    if re.search(r'0\\?\.0\\?\.673|kernel 673', text):   # the plain and the regex-escaped spelling
+        raise ValueError('Activation guard still names kernel 0.0.673 after the 0.0.674 bump')
+    return text
+
+
 def refresh_patch(text):
     """The refresh-60 hook (additions only) from tools/baremetal/navi44-desktop/refresh-60/apply_refresh_guard.py. The module is loaded
     by its absolute path; sys.path is not changed."""
@@ -548,7 +603,7 @@ def live_metal_pins(guard_text):
 
 def release_for_guard(rel, guard_text):
     """0.0.669/0.0.670: the release with the Metal bundle its guard expects (read from that guard; see live_metal_pins). Other releases unchanged."""
-    if rel['guard'] not in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673'):
+    if rel['guard'] not in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673', 'live-674'):
         return rel
     version, pins = live_metal_pins(guard_text)
     return {**rel, 'metal': pins, 'metal_version': version}
@@ -596,6 +651,9 @@ def make_guard(rel, original, probe_sha, version):
     if rel['guard'] == 'live-673':
         if version != '0.0.673': raise ValueError('The live-673 guard is only derived for 0.0.673')
         return bump_guard_673(original, probe_sha)
+    if rel['guard'] == 'live-674':
+        if version != '0.0.674': raise ValueError('The live-674 guard is only derived for 0.0.674')
+        return bump_guard_674(original, probe_sha)
     return guard_live(original, probe_sha, version) if rel['guard'] == 'live' else guard_text(original, probe_sha, version)
 
 
@@ -659,7 +717,7 @@ def verify(payload, live=False, efi=None, system_root=Path('/')):
     if m.get('schema') != 1 or m.get('profile') != PROFILE or m.get('status') != 'prepared-not-installed':
         raise ValueError('Unexpected kernel payload profile')
     version, rel = release_of(m)
-    if rel['guard'] in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673'):
+    if rel['guard'] in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673', 'live-674'):
         rel = release_for_guard(rel, (payload/'system'/GUARD).read_text())
     actual = tree(payload); actual.pop('manifest.json')
     if actual != m['files'] or set(actual) != set(m['file_modes']): raise ValueError('Payload inventory changed')
@@ -768,6 +826,12 @@ def reviewed_base(build, rel):
     if rel.get('base') is None:
         return len(build.get('baseline_sections', {})) == 7
     proof = build.get('base_verified') or {}
+    if rel['base'] == 'reviewed-candidate-673':   # 0.0.674: the reviewed 0.0.673 candidate TREE (kernel-contexts-v9), its binary and inputs checked
+        base = json.loads(BASE_673_MANIFEST.read_text())
+        return (proof.get('manifest') == str(BASE_673_MANIFEST.relative_to(ROOT)) and proof.get('binary_sha256') == rel['base_kernel_sha']
+                and proof.get('candidate_inputs_checked') == len(base.get('candidate_inputs', {}))
+                and base.get('candidate_version') == '0.0.673' and base.get('candidate_binary_sha256') == rel['base_kernel_sha']
+                and build.get('baseline_inputs') == base.get('candidate_inputs'))
     if rel['base'] == 'reviewed-candidate-672':   # 0.0.673: the reviewed 0.0.672 candidate TREE (kernel-contexts-v8), its binary and inputs checked
         base = json.loads(BASE_672_MANIFEST.read_text())
         return (proof.get('manifest') == str(BASE_672_MANIFEST.relative_to(ROOT)) and proof.get('binary_sha256') == rel['base_kernel_sha']
@@ -836,7 +900,7 @@ def prepare(candidate, output, baseline_payload=None, baseline_state='baseline')
     critical = {name:metadata(Path('/')/name) for name in CRITICAL}
     if any(v is None for v in critical.values()) or baseline_system[GUARD] is None or any(baseline_system[name] is None for name in rel.get('system_files',{})): raise ValueError('Missing boot dependency')
     metal = tree(Path('/')/METAL)
-    if rel['guard'] in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673') and any(metal.get(name) != digest for name, digest in rel['metal'].items()):
+    if rel['guard'] in ('live-669', 'live-670', 'live-671', 'live-672', 'live-673', 'live-674') and any(metal.get(name) != digest for name, digest in rel['metal'].items()):
         raise ValueError('The live Metal bundle is not the one the live guard expects (bundle %s)' % rel['metal_version'])
     output.mkdir(parents=True)
     (output/'evidence').mkdir()

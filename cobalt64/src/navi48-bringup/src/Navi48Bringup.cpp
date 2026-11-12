@@ -7098,7 +7098,7 @@ void Navi48Bringup::runStages(uint32_t target) {
 	if (ctx.smuOnline) setProperty("SMU,FirmwareVersion", static_cast<uint64_t>(ctx.smuVersion), 32);
 	{   // 0.0.672 (black band): the display UCLK pin's outcome, readable without root (ioreg -l | grep UclkPin). 0.0.673: the display monitor
 		// thread (dcn/navi48_dcn.cpp) updates it on every fallback pin / release; the text is n48dcn::uclkPinDescribe's.
-		char t[320];
+		char t[640];   // 0.0.674: the stage, its times and the counters (about 560 bytes at most)
 		n48dcn::uclkPinDescribe(t, sizeof(t));
 		setProperty("Navi48,UclkPin", t);
 	}

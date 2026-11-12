@@ -2113,9 +2113,10 @@ static bool mt_wr(void *, uint32_t abs, uint32_t v) {
 namespace { n48ufmon::Mon gUf; uint32_t gUfOn = 2u; }   // 2 = boot-arg not read yet
 static void ufmon_publish() {
 	if (gDcn.owner == nullptr) return;
-	char t[200];
-	snprintf(t, sizeof(t), "events %llu (hubp %llu optc %llu), last at uptime %llu ms frame %llu, baseline-stale %llu, clears %llu, refused %llu, busy %llu, polls %llu",
-	         (unsigned long long)gUf.events, (unsigned long long)gUf.hubpEvents, (unsigned long long)gUf.optcEvents, (unsigned long long)(gUf.lastNs / 1000000ull),
+	char t[384];   // 0.0.674: the OPTC-only count too (the worst case is about 360 bytes)
+	snprintf(t, sizeof(t), "events %llu (hubp %llu optc %llu; OPTC alone %llu), last at uptime %llu ms frame %llu, baseline-stale %llu, clears %llu, refused %llu, busy %llu, polls %llu",
+	         (unsigned long long)gUf.events, (unsigned long long)gUf.hubpEvents, (unsigned long long)gUf.optcEvents, (unsigned long long)gUf.optcOnly,
+	         (unsigned long long)(gUf.lastNs / 1000000ull),
 	         (unsigned long long)gUf.lastFrame, (unsigned long long)gUf.baselineStale, (unsigned long long)gUf.clears, (unsigned long long)gUf.clearRefused,
 	         (unsigned long long)gUf.busySkips, (unsigned long long)gUf.polls);
 	gDcn.owner->setProperty("Navi48,DisplayUnderflow", t);
@@ -2403,8 +2404,10 @@ static void mt_shutdown() {
 //      the result in the registry (Navi48,DisplayArb);
 //   2. the scanout underflow monitor (ufmon_poll; 0.0.672 ran it only inside a native scanout acquisition's watchdog, so the GOP console and any
 //      period without an acquisition were never watched: now it runs whenever the display layer is armed and the display is on);
-//   3. the UCLK fallback (smu_uclkpin_pure.h fb::step): navi48-uclkpin absent = AUTO pins when ufmon counts 3 underflows within 10 s after step 1,
-//      =1 FORCE was pinned at SMU init; both release while the display is off (2 s) and pin again when it is back. The PPSMC messages run here with
+//   3. the UCLK fallback (smu_uclkpin_pure.h fb::step). 0.0.674, AUTO (navi48-uclkpin absent): stage 1 when ufmon counts 3 underflows within 10 s after step 1
+//      = the stutter forced off again, NO pin; stage 2 when 3 more come within 10 s = the pin; a stage-2 pin is released once after 10 min with the
+//      display on and no counted underflow. FORCE (=1) was pinned at SMU init. Both release while the display is off (2 s) and pin again when it is back
+//      once an underflow pinned them. The PPSMC messages run here with
 //      no lock held (the lock rank of the mode-trial block above: no PMFW call under any of the display locks).
 // Boot-args (read once, at step 1): navi48-det=0, navi48-wm=0, navi48-sr=0 (dcn/navi48_disparb_pure.h); navi48-uclkpin (amd/smu_v14_0.cpp);
 // navi48-ufmon=0 (ufmon_poll). navi48-dispmon=0 turns the whole thread off (0.0.672 behaviour minus the pin: nothing is read or written by it).
@@ -2447,15 +2450,18 @@ static bool arb_display_on(uint32_t *hubpOut) {
 
 // Navi48,UclkPin: the pin's state, readable without root (ioreg -l | grep UclkPin). Navi48Bringup.cpp publishes it at the end of the ladder too.
 void uclkPinDescribe(char *t, size_t n) {
+	// 0.0.674: the fallback's stage (which one stopped the underflows is the last one reached, when no underflow came after it), and the times of stage 1 and of the pin.
 	const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
-	snprintf(t, n, "%s: mode %s, set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x), last %s; pins %u releases %u; fallback %s, triggers %llu repins %llu releases %llu failures %llu",
+	snprintf(t, n, "%s: mode %s, set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x), last %s; pins %u releases %u; %s, %s; stage 1 at %llu ms, pin at %llu ms; "
+	         "triggers %llu repins %llu releases %llu (quiet %llu) failures %llu",
 	         n48uclk::verdict_name(up.verdict), n48uclk::mode_name(up.mode), up.setMhz, up.minMhz, up.maxMhz, up.kr, n48uclk::why_name(up.why), up.pins, up.releases,
-	         gFb.armed ? (gFb.pinned ? "armed, PINNED" : "armed") : "not armed yet", (unsigned long long)gFb.triggers, (unsigned long long)gFb.repins,
-	         (unsigned long long)gFb.releases, (unsigned long long)gFb.failures);
+	         n48uclk::fb::status_text(gFb), gFb.armed ? "armed" : "not armed yet", (unsigned long long)gFb.stage1AtMs, (unsigned long long)gFb.pinAtMs,
+	         (unsigned long long)gFb.triggers, (unsigned long long)gFb.repins, (unsigned long long)gFb.releases, (unsigned long long)gFb.quietReleases,
+	         (unsigned long long)gFb.failures);
 }
 static void uclk_publish() {
 	if (gDcn.owner == nullptr) return;
-	char t[320];
+	char t[640];   // 0.0.674: the stage, its times and the counters (uclkPinDescribe's worst case is about 560 bytes)
 	uclkPinDescribe(t, sizeof(t));
 	gDcn.owner->setProperty("Navi48,UclkPin", t);
 }
@@ -2480,19 +2486,26 @@ static void arb_publish() {
 	gDcn.owner->setProperty("Navi48,DisplayArb", t);
 }
 
-// The fallback's second half: when underflows force the UCLK pin, the stutter allow of step 1 is taken back too (the GOP's SELF_REFRESH_FORCE
-// bits), so the fallback state is the 0.0.672 state plus the larger DET and the watermarks. Once per boot; under gMtLock like step 1.
-static void arb_sr_revert() {
+// The fallback's stage 1 (0.0.674; 0.0.673 ran it only with the pin): the stutter allow of step 1 is taken back (the GOP's SELF_REFRESH_FORCE bits), with NO
+// UCLK pin. Once per boot; under gMtLock like step 1. True when the stutter is in the GOP's state now, or there was nothing to restore (the arbitration did
+// not allow stutter, or the GOP did not forbid it).
+static bool arb_sr_revert() {
 	using namespace n48arb;
 	const uint32_t gop = gArbRes.before.dram & (kDramSrForceEnable | kDramSrForceValue);
-	if (gArbSrReverted || !gArbRes.srAllowed || (gop & kDramSrForceEnable) == 0u || !mt_ensure_lock()) return;
+	if (gArbSrReverted) return true;
+	if (!gArbRes.srAllowed || (gop & kDramSrForceEnable) == 0u) {
+		N48LOG("disparb: UCLK fallback stage 1: nothing to restore (stutter %s)", gArbRes.srAllowed ? "allowed, as the GOP had it" : "already forced off");
+		return true;
+	}
+	if (!mt_ensure_lock()) return false;
 	IOLockLock(gMtLock);
 	const uint32_t d = mt_rd(nullptr, kRegDramState);
 	const bool ok = !unreadable(d) && arb_wr(nullptr, kRegDramState, (d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop);
 	IOLockUnlock(gMtLock);
 	gArbSrReverted = ok;
-	N48LOG("disparb: UCLK fallback: stutter forced off again as the GOP had it (DRAM_STATE %#010x -> %#010x): %s", d, (d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop, ok ? "done" : "FAILED");
+	N48LOG("disparb: UCLK fallback stage 1: stutter forced off again as the GOP had it (DRAM_STATE %#010x -> %#010x): %s", d, (d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop, ok ? "done" : "FAILED");
 	arb_publish();
+	return ok;
 }
 
 // Step 1. Returns false when it must be tried again later (a mode trial or hold is running).
@@ -2549,13 +2562,19 @@ static void arb_monitor_loop() {
 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
 		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
 		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);
-		if (act != n48uclk::fb::kNone) {
+		if (act == n48uclk::fb::kStutterOff) {
+			// 0.0.674 stage 1: the stutter forced off again, NO pin (arb_sr_revert takes gMtLock itself, for its write only).
+			const bool ok = arb_sr_revert();
+			n48uclk::fb::done(gFb, act, ok, ms);
+			N48LOG("ufmon: UCLK fallback stage 1 (stutter off, no pin; %s) -> %s; underflow events so far %llu", n48uclk::why_name(gFb.why),
+			       ok ? "done" : "FAILED (retry in 10 s)", (unsigned long long)ev);
+			uclk_publish();
+		} else if (act != n48uclk::fb::kNone) {
 			const bool pin = act == n48uclk::fb::kPin;
 			const kern_return_t kr = amdgpu::smu_uclk_display_pin(*gDcn.dev, pin, gFb.why);   // no lock held
 			const bool ok = kr == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == (pin ? n48uclk::kPinned : n48uclk::kReleased);
 			n48uclk::fb::done(gFb, act, ok, ms);
-			if (pin && gFb.why == n48uclk::kWhyUnderflow) arb_sr_revert();   // the trigger (an underflow after step 1): stutter off again too
-			N48LOG("ufmon: UCLK fallback: %s (%s) -> %s (kr %#x); underflow events so far %llu", pin ? "PIN the memory clock to its maximum" : "RELEASE the memory clock pin",
+			N48LOG("ufmon: UCLK fallback: %s (%s) -> %s (kr %#x); underflow events so far %llu", pin ? "PIN the memory clock to its maximum (stage 2)" : "RELEASE the memory clock pin",
 			       n48uclk::why_name(gFb.why), ok ? "done" : "FAILED (retry in 10 s)", (unsigned)kr, (unsigned long long)ev);
 			uclk_publish();
 		}
