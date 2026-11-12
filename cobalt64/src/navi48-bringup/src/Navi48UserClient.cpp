@@ -219,7 +219,7 @@ IOReturn Navi48UserClient::doReadVRAM(IOExternalMethodArguments *args) {
 
 IOReturn Navi48UserClient::doSubmitIB(IOExternalMethodArguments *args) {
 	if (amdgpu::native_s1b_refuse(1)) return kIOReturnNotPermitted;   // NATIVE S1b (0.0.600): refused once the VM self-test ran
-	if (n4xs::refused()) return kIOReturnNotPermitted;                // n4x safety: a latched thermal TRIP refuses new submissions
+	if (n4xs::submit_refused()) return kIOReturnNotPermitted;         // n4x safety 0.0.675: a TRIP clamps GFXCLK, never refuses a submission
 	if (args->scalarInputCount < 3 || args->scalarOutputCount < 1) return kIOReturnBadArgument;
 	const uint64_t gpu_va  = args->scalarInput[0];
 	const uint32_t len_dw  = (uint32_t)args->scalarInput[1];
@@ -509,7 +509,7 @@ IOReturn Navi48UserClient::doPowerState(IOExternalMethodArguments *args) {
 	if (args->scalarInputCount < 1) return kIOReturnBadArgument;
 	const uint32_t state = (uint32_t)args->scalarInput[0];
 	if (state > 4) return kIOReturnBadArgument;
-	// n4x safety: after a latched TRIP only the clamp-down state (Low) is allowed; every state that can raise a clock is refused.
+	// n4x safety: during a TRIP (and its cooling hold, or a sensor fault) only the clamp-down state (Low) is allowed; every state that can raise a clock is refused.
 	if (n4xs::refused() && state != amdgpu::SMUPowerState::Low) return kIOReturnNotPermitted;
 	// n4x safety: High (min 1500 MHz) and Peak (min = max = 2400 MHz) RAISE the GFX clock: refused unless navi48-clock-raise=1 (default OFF).
 	if ((state == amdgpu::SMUPowerState::High || state == amdgpu::SMUPowerState::Peak) && !n4xs::clock_raise_allowed())

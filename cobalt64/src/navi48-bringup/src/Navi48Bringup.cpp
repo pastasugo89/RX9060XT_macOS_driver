@@ -17,7 +17,8 @@
 #include "Navi48DisplayNub.hpp"       // 0.0.652 (M5): fbpublish 2
 #include <libkern/c++/OSData.h>
 #include "amd/native_s1b.h"   // 0.0.600 (native S1b): navi48-native=1, default OFF
-#include "amd/n4x_safety.h"   // n4x safety: the thermal watchdog (navi48-safety), read-only sensor + TRIP latch
+#include "amd/n4x_safety.h"   // n4x safety: the thermal watchdog (navi48-safety); 0.0.675: TRIP clamps GFXCLK low with hysteresis, never refuses submissions
+#include "amd/gfx_v12_0_cg.h"  // 0.0.675: GFX clock gating (navi48-cg, navi48-cg-ints), Linux gfx_v12_0_update_gfx_clock_gating
 #include "amd/native_s1c.h"   // 0.0.612: n1c_latch_pci_bars
 #include "Navi48NativeClient.hpp"   // 0.0.601 (native S1c): the N48N user client
 #include "Navi48UserClient.hpp"
@@ -6950,6 +6951,8 @@ void Navi48Bringup::runStages(uint32_t target) {
 	uint32_t clamp = 1;
 	PE_parse_boot_argn("navi48-idle-clamp", &clamp, sizeof(clamp));
 	ctx.idleClamp = (clamp != 0);
+	// 0.0.675: the clock policy the thermal watchdog restores after a TRIP clamp (the idle clamp's Low, or Auto when navi48-idle-clamp=0).
+	n4xs::set_restore_state(ctx.idleClamp ? amdgpu::SMUPowerState::Low : amdgpu::SMUPowerState::Auto);
 	uint32_t kcq = 1;
 	PE_parse_boot_argn("navi48-kcq", &kcq, sizeof(kcq));
 	ctx.wantKcq = (kcq != 0);
@@ -7128,6 +7131,21 @@ void Navi48Bringup::runStages(uint32_t target) {
 		// 0.0.657: the SDMAInit stage already applied it right after `sdma_init_full` (before its own copy test and
 		// sweep), so this call is then a logged no-op (gSdmaDccDefaultDone). `navi48-sdmadcc=0` skips it.
 		navi48_sdmadcc_default();
+	}
+	{   // 0.0.675: GFX clock gating, once, where Linux's amdgpu_device_ip_late_init gates (after every IP's hw_init, before any client). Only on the
+		// full bring-up path: the ladder reached its target (PM4Test or beyond: RLC, CP, MES and SDMA are up and the kernel GFX queue is mapped).
+		// navi48-cg=0 skips it. The registers before/after and every write are logged ("cg:" lines); ioreg -l | grep ClockGating.
+		bool cgInts = true;
+		const bool cgOn = amdgpu::gfx_cg_config(&cgInts);
+		const bool fullPath = r == kIOReturnSuccess && ctx.reached == (amdgpu::BringupStage)target && target >= (uint32_t)amdgpu::BringupStage::PM4Test &&
+		                      !ctx.mesFailed && ctx.smuOnline && (ctx.kgqMapped || ctx.cpLegacyRb);
+		if (!cgOn) amdgpu::gfx_cg_skip(n48cg::kWhyOff);
+		else if (!fullPath) amdgpu::gfx_cg_skip(n48cg::kWhyNotFullPath);
+		else (void)amdgpu::gfx_v12_0_enable_clock_gating(dev, dev.ip.isResolved(amdgpu::IPBlock::SDMA1), cgInts);
+		char t[400];
+		amdgpu::gfx_cg_describe(t, sizeof(t));
+		setProperty("Navi48,ClockGating", t);
+		N48LOG("clock gating: %s", t);
 	}
 	publishPDB0On(this, ctx);
 	publishSDMAQ1On(this, ctx);

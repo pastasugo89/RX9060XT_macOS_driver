@@ -116,6 +116,23 @@ FALLBACK_BASE_SHA = 'f53efdb50e4884c2a51c0d2cc2b9ab8d820527ea16851de4201698083df
 FALLBACK_PATCH_SHA = 'ca223bc8fd32d217cce9057a16a5f4c3586c271e132a1d96056ab0f19d0c21af'   # kernel-0.0.674-over-0.0.673.diff
 FALLBACK_FILES = ('Info.plist', 'src/Navi48Bringup.cpp', 'src/amd/smu_uclkpin_pure.h', 'src/dcn/navi48_dcn.cpp', 'src/dcn/navi48_ufmon_pure.h')   # the files the patch changes
 FALLBACK_REQUIRED_STRINGS = (b'10 min without underflow', b'OPTC alone %llu', b'fallback stage 1 (stutter off, no pin)')   # 0.0.674: the quiet release, the OPTC-only count, the stage-1 words
+# 0.0.675 (payload v11, GFX clock gating + the thermal policy that never refuses submissions): built on the reviewed 0.0.674 candidate TREE (kernel-contexts-v10,
+# checked against its manifest), as 0.0.674 was built on the 0.0.673 tree: kernel-0.0.675-over-0.0.674.diff (--patch, sha256 pinned here) ports Linux
+# gfx_v12_0_update_gfx_clock_gating (run once after the full ladder; navi48-cg=0 off, navi48-cg-ints=0 without the CP interrupt enables) and changes the n4x
+# thermal policy (WARN 90 C, TRIP 100 C: GFXCLK clamped through the SMU with an 85 C / 10 s release; no submission refused for a temperature). Version markers
+# 674 -> 675 (kN1cKextBuild and the Metal ops build number; Info.plist: the patch). 0.0.674 (payload v10) is the kernel installed now: 0.0.675 replaces it.
+INSTALLED_674 = {'bundle_path': 'Navi48Bringup-contexts-0.0.674.kext',
+                 'kernel_sha256': 'b71f535783f95c92dae163953c3579da7b0479a7841ebac120529d88f1399036',
+                 'config_sha256': 'd75bbca200f02456180acab51ba415c7ca120a4e529d43704818078ffc2d9bd5', 'version': '0.0.674'}
+GATING_VERSION = '0.0.675'
+GATING_BASE = ROOT / 'research/builds/macos-20261112/kernel-674/kernel-contexts-v10'
+GATING_BASE_SHA = 'b71f535783f95c92dae163953c3579da7b0479a7841ebac120529d88f1399036'   # the 0.0.674 candidate binary (kernel-contexts-v10's manifest)
+GATING_PATCH_SHA = '5a9f0732bda1ef460cc78ef67d07c90f39f52769407ea7b43eeb8ce1db7396dc'   # kernel-0.0.675-over-0.0.674.diff
+GATING_FILES = ('Info.plist', 'src/Navi48Bringup.cpp', 'src/Navi48NativeClient.cpp', 'src/Navi48UserClient.cpp', 'src/amd/gfx_v12_0_cg.cpp',
+                'src/amd/gfx_v12_0_cg.h', 'src/amd/gfx_v12_0_cg_pure.h', 'src/amd/n4x_safety.cpp', 'src/amd/n4x_safety.h',
+                'src/amd/n4x_safety_pure.h')   # the files the patch changes (three of them new)
+GATING_REQUIRED_STRINGS = (b'Navi48,ClockGating', b'navi48-cg-ints', b'event=%s reason=%s hotspot=%d power_state=%u',
+                           b'TRIP clamps GFXCLK, never refuses submissions')   # 0.0.675: the property, the boot-arg, the clamp event, the START words
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -178,8 +195,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.674)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-4])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.675)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-5])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -197,13 +214,13 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION):
         return recorded_active_baseline(path)
     # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
                          '0.0.670': (INSTALLED_669, '0.0.669'), FIX_VERSION: (INSTALLED_669, '0.0.669'),
                          BLACKBAND_VERSION: (INSTALLED_671, '0.0.671'), DISPARB_VERSION: (INSTALLED_671, '0.0.671'),
-                         FALLBACK_VERSION: (INSTALLED_673, '0.0.673')}[version]
+                         FALLBACK_VERSION: (INSTALLED_673, '0.0.673'), GATING_VERSION: (INSTALLED_674, '0.0.674')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -313,6 +330,11 @@ def fallback_base_verified(baseline):
     return candidate_base_verified(baseline, FALLBACK_BASE, FALLBACK_BASE_SHA, '0.0.673')
 
 
+def gating_base_verified(baseline):
+    """0.0.675's base: the reviewed 0.0.674 candidate tree and its binary, both checked against kernel-contexts-v10's manifest."""
+    return candidate_base_verified(baseline, GATING_BASE, GATING_BASE_SHA, '0.0.674')
+
+
 def blackband_overlay(candidate, patch, version):
     """0.0.672: the black-band patch over the 0.0.671 candidate tree (patch -p1; the patch must be the reviewed file), then the markers
     671 -> 672 (kN1cKextBuild and the Metal ops build number; Info.plist comes with the patch). The changed files must be exactly the
@@ -380,6 +402,29 @@ def fallback_overlay(candidate, patch, version):
     expected = set(FALLBACK_FILES) | set(BLACKBAND_MARKER_FILES)
     if changed != expected:
         raise ValueError('Candidate changed files outside the reviewed fallback set: ' + ', '.join(sorted(changed ^ expected)))
+    return sorted(changed)
+
+
+def gating_overlay(candidate, patch, version):
+    """0.0.675: the clock-gating + thermal-policy patch over the 0.0.674 candidate tree (patch -p1; the patch must be the reviewed file), then the markers
+    674 -> 675 (kN1cKextBuild and the Metal ops build number; Info.plist comes with the patch). The changed files must be exactly the reviewed set."""
+    if version != GATING_VERSION:
+        raise ValueError('The gating overlay is only for ' + GATING_VERSION)
+    patch = patch.resolve()   # patch -d changes directory: the patch path must be absolute
+    if sha(patch) != GATING_PATCH_SHA:
+        raise ValueError('The gating patch is not the reviewed file')
+    before = tree_files(candidate)
+    subprocess.run(['patch', '-p1', '-s', '--forward', '--batch', '--no-backup-if-mismatch', '-d', str(candidate), '-i', str(patch)], check=True)
+    build = release_build(version)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 674;', 'kN1cKextBuild = %d;' % build, 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 674u', 'sizeof(N48MetalOps), %du' % build, 2)
+    if (candidate / 'Info.plist').read_text().count('<string>' + version + '</string>') != 2:
+        raise ValueError('The patch does not set Info.plist to ' + version)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    expected = set(GATING_FILES) | set(BLACKBAND_MARKER_FILES)
+    if changed != expected:
+        raise ValueError('Candidate changed files outside the reviewed gating set: ' + ', '.join(sorted(changed ^ expected)))
     return sorted(changed)
 
 
@@ -464,11 +509,12 @@ def test_path(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch)')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch) or 0.0.675 (GFX clock gating + thermal policy on the 0.0.674 tree: needs --active-baseline-manifest (payload v10) and --patch)')
     parser.add_argument('--patch', type=Path,
                         help='0.0.672: the black-band patch over the 0.0.671 candidate tree (PATCH-vs-671-deployed.diff); 0.0.673: the display-arbitration patch '
                              'over the 0.0.672 candidate tree (kernel-0.0.673-over-0.0.672.diff); 0.0.674: the fallback patch over the 0.0.673 candidate tree '
-                             '(kernel-0.0.674-over-0.0.673.diff). Each sha256 is pinned')
+                             '(kernel-0.0.674-over-0.0.673.diff); 0.0.675: the clock-gating + thermal patch over the 0.0.674 candidate tree '
+                             '(kernel-0.0.675-over-0.0.674.diff). Each sha256 is pinned')
     parser.add_argument('--active-baseline-manifest', type=Path,
                         help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
                              'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
@@ -485,9 +531,10 @@ def main():
     blackband = version == BLACKBAND_VERSION   # 0.0.672: built on the 0.0.671 candidate tree plus the reviewed black-band patch
     disparb = version == DISPARB_VERSION       # 0.0.673: built on the 0.0.672 candidate tree plus the reviewed display-arbitration patch
     fallback = version == FALLBACK_VERSION     # 0.0.674: built on the 0.0.673 candidate tree plus the reviewed two-stage fallback patch
-    patched = blackband or disparb or fallback
+    gating = version == GATING_VERSION         # 0.0.675: built on the 0.0.674 candidate tree plus the reviewed clock-gating + thermal patch
+    patched = blackband or disparb or fallback or gating
     tests = TESTS + (REFRESH_TESTS if refresh or fix or patched else ())
-    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION) and not args.active_baseline_manifest:
+    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION) and not args.active_baseline_manifest:
         raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
@@ -503,7 +550,8 @@ def main():
             raise ValueError(version + ' is built from its reviewed patch: pass --patch')
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         overlay = {'source': 'patch', 'patch': str(args.patch), 'patch_sha256': sha(args.patch),
-                   'patch_files': list(FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES), 'head_at_build': revision}
+                   'patch_files': list(GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
+                   'head_at_build': revision}
     else:
         revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
@@ -538,10 +586,13 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+    copy_source(GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
                 REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if fallback:
+    if gating:
+        # 0.0.675: no rebuild of any base. The base is the reviewed 0.0.674 candidate tree and binary (checked against its manifest).
+        manifest['base_verified'] = gating_base_verified(baseline)
+    elif fallback:
         # 0.0.674: no rebuild of any base. The base is the reviewed 0.0.673 candidate tree and binary (checked against its manifest).
         manifest['base_verified'] = fallback_base_verified(baseline)
     elif disparb:
@@ -567,7 +618,11 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if fallback:
+    if gating:
+        manifest['changed_source_files'] = gating_overlay(candidate, args.patch, version)
+        manifest['gating_overlay'] = {'patch': str(args.patch), 'patch_sha256': GATING_PATCH_SHA,
+                                      'marker_files': list(BLACKBAND_MARKER_FILES)}
+    elif fallback:
         manifest['changed_source_files'] = fallback_overlay(candidate, args.patch, version)
         manifest['fallback_overlay'] = {'patch': str(args.patch), 'patch_sha256': FALLBACK_PATCH_SHA,
                                         'marker_files': list(BLACKBAND_MARKER_FILES)}
@@ -607,7 +662,8 @@ def main():
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
     required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched else ())
                 + (FIX_REQUIRED_STRINGS if fix or patched else ()) + (BLACKBAND_REQUIRED_STRINGS if patched else ())
-                + (DISPARB_REQUIRED_STRINGS if disparb or fallback else ()) + (FALLBACK_REQUIRED_STRINGS if fallback else ()))
+                + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating else ()) + (FALLBACK_REQUIRED_STRINGS if fallback or gating else ())
+                + (GATING_REQUIRED_STRINGS if gating else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]

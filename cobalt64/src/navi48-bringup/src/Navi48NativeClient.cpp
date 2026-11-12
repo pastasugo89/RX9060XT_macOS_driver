@@ -196,8 +196,9 @@ IOReturn IOAccelNavi48NativeClient::externalMethod(uint32_t selector, IOExternal
 		if (!shape(0, 0, sizeof(n48n_ctx), sizeof(n48n_ctx))) return kIOReturnBadArgument;
 		return amdgpu::n1c_ctx(r, static_cast<const n48n_ctx *>(args->structureInput), static_cast<n48n_ctx *>(args->structureOutput));
 	case N48N_SEL_SUBMIT: {
-		// n4x safety: a latched TRIP refuses new submissions (the GPU stops getting work; reads stay allowed).
-		if (n4xs::refused()) return kIOReturnNotPermitted;
+		// n4x safety 0.0.675: a thermal TRIP never refuses a submission (it clamps GFXCLK instead; refusing froze the desktop on 2026-11-12).
+		// Only a watchdog being torn down refuses here.
+		if (n4xs::submit_refused()) return kIOReturnNotPermitted;
 		// 32 + 32*n bytes: the size is checked against num_ibs inside the parser; here only the shape and the ceiling.
 		if (sic != 0 || soc != 1 || sos != 0 || sis < 32u + 32u || sis > 32u + 32u * N48N_MAX_IBS || args->structureInput == nullptr)
 			return kIOReturnBadArgument;
@@ -258,7 +259,7 @@ IOReturn IOAccelNavi48NativeClient::externalMethod(uint32_t selector, IOExternal
 	// ---- ABI 1.2 (0.0.604): the DISPCLK/DPPCLK experiment. bind() arms the display layer (idempotent; no register written): the step reads the OTG frame
 	// counter through the scanout status code.
 	case N48N_SEL_DAL_STEP:
-		if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety: a latched TRIP refuses every writer (clocks, display)
+		if (n4xs::refused()) return kIOReturnNotPermitted;   // n4x safety: a TRIP (or a sensor fault) refuses every writer (clocks, display)
 		if (!shape(2, 0, 0, sizeof(n48n_dal_result))) return kIOReturnBadArgument;
 		(void)n48dcn::bind(owner);
 		return amdgpu::n1c_dal_step(r, si[0], si[1], static_cast<n48n_dal_result *>(args->structureOutput));

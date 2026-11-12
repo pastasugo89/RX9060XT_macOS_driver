@@ -28,10 +28,18 @@ constexpr uint32_t kRangeSelShift    = 19;
 // ---- thresholds and timing ----------------------------------------------------------------------------------------------
 // Defaults (hotspot = junction, the only independent sensor on this path). Edge and memory temperatures are NOT used for a
 // decision: they come from the SMU metrics table, whose layout is unverified for IF 0x33 (research/reports/smu_metrics_if33_audit.md).
-constexpr int32_t kDefaultWarnC      = 75;
-constexpr int32_t kDefaultTripC      = 80;
+// 0.0.675 (research/reports/macos-20261112/gfx-power-gating-study.md section 1): 80 C hotspot is a normal value under any real 3D load, and the
+// old TRIP (80 C, latched, refusing every submission) froze the desktop on 2026-11-12 at 85-87 C. New ladder: WARN 90 C (log only), TRIP 100 C
+// (below the PMFW's own throttlers and FW_CTF, which stay the real protection): the kext clamps GFXCLK to the PMFW minimum through the SMU and
+// keeps it until the hotspot stays below the release temperature (85 C) for kReleaseHoldMs; then the boot clock policy comes back. A TRIP
+// never latches and never refuses a submission (see refuses_submissions below).
+constexpr int32_t kDefaultWarnC      = 90;
+constexpr int32_t kDefaultTripC      = 100;
+constexpr int32_t kDefaultReleaseC   = 85;
+constexpr uint64_t kReleaseHoldMs    = 10000;   // the hotspot must stay below the release temperature this long (10 s)
+constexpr uint64_t kClampRetryMs     = 1000;    // a failed SMU clamp / restore is retried at most once a second
 constexpr int32_t kConfigMinC        = 50;      // boot-arg range; anything outside falls back to the default
-constexpr int32_t kConfigMaxC        = 100;
+constexpr int32_t kConfigMaxC        = 105;
 constexpr int32_t kPlausibleMinC     = 0;       // a decoded value outside this range is a sensor fault, not a temperature
 constexpr int32_t kPlausibleMaxC     = 125;
 constexpr uint32_t kSamplePeriodMs   = 250;
@@ -45,6 +53,12 @@ struct Thresholds {
 
 inline bool thresholds_valid(const Thresholds &t) {
     return t.warnC >= kConfigMinC && t.tripC <= kConfigMaxC && t.warnC < t.tripC;
+}
+
+// The temperature the hotspot must stay below (for kReleaseHoldMs) before a thermal clamp is released: 85 C, or 5 C under a lower TRIP set
+// by boot-arg (navi48-safety-trip=80 releases below 75 C), so the release is always under the TRIP.
+inline int32_t release_c(const Thresholds &t) {
+    return t.tripC - 5 < kDefaultReleaseC ? t.tripC - 5 : kDefaultReleaseC;
 }
 
 // ---- decode -------------------------------------------------------------------------------------------------------------
@@ -69,8 +83,19 @@ inline ThmDecode decode_thm_cur_temp(uint32_t reg) {
 
 // ---- decision -----------------------------------------------------------------------------------------------------------
 enum Level : uint32_t { kLevelOk = 0, kLevelWarn = 1, kLevelTrip = 2 };
+
+// A precondition for entering PSP, not a guarantee during the chain.
+inline uint64_t psp_gate_sample(uint64_t sampleMs, bool valid, uint32_t level) {
+    return (sampleMs << 1) | ((valid && level == kLevelOk) ? 1u : 0u);
+}
+inline bool psp_entry_permitted(bool running, uint64_t sample, uint64_t nowMs) {
+    const uint64_t sampleMs = sample >> 1;
+    return running && (sample & 1u) != 0 && nowMs >= sampleMs && nowMs - sampleMs <= 1000;
+}
 enum Reason : uint32_t {
     kReasonNone = 0, kReasonWarnTemp = 1, kReasonTripTemp = 2, kReasonSensorInvalid = 3, kReasonNoSensor = 4,
+    kReasonWatchdogFailure = 5,
+    kReasonCooling = 6,   // 0.0.675: below TRIP, the clamp held until the hotspot stays below release_c for kReleaseHoldMs
 };
 
 inline const char *level_name(uint32_t level) {
@@ -82,31 +107,47 @@ inline const char *reason_name(uint32_t reason) {
     case kReasonTripTemp:      return "trip-temp";
     case kReasonSensorInvalid: return "sensor-invalid";
     case kReasonNoSensor:      return "no-sensor";
+    case kReasonWatchdogFailure: return "watchdog-failure";
+    case kReasonCooling:       return "cooling";
     default:                   return "none";
     }
 }
 
-// The monitor. TRIP latches: once set it stays set until the kext is reloaded, so a single spike cannot be "forgotten".
-// WARN and OK follow the sample. An unreadable sample is WARN at first and TRIP after kInvalidTripSamples in a row.
+// The monitor (0.0.675). Nothing latches. A temperature at or above TRIP sets level TRIP and asks for the thermal clamp (clamp = true: the kext
+// sends smu_set_power_state(Low), GFXCLK soft max = PMFW minimum). While the clamp is held the level stays TRIP (reason trip-temp at or above
+// TRIP, cooling below it); the clamp is released only after kReleaseHoldMs of consecutive valid samples below release_c, and then WARN / OK
+// follow the sample again. An unreadable sample is WARN at first; kInvalidTripSamples in a row while armed is TRIP (sensor-invalid) with the
+// clamp asked for too, released by the same rule once the sensor reads again. Up to 0.0.674 a TRIP latched and refused submissions; that
+// froze the desktop (2026-11-12), so no level refuses a submission now (refuses_submissions).
 struct Monitor {
     uint32_t invalidRun;
     uint32_t level;
     uint32_t reason;
+    bool     clamp;          // the thermal clamp is wanted (the kext applies / releases it on a change)
+    bool     cooling;        // a below-release run is being timed
+    uint64_t coolSinceMs;    // when that run started
+    bool     permanent;      // no sensor at all: the clamp is never released
 };
 
 inline void monitor_init(Monitor &m) {
     m.invalidRun = 0;
     m.level = kLevelOk;
     m.reason = kReasonNone;
+    m.clamp = false;
+    m.cooling = false;
+    m.coolSinceMs = 0;
+    m.permanent = false;
 }
 
-inline uint32_t monitor_step(Monitor &m, const Thresholds &th, const ThmDecode &d) {
-    if (m.level == kLevelTrip) return kLevelTrip;      // latched
+inline uint32_t monitor_step(Monitor &m, const Thresholds &th, const ThmDecode &d, uint64_t nowMs) {
+    if (m.permanent) return m.level;                   // no sensor: TRIP + clamp for the whole boot
     if (!d.valid) {
         m.invalidRun++;
+        m.cooling = false;                             // an unreadable sample never counts towards a release
         if (m.invalidRun >= kInvalidTripSamples) {
             m.level = kLevelTrip;
-        } else {
+            m.clamp = true;
+        } else if (!m.clamp) {
             m.level = kLevelWarn;
         }
         m.reason = kReasonSensorInvalid;
@@ -116,7 +157,27 @@ inline uint32_t monitor_step(Monitor &m, const Thresholds &th, const ThmDecode &
     if (d.tempC >= th.tripC) {
         m.level = kLevelTrip;
         m.reason = kReasonTripTemp;
-    } else if (d.tempC >= th.warnC) {
+        m.clamp = true;
+        m.cooling = false;
+        return m.level;
+    }
+    if (m.clamp) {                                     // hysteresis: hold until below release_c for kReleaseHoldMs
+        if (d.tempC < release_c(th)) {
+            if (!m.cooling) { m.cooling = true; m.coolSinceMs = nowMs; }
+            if (nowMs >= m.coolSinceMs && nowMs - m.coolSinceMs >= kReleaseHoldMs) {
+                m.clamp = false;
+                m.cooling = false;
+            }
+        } else {
+            m.cooling = false;
+        }
+        if (m.clamp) {
+            m.level = kLevelTrip;
+            m.reason = kReasonCooling;
+            return m.level;
+        }
+    }
+    if (d.tempC >= th.warnC) {
         m.level = kLevelWarn;
         m.reason = kReasonWarnTemp;
     } else {
@@ -126,12 +187,34 @@ inline uint32_t monitor_step(Monitor &m, const Thresholds &th, const ThmDecode &
     return m.level;
 }
 
-// Called when the sensor cannot be resolved at all while the watchdog is enabled: fail closed.
+// Called when the sensor cannot be resolved at all while the watchdog is enabled: fail closed = TRIP and the thermal clamp for the whole boot
+// (0.0.675: clocks low, submissions still accepted).
 inline uint32_t monitor_no_sensor(Monitor &m) {
     m.level = kLevelTrip;
     m.reason = kReasonNoSensor;
+    m.clamp = true;
+    m.permanent = true;
     return m.level;
 }
+
+// ---- the clamp action (0.0.675) -----------------------------------------------------------------------------------------------------------
+// The kext keeps `applied` (what the SMU last accepted) and `lastTryMs`. clamp_action says what to send now: kActClamp (smu_set_power_state
+// Low), kActRestore (the boot clock policy: Low when navi48-idle-clamp is on, the default; Auto when it is off) or nothing. A failed send is
+// retried at most every kClampRetryMs.
+enum Action : uint32_t { kActNone = 0, kActClamp = 1, kActRestore = 2 };
+inline uint32_t clamp_action(bool wanted, bool applied, bool tried, uint64_t lastTryMs, uint64_t nowMs) {
+    if (wanted == applied) return kActNone;
+    if (tried && nowMs >= lastTryMs && nowMs - lastTryMs < kClampRetryMs) return kActNone;
+    return wanted ? kActClamp : kActRestore;
+}
+
+// ---- what a level refuses (0.0.675) ---------------------------------------------------------------------------------------------------------
+// Submissions (N48N submit, the legacy SubmitIB) are NEVER refused for a temperature or a sensor fault: only while the watchdog is being torn
+// down (stopping). The writers that can raise a clock or change the display (DAL step / hold, mode trial, power states other than Low, the
+// accel experiment, refresh-60, the bring-up ladder beyond SMUInit) are refused while TRIP (a temperature TRIP, the cooling hold, an
+// unreadable or unresolved sensor, a watchdog failure) and while stopping.
+inline bool refuses_submissions(bool stopping, uint32_t /*level*/) { return stopping; }
+inline bool refuses_writers(bool stopping, uint32_t level) { return stopping || level == kLevelTrip; }
 
 // ---- protections (SMU feature mask) -------------------------------------------------------------------------------------
 // Bits from Linux smu14_driver_if_v14_0.h: FEATURE_THROTTLERS_BIT 23 (PPT, TDC and the temperature throttlers ride on it:

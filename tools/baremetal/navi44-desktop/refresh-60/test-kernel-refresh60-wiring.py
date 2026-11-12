@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""0.0.669 to 0.0.674 CPU test: the wiring of the 60 Hz verb in the candidate kernel source (static checks, no execution).
+"""0.0.669 to 0.0.675 CPU test: the wiring of the 60 Hz verb in the candidate kernel source (static checks, no execution).
 Checks: the verb is dispatched BEFORE the native-boot refusal and only for well-formed requests; the user client admits 109 and 110; the
 lock is taken after the timer is created and released before the timer is removed; the stop path restores 120 Hz before the registers
-are unmapped; the RDNA4FB property name is the one RDNA4FB 0.0.9 reads; the version markers are those of --version (default 0.0.669; 0.0.672 to 0.0.674 check the patched trees' markers).
+are unmapped; the RDNA4FB property name is the one RDNA4FB 0.0.9 reads; the version markers are those of --version (default 0.0.669; 0.0.672 to 0.0.675 check the patched trees' markers).
 """
 from pathlib import Path
 import argparse
@@ -11,9 +11,9 @@ import re
 root = Path(__file__).resolve().parents[4]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--kernel-source', type=Path, required=True)
-parser.add_argument('--version', default='0.0.669', help='the candidate CFBundleVersion the markers must carry (0.0.669 to 0.0.674)')
+parser.add_argument('--version', default='0.0.669', help='the candidate CFBundleVersion the markers must carry (0.0.669 to 0.0.675)')
 args = parser.parse_args()
-if args.version not in ('0.0.669', '0.0.670', '0.0.671', '0.0.672', '0.0.673', '0.0.674'):
+if args.version not in ('0.0.669', '0.0.670', '0.0.671', '0.0.672', '0.0.673', '0.0.674', '0.0.675'):
     raise SystemExit('unsupported --version: ' + args.version)
 build_marker = int(args.version.rsplit('.', 1)[1])
 src = args.kernel_source.resolve()

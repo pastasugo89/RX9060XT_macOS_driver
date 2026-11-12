@@ -3,18 +3,22 @@
 //
 //  Boot-args:
 //    navi48-safety=0|1         enable or disable (default: 1 on Navi 44, 0 on Navi 48)
-//    navi48-safety-warn=<C>    WARN threshold, degrees C (default 75), accepted range 50..100
-//    navi48-safety-trip=<C>    TRIP threshold, degrees C (default 80), accepted range 50..100, must be above warn
+//    navi48-safety-warn=<C>    WARN threshold, degrees C (default 90, 0.0.675), accepted range 50..105
+//    navi48-safety-trip=<C>    TRIP threshold, degrees C (default 100, 0.0.675), accepted range 50..105, must be above warn
 //  An invalid pair falls back to the defaults and says so in the log.
 //
 //  What it does, and nothing else:
 //    * reads THM_TCON_CUR_TMP (hardware sensor, independent of the SMU metrics table) every 250 ms;
 //    * emits "N4X-SAFETY t=... hotspot=... state=OK|WARN|TRIP|STOP ..." on the serial log once a second;
-//    * on TRIP the state latches until the kext is reloaded, and the writing entry points refuse
-//      (N48N submit, DAL step and hold, mode trial, power state, accel experiment, bring-up ladder);
-//    * when the sensor cannot be resolved while enabled, it fails closed: state=TRIP reason=no-sensor.
-//  It never writes a voltage, a clock, a fan setting, a table or a register. The host watchdog (tools/vm/gpu-safety-watchdog.py)
-//  is the part that stops the VM; the kext only reports and refuses. Design: research/reports/gpu_safety.md.
+//    * 0.0.675: on TRIP (hotspot >= trip, or the sensor unreadable for 3 s, or unresolved) it clamps GFXCLK to the PMFW minimum through the
+//      SMU (smu_set_power_state Low) and keeps the clamp until the hotspot stays below 85 C (release_c) for 10 s, then restores the boot
+//      clock policy (set_restore_state: Low with navi48-idle-clamp on, Auto with it off). Nothing latches.
+//    * a TRIP NEVER refuses a submission (submit_refused: only while the watchdog is torn down). Up to 0.0.674 a latched TRIP refused every
+//      submission and froze the desktop at 85-87 C (research/reports/macos-20261112/gfx-power-gating-study.md section 1).
+//    * while TRIP (including the cooling hold) the writers that can raise a clock or change the display still refuse (refused(): DAL step and
+//      hold, mode trial, power states other than Low, accel experiment, refresh-60, the bring-up ladder beyond SMUInit).
+//  The only GPU state it changes is the GFXCLK soft limits above (the same SMU messages navi48test power uses); never a voltage, a fan setting,
+//  a table or a register. PMFW throttlers and FW_CTF remain the real protection. Design: research/reports/gpu_safety.md.
 //
 #pragma once
 #include <stdint.h>
@@ -36,11 +40,22 @@ void stop();
 // True while the watchdog thread is running.
 bool active();
 
-// The latched level (Level): kLevelOk, kLevelWarn or kLevelTrip. A watchdog that is not enabled reports kLevelOk and never refuses.
+// The current level (Level): kLevelOk, kLevelWarn or kLevelTrip. A watchdog that is not enabled reports kLevelOk and never refuses.
 uint32_t level();
 
-// True once the watchdog has latched TRIP. Writing entry points check this and return kIOReturnNotPermitted.
+// True while TRIP (temperature, cooling hold, sensor fault, watchdog failure) or stopping. The WRITERS check this (DAL, mode trial, clock
+// raise, accel experiment, refresh-60, the ladder) and return kIOReturnNotPermitted. Submissions do NOT use it (0.0.675): submit_refused().
 bool refused();
+
+// 0.0.675: true only while the watchdog is being torn down (stop()). N48N submit and the legacy SubmitIB check this; temperature never refuses.
+bool submit_refused();
+
+// 0.0.675: the thermal clamp is in force (the SMU accepted the Low power state for a TRIP).
+bool clamped();
+
+// 0.0.675: the power state the watchdog restores when a thermal clamp is released (amdgpu::SMUPowerState: Low = the boot idle clamp, the
+// default; Auto when navi48-idle-clamp=0). Navi48Bringup::runStages sets it from ctx.idleClamp.
+void set_restore_state(uint32_t smuPowerState);
 
 // Boot-arg navi48-clock-raise=1 (default OFF). Without it doPowerState refuses the power states that RAISE a clock (High, Peak).
 bool clock_raise_allowed();

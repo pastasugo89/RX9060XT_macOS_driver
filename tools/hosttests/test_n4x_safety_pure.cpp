@@ -1,8 +1,10 @@
 // Host test: the pure thermal-safety logic of the kext (cobalt64/src/navi48-bringup/src/amd/n4x_safety_pure.h).
+// 0.0.675: WARN 90 / TRIP 100, the TRIP clamp with its 85 C / 10 s hysteresis, the clamp action and what each level refuses (never a submission).
 // Build: tools/hosttests/run.sh   Usage: test_n4x_safety_pure
 #include "amd/n4x_safety_pure.h"
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 using namespace n4xs;
 
@@ -32,38 +34,119 @@ static void test_decode() {
 }
 
 static void test_thresholds() {
+    CHECK(kDefaultWarnC == 90 && kDefaultTripC == 100 && kDefaultReleaseC == 85, "thresholds: 0.0.675 defaults WARN 90, TRIP 100, release 85");
     CHECK(thresholds_valid({kDefaultWarnC, kDefaultTripC}), "thresholds: defaults are valid");
     CHECK(!thresholds_valid({80, 75}), "thresholds: warn above trip is refused");
     CHECK(!thresholds_valid({75, 75}), "thresholds: warn equal to trip is refused");
     CHECK(!thresholds_valid({40, 80}), "thresholds: warn below the config floor is refused");
-    CHECK(!thresholds_valid({75, 101}), "thresholds: trip above the config ceiling is refused");
+    CHECK(thresholds_valid({95, 105}), "thresholds: trip 105 (the new ceiling) is accepted");
+    CHECK(!thresholds_valid({75, 106}), "thresholds: trip above the config ceiling (105) is refused");
+    CHECK(thresholds_valid({75, 80}), "thresholds: the old 75/80 pair is still accepted by boot-arg");
+    CHECK(release_c({kDefaultWarnC, kDefaultTripC}) == 85, "release: 85 C with the defaults");
+    CHECK(release_c({75, 80}) == 75, "release: 5 C under a lower TRIP (80 -> 75)");
+    CHECK(release_c({95, 105}) == 85, "release: never above 85 C");
 }
 
-static uint32_t step(Monitor &m, int32_t c) {
-    return monitor_step(m, {kDefaultWarnC, kDefaultTripC}, decode_thm_cur_temp(thm_reg((uint32_t)(c * 8), 0)));
+static const Thresholds kTh {kDefaultWarnC, kDefaultTripC};
+
+static uint32_t step_at(Monitor &m, int32_t c, uint64_t t) {
+    return monitor_step(m, kTh, decode_thm_cur_temp(thm_reg((uint32_t)(c * 8), 0)), t);
 }
 
 static void test_monitor() {
+    uint64_t t = 1000;
     Monitor m; monitor_init(m);
-    CHECK(step(m, 30) == kLevelOk && m.reason == kReasonNone, "monitor: 30 C is OK");
-    CHECK(step(m, 75) == kLevelWarn && m.reason == kReasonWarnTemp, "monitor: 75 C is WARN");
-    CHECK(step(m, 74) == kLevelOk, "monitor: WARN follows the sample back to OK");
-    CHECK(step(m, 80) == kLevelTrip && m.reason == kReasonTripTemp, "monitor: 80 C is TRIP");
-    CHECK(step(m, 40) == kLevelTrip, "monitor: TRIP latches after the temperature falls");
+    CHECK(step_at(m, 30, t) == kLevelOk && m.reason == kReasonNone && !m.clamp, "monitor: 30 C is OK, no clamp");
+    CHECK(step_at(m, 87, t += 250) == kLevelOk && !m.clamp, "monitor: 87 C (the 2026-11-12 hotspot) is OK now, no clamp");
+    CHECK(step_at(m, 90, t += 250) == kLevelWarn && m.reason == kReasonWarnTemp && !m.clamp, "monitor: 90 C is WARN, log only");
+    CHECK(step_at(m, 89, t += 250) == kLevelOk, "monitor: WARN follows the sample back to OK");
+    CHECK(step_at(m, 99, t += 250) == kLevelWarn && !m.clamp, "monitor: 99 C is WARN, no clamp");
+    CHECK(step_at(m, 100, t += 250) == kLevelTrip && m.reason == kReasonTripTemp && m.clamp, "monitor: 100 C is TRIP and asks for the clamp");
+    CHECK(step_at(m, 95, t += 250) == kLevelTrip && m.reason == kReasonCooling && m.clamp, "monitor: below TRIP but above release: cooling hold");
+    CHECK(step_at(m, 85, t += 250) == kLevelTrip && m.clamp && !m.cooling, "monitor: 85 C is not below release (strict)");
+    // below release: the 10 s run starts at the first sample below 85 C
+    const uint64_t start = (t += 250);
+    CHECK(step_at(m, 84, start) == kLevelTrip && m.clamp && m.cooling, "monitor: 84 C starts the release timer");
+    for (uint64_t k = 250; k < kReleaseHoldMs; k += 250) step_at(m, 70, start + k);
+    CHECK(m.clamp && m.level == kLevelTrip, "monitor: still clamped 9.75 s into the run");
+    CHECK(step_at(m, 70, start + kReleaseHoldMs) == kLevelOk && !m.clamp, "monitor: released after 10 s below 85 C, level follows the sample");
+    // a spike inside the run restarts it
+    Monitor h; monitor_init(h);
+    t = 0;
+    step_at(h, 101, t);
+    step_at(h, 80, t += 250);
+    for (int i = 0; i < 20; i++) step_at(h, 80, t += 250);                  // 5 s below release
+    CHECK(step_at(h, 86, t += 250) == kLevelTrip && h.clamp && !h.cooling, "monitor: a sample at or above release resets the run");
+    const uint64_t again = (t += 250);
+    step_at(h, 80, again);
+    step_at(h, 80, again + kReleaseHoldMs - 1);
+    CHECK(h.clamp, "monitor: the run restarted (9.999 s after the reset: still clamped)");
+    CHECK(step_at(h, 80, again + kReleaseHoldMs) == kLevelOk && !h.clamp, "monitor: released 10 s after the restart");
+    CHECK(step_at(h, 100, again + kReleaseHoldMs + 250) == kLevelTrip && h.clamp, "monitor: TRIP again after a release (nothing latched, nothing disarmed)");
+    Monitor w2; monitor_init(w2);
+    step_at(w2, 100, 0);
+    for (uint64_t k = 250; k <= kReleaseHoldMs + 250; k += 250) step_at(w2, 60, k);
+    CHECK(w2.level == kLevelOk && w2.reason == kReasonNone && !w2.clamp, "monitor: after release the reason is none");
 
+    // unreadable sensor
     Monitor w; monitor_init(w);
-    for (int i = 0; i < 11; i++) monitor_step(w, {kDefaultWarnC, kDefaultTripC}, ThmDecode{false, 0, 0, 0});
-    CHECK(w.level == kLevelWarn && w.reason == kReasonSensorInvalid, "monitor: 11 unreadable samples are WARN");
-    monitor_step(w, {kDefaultWarnC, kDefaultTripC}, ThmDecode{false, 0, 0, 0});
-    CHECK(w.level == kLevelTrip, "monitor: 12 unreadable samples (3 s) are TRIP");
+    for (int i = 0; i < 11; i++) monitor_step(w, kTh, ThmDecode{false, 0, 0, 0}, (uint64_t)i * 250);
+    CHECK(w.level == kLevelWarn && w.reason == kReasonSensorInvalid && !w.clamp, "monitor: 11 unreadable samples are WARN, no clamp");
+    monitor_step(w, kTh, ThmDecode{false, 0, 0, 0}, 11 * 250);
+    CHECK(w.level == kLevelTrip && w.clamp && w.reason == kReasonSensorInvalid, "monitor: 12 unreadable samples (3 s) are TRIP + clamp");
+    CHECK(step_at(w, 40, 3250) == kLevelTrip && w.clamp && w.reason == kReasonCooling, "monitor: the sensor back at 40 C: still clamped (hysteresis)");
+    CHECK(step_at(w, 40, 3250 + kReleaseHoldMs) == kLevelOk && !w.clamp, "monitor: released 10 s after the sensor came back cool");
+    // unreadable samples never count towards a release
+    Monitor u; monitor_init(u);
+    step_at(u, 100, 0);
+    step_at(u, 60, 250);
+    monitor_step(u, kTh, ThmDecode{false, 0, 0, 0}, 5000);
+    CHECK(u.clamp && u.level == kLevelTrip && !u.cooling, "monitor: an unreadable sample during the hold resets the run, keeps TRIP");
+    step_at(u, 60, 5250);
+    CHECK(step_at(u, 60, 5250 + kReleaseHoldMs - 250) == kLevelTrip && u.clamp, "monitor: the run restarted at the next readable sample");
 
     Monitor r; monitor_init(r);
-    for (int i = 0; i < 5; i++) monitor_step(r, {kDefaultWarnC, kDefaultTripC}, ThmDecode{false, 0, 0, 0});
-    CHECK(step(r, 30) == kLevelOk && r.invalidRun == 0, "monitor: a readable sample clears the invalid run");
+    for (int i = 0; i < 5; i++) monitor_step(r, kTh, ThmDecode{false, 0, 0, 0}, (uint64_t)i);
+    CHECK(step_at(r, 30, 10) == kLevelOk && r.invalidRun == 0, "monitor: a readable sample clears the invalid run");
 
     Monitor n; monitor_init(n);
     monitor_no_sensor(n);
-    CHECK(n.level == kLevelTrip && n.reason == kReasonNoSensor, "monitor: no sensor fails closed");
+    CHECK(n.level == kLevelTrip && n.reason == kReasonNoSensor && n.clamp, "monitor: no sensor fails closed = TRIP + clamp");
+    CHECK(step_at(n, 30, 1000000) == kLevelTrip && n.clamp, "monitor: no sensor: the clamp is never released");
+}
+
+static void test_clamp_action() {
+    CHECK(clamp_action(false, false, false, 0, 1000) == kActNone, "action: nothing wanted, nothing applied");
+    CHECK(clamp_action(true, false, false, 0, 1000) == kActClamp, "action: TRIP -> clamp");
+    CHECK(clamp_action(true, true, false, 0, 1000) == kActNone, "action: clamp already applied");
+    CHECK(clamp_action(false, true, false, 0, 1000) == kActRestore, "action: release -> restore the boot policy");
+    CHECK(clamp_action(true, false, true, 1000, 1500) == kActNone, "action: a failed clamp is not resent within 1 s");
+    CHECK(clamp_action(true, false, true, 1000, 2000) == kActClamp, "action: a failed clamp is retried after 1 s");
+    CHECK(clamp_action(false, true, true, 1000, 1999) == kActNone && clamp_action(false, true, true, 1000, 2000) == kActRestore,
+          "action: a failed restore is retried after 1 s");
+}
+
+static void test_refusal() {
+    // the 2026-11-12 freeze: submissions are never refused for a temperature or a sensor fault
+    CHECK(!refuses_submissions(false, kLevelTrip), "refusal: TRIP does not refuse submissions");
+    CHECK(!refuses_submissions(false, kLevelWarn) && !refuses_submissions(false, kLevelOk), "refusal: WARN / OK do not refuse submissions");
+    CHECK(refuses_submissions(true, kLevelOk), "refusal: only teardown refuses submissions");
+    CHECK(refuses_writers(false, kLevelTrip), "refusal: TRIP (and its cooling hold) refuses the writers (DAL, mode trial, clock raise)");
+    CHECK(!refuses_writers(false, kLevelWarn) && !refuses_writers(false, kLevelOk), "refusal: WARN / OK do not refuse the writers");
+    CHECK(refuses_writers(true, kLevelOk), "refusal: teardown / watchdog failure refuses the writers");
+    // end to end over the monitor: the levels a full TRIP episode goes through never refuse a submission
+    Monitor m; monitor_init(m);
+    bool anySubmitRefused = false, writersRefusedDuringHold = true;
+    uint64_t t = 0;
+    for (int c : {60, 87, 95, 101, 104, 96, 90, 84}) { step_at(m, c, t += 250); anySubmitRefused |= refuses_submissions(false, m.level); }
+    for (uint64_t k = 0; k < kReleaseHoldMs; k += 250) {
+        step_at(m, 70, t += 250);
+        anySubmitRefused |= refuses_submissions(false, m.level);
+        if (m.clamp) writersRefusedDuringHold &= refuses_writers(false, m.level);
+    }
+    CHECK(!anySubmitRefused, "refusal: no submission refused through a whole TRIP episode");
+    CHECK(writersRefusedDuringHold, "refusal: the writers stay refused while the clamp is held");
+    CHECK(!m.clamp && !refuses_writers(false, m.level), "refusal: the writers are allowed again after the release");
 }
 
 static void test_protections() {
@@ -115,6 +198,8 @@ int main() {
     test_decode();
     test_thresholds();
     test_monitor();
+    test_clamp_action();
+    test_refusal();
     test_protections();
     test_heartbeat();
     std::printf("n4x_safety_pure: %d checks, %d failed\n", checks, fails);
