@@ -10,6 +10,7 @@
 
 #include "navi48_refresh_pure.h"   // 0.0.669: the 60 Hz scanout switch (n48rf::Hw, Session, Report)
 #include <stdint.h>
+#include <stddef.h>   // 0.0.673: size_t (uclkPinDescribe)
 
 class Navi48Bringup;
 namespace amdgpu { struct BringupContext; }   // 0.0.635: disp2's plane op
@@ -189,6 +190,11 @@ void scanLogState();
 // write allowlist. refresh_bound() is true once bind() has armed the DCN device on this boot.
 n48rf::Hw refresh_hw();
 bool refresh_bound();
+
+// 0.0.673 (black band without a fixed memory clock): the display monitor thread (DET / watermarks, the underflow watch, the UCLK fallback) is started
+// by bind(). dispArbModeChanged(): the 60 Hz switch changed the timing (ufmon takes a new baseline). uclkPinDescribe(): the text of Navi48,UclkPin.
+void dispArbModeChanged();
+void uclkPinDescribe(char *t, size_t n);
 
 }  // namespace n48dcn
 

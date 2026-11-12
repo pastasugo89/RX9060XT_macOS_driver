@@ -1,5 +1,6 @@
 // blackband_ufmon_test.cpp - build 0.0.672 (black band): the scanout underflow monitor's decisions (dcn/navi48_ufmon_pure.h) and its wiring in
 // dcn/navi48_dcn.cpp (source pins: no lock held at the call, try-lock only, writes only through mt_wr, the registers and the kill switch).
+// 0.0.673: the caller is the display monitor thread (arb_monitor_loop), not the scanout watchdog.
 //   clang++ -std=c++17 -Wall -Wextra -Werror -O1 -fsanitize=address,undefined -fno-sanitize-recover=all -I src/navi48-bringup/src/dcn \
 //       src/navi48-bringup/tests/blackband_ufmon_test.cpp -o /tmp/blackband_ufmon && /tmp/blackband_ufmon src/navi48-bringup
 #include <cstdio>
@@ -88,12 +89,15 @@ int main(int argc, char **argv) {
     expect(body.find("WREG32") == std::string::npos && body.find("dcn_wreg") == std::string::npos, "writes only through mt_wr (the DCN allowlist)");
     expect(body.find("\"navi48-ufmon\"") != std::string::npos, "kill switch navi48-ufmon");
     expect(body.find("__atomic_load_n(&gMt.busy, __ATOMIC_SEQ_CST) == 0u && mt_ensure_lock() && IOLockTryLock(gMtLock)") != std::string::npos, "never clears while a mode trial / hold runs");
-    const size_t pw = d.find("static void scan_watchdog_loop(uint32_t myGen) {");
-    const size_t pc = d.find("ufmon_poll(myGen);", pw);
-    const size_t pu = d.rfind("IOLockUnlock(l);", pc);
-    expect(pw != std::string::npos && pc != std::string::npos && pu != std::string::npos && pu > pw, "the watchdog calls ufmon_poll after dropping the scan lock");
-    const size_t pnext = d.find("IOLockLock(l);", pu);
-    expect(pnext == std::string::npos || pnext > pc, "no scan lock is re-taken between the unlock and the call");
+    // 0.0.673: ufmon runs on the display monitor thread (arb_monitor_loop: whenever the display layer is armed and the display is on), no longer only
+    // inside a native scanout acquisition's watchdog (which left the GOP console and every period without an acquisition unwatched).
+    const size_t pw = d.find("static void scan_watchdog_loop(uint32_t myGen) {"), pwe = d.find("\n}\n", pw);
+    expect(pw != std::string::npos && d.substr(pw, pwe - pw).find("ufmon_poll(") == std::string::npos, "the scan watchdog no longer calls ufmon_poll");
+    const size_t pm = d.find("static void arb_monitor_loop() {"), pme = d.find("\n}\n", pm);
+    const std::string mon = pm == std::string::npos ? std::string() : d.substr(pm, pme - pm);
+    expect(mon.find("if (on) ufmon_poll(monGen);") != std::string::npos, "the display monitor calls ufmon_poll while the display is on");
+    expect(mon.find("IOLockLock(") == std::string::npos && mon.find("IOLockTryLock(") == std::string::npos, "with no lock held (gMtLock is taken by try-lock inside ufmon_poll only)");
+    expect(body.find("(gUf.polls % 200u) == 1u") != std::string::npos, "Navi48,DisplayUnderflow is published every 10 s too (the watch is visible without root)");
     std::printf("%s: %d checks, %d failed\n", gFail ? "FAIL" : "PASS", gRun, gFail);
     return gFail ? 1 : 0;
 }

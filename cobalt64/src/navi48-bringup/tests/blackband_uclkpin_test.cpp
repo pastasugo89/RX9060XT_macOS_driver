@@ -5,6 +5,8 @@
 //       src/navi48-bringup/tests/blackband_uclkpin_test.cpp src/navi48-bringup/src/amd/smu_v14_0.cpp -o /tmp/blackband_uclkpin && /tmp/blackband_uclkpin
 // Covers: P the pure rules (boot-arg, params, plausibility, names); B the exact PPSMC message list per scenario (pinned, off, query failure,
 // implausible reply, set refused, PMFW without reply); I smu_hw_init calls the pin only on the full setup and before the protection gate.
+// 0.0.673: the default is AUTO (no message at SMU init), navi48-uclkpin=1 FORCE is the 0.0.672 pin; D the run-time pin / release
+// (smu_uclk_display_pin) of the display monitor's fallback; F the fallback state machine (n48uclk::fb).
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -79,65 +81,123 @@ static bool seen_exact(const std::vector<std::pair<uint32_t, uint32_t>> &want) {
 int main() {
     using namespace n48uclk;
     // ---- P: pure rules ----
-    expect(enabled(false, 0) && enabled(true, 1) && enabled(true, 7) && !enabled(true, 0), "only an explicit navi48-uclkpin=0 turns the pin off");
+    expect(mode_of(false, 0) == kModeAuto && mode_of(true, 0) == kModeOff && mode_of(true, 1) == kModeForce && mode_of(true, 7) == kModeAuto,
+           "0.0.673: absent = auto (fallback only), 0 = off, 1 = force (the 0.0.672 pin), anything else = auto");
     expect(query_param() == 0x00020000u && set_param(2518) == 0x000209D6u && set_param(0x12345) == 0x00022345u, "params: PPCLK_UCLK (2) << 16 | MHz");
     expect(max_ok(2518, true, 96) && max_ok(100, false, 0) && max_ok(5000, true, 5000), "plausible maxima accepted");
     expect(!max_ok(99, false, 0) && !max_ok(5001, false, 0) && !max_ok(0, false, 0) && !max_ok(500, true, 600) && !max_ok(0xFFFFFFFFu, false, 0), "implausible maxima refused");
+    expect(min_ok(96, 2518) && !min_ok(0, 2518) && !min_ok(3000, 2518) && !min_ok(0xFFFFFFFFu, 0xFFFFFFFFu), "release target: a plausible minimum not above the maximum");
     expect(kPpclkUclk == amdgpu::SMUClk::UCLK, "PPCLK_UCLK matches the metrics index (amdgpu_smu.h)");
     expect(kMsgSetSoftMinByFreq == amdgpu::PPSMC::SetSoftMinByFreq && kMsgGetMinDpmFreq == amdgpu::PPSMC::GetMinDpmFreq && kMsgGetMaxDpmFreq == amdgpu::PPSMC::GetMaxDpmFreq, "message ids match amdgpu_ip.h");
-    expect(std::strcmp(verdict_name(kPinned), "pinned") == 0 && std::strstr(verdict_name(kOff), "navi48-uclkpin=0") != nullptr, "verdict names");
+    expect(std::strcmp(verdict_name(kPinned), "pinned") == 0 && std::strstr(verdict_name(kOff), "navi48-uclkpin=0") != nullptr && std::strstr(verdict_name(kAuto), "auto") != nullptr &&
+           std::strstr(verdict_name(kReleased), "released") != nullptr, "verdict names");
 
-    // ---- B1: pinned (default, no boot-arg) ----
+    // ---- D0: before smu_hw_init enabled the features, the run-time path sends nothing ----
     world_reset();
-    kern_return_t r = amdgpu::smu_pin_uclk_for_display(gDev);
-    expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kPinned, "default: pinned");
-    expect(seen_exact({ { 0x1D, 0x20000 }, { 0x1E, 0x20000 }, { 0x19, 0x209D6 } }), "default: exactly GetMin, GetMax, SetSoftMin(UCLK, 2518)");
-    expect(W.softMinUclk == 2518 && amdgpu::smu_uclk_pin_result().setMhz == 2518 && amdgpu::smu_uclk_pin_result().minMhz == 96, "the soft minimum is the DPM maximum");
-    // ---- B2: explicit ON value ----
+    kern_return_t r = amdgpu::smu_uclk_display_pin(gDev, true, kWhyUnderflow);
+    expect(r == kIOReturnNotPermitted && W.seen.empty(), "run-time pin before SMU init: refused, no message");
+    // ---- B1: default (no boot-arg) = AUTO: nothing sent at SMU init ----
+    world_reset();
+    r = amdgpu::smu_pin_uclk_for_display(gDev);
+    expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kAuto && amdgpu::smu_uclk_pin_result().mode == kModeAuto && W.seen.empty(),
+           "default: auto, NO message (the memory clock stays under PMFW DPM)");
+    // ---- D1: the fallback pin at run time, then the release ----
+    W.seen.clear();
+    r = amdgpu::smu_uclk_display_pin(gDev, true, kWhyUnderflow);
+    expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kPinned && amdgpu::smu_uclk_pin_result().why == kWhyUnderflow && W.softMinUclk == 2518,
+           "fallback pin: pinned to the maximum");
+    expect(seen_exact({ { 0x1D, 0x20000 }, { 0x1E, 0x20000 }, { 0x19, 0x209D6 } }), "fallback pin: exactly GetMin, GetMax, SetSoftMin(UCLK, 2518)");
+    W.seen.clear();
+    r = amdgpu::smu_uclk_display_pin(gDev, false, kWhyDisplayOff);
+    expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kReleased && W.softMinUclk == 96 && amdgpu::smu_uclk_pin_result().setMhz == 96,
+           "release: the soft minimum back to the DPM minimum");
+    expect(seen_exact({ { 0x1D, 0x20000 }, { 0x1E, 0x20000 }, { 0x19, 0x20060 } }), "release: exactly GetMin, GetMax, SetSoftMin(UCLK, 96)");
+    expect(amdgpu::smu_uclk_pin_result().pins == 1u && amdgpu::smu_uclk_pin_result().releases == 1u, "counted");
+    W.seen.clear(); W.failMsg = 0x1D; W.softMinUclk = 1234;
+    r = amdgpu::smu_uclk_display_pin(gDev, false, kWhyDisplayOff);
+    expect(r != kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kQueryFailed && W.softMinUclk == 1234 && W.seen.size() == 2, "release without a minimum: nothing set");
+    W.seen.clear(); W.failMsg = 0; W.uclkMin = 0;
+    (void)amdgpu::smu_uclk_display_pin(gDev, false, kWhyDisplayOff);
+    expect(amdgpu::smu_uclk_pin_result().verdict == kImplausible && W.softMinUclk == 1234, "release to a 0 MHz minimum: implausible, nothing set");
+    // ---- B2: FORCE (navi48-uclkpin=1) = the 0.0.672 pin at SMU init ----
     world_reset(); gArg.present = true; gArg.val = 1;
-    (void)amdgpu::smu_pin_uclk_for_display(gDev);
-    expect(amdgpu::smu_uclk_pin_result().verdict == kPinned && W.seen.size() == 3, "navi48-uclkpin=1: pinned");
-    // ---- B3: kill switch ----
+    r = amdgpu::smu_pin_uclk_for_display(gDev);
+    expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kPinned && amdgpu::smu_uclk_pin_result().mode == kModeForce, "navi48-uclkpin=1: pinned");
+    expect(seen_exact({ { 0x1D, 0x20000 }, { 0x1E, 0x20000 }, { 0x19, 0x209D6 } }), "force: exactly GetMin, GetMax, SetSoftMin(UCLK, 2518)");
+    expect(W.softMinUclk == 2518 && amdgpu::smu_uclk_pin_result().setMhz == 2518 && amdgpu::smu_uclk_pin_result().minMhz == 96, "the soft minimum is the DPM maximum");
+    // ---- B3: OFF ----
     world_reset(); gArg.present = true; gArg.val = 0;
     r = amdgpu::smu_pin_uclk_for_display(gDev);
     expect(r == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kOff && W.seen.empty(), "navi48-uclkpin=0: OFF and NO message at all");
-    // ---- B4: GetMaxDpmFreq refused ----
-    world_reset(); W.failMsg = 0x1E;
+    r = amdgpu::smu_uclk_display_pin(gDev, true, kWhyUnderflow);
+    expect(r == kIOReturnNotPermitted && W.seen.empty(), "navi48-uclkpin=0: the fallback never pins");
+    // ---- B4..B8: the force pin's failure paths (as 0.0.672) ----
+    world_reset(); gArg.present = true; gArg.val = 1; W.failMsg = 0x1E;
     r = amdgpu::smu_pin_uclk_for_display(gDev);
     expect(r != kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kQueryFailed, "max query refused: query-failed");
     expect(W.softMinUclk == 0 && W.seen.size() == 2 && W.seen.back().first == 0x1E, "max query refused: SetSoftMin never sent");
-    // ---- B5: implausible max ----
-    world_reset(); W.uclkMax = 7000;
+    world_reset(); gArg.present = true; gArg.val = 1; W.uclkMax = 7000;
     (void)amdgpu::smu_pin_uclk_for_display(gDev);
     expect(amdgpu::smu_uclk_pin_result().verdict == kImplausible && W.softMinUclk == 0 && W.seen.size() == 2, "7000 MHz: implausible, nothing sent");
-    world_reset(); W.uclkMax = 50; W.uclkMin = 96;
+    world_reset(); gArg.present = true; gArg.val = 1; W.uclkMax = 50; W.uclkMin = 96;
     (void)amdgpu::smu_pin_uclk_for_display(gDev);
     expect(amdgpu::smu_uclk_pin_result().verdict == kImplausible && W.softMinUclk == 0, "max below min: implausible");
-    // ---- B6: min query failure still pins (the minimum is only a sanity bound) ----
-    world_reset(); W.failMsg = 0x1D;
+    world_reset(); gArg.present = true; gArg.val = 1; W.failMsg = 0x1D;
     (void)amdgpu::smu_pin_uclk_for_display(gDev);
     expect(amdgpu::smu_uclk_pin_result().verdict == kPinned && W.softMinUclk == 2518 && amdgpu::smu_uclk_pin_result().minMhz == 0, "min query refused: still pinned on a plausible max");
-    // ---- B7: SetSoftMin refused ----
-    world_reset(); W.failMsg = 0x19;
+    world_reset(); gArg.present = true; gArg.val = 1; W.failMsg = 0x19;
     r = amdgpu::smu_pin_uclk_for_display(gDev);
     expect(r != kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kSetFailed && W.softMinUclk == 0, "SetSoftMin refused: set-failed, PMFW default");
-    // ---- B8: PMFW never answers: bounded, query-failed ----
-    world_reset(); W.hangMsgAll = true;
+    world_reset(); gArg.present = true; gArg.val = 1; W.hangMsgAll = true;
     r = amdgpu::smu_pin_uclk_for_display(gDev);
     expect(r != kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == kQueryFailed && W.softMinUclk == 0, "PMFW silent: returns (bounded), query-failed");
+
+    // ---- F: the fallback state machine ----
+    {
+        using namespace n48uclk::fb;
+        State f; init(f, kModeAuto, false);
+        expect(step(f, kModeAuto, 1000, 5, true) == kNone, "not armed (the arbitration has not run): underflows do not pin");
+        f.armed = true;
+        expect(step(f, kModeAuto, 2000, 1, true) == kNone && step(f, kModeAuto, 3000, 1, true) == kNone, "2 events: not yet");
+        expect(step(f, kModeAuto, 4000, 1, true) == kPin && f.why == kWhyUnderflow, "3 events within 10 s: PIN");
+        done(f, kPin, true, 4000);
+        expect(f.pinned && f.latched && f.triggers == 1u && step(f, kModeAuto, 4050, 9, true) == kNone, "pinned: nothing more");
+        expect(step(f, kModeAuto, 5000, 0, false) == kNone && step(f, kModeAuto, 6900, 0, false) == kNone, "display off < 2 s: kept");
+        expect(step(f, kModeAuto, 7000, 0, false) == kRelease && f.why == kWhyDisplayOff, "display off 2 s: RELEASE");
+        done(f, kRelease, true, 7000);
+        expect(!f.pinned && f.releases == 1u && step(f, kModeAuto, 8000, 0, false) == kNone, "released, stays released while off");
+        expect(step(f, kModeAuto, 9000, 0, true) == kPin && f.why == kWhyWake, "display back after an underflow pin: PIN again at once");
+        done(f, kPin, false, 9000);
+        expect(f.failures == 1u && step(f, kModeAuto, 9050, 0, true) == kNone && step(f, kModeAuto, 19000, 0, true) == kPin, "a failed pin is retried after 10 s, not before");
+        State g; init(g, kModeAuto, false); g.armed = true;
+        expect(step(g, kModeAuto, 1000, 1, true) == kNone && step(g, kModeAuto, 2000, 1, true) == kNone && step(g, kModeAuto, 13000, 1, true) == kNone,
+               "3 events spread over more than 10 s: no pin (the window restarts)");
+        expect(step(g, kModeAuto, 14000, 0, false) == kNone && step(g, kModeAuto, 15000, 1, true) == kNone && g.winEvents == 1u, "a display-off period clears the window");
+        State h; init(h, kModeForce, true); h.armed = true;
+        expect(h.latched && h.pinned && step(h, kModeForce, 1000, 0, false) == kNone && step(h, kModeForce, 3000, 0, false) == kRelease, "force: released while the display is off");
+        done(h, kRelease, true, 3000);
+        expect(step(h, kModeForce, 4000, 0, true) == kPin && h.why == kWhyWake, "force: pinned again when the display is back");
+        State o; init(o, kModeOff, false); o.armed = true;
+        expect(step(o, kModeOff, 1000, 50, true) == kNone && step(o, kModeOff, 1100, 50, true) == kNone, "off: never");
+    }
+
     // ---- I: smu_hw_init wiring ----
     world_reset();
     (void)amdgpu::smu_hw_init(gDev, false);
     bool any = false; for (auto &p : W.seen) any |= (p.first == 0x19 || p.first == 0x1E);
     expect(!any, "smu_hw_init(full=false): no UCLK message (the pin needs the features we enabled)");
-    world_reset(); gDev.vramMcBase = 0; gDev.vramBase = 0; gDev.vramLimit = 0;
+    world_reset(); gArg.present = true; gArg.val = 1; gDev.vramMcBase = 0; gDev.vramBase = 0; gDev.vramLimit = 0;
     (void)amdgpu::smu_hw_init(gDev, true);
     any = false; for (auto &p : W.seen) any |= (p.first == 0x19 || p.first == 0x1E);
     expect(!any && W.softMinUclk == 0, "smc_hw_setup failed before EnableAllSmuFeatures (no driver table): no UCLK message");
     world_reset(); gDev.vramMcBase = 0x8000000000ull; gDev.vramBase = 0x01000000ull; gDev.vramLimit = 0x400000000ull;
     (void)amdgpu::smu_hw_init(gDev, true);
+    any = false; for (auto &p : W.seen) any |= (p.first == 0x19 || p.first == 0x1E || p.first == 0x1D);
+    expect(!any && W.softMinUclk == 0 && amdgpu::smu_uclk_pin_result().verdict == kAuto, "smu_hw_init(full=true), default: no UCLK message, verdict auto");
+    world_reset(); gArg.present = true; gArg.val = 1; gDev.vramMcBase = 0x8000000000ull; gDev.vramBase = 0x01000000ull; gDev.vramLimit = 0x400000000ull;
+    (void)amdgpu::smu_hw_init(gDev, true);
     size_t iSet = 99, iFeat = 99; for (size_t i = 0; i < W.seen.size(); i++) { if (W.seen[i].first == 0x19 && W.seen[i].second == 0x209D6u && iSet == 99) iSet = i; if (W.seen[i].first == 0x0C) iFeat = i; }
-    expect(iSet != 99 && W.softMinUclk == 2518, "smu_hw_init(full=true): UCLK pinned");
+    expect(iSet != 99 && W.softMinUclk == 2518, "smu_hw_init(full=true), force: UCLK pinned");
     size_t iEnable = 99; for (size_t i = 0; i < W.seen.size(); i++) if (W.seen[i].first == amdgpu::PPSMC::EnableAllSmuFeatures) iEnable = i;
     expect(iEnable != 99 && iEnable < iSet, "the pin comes after EnableAllSmuFeatures");
     // the protection gate reads features after the pin (last GetRunningSmuFeaturesLow is after the pin)

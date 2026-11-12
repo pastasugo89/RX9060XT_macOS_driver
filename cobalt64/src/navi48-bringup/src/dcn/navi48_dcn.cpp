@@ -33,6 +33,8 @@
 #include "amd/native_disp_pure.h"     // 0.0.618 (V1): vbl_period_ns / vbl_delay_ns (the vblank timing sample)
 #include "amd/native_disp.h"          // 0.0.659 (M6): n48m6_latched_on (the scan_query flag)
 #include "navi48_ufmon_pure.h"      // build 0.0.672 (black band): the scanout underflow monitor (host-tested)
+#include "navi48_disparb_pure.h"    // build 0.0.673: the display arbitration Linux programs for one plane (DET, watermarks; host-tested)
+#include "amd/amdgpu_smu.h"           // build 0.0.673: smu_uclk_display_pin / smu_uclk_pin_result (the UCLK fallback)
 #include "navi48_modetrial_pure.h"   // build 0.0.605 (native S2d): the timed mode trial - decisions AND sequences, host-tested through a Hw interface
 #include "Navi48DisplayOps.h"          // build 0.0.652 (M5): the monitor B's mode constants (fbEdid reads blocks 0 and 1 over DDC line 3)
 
@@ -347,6 +349,7 @@ void attach(Navi48Bringup *owner) {
 
 static uint32_t bind_locked(Navi48Bringup *owner);
 static void mt_golden_at_bind();                       // build 0.0.605: defined with the mode-trial glue at the end of this file
+static void arb_monitor_start();                       // build 0.0.673: the display monitor thread (defined before scanShutdown)
 static bool mt_emergency_restore(const char *why);     // ditto: `dcnmode 0` on a native boot restores the FULL golden set
 // build 0.0.603: bind() is serialised - the N48N selectors and the legacy accel verbs can both reach it concurrently on a native boot.
 uint32_t bind(Navi48Bringup *owner) {
@@ -438,6 +441,7 @@ static uint32_t bind_locked(Navi48Bringup *owner) {
 	// build 0.0.605 (S2d review MUST-FIX): the FULL golden copy - every register a mode trial can write - is taken here on a native boot, read-only, before any native
 	// call can write a display register. `dcnmode 0` and the trial's restore both put THIS copy back.
 	mt_golden_at_bind();
+	arb_monitor_start();   // build 0.0.673: the display monitor (DET / watermarks once, the underflow watch, the UCLK fallback); once per boot
 	return 0;
 }
 
@@ -1643,7 +1647,6 @@ static uint32_t scan_restore(const char *why, bool force, uint32_t expectGen, ui
 // The watchdog thread: started by Acquire, one per acquisition. IRQ-INDEPENDENT: it polls the plane itself every 50 ms (which also keeps the
 // Status counters honest when no interrupt arrives), restores after 5 s without a scanout call, and performs the restores the IRQ handler
 // requests. It ends when its acquisition ends. (The pattern is the kext's other pollers: kernel_thread_start, IOSleep, fall off the end.)
-static void ufmon_poll(uint32_t gen);   // 0.0.672 (black band): defined after the mode trial's register access (mt_rd / mt_wr)
 static void scan_watchdog_loop(uint32_t myGen) {
 	for (;;) {
 		IOSleep(50);
@@ -1664,7 +1667,7 @@ static void scan_watchdog_loop(uint32_t myGen) {
 		if (why) gScan.wdRestores++;
 		IOLockUnlock(l);
 		if (why) { N48LOG("n48scan: WATCHDOG restoring the console: %s", why); (void)scan_restore(why, false, myGen, nullptr); break; }
-		ufmon_poll(myGen);   // 0.0.672: no lock held here (gMtLock is a leaf, taken with try-lock inside)
+		// 0.0.673: ufmon_poll moved to the display monitor thread (arb_monitor_loop), which runs with or without an acquisition.
 	}
 }
 static void scan_watchdog(void *arg, wait_result_t) {
@@ -2144,7 +2147,7 @@ static void ufmon_poll(uint32_t gen) {
 	if (st.stale) N48LOG("ufmon: baseline (scanout gen %u): a status set BEFORE monitoring was cleared, not counted: HUBP0_DCHUBP_CNTL %#010x ODM0_OPTC_INPUT_GLOBAL_CONTROL %#010x", gen, hubp, optc);
 	if (st.log) N48LOG("ufmon: UNDERFLOW #%llu at uptime %llu ms, OTG0 frame %u: HUBP0_DCHUBP_CNTL %#010x (status %u timeout %u) ODM0_OPTC_INPUT_GLOBAL_CONTROL %#010x%s",
 	                   (unsigned long long)gUf.events, (unsigned long long)(t / 1000000ull), fc, hubp, n48mt::uf::hubp_status(hubp), n48mt::uf::hubp_timeout(hubp), optc, locked ? "" : " (mode trial busy: not cleared)");
-	if (st.counted || st.stale) ufmon_publish();
+	if (st.counted || st.stale || (gUf.polls % 200u) == 1u) ufmon_publish();   // 0.0.673: also every 10 s, so `polls` shows the watch is alive (ioreg, no root)
 }
 static void mt_sleep(void *, uint32_t ms) { /*nolock*/ IOSleep(ms); }   // never called with the scanout lock held; 0.0.606: the resync's msleep(60) runs under gMtLock (see the lock rank above)
 static void mt_delay_us(void *, uint32_t us) { IODelay(us); }         // 0.0.606: the polls of the sequences (a few us to 200 us each)
@@ -2393,8 +2396,199 @@ static void mt_shutdown() {
 	if (__atomic_load_n(&gMtHoldAlive, __ATOMIC_ACQUIRE) != 0u) N48LOG("mode-trial: kext stop: a hold thread is still alive after 2 s");
 }
 
+// ---- build 0.0.673 (black band without a fixed memory clock): THE DISPLAY MONITOR THREAD. One per boot, started by bind() (the display layer armed),
+// ended by scanShutdown() before anything else there. Every 50 ms, with NO lock held between steps:
+//   1. once, at least 2 s after it started and with the display on: the display arbitration Linux programs for one plane (dcn/navi48_disparb_pure.h:
+//      the DET of HUBP0 to 20 segments, the DCHUBBUB watermarks A/B, stutter allowed), under gMtLock (the mode trial / 60 Hz hold exclusion), then
+//      the result in the registry (Navi48,DisplayArb);
+//   2. the scanout underflow monitor (ufmon_poll; 0.0.672 ran it only inside a native scanout acquisition's watchdog, so the GOP console and any
+//      period without an acquisition were never watched: now it runs whenever the display layer is armed and the display is on);
+//   3. the UCLK fallback (smu_uclkpin_pure.h fb::step): navi48-uclkpin absent = AUTO pins when ufmon counts 3 underflows within 10 s after step 1,
+//      =1 FORCE was pinned at SMU init; both release while the display is off (2 s) and pin again when it is back. The PPSMC messages run here with
+//      no lock held (the lock rank of the mode-trial block above: no PMFW call under any of the display locks).
+// Boot-args (read once, at step 1): navi48-det=0, navi48-wm=0, navi48-sr=0 (dcn/navi48_disparb_pure.h); navi48-uclkpin (amd/smu_v14_0.cpp);
+// navi48-ufmon=0 (ufmon_poll). navi48-dispmon=0 turns the whole thread off (0.0.672 behaviour minus the pin: nothing is read or written by it).
+namespace {
+volatile uint32_t gArbStarted = 0u, gArbStop = 0u, gArbAlive = 0u;
+volatile uint32_t gArbModeGen = 0u;     // bumped by dispArbModeChanged (the 60 Hz switch): ufmon takes a new baseline
+bool gArbDone = false;                  // step 1 ran (whatever its verdict)
+bool gArbMultiLatch = false;            // a multi-display latch was on at step 1: the DET was not touched
+bool gArbSrReverted = false;            // the UCLK fallback forced stutter off again (arb_sr_revert)
+n48arb::Cfg gArbCfg { true, true, true };
+n48arb::Result gArbRes {};
+uint64_t gArbAtMs = 0;
+n48uclk::fb::State gFb {};
+}
+static uint32_t arb_rd(void *, uint32_t abs) { return mt_rd(nullptr, abs); }
+// The allowlisted write (dcn41_allow_write first; a refusal never reaches the hardware and is logged).
+static bool arb_wr(void *, uint32_t abs, uint32_t v) {
+	if (!gDcn.armed || gDcn.dev == nullptr) return false;
+	gDcn.tag = "disparb";
+	if (!dcn41_allow_write(&gDcn.allow, abs, v, gDcn.tag)) {
+		const char *why = nullptr;
+		const int reason = dcn41_allow_classify(abs, gDcn.allow.mmio_dwords, nullptr, &why);
+		N48LOG("disparb: REFUSED write %#010x = %#010x - allowlist says %s: %s", abs, v, dcn41_allow_reason_name(reason), why ? why : "(no text)");
+		return false;
+	}
+	amdgpu::WREG32(*gDcn.dev, abs, v);
+	return true;
+}
+static void arb_delay(void *, uint32_t us) { IODelay(us); }
+static void arb_log(void *, const char *what, uint32_t abs, uint32_t a, uint32_t b) { N48LOG("disparb: %s %#010x: %#010x -> %#010x", what, abs, a, b); }
+static n48arb::Hw disparb_hw() { return n48arb::Hw{ nullptr, arb_rd, arb_wr, arb_delay, arb_log }; }
+static uint64_t now_ms() { return now_ns() / 1000000ull; }
+
+// The display is "on": OTG0 is the lit OTG and HUBP0 is not blanked.
+static bool arb_display_on(uint32_t *hubpOut) {
+	const uint32_t h = mt_rd(nullptr, n48arb::kRegHubp0Cntl);
+	if (hubpOut) *hubpOut = h;
+	return !n48arb::unreadable(h) && (h & n48arb::kHubpBlank) == 0u && lit_otg() == 0;
+}
+
+// Navi48,UclkPin: the pin's state, readable without root (ioreg -l | grep UclkPin). Navi48Bringup.cpp publishes it at the end of the ladder too.
+void uclkPinDescribe(char *t, size_t n) {
+	const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
+	snprintf(t, n, "%s: mode %s, set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x), last %s; pins %u releases %u; fallback %s, triggers %llu repins %llu releases %llu failures %llu",
+	         n48uclk::verdict_name(up.verdict), n48uclk::mode_name(up.mode), up.setMhz, up.minMhz, up.maxMhz, up.kr, n48uclk::why_name(up.why), up.pins, up.releases,
+	         gFb.armed ? (gFb.pinned ? "armed, PINNED" : "armed") : "not armed yet", (unsigned long long)gFb.triggers, (unsigned long long)gFb.repins,
+	         (unsigned long long)gFb.releases, (unsigned long long)gFb.failures);
+}
+static void uclk_publish() {
+	if (gDcn.owner == nullptr) return;
+	char t[320];
+	uclkPinDescribe(t, sizeof(t));
+	gDcn.owner->setProperty("Navi48,UclkPin", t);
+}
+
+// Navi48,DisplayArb: what step 1 found and did.
+static void arb_publish() {
+	if (gDcn.owner == nullptr) return;
+	using namespace n48arb;
+	const Result &r = gArbRes;
+	const Snap &b = r.before, &a = r.after;
+	char t[640];
+	snprintf(t, sizeof(t),
+	         "det %s%s: DET0 %u->%u segs (%u->%u KB, about %u->%u lines; current %u), DET1-3 %u,%u,%u->%u,%u,%u, COMPBUF %u (config error %u), settled in %u us; "
+	         "wm %s: A/B urgent %u->%u, trip %u->%u, sr enter %u->%u exit %u->%u, uclk %u->%u, uclk1 %u->%u, fclk %u->%u, fclk1 %u->%u (refclk cycles, 50 MHz; raised %u lowered %u); "
+	         "DRAM_STATE %#x->%#x (stutter %s%s); WATERMARK_CHANGE_CNTL %#x; writes %u refused %u; at uptime %llu ms",
+	         det_name(r.det), gArbMultiLatch ? " (a multi-display latch is on)" : "",
+	         size_of(b.det[0]), size_of(a.det[0]), size_of(b.det[0]) * kSegKb, size_of(a.det[0]) * kSegKb, lines_of(size_of(b.det[0])), lines_of(size_of(a.det[0])), cur_of(a.det[0]),
+	         size_of(b.det[1]), size_of(b.det[2]), size_of(b.det[3]), size_of(a.det[1]), size_of(a.det[2]), size_of(a.det[3]), size_of(a.compbuf),
+	         (a.compbuf & kCompbufConfigError) ? 1u : 0u, r.detWaitUs,
+	         wm_name(r.wm), b.wm[0], a.wm[0], b.wm[1], a.wm[1], b.wm[3], a.wm[3], b.wm[4], a.wm[4], b.wm[11], a.wm[11], b.wm[12], a.wm[12], b.wm[13], a.wm[13], b.wm[14], a.wm[14],
+	         r.raised, r.lowered, b.dram, a.dram, r.srAllowed ? "allowed" : "forced off", gArbSrReverted ? ", forced off again by the UCLK fallback" : "", a.wmChange, r.writes, r.refusedWrites, (unsigned long long)gArbAtMs);
+	gDcn.owner->setProperty("Navi48,DisplayArb", t);
+}
+
+// The fallback's second half: when underflows force the UCLK pin, the stutter allow of step 1 is taken back too (the GOP's SELF_REFRESH_FORCE
+// bits), so the fallback state is the 0.0.672 state plus the larger DET and the watermarks. Once per boot; under gMtLock like step 1.
+static void arb_sr_revert() {
+	using namespace n48arb;
+	const uint32_t gop = gArbRes.before.dram & (kDramSrForceEnable | kDramSrForceValue);
+	if (gArbSrReverted || !gArbRes.srAllowed || (gop & kDramSrForceEnable) == 0u || !mt_ensure_lock()) return;
+	IOLockLock(gMtLock);
+	const uint32_t d = mt_rd(nullptr, kRegDramState);
+	const bool ok = !unreadable(d) && arb_wr(nullptr, kRegDramState, (d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop);
+	IOLockUnlock(gMtLock);
+	gArbSrReverted = ok;
+	N48LOG("disparb: UCLK fallback: stutter forced off again as the GOP had it (DRAM_STATE %#010x -> %#010x): %s", d, (d & ~(kDramSrForceEnable | kDramSrForceValue)) | gop, ok ? "done" : "FAILED");
+	arb_publish();
+}
+
+// Step 1. Returns false when it must be tried again later (a mode trial or hold is running).
+static bool arb_apply_once() {
+	if (modeTrialBusy() || modeHoldActive() || !mt_ensure_lock()) return false;
+	uint32_t v = 0; bool p = false;
+	p = PE_parse_boot_argn("navi48-det", &v, sizeof(v)); gArbCfg.det = n48arb::enabled(p, v); v = 0;
+	p = PE_parse_boot_argn("navi48-wm", &v, sizeof(v));  gArbCfg.wm = n48arb::enabled(p, v); v = 0;
+	p = PE_parse_boot_argn("navi48-sr", &v, sizeof(v));  gArbCfg.sr = n48arb::enabled(p, v);
+	// The DET of HUBP1..3 is given to HUBP0: never while a feature that lights a second pipe can run this boot (all are Navi 48 only or OFF by default).
+	// (Asked only where the feature exists, so a Navi 44 boot does not log the latches' "REFUSED on navi44" lines on their behalf.)
+	gArbMultiLatch = (n4xdisp::supported(n4xdisp::kFeatDisp2) && d2_latched_on()) || (n4xdisp::supported(n4xdisp::kFeatDmubCmd) && dm_latched_on()) ||
+	                 (n4xdisp::supported(n4xdisp::kFeatM6) && n48m6_latched_on()) || (n4xdisp::supported(n4xdisp::kFeatM6Flip) && n48m6flip_latched_on()) ||
+	                 (n4xdisp::supported(n4xdisp::kFeatM6Flip1) && n48m6flip1_latched_on());
+	n48arb::Cfg c = gArbCfg;
+	if (gArbMultiLatch) c.det = false;
+	IOLockLock(gMtLock);   // a leaf: register I/O and bounded IODelay waits only (the DET wait is <= 100 ms, the rollback another <= 100 ms)
+	gArbRes = n48arb::apply(disparb_hw(), c);
+	IOLockUnlock(gMtLock);
+	if (gArbMultiLatch && gArbCfg.det) gArbRes.det = n48arb::kDetNotRun;
+	gArbAtMs = now_ms();
+	N48LOG("disparb: det %s (DET0 %u -> %u segments, DET0_SIZE_CURRENT %u after %u us%s), wm %s (raised %u, lowered %u), stutter %s, writes %u refused %u",
+	       n48arb::det_name(gArbRes.det), n48arb::size_of(gArbRes.before.det[0]), n48arb::size_of(gArbRes.after.det[0]), n48arb::cur_of(gArbRes.after.det[0]),
+	       gArbRes.detWaitUs, gArbMultiLatch ? "; a multi-display latch is on: DET untouched" : "", n48arb::wm_name(gArbRes.wm), gArbRes.raised, gArbRes.lowered,
+	       gArbRes.srAllowed ? "allowed" : "forced off", gArbRes.writes, gArbRes.refusedWrites);
+	arb_publish();
+	return true;
+}
+
+static void arb_monitor_loop() {
+	const uint64_t t0 = now_ms();
+	{
+		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
+		n48uclk::fb::init(gFb, up.mode, up.verdict == n48uclk::kPinned);
+	}
+	uint32_t monGen = 1u, lastScanGen = scanGeneration(), lastModeGen = __atomic_load_n(&gArbModeGen, __ATOMIC_ACQUIRE);
+	bool wasOn = false;
+	uint64_t lastEvents = 0;
+	uclk_publish();
+	while (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) == 0u) {
+		IOSleep(50);
+		if (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) != 0u) break;
+		if (!gDcn.armed || gDcn.dev == nullptr) continue;
+		const bool on = arb_display_on(nullptr);
+		const uint64_t ms = now_ms();
+		if (!gArbDone && on && ms - t0 >= 2000u && arb_apply_once()) { gArbDone = true; gFb.armed = true; uclk_publish(); }
+		// A new baseline for ufmon after a display-off period, a 60 Hz switch or a new scanout acquisition (what is sticky then predates the watch).
+		const uint32_t sg = scanGeneration(), mg = __atomic_load_n(&gArbModeGen, __ATOMIC_ACQUIRE);
+		if ((on && !wasOn) || sg != lastScanGen || mg != lastModeGen) { monGen++; lastScanGen = sg; lastModeGen = mg; }
+		wasOn = on;
+		if (on) ufmon_poll(monGen);
+		const uint64_t ev = gUf.events, fresh = ev - lastEvents;
+		lastEvents = ev;
+		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
+		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
+		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);
+		if (act != n48uclk::fb::kNone) {
+			const bool pin = act == n48uclk::fb::kPin;
+			const kern_return_t kr = amdgpu::smu_uclk_display_pin(*gDcn.dev, pin, gFb.why);   // no lock held
+			const bool ok = kr == kIOReturnSuccess && amdgpu::smu_uclk_pin_result().verdict == (pin ? n48uclk::kPinned : n48uclk::kReleased);
+			n48uclk::fb::done(gFb, act, ok, ms);
+			if (pin && gFb.why == n48uclk::kWhyUnderflow) arb_sr_revert();   // the trigger (an underflow after step 1): stutter off again too
+			N48LOG("ufmon: UCLK fallback: %s (%s) -> %s (kr %#x); underflow events so far %llu", pin ? "PIN the memory clock to its maximum" : "RELEASE the memory clock pin",
+			       n48uclk::why_name(gFb.why), ok ? "done" : "FAILED (retry in 10 s)", (unsigned)kr, (unsigned long long)ev);
+			uclk_publish();
+		}
+	}
+}
+static void arb_monitor(void *, wait_result_t) {
+	arb_monitor_loop();
+	__atomic_fetch_sub(&gArbAlive, 1u, __ATOMIC_RELEASE);   // the thread touches nothing of ours after this
+}
+// Called at the end of bind_locked (the display layer armed). Once per boot.
+static void arb_monitor_start() {
+	uint32_t v = 0;
+	if (PE_parse_boot_argn("navi48-dispmon", &v, sizeof(v)) && v == 0u) { N48LOG("disparb: display monitor OFF (navi48-dispmon=0): no DET / watermark change, no underflow watch, no UCLK fallback"); return; }
+	if (__atomic_exchange_n(&gArbStarted, 1u, __ATOMIC_ACQ_REL) != 0u) return;
+	thread_t th = nullptr;
+	__atomic_fetch_add(&gArbAlive, 1u, __ATOMIC_ACQ_REL);
+	const kern_return_t kr = kernel_thread_start(&arb_monitor, nullptr, &th);
+	if (kr != KERN_SUCCESS) { __atomic_fetch_sub(&gArbAlive, 1u, __ATOMIC_ACQ_REL); N48LOG("disparb: the display monitor thread did not start (kr %#x)", kr); return; }
+	thread_deallocate(th);
+	N48LOG("disparb: display monitor started (DET / watermarks in 2 s, underflow watch every 50 ms, UCLK fallback)");
+}
+// Kext stop: first thing in scanShutdown. Bounded at 3 s (a PPSMC message in flight has its own timeout).
+static void arb_monitor_stop() {
+	__atomic_store_n(&gArbStop, 1u, __ATOMIC_RELEASE);
+	for (uint32_t i = 0; i < 3000u && __atomic_load_n(&gArbAlive, __ATOMIC_ACQUIRE) != 0u; i++) /*nolock*/ IOSleep(1);
+	if (__atomic_load_n(&gArbAlive, __ATOMIC_ACQUIRE) != 0u) N48LOG("disparb: kext stop: the display monitor thread is still alive after 3 s");
+}
+// The 60 Hz switch (Navi48Bringup.cpp refreshRequestLocked / refreshTimerFired): a timing change, so ufmon takes a new baseline.
+void dispArbModeChanged() { __atomic_fetch_add(&gArbModeGen, 1u, __ATOMIC_ACQ_REL); }
+
 // Kext stop: restore the console (idempotent) and wait, bounded at 2 s, for every watchdog thread to finish before the caller unmaps the registers.
 void scanShutdown() {
+	arb_monitor_stop();                      // build 0.0.673: the display monitor ends first (it may hold gMtLock for <= 200 ms and send PPSMC messages)
 	mt_shutdown();                           // build 0.0.605: the mode trial ends and the golden set is put back first (before the scan-lock early return: a trial needs no scan lock)
 	scanXShutdown();                        // 0.0.661 (M6 Stage 1b): instance 2's A is restored (and its watchdog waited for) before the registers go away; inert when the latches are OFF
 	if (gScan.lock == nullptr) return;

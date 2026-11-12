@@ -1,8 +1,10 @@
 //
 //  navi48_ufmon_pure.h - build 0.0.672 (black band): the PURE half of the scanout underflow monitor. tests/blackband_ufmon_test.cpp drives it.
 //
-//  The scanout watchdog thread (navi48_dcn.cpp scan_watchdog_loop, every 50 ms while a native client holds the plane) reads HUBP0_DCHUBP_CNTL
-//  and ODM0_OPTC_INPUT_GLOBAL_CONTROL. Both underflow statuses are STICKY, so one read only says "at least one underflow since the last clear".
+//  0.0.672: the scanout watchdog thread (navi48_dcn.cpp scan_watchdog_loop, every 50 ms while a native client holds the plane) read HUBP0_DCHUBP_CNTL
+//  and ODM0_OPTC_INPUT_GLOBAL_CONTROL. 0.0.673: the display monitor thread (arb_monitor_loop) does, every 50 ms whenever the display layer is
+//  armed and the display is on, with or without a scanout acquisition; `gen` is its own generation (a new one after a display-off period, a
+//  60 Hz switch or a new acquisition), and its counts feed the UCLK fallback (smu_uclkpin_pure.h fb). Both underflow statuses are STICKY, so one read only says "at least one underflow since the last clear".
 //  To count and timestamp each event the monitor clears them with the same write-1 strobes the mode trial uses (n48mt::uf, Linux
 //  hubp1_clear_underflow / optc1_clear_optc_underflow), through the DCN allowlist, never while OPTC INPUT_SOFT_RESET is set, and only when gMtLock
 //  (the mode trial / 60 Hz hold) is free. The first sample after an acquisition is a BASELINE: what it finds predates the monitor (the GOP, an

@@ -255,7 +255,11 @@ kern_return_t smu_read_protections(const DeviceContext &dev);
 
 // 0.0.672 (black band): pin the UCLK soft minimum to the UCLK DPM maximum (smu_uclkpin_pure.h). smu_hw_init calls it after smc_hw_setup;
 // boot-arg navi48-uclkpin=0 turns it off. Never fatal. smu_uclk_pin_result() is the outcome for the registry (Navi48,UclkPin).
+// 0.0.673: smu_pin_uclk_for_display only records the mode (smu_uclkpin_pure.h mode_of) and pins only with navi48-uclkpin=1 (FORCE);
+// smu_uclk_display_pin(pin / release, why) is the run-time path of the display monitor's fallback (no lock held; kIOReturnNotPermitted when the
+// features were not enabled by this boot or the mode is OFF).
 kern_return_t smu_pin_uclk_for_display(const DeviceContext &dev);
+kern_return_t smu_uclk_display_pin(const DeviceContext &dev, bool pin, uint32_t why);
 const n48uclk::Result &smu_uclk_pin_result();
 bool smu_protections_verified();
 

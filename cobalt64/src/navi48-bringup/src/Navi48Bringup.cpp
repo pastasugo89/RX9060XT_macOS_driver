@@ -7096,10 +7096,10 @@ void Navi48Bringup::runStages(uint32_t target) {
 	setProperty("Navi48,StageResult", static_cast<uint64_t>(r), 32);
 	if (r != kIOReturnSuccess) setProperty("Navi48,StageFailed", amdgpu::stage_name(ctx.failedAt));
 	if (ctx.smuOnline) setProperty("SMU,FirmwareVersion", static_cast<uint64_t>(ctx.smuVersion), 32);
-	{   // 0.0.672 (black band): the display UCLK pin's outcome, readable without root (ioreg -l | grep UclkPin)
-		const n48uclk::Result &up = amdgpu::smu_uclk_pin_result();
-		char t[160];
-		snprintf(t, sizeof(t), "%s: set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x)", n48uclk::verdict_name(up.verdict), up.setMhz, up.minMhz, up.maxMhz, up.kr);
+	{   // 0.0.672 (black band): the display UCLK pin's outcome, readable without root (ioreg -l | grep UclkPin). 0.0.673: the display monitor
+		// thread (dcn/navi48_dcn.cpp) updates it on every fallback pin / release; the text is n48dcn::uclkPinDescribe's.
+		char t[320];
+		n48dcn::uclkPinDescribe(t, sizeof(t));
 		setProperty("Navi48,UclkPin", t);
 	}
 	if (ctx.mesFailed) setProperty("Navi48,MESFailed", true);
@@ -7590,6 +7590,7 @@ void Navi48Bringup::refreshTimerFired(IOTimerEventSource *) {
 		N48LOG("refresh60: no `refresh confirm` within %u s: reverting to 120 Hz (automatic)", refreshSess.timeoutS);
 		n48rf::Hw hw = n48dcn::refresh_hw();
 		const n48rf::Outcome o = n48rf::restore120(hw, n48rf::read_snap(hw));
+		n48dcn::dispArbModeChanged();   // 0.0.673: the timing may have changed (the display monitor's underflow watch takes a new baseline)
 		if (o.code == n48rf::kOk) {
 			n48rf::session_gop(refreshSess);
 			refreshSess.reverts++;
@@ -7708,6 +7709,8 @@ IOReturn Navi48Bringup::refreshVerb(uint32_t action, uint64_t arg, uint64_t *out
 		IOLockLock(refreshLock);
 		refreshRequestLocked(req, rep);
 		IOLockUnlock(refreshLock);
+		// 0.0.673: a set / restore may have changed the timing: the display monitor's underflow watch takes a new baseline (an atomic add, no lock).
+		if (req.kind == n48rf::kReqSet60 || req.kind == n48rf::kReqSet120) n48dcn::dispArbModeChanged();
 	}
 	if (outExtra) {
 		outExtra[0] = rep.code;
