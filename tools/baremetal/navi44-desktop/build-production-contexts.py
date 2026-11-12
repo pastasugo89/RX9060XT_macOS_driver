@@ -74,6 +74,22 @@ FIX_BASE = ROOT / 'research/builds/macos-20261101/refresh-60b/kernel-contexts-v6
 FIX_BASE_SHA = 'c212c7310fb5a506d128d72dd5798725ecc2d6aaf84d7cee27dc0f6b88959eb3'   # the 0.0.670 candidate binary (kernel-contexts-v6's manifest)
 FIX_OVERLAY = ('src/amd/native_s1c.cpp', 'src/amd/amdgpu_sysmem.cpp', 'src/amd/amdgpu_sysmem.h', 'src/amd/native_gtt_pure.h')
 FIX_REQUIRED_STRINGS = (b'GTT BO could not be given wired pages',)   # 0.0.671: the refusal log of native_s1c.cpp gtt_refused_log
+# 0.0.672 (payload v8, black band): built on the reviewed 0.0.671 candidate TREE (kernel-contexts-v7, checked against its manifest), not on HEAD.
+# HEAD's six changed files differ from that tree beyond the black-band change (72 lines in Navi48Bringup.cpp, 8 in smu_v14_0.cpp; the tree has
+# amd/n4x_console_guard.h, which HEAD lacks), so the change is applied as PATCH-vs-671-deployed.diff (--patch, sha256 pinned here). Its added lines
+# are those of commit ae303c7 (compared as multisets). Version markers 671 -> 672: kN1cKextBuild and the Metal ops build number (Info.plist: the patch).
+BLACKBAND_VERSION = '0.0.672'
+BLACKBAND_BASE = ROOT / 'research/builds/macos-20261105/kernel-671/kernel-contexts-v7'
+BLACKBAND_BASE_SHA = '984989280e30be5dc0d26d9760b698393be0fae99a43e2604b380c7cfdddec22'   # the 0.0.671 candidate binary (kernel-contexts-v7's manifest)
+BLACKBAND_PATCH_SHA = '06f1fb8f328fd43985e00a47ca68747e84c53e0ca7bf90a02b391c31aff3dce8'   # PATCH-vs-671-deployed.diff (kernel-0.0.672-over-0.0.671.diff)
+BLACKBAND_FILES = ('Info.plist', 'src/Navi48Bringup.cpp', 'src/amd/amdgpu_smu.h', 'src/amd/smu_uclkpin_pure.h', 'src/amd/smu_v14_0.cpp',
+                   'src/dcn/navi48_dcn.cpp', 'src/dcn/navi48_ufmon_pure.h')   # the files the patch changes
+BLACKBAND_MARKER_FILES = ('src/amd/native_s1c.h', 'src/Navi48MetalNub.cpp')   # the build markers, bumped after the patch
+BLACKBAND_REQUIRED_STRINGS = (b'Navi48,UclkPin', b'Navi48,DisplayUnderflow')   # 0.0.672: the registry properties of the black-band change
+# 0.0.671 is the kernel that payload v7 installs (its candidate EFI holds exactly these hashes); 0.0.672 replaces it.
+INSTALLED_671 = {'bundle_path': 'Navi48Bringup-contexts-0.0.671.kext',
+                 'kernel_sha256': '984989280e30be5dc0d26d9760b698393be0fae99a43e2604b380c7cfdddec22',
+                 'config_sha256': 'fa8c993c839a5a37794a54f178fbcee3e63a06901ddffe9efa9f65eb97429d57', 'version': '0.0.671'}
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -136,8 +152,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.671)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[01])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.672)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-2])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -155,11 +171,12 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION):
         return recorded_active_baseline(path)
-    # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed.
+    # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
-                         '0.0.670': (INSTALLED_669, '0.0.669'), FIX_VERSION: (INSTALLED_669, '0.0.669')}[version]
+                         '0.0.670': (INSTALLED_669, '0.0.669'), FIX_VERSION: (INSTALLED_669, '0.0.669'),
+                         BLACKBAND_VERSION: (INSTALLED_671, '0.0.671')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -237,6 +254,44 @@ def fix_overlay(candidate, source, version):
     allowed = set(FIX_OVERLAY) | {'Info.plist', 'src/Navi48MetalNub.cpp', 'src/amd/native_s1c.h'}
     if changed - allowed:
         raise ValueError('Candidate changed files outside the reviewed GTT overlay')
+    return sorted(changed)
+
+
+def blackband_base_verified(baseline):
+    """0.0.672's base: the reviewed 0.0.671 candidate tree and its binary, both checked against kernel-contexts-v7's manifest."""
+    base = json.loads((BLACKBAND_BASE / 'manifest.json').read_text())
+    if base.get('candidate_version') != '0.0.671' or base.get('candidate_binary_sha256') != BLACKBAND_BASE_SHA:
+        raise ValueError('kernel-contexts-v7 is not the reviewed 0.0.671 candidate')
+    if tree_files(baseline) != base['candidate_inputs']:
+        raise ValueError('The 0.0.671 candidate tree changed')
+    binary = BLACKBAND_BASE / 'candidate-source/build/Navi48Bringup.kext/Contents/MacOS/Navi48Bringup'
+    if sha(binary) != BLACKBAND_BASE_SHA:
+        raise ValueError('The 0.0.671 candidate binary changed')
+    return {'manifest': str((BLACKBAND_BASE / 'manifest.json').relative_to(ROOT)), 'candidate_inputs_checked': len(base['candidate_inputs']),
+            'binary_sha256': BLACKBAND_BASE_SHA}
+
+
+def blackband_overlay(candidate, patch, version):
+    """0.0.672: the black-band patch over the 0.0.671 candidate tree (patch -p1; the patch must be the reviewed file), then the markers
+    671 -> 672 (kN1cKextBuild and the Metal ops build number; Info.plist comes with the patch). The changed files must be exactly the
+    reviewed set. Nothing else changes."""
+    if version != BLACKBAND_VERSION:
+        raise ValueError('The black-band overlay is only for ' + BLACKBAND_VERSION)
+    patch = patch.resolve()   # patch -d changes directory: the patch path must be absolute
+    if sha(patch) != BLACKBAND_PATCH_SHA:
+        raise ValueError('The black-band patch is not the reviewed file')
+    before = tree_files(candidate)
+    subprocess.run(['patch', '-p1', '-s', '--no-backup-if-mismatch', '-d', str(candidate), '-i', str(patch)], check=True)
+    build = release_build(version)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 671;', 'kN1cKextBuild = %d;' % build, 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 671u', 'sizeof(N48MetalOps), %du' % build, 2)
+    if (candidate / 'Info.plist').read_text().count('<string>' + version + '</string>') != 2:
+        raise ValueError('The patch does not set Info.plist to ' + version)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    expected = set(BLACKBAND_FILES) | set(BLACKBAND_MARKER_FILES)
+    if changed != expected:
+        raise ValueError('Candidate changed files outside the reviewed black-band set: ' + ', '.join(sorted(changed ^ expected)))
     return sorted(changed)
 
 
@@ -321,7 +376,9 @@ def test_path(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5) or 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay)')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) or 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch)')
+    parser.add_argument('--patch', type=Path,
+                        help='0.0.672 only: the black-band patch over the 0.0.671 candidate tree (PATCH-vs-671-deployed.diff; its sha256 is pinned)')
     parser.add_argument('--active-baseline-manifest', type=Path,
                         help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
                              'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
@@ -335,8 +392,9 @@ def main():
         raise ValueError('Reference kernel binary changed')
     refresh = version in REFRESH_VERSIONS
     fix = version == FIX_VERSION   # 0.0.671: built on the 0.0.670 candidate tree (no 665 or 0.0.668 rebuild); the refresh tests run too
-    tests = TESTS + (REFRESH_TESTS if refresh or fix else ())
-    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION) and not args.active_baseline_manifest:
+    blackband = version == BLACKBAND_VERSION   # 0.0.672: built on the 0.0.671 candidate tree plus the reviewed black-band patch
+    tests = TESTS + (REFRESH_TESTS if refresh or fix or blackband else ())
+    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION) and not args.active_baseline_manifest:
         raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
@@ -346,7 +404,15 @@ def main():
         active_source = 'live-efi'
     if fix and not args.worktree_overlay:
         raise ValueError('0.0.671 overlays the GTT fix, which is uncommitted review work: pass --worktree-overlay (recorded with sha256 and blob ids)')
-    revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
+    if blackband:
+        # The overlay is the patch file (sha256 pinned in blackband_overlay), not the SOURCE tree: HEAD is recorded for reference only.
+        if args.patch is None:
+            raise ValueError('0.0.672 is built from the black-band patch: pass --patch (PATCH-vs-671-deployed.diff)')
+        revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        overlay = {'source': 'patch', 'patch': str(args.patch), 'patch_sha256': sha(args.patch), 'patch_files': list(BLACKBAND_FILES),
+                   'head_at_build': revision}
+    else:
+        revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
     repro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repro)
@@ -379,9 +445,13 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(FIX_BASE / 'candidate-source' if fix else REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
+    copy_source(BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+                REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if fix:
+    if blackband:
+        # 0.0.672: no rebuild of any base. The base is the reviewed 0.0.671 candidate tree and binary (checked against its manifest).
+        manifest['base_verified'] = blackband_base_verified(baseline)
+    elif fix:
         # 0.0.671: no rebuild of any base. The base is the reviewed 0.0.670 candidate tree and binary (checked against its manifest).
         manifest['base_verified'] = fix_base_verified(baseline)
     elif refresh:
@@ -398,7 +468,11 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if fix:
+    if blackband:
+        manifest['changed_source_files'] = blackband_overlay(candidate, args.patch, version)
+        manifest['blackband_overlay'] = {'patch': str(args.patch), 'patch_sha256': BLACKBAND_PATCH_SHA,
+                                         'marker_files': list(BLACKBAND_MARKER_FILES)}
+    elif fix:
         manifest['changed_source_files'] = fix_overlay(candidate, SOURCE, version)
         manifest['fix_overlay'] = {'base': str(FIX_BASE.relative_to(ROOT)), 'base_binary_sha256': FIX_BASE_SHA,
                                    'files': {name: sha(SOURCE / name) for name in FIX_OVERLAY}}
@@ -424,7 +498,8 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    required = REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix else ()) + (FIX_REQUIRED_STRINGS if fix else ())
+    required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or blackband else ())
+                + (FIX_REQUIRED_STRINGS if fix or blackband else ()) + (BLACKBAND_REQUIRED_STRINGS if blackband else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]

@@ -139,9 +139,21 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.669'), 669)   # refresh-60 (0.0.669 is a supported candidate since the refresh overlay)
         self.assertEqual(build.release_build('0.0.670'), 670)   # refresh-60b: the same overlay with the frame-total fix
         self.assertEqual(build.release_build('0.0.671'), 671)   # refresh-60b + the GTT fix (wired, non-contiguous GTT BOs): built on the 0.0.670 tree
-        for version in ('0.0.665', '0.0.672', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.672'), 672)   # black band: the 0.0.671 tree plus the reviewed black-band patch
+        for version in ('0.0.665', '0.0.673', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
+
+    def test_blackband_overlay_refuses_another_version_and_an_unreviewed_patch(self):
+        candidate = self.root / 'candidate-blackband'
+        candidate.mkdir()
+        patch = self.root / 'unreviewed.diff'
+        patch.write_text('not the reviewed black-band patch\n')
+        with self.assertRaises(ValueError):
+            build.blackband_overlay(candidate, patch, '0.0.671')
+        with self.assertRaises(ValueError):   # the pinned sha256 of PATCH-vs-671-deployed.diff does not match this file
+            build.blackband_overlay(candidate, patch, '0.0.672')
+        self.assertEqual(sorted(p.name for p in candidate.iterdir()), [])   # nothing written before the checks pass
 
     def test_668_overlay_sets_its_version_and_build_number(self):
         baseline, source, candidate = (self.root / name for name in ('baseline668', 'source668', 'candidate668'))
