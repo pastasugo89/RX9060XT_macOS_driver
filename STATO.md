@@ -169,3 +169,9 @@ Al posto dello Stage20 ancora non avviato, predisposto Stage21/bundle23: 212 sha
 
 - **Bundle 38** (profilo `stage38-swz-v1`, `50f2597`) installato. Causa delle icone sbagliate: IconServices passa i livelli grigio + alfa come texture RG8 su IOSurface o buffer con swizzle (R,R,R,G); il bundle applicava lo swizzle solo alle texture ordinarie, quindi il vetro diventava giallo (blu a 0) e ogni livello un quadrato nero (alfa a 1). L'utente conferma il Dock corretto in tutti gli stili, anche trasparente e tinto. Le icone già in cache dentro Impostazioni di Sistema restano vecchie fino al rinnovo della cache. Residuo minore nel confronto in-process: blocchi su Dov'è (stile predefinito) e punta del razzo di Giochi in scuro.
 - **Banda nera in alto**: con i 60 Hz è molto più rara ma ricompare ogni tanto. Indagine sul percorso di presentazione (flip, slot di scanout, copia D) in corso.
+
+### 12 novembre 2026 — kernel 0.0.673: banda nera sparita
+
+- Causa: il GOP lasciava al display solo 3 segmenti DET (192 KB), quindi i cambi di frequenza della memoria cadevano nel vblank di 85 righe senza margine. 0.0.673 (`d8b72c0`) porta DET0 a 20 segmenti e programma i watermark di Linux; installato (payload v9, guardia 673). L'utente non vede più la banda.
+- Al primo avvio: 3 underflow circa 10 s dopo il login; il fallback ha rimesso lo stutter forzato off e bloccato la UCLK a 1258 MHz (scheda ~33 W contro ~25 W). Nessun underflow dopo. In preparazione 0.0.674 con fallback a due stadi (prima solo stutter off, poi il blocco).
+- Schermo nero con solo il puntatore (12/11, 60 Hz al boot): blocco di sistema dopo `WINDOWSERVER_READY`, causa aperta; i 60 Hz restano disattivati.
