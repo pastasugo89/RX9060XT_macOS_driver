@@ -4288,7 +4288,7 @@ IOUC AppleKeyStoreUserClient failed MACF in process pid 528, linkd
 IOUC AppleKeyStoreUserClient failed MACF in process pid 528, linkd
 N4X-SAFETY t=73334 hotspot=35 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x23400000
                                                                                
-*** FINAL System shutdown message from test@tests-Mac-Pro.local ***          
+*** FINAL System shutdown message from test@<host>.local ***          
 
 System going down IMMEDIATELY                                                  
 

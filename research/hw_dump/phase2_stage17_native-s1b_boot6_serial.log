@@ -3673,7 +3673,7 @@ AMFI: [non-fatal] unable to accelerate context: com.apple.HostInferenceProviderS
 "AppleKeyStore":pid:135,msgid:0,msgno:0:2598: vol-uuid: A63A488A-7483-4C6F-B10D-1DE577E709B3, portable: 1, res: 0x0
 "AppleKeyStore":pid:135,msgid:0,msgno:0:4332: user 056fbce1b13147398e53147a0a48f799 unlock successful (0)
                                                                                
-*** FINAL System shutdown message from test@tests-Mac-Pro.local ***          
+*** FINAL System shutdown message from test@<host>.local ***          
 
 System going down IMMEDIATELY                                                  
 

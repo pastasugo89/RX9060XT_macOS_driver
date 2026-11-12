@@ -14,4 +14,4 @@ La DSDT locale research/hw_dump/baremetal_inventory/acpi/DSDT contiene OpRegion 
 
 La variante per boot13 è un esperimento: unica differenza dalla EFI cpus=1 verificata, Booter.MmioWhitelist Address=0xF7000000 Enabled=True. SHA config 55d53e17585af340d3d23c99bd2a305390c7c64005d1735f31d07b742012ac25. Deployment/preflight/backup in research/ext/opcore-simplify-b840-cpus1-mmio-f700/DEPLOYMENT.json. Hardware boot pendente.
 
-Foto originale (HEIC) conservata nel percorso locale /home/pastasugo89/Scaricati/IMG_0669.HEIC; il PNG e i ritagli qui sono conversioni locali per lettura, non contenuti generati.
+Foto originale (HEIC) conservata nel percorso locale ~/Scaricati/IMG_0669.HEIC; il PNG e i ritagli qui sono conversioni locali per lettura, non contenuti generati.

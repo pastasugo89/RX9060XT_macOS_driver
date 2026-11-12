@@ -38,7 +38,7 @@ rw al solo uid1000 sui due nodi VFIO. Non carica driver né resetta dispositivi.
 Esito atteso `/mnt/vm/builds/vfio-boot-result.json` con nuovo boot_id.
 
 Per annullare PRIMA del riavvio:
-`pkexec python3 /home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/prepare-vfio-test-boot.py disarm`.
+`pkexec python3 ~/Documenti/rx9060xt_metal_driver/tools/vm/prepare-vfio-test-boot.py disarm`.
 Rollback completo disponibile con stessa invocazione e `rollback` (rifiuta
 backup obsoleto se kernel/GRUB sono cambiati successivamente).
 

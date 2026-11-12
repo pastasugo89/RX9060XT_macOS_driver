@@ -55,3 +55,9 @@ research/hw_dump/baremetal_inventory/acpi/
 /research/hw_dump/**/config.plist
 
 /new_root
+
+# Proprietary or personal artefacts: never versioned (2026-11-12 cleanup)
+*.rom
+research/hw_dump/**/*.air
+research/hw_dump/**/*.spv
+*edid*.bin

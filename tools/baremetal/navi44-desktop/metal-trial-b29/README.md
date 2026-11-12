@@ -15,7 +15,7 @@ Stato: pacchetto preparato, **non installato**. Il bundle 28 resta attivo finch√
 ## Comandi
 
 ```sh
-cd /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/trial-b29
+cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/trial-b29
 ./stage.sh                   # senza root: verifica bundle, firma, hash, guard, manifest
 sudo ./install-trial.sh      # oppure: sudo ./install-trial.sh --no-audio
 sudo reboot

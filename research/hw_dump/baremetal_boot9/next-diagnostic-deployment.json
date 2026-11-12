@@ -10,6 +10,6 @@
   "deployed_at_utc": "20261025T115242Z",
   "usb_uuid": "A140-3052",
   "deployed_to_usb": true,
-  "backup": "/run/media/pastasugo89/OCBOOT/_config-pre-acpi-debug-20261025T115242Z/config.plist",
+  "backup": "/run/media/<user>/OCBOOT/_config-pre-acpi-debug-20261025T115242Z/config.plist",
   "recovery_sha256_before_and_after": "bbfcbf7bfd09c79465fa92c741ebb665625794c31578b81248f7fa0c2bcd4789"
 }

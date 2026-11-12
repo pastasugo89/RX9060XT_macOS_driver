@@ -26,7 +26,7 @@ nessuna partizione fisica Windows o Linux è assegnata al guest.
 Premere Ctrl+Alt+T oppure aprire Konsole dal menu applicazioni.
 
 ```bash
-cd /home/pastasugo89/Documenti/rx9060xt_metal_driver
+cd ~/Documenti/rx9060xt_metal_driver
 bash tools/vm/prepare-build-vm.sh
 ```
 

@@ -38,7 +38,7 @@ La shell gira su `Linux MSI-Desktop` (CachyOS x86_64), separata dall’interfacc
 | Samsung `MZVLQ256HBJD-00BH1`, 238,5 GiB | EFI FAT32 512 MiB; Btrfs 238 GiB montato come `/` | Disco dell’host Linux; non candidato all’installazione. |
 | Lexar EQ790 1 TB, 931,5 GiB | p1 FAT32 100 MiB, p2 16 MiB, p3 NTFS 728,1 GiB, p4 NTFS 823 MiB, p5 FAT32 1 GiB, p6 NTFS 742 MiB; p7 Btrfs 50 GiB; p8 150 GiB tipo GPT Apple APFS senza filesystem | Metadati letti dopo la ricreazione delle partizioni. p8 è un candidato host: la corrispondenza con un identificatore `diskutil` va verificata in Recovery. |
 | Lexar p7, UUID `0ae89dbc-e934-4c12-a6bd-90d01e5bd0da`, mount `/mnt/vm` | Btrfs 50 GiB | Archivio dei materiali selezionati ripristinato e confrontato; i dischi VM non sono stati ripristinati. `/etc/fstab` punta al nuovo UUID. |
-| SanDisk USB personale 128 GB, UUID `48AD-071D` | exFAT; montata temporaneamente in `/run/media/pastasugo89/48AD-071D`, poi smontata | Ho verificato solo metadati e contenuto ISO autorizzata; gli altri contenuti non sono stati elencati né letti. |
+| SanDisk USB personale 128 GB, UUID `48AD-071D` | exFAT; montata temporaneamente in `/run/media/<user>/48AD-071D`, poi smontata | Ho verificato solo metadati e contenuto ISO autorizzata; gli altri contenuti non sono stati elencati né letti. |
 
 Il dato dei dischi Linux non sostituisce l’inventario di macOS Recovery. I nomi `/dev/nvme…` e `/dev/sda` potrebbero non corrispondere ai nomi che mostrerà `diskutil`.
 

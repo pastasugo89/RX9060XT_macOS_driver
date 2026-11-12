@@ -2,7 +2,7 @@
   "boot": "12",
   "date": "2026-10-25",
   "original_photo": {
-    "path": "/home/pastasugo89/Scaricati/IMG_0669.HEIC",
+    "path": "~/Scaricati/IMG_0669.HEIC",
     "sha256": "91119435f76c9795cf67f5248978faeab4122f2ca75fb058168d9ad1dd9ef14d"
   },
   "local_visual_conversions": {

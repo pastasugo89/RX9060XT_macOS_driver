@@ -4288,7 +4288,7 @@ IOUC AppleKeyStoreUserClient failed MACF in process pid 676, assistantd
 IOUC AppleKeyStoreUserClient failed MACF in process pid 676, assistantd
 N4X-SAFETY t=61263 hotspot=34 edge=na mem=na ppt=na state=OK reason=none proto=1 thm=0x22c00000
                                                                                
-*** FINAL System shutdown message from test@tests-Mac-Pro.local ***          
+*** FINAL System shutdown message from test@<host>.local ***          
 
 System going down IMMEDIATELY                                                  
 

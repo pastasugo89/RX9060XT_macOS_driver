@@ -1,4 +1,4 @@
-ERROR: [Loader Message] Code 0 : loader_create_instance_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so"
+ERROR: [Loader Message] Code 0 : loader_create_instance_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so"
 Device info:
     name = RAPHAEL_MENDOCINO
     marketing_name = AMD Ryzen 7 7700 8-Core Processor
@@ -465,10 +465,10 @@ Modifiers (64 bpp):
     0x200000000000a04 - GFX11,64KB_D
     0x200000000000105 - GFX12,256B_2D
     0x0 - LINEAR
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPlanePropertiesKHR!
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
 ==========

@@ -4412,7 +4412,7 @@ N4X-SAFETY t=97198 hotspot=35 edge=na mem=na ppt=na state=OK reason=none proto=1
 _vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 2 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
 _vnode_dev_unmap_flush_and_unlock:1822: disk2 trim'ing 8 blocks from trim_list failed w/: 45 (entry 0:0 ; 0:0)
                                                                                
-*** FINAL System shutdown message from test@tests-Mac-Pro.local ***          
+*** FINAL System shutdown message from test@<host>.local ***          
 
 System going down IMMEDIATELY                                                  
 

@@ -1,1 +1,1 @@
-console=ttyS0,115200n8 rdinit=/home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
+console=ttyS0,115200n8 rdinit=~/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1

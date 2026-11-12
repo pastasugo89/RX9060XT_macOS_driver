@@ -1,9 +1,9 @@
-ERROR: [Loader Message] Code 0 : loader_create_instance_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so"
+ERROR: [Loader Message] Code 0 : loader_create_instance_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so"
 WARNING: radv is not a conformant Vulkan implementation, testing use only.
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
-ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "/home/pastasugo89/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
+ERROR: [Loader Message] Code 0 : loader_create_device_chain: Failed to find 'vkGetInstanceProcAddr' in layer "~/.local/share/vulkan/implicit_layer.d/../../../lib/liblsfg-vk-layer.so".  Skipping layer.
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPlanePropertiesKHR!
 WARNING: [Loader Message] Code 0 : ICD for selected physical device does not export vkGetPhysicalDeviceDisplayPropertiesKHR!
 ==========

@@ -2,7 +2,7 @@
 
 Date: 2026-10-31. Method: static reading of the repo. Nothing was run against the GPU, no kext was loaded or unloaded, no register was written, NootRX/NootedRed sources were not read, and no AMD firmware was disassembled.
 
-Repo root: `/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver`. Paths below are relative to it.
+Repo root: `~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver`. Paths below are relative to it.
 
 ## Summary
 

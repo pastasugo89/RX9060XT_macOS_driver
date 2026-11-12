@@ -175,7 +175,7 @@ non il ripristino automatico di una BAR da 16 GiB.
 
 ### Evidenza dell'avvio 7
 
-- Foto fornita dall'utente: `/home/pastasugo89/Scaricati/IMG_0666.HEIC`, convertita in PNG solo per lettura in `/tmp`.
+- Foto fornita dall'utente: `~/Scaricati/IMG_0666.HEIC`, convertita in PNG solo per lettura in `/tmp`.
   Conferma ultime righe `CoreAnalyticsHub start completed` e `Kext com.apple.iokit.IOTimeSyncFamily is already loaded`.
   Nessun panic/backtrace visibile. Il messaggio del kext già caricato non è una prova della causa del blocco.
 - Config effettivamente su OCBOOT: SHA256 `007215f872830c78b5995195bf7d37b7ffa54ac09e7a111aadfa05761e136d64`.

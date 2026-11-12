@@ -39,7 +39,7 @@
 2026-10-21T18:14:54 gpu-safety-watchdog: STOP REQUEST: heartbeat-lost:10.2s
 2026-10-21T18:14:54 gpu-safety-watchdog: QMP quit sent; reply {"return": {}}
 2026-10-21T18:14:54 gpu-safety-watchdog: QEMU has exited; the GPU is released (vfio-pci reset on close)
-2026-10-21T18:14:54 gpu-safety-watchdog: event report: /home/pastasugo89/Documenti/rx9060xt_metal_driver/research/hw_dump/gpu_safety_events/20261021T181454-heartbeat-lost_10.2s
+2026-10-21T18:14:54 gpu-safety-watchdog: event report: ~/Documenti/rx9060xt_metal_driver/research/hw_dump/gpu_safety_events/20261021T181454-heartbeat-lost_10.2s
 2026-10-21T18:14:54 gpu-safety-watchdog: exit rc=2
 2026-10-21T18:19:21 gpu-safety-watchdog: READY pid=147923 warn=75 trip=80 hb_timeout=10.0 max_runtime=3600 dry_run=False serial=/mnt/vm/images/macos-gpu-test/diagnostics/serial.log qmp=/mnt/vm/images/macos-gpu-test/qmp.sock
 2026-10-21T18:19:21 gpu-safety-watchdog: QEMU socket present: following /mnt/vm/images/macos-gpu-test/diagnostics/serial.log

@@ -14,8 +14,8 @@ Il pacchetto `../metal-trial-b31/` non è stato modificato e resta per il bundle
 ## Comandi
 
 ```sh
-cd /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial
-./stage.sh /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/bundle32-src/build-32/Navi48Metal.bundle stage32-dualsrc-v1
+cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial
+./stage.sh ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/bundle32-src/build-32/Navi48Metal.bundle stage32-dualsrc-v1
 sudo ./install-trial.sh
 sudo reboot
 ```
@@ -66,7 +66,7 @@ sudo rm /private/tmp/n48m-magenta       # torna al placeholder invisibile
 ## Rollback
 
 ```sh
-cd /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial
+cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial
 sudo ./rollback-trial.sh                 # ripristina il bundle 31 e la guard 31 dal backup trial-b32 più recente
 sudo ./rollback-trial.sh --backup DIR    # oppure un backup preciso
 sudo ./rollback-trial.sh --reset-latch   # solo dopo aver esaminato un latch pending/failed

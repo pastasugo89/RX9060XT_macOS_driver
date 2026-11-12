@@ -3,7 +3,7 @@
   "usb_uuid": "A140-3052",
   "previous_config_sha256": "b19b38865059e382f7fa350c56b16052f200d434c8c50b1781993e52900a568d",
   "config_sha256": "1f8d43cf677eb2cce93fc792ebe13fd897760b4897126ae2d3988bf26b4cbc08",
-  "backup": "/run/media/pastasugo89/OCBOOT/_EFI-pre-simplify-20261025T112158Z",
+  "backup": "/run/media/<user>/OCBOOT/_EFI-pre-simplify-20261025T112158Z",
   "file_count": 28,
   "recovery_sha256_before_and_after": "bbfcbf7bfd09c79465fa92c741ebb665625794c31578b81248f7fa0c2bcd4789",
   "hardware_boot_tested": false,

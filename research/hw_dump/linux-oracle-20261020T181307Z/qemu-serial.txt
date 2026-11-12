@@ -1,5 +1,5 @@
 [    0.000000] Linux version 7.2.10-1-cachyos (linux-cachyos@cachyos) (clang version 23.1.1, LLD 23.1.1) #1 SMP PREEMPT_DYNAMIC Wed, 14 Oct 2026 07:02:02 +0000
-[    0.000000] Command line: console=ttyS0,115200n8 rdinit=/home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
+[    0.000000] Command line: console=ttyS0,115200n8 rdinit=~/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
 [    0.000000] BIOS-provided physical RAM map:
 [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff]  System RAM
 [    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff]  device reserved
@@ -103,7 +103,7 @@
 [    0.011634] percpu: Embedded 63 pages/cpu s221184 r8192 d28672 u524288
 [    0.011664] kvm-guest: PV spinlocks enabled
 [    0.011665] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
-[    0.011667] Kernel command line: console=ttyS0,115200n8 rdinit=/home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
+[    0.011667] Kernel command line: console=ttyS0,115200n8 rdinit=~/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init loglevel=7 panic=-1
 [    0.011876] random: crng init done
 [    0.011877] printk: log buffer data + meta data: 131072 + 557056 = 688128 bytes
 [    0.012209] Dentry cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
@@ -431,8 +431,8 @@
 [    0.966509] Freeing unused kernel image (rodata/data gap) memory: 1372K
 [    0.996152] x86/mm: Checked W+X mappings: passed, no W+X pages found.
 [    0.997040] rodata_test: all tests were successful
-[    0.997708] Run /home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init as init process
-/home/pastasugo89/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init: line 10: can't create /proc/sys/kernel/hotplug: nonexistent directory
+[    0.997708] Run ~/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init as init process
+~/Documenti/rx9060xt_metal_driver/tools/vm/linux-oracle.init: line 10: can't create /proc/sys/kernel/hotplug: nonexistent directory
 [    1.014851] netfs: FS-Cache loaded
 [    1.018653] 9pnet: Installing 9P2000 support
 [    1.025603] 9p: Installing v9fs 9p2000 file system support

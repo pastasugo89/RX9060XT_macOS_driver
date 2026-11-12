@@ -2,7 +2,7 @@
   "original_log_sha256": "225c3a6726bd0e24ffc248182b04d207c80cfb72b85f775847b11538a2610cc8",
   "photo_sha256": "fb32c995b38fdec5ada25729188e8360ab38e78bac2b14304f72ae1ca78539d9",
   "active_config_sha256": "007215f872830c78b5995195bf7d37b7ffa54ac09e7a111aadfa05761e136d64",
-  "raw_log_local_only": "/home/pastasugo89/Documenti/rx9060xt_metal_driver/research/ext/baremetal-boot7-audit/opencore-boot7-raw.txt",
-  "photo_original": "/home/pastasugo89/Scaricati/IMG_0666.HEIC",
+  "raw_log_local_only": "~/Documenti/rx9060xt_metal_driver/research/ext/baremetal-boot7-audit/opencore-boot7-raw.txt",
+  "photo_original": "~/Scaricati/IMG_0666.HEIC",
   "usb_mounted_read_only": true
 }

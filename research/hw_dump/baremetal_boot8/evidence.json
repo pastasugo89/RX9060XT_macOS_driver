@@ -1,6 +1,6 @@
 {
   "original_log_sha256": "069af75552d9c8ae5fdb8c2f3f848fa2c00e45b08ea17c345cd184e2e72171a6",
   "active_config_sha256": "b19b38865059e382f7fa350c56b16052f200d434c8c50b1781993e52900a568d",
-  "raw_log_local_only": "/home/pastasugo89/Documenti/rx9060xt_metal_driver/research/ext/baremetal-boot8-audit/opencore-boot8-raw.txt",
+  "raw_log_local_only": "~/Documenti/rx9060xt_metal_driver/research/ext/baremetal-boot8-audit/opencore-boot8-raw.txt",
   "usb_mounted_read_only": true
 }

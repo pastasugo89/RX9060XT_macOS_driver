@@ -55,8 +55,8 @@ Navi48Metal: P4 impcache: ON (default since build 16; kill file /private/tmp/n48
 Navi48Metal: T1 drawopt: ON (/private/tmp/n48m-drawopt present at device creation; latched for the life of this process): descriptor-set reuse, pipeline-bind skip, variant cache, render-pass cache (<= 64)
 Navi48Metal: T1 timing: summaries every 10 s (pid 1365 mtlprobe)
 Navi48Metal: radv open: OK (queue family 0)
-Navi48Metal: spvcache hit vertex: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078.spv (1316 bytes, meta)
-Navi48Metal: spvcache hit fragment: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f.spv (1276 bytes, meta)
+Navi48Metal: spvcache hit vertex: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8c8b25d8e140695f414e41ce0c611965e4ad7c5d479095436d9e992d4ea7d078.spv (1316 bytes, meta)
+Navi48Metal: spvcache hit fragment: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c9f593d3696a9719c840f0e48ccd5de484f06b7c75cff3bf3f74bddbab53038f.spv (1276 bytes, meta)
 Navi48Metal: pipeline: colour attachment 0 pixel format 80 (vk 44)
 Navi48Metal: N48RenderPipelineState 0x7faf10812c00: pipeline 0x7faf0081a000 (1 colour attachment(s), set0 1 / set1 3 bindings, 2 vertex input(s), 1 vertex binding(s))
 mtlprobe: step pipeline: non-nil

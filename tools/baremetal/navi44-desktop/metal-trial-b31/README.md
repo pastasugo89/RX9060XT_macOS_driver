@@ -25,7 +25,7 @@ Non toccati: audio (VoodooHDA, nessuna installazione o ricostruzione), `/private
 ## Comandi
 
 ```sh
-cd /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial-b31
+cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial-b31
 ./stage.sh                              # senza root; default bundle31b-src/build-31/Navi48Metal.bundle
 # oppure: ./stage.sh /percorso/Navi48Metal.bundle
 sudo ./install-trial.sh

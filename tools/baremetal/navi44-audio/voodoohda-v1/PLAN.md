@@ -120,10 +120,10 @@ sudo cp -p /Volumes/OCBOOT/EFI/OC/config.plist "/Library/Application Support/Nav
 shasum -a 256 /Volumes/OCBOOT/EFI/OC/config.plist   # deve essere 92379563...
 
 # 1. copia del kext nella cartella Kexts del stick
-sudo cp -R "/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/audio-v1/EFI-candidate/EFI/OC/Kexts/VoodooHDA_BL.kext" /Volumes/OCBOOT/EFI/OC/Kexts/
+sudo cp -R "~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/audio-v1/EFI-candidate/EFI/OC/Kexts/VoodooHDA_BL.kext" /Volumes/OCBOOT/EFI/OC/Kexts/
 
 # 2. sostituzione atomica del config (solo OC/config.plist)
-sudo cp "/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/audio-v1/config.candidate-blocked.plist" /Volumes/OCBOOT/EFI/OC/config.plist.new
+sudo cp "~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/audio-v1/config.candidate-blocked.plist" /Volumes/OCBOOT/EFI/OC/config.plist.new
 sudo mv /Volumes/OCBOOT/EFI/OC/config.plist.new /Volumes/OCBOOT/EFI/OC/config.plist
 sync
 

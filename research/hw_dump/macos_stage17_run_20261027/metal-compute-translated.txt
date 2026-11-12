@@ -22,7 +22,7 @@ Navi48Metal: argumentBuffersSupport -> Tier1 (0) for this application: argument 
 mtlprobe: using device AMD Radeon RX 9060 XT registryID=0x100000738
 mtlprobe: step library (11e sources): non-nil
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/e64f769aa5de62aca5145b76102ed4c902da6e418e530441fe7fb65f4d8fec21.spv (1444 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/e64f769aa5de62aca5145b76102ed4c902da6e418e530441fe7fb65f4d8fec21.spv (1444 bytes, meta)
 Navi48Metal: radv open: attempt 1
 Navi48Metal: radv open: dlopen /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib
 Navi48Metal: radv open: P5a /private/tmp/n48m-nosam present: RADV_PERFTEST=nosam (command buffers in GTT)
@@ -58,7 +58,7 @@ Navi48Metal: T1 timing: summaries every 10 s (pid 1251 mtlprobe)
 Navi48Metal: radv open: OK (queue family 0)
 Navi48Metal: N48ComputePipelineState 0x7fdfeab048e0 'fill_buf': local 64,1,1, ThreadsDynamic, 2 bindings, push constants 48 B
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/82941c47eda095ede33f052e64ba33ef4497b96938a2b78cb4e87ce62c0a81c8.spv (1832 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/82941c47eda095ede33f052e64ba33ef4497b96938a2b78cb4e87ce62c0a81c8.spv (1832 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fdfc9f05cd0 'write_tex': local 8,8,1, ThreadsDynamic, 1 bindings, push constants 48 B
 mtlprobe: step compute pipelines: fill_buf=non-nil write_tex=non-nil
 Navi48Metal: newBufferWithLength:4096 options:0x0

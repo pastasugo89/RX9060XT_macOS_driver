@@ -187,7 +187,7 @@ I checked constants against upstream master headers. Everything below agrees.
 
 ## Appendix A. Paths
 
-Clone (read-only): `/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/ext/hailuo2456-navi44`
+Clone (read-only): `~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/ext/hailuo2456-navi44`
 
 Their key files (relative to the clone):
 - `src/compute.cpp`: CG 1581-1720; GFXOFF 1046-1600, 1576; workload 1877; feature enable 2100-2160, 2214-2254; metrics 955-1010; IF 0x33 caveat 1823.
@@ -201,7 +201,7 @@ Their key files (relative to the clone):
 - `docs/PORT-NAVI44.md`: porting status and known limits.
 - `firmware/amdgpu/LICENSE.amdgpu`: firmware licence.
 
-Ours (absolute, under the project root `/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver`):
+Ours (absolute, under the project root `~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver`):
 - `cobalt64/src/navi48-bringup/src/amd/rlc_v12_0.cpp:520-525`: CG comment, no CG writes.
 - `cobalt64/src/navi48-bringup/src/amd/amdgpu_init.cpp:282-287, 871-874`: GFXOFF hold and release.
 - `cobalt64/src/navi48-bringup/src/amd/amdgpu_smu.h:306-400`: metrics layout, IF 0x2E pin, 0x33 caveat, `static_assert` 260.

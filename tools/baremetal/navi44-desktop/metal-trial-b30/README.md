@@ -26,7 +26,7 @@ Il payload contiene 466 voci nel manifest (bundle più guard).
 ## Comandi
 
 ```sh
-cd /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/trial-b30
+cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/trial-b30
 ./stage.sh                   # senza root: verifica bundle, firma, hash, guard, manifest
 sudo ./install-trial.sh
 sudo reboot

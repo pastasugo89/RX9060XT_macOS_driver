@@ -22,7 +22,7 @@ Navi48Metal: argumentBuffersSupport -> Tier1 (0) for this application: argument 
 mtlprobe: using device AMD Radeon RX 9060 XT registryID=0x100000738
 qccompute: device responds to newComputePipelineStateWithDescriptor:error: = 1
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
 Navi48Metal: radv open: attempt 1
 Navi48Metal: radv open: dlopen /Library/GPUBundles/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib
 Navi48Metal: radv open: P5a /private/tmp/n48m-nosam present: RADV_PERFTEST=nosam (command buffers in GTT)
@@ -60,92 +60,92 @@ Navi48Metal: N48ComputePipelineState 0x7fbb4be05330 'compute_average_luma': loca
 qccompute: compute_average_luma: descriptor:error: -> non-nil
 qccompute: compute_average_luma:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb082a0 'compute_average_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: compute_average_luma: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/2ec9c9507cfbc202fba4a6f0c619c37866a6dfa57889e0f8a16c5cda5d47e54d.spv (4524 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb09140 'compute_average_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: compute_average_luma: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb082a0 'compute_sum_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 0 B
 qccompute: compute_sum_luma: descriptor:error: -> non-nil
 qccompute: compute_sum_luma:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be06b60 'compute_sum_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 0 B
 qccompute: compute_sum_luma: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/8123080cd42a96fa2b7f6b335261d6abe093193eaeadc533625622fd3ca0f4be.spv (3080 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be07890 'compute_sum_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 0 B
 qccompute: compute_sum_luma: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be06b60 'tile_average_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma: descriptor:error: -> non-nil
 qccompute: tile_average_luma:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb0a290 'tile_average_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/ed830b9b939a1e92c3e6f09e93a8da60af30940f7f258513e734935e6c64b521.spv (4680 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb0b1f0 'tile_average_luma': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4bb0a290 'tile_average_luma_quad': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma_quad: descriptor:error: -> non-nil
 qccompute: tile_average_luma_quad:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be087c0 'tile_average_luma_quad': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma_quad: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/452b2cc852098cafd0ba5a82041588ef1323425d46de2ed317807f3907424afe.spv (9528 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be093e0 'tile_average_luma_quad': local 64,1,1, ThreadsDynamic, 3 bindings, push constants 48 B
 qccompute: tile_average_luma_quad: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be087c0 'compute_apl': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 48 B
 qccompute: compute_apl: descriptor:error: -> non-nil
 qccompute: compute_apl:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0a480 'compute_apl': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 48 B
 qccompute: compute_apl: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/1b937b0fc7def8791f16b65f590a2ba690816723ddb31a287d4d9c112a54050e.spv (5904 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0b0b0 'compute_apl': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 48 B
 qccompute: compute_apl: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
 Navi48Metal: static sampler at binding 160: min 1 mag 1 mip 0 addr 4/4/4 unnormalized (coord::pixel)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0a480 'compute_apl_fast': local 64,1,1, ThreadsDynamic, 5 bindings, push constants 48 B
 qccompute: compute_apl_fast: descriptor:error: -> non-nil
 qccompute: compute_apl_fast:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
 Navi48Metal: static sampler at binding 160: min 1 mag 1 mip 0 addr 4/4/4 unnormalized (coord::pixel)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0bef0 'compute_apl_fast': local 64,1,1, ThreadsDynamic, 5 bindings, push constants 48 B
 qccompute: compute_apl_fast: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/53383dfb3c9e0c4925f93e6edb2f3b7dd5e61e28952e74d986217cc1848c1887.spv (9908 bytes, meta)
 Navi48Metal: static sampler at binding 160: min 1 mag 1 mip 0 addr 4/4/4 unnormalized (coord::pixel)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0ccc0 'compute_apl_fast': local 64,1,1, ThreadsDynamic, 5 bindings, push constants 48 B
 qccompute: compute_apl_fast: descriptor:options:reflection:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0bef0 'sum_apl_and_compute_dimming_factor': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 0 B
 qccompute: sum_apl_and_compute_dimming_factor: descriptor:error: -> non-nil
 qccompute: sum_apl_and_compute_dimming_factor:   maxTotalThreadsPerThreadgroup 1024 threadExecutionWidth 32 staticThreadgroupMemoryLength 0
 Navi48Metal: newComputePipelineStateWithFunction:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0dfc0 'sum_apl_and_compute_dimming_factor': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 0 B
 qccompute: sum_apl_and_compute_dimming_factor: function:error: -> non-nil
 Navi48Metal: newComputePipelineStateWithDescriptor:options:reflection:error:
-Navi48Metal: spvcache hit kernel: /Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
+Navi48Metal: spvcache hit kernel: ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/hw_dump/macos_stage17_run_20261027/translator/output/c226450a35140d829d1b3d7700d3884b5a0f339920552b7c7e9c876510520358.spv (6148 bytes, meta)
 Navi48Metal: N48ComputePipelineState 0x7fbb4be0ed30 'sum_apl_and_compute_dimming_factor': local 64,1,1, ThreadsDynamic, 4 bindings, push constants 0 B
 qccompute: sum_apl_and_compute_dimming_factor: descriptor:options:reflection:error: -> non-nil
 mtlprobe: PASS qccompute (0)

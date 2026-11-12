@@ -25,7 +25,7 @@ Graphics/Displays:
           Resolution: 2560 x 1440 (QHD/WQHD - Wide Quad High Definition)
           UI Looks like: 2560 x 1440 @ 120.00Hz
           Framebuffer Depth: 24-Bit Color (ARGB8888)
-          Display Serial Number: 502BOFT0B707
+          Display Serial Number: <monitor-serial>
           Main Display: Yes
           Mirror: Off
           Online: Yes
