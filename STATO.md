@@ -1,3 +1,5 @@
+> **English summary:** [`docs/STATUS.md`](docs/STATUS.md) gives the current status and roadmap in English. The rest of this file is in Italian.
+
 # Stato del progetto — 26 ottobre 2026
 
 Driver Metal per **AMD Radeon RX 9060 XT** (Navi 44, `1002:7590`) su macOS Tahoe 26.6.2 (build 25G83), come port di

@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest a capability or an improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: My request does not depend on redistributing Apple or AMD binaries, firmware or other proprietary files.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Power and clocks
+        - Thermal and fan control
+        - Display and refresh
+        - Metal and shader translation
+        - Video (VCN)
+        - Vulkan, OpenCL or compute
+        - Installation and tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today, and why does it matter?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should happen instead? Link to upstream code or documentation where it helps.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+    validations:
+      required: false

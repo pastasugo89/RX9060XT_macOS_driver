@@ -1,3 +1,5 @@
+> **English summary:** [`docs/STATUS.md`](docs/STATUS.md) gives the current status and the phased roadmap (its section "Roadmap" follows this checklist's phases A to H) in English. The rest of this file is in Italian.
+
 # Driver GPU completo per RX 9060 XT su macOS: requisiti e piano di copertura
 
 Data della ricerca: **29 ottobre 2026**. Target del progetto: **Navi 44 / RX 9060 XT, RDNA 4, macOS x86_64**, inizialmente Tahoe 26.6.2 / 25G83.

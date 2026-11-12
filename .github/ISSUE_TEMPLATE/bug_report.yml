@@ -1,0 +1,144 @@
+name: Bug report
+description: Something does not work, freezes, restarts the machine or fails to build
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting. Before you start, read the **Safety** section of the README.
+        Remove private data from every log and screenshot you attach: serial numbers, `MLB`, `ROM`, `SystemUUID`,
+        Wi-Fi network names, MAC and IP addresses, home-directory paths and personal names.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I have read the Safety section of the README.
+          required: true
+        - label: I have a boot entry that starts macOS without this driver, and I can recover the machine.
+          required: true
+        - label: I have removed private data from the logs and screenshots I attach.
+          required: true
+
+  - type: input
+    id: macos-build
+    attributes:
+      label: macOS build
+      placeholder: "26.6.2 (25G83)"
+    validations:
+      required: true
+
+  - type: input
+    id: opencore
+    attributes:
+      label: OpenCore version
+      placeholder: "1.0.8"
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU model and PCI ID
+      placeholder: "RX 9060 XT, 1002:7590"
+    validations:
+      required: true
+
+  - type: input
+    id: kext
+    attributes:
+      label: Navi48Bringup kext version
+      description: The CFBundleVersion of Navi48Bringup.kext, for example 0.0.675.
+    validations:
+      required: true
+
+  - type: input
+    id: bundle
+    attributes:
+      label: Navi48Metal bundle version
+      description: CFBundleVersion of Navi48Metal.bundle, if it was installed.
+    validations:
+      required: false
+
+  - type: input
+    id: aux
+    attributes:
+      label: Navi48Accel (auxiliary kext) version
+      description: Leave empty if it was not loaded.
+    validations:
+      required: false
+
+  - type: input
+    id: rdna4fb
+    attributes:
+      label: RDNA4FB version
+      description: Leave empty if it was not loaded.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which component do you think is involved?
+      multiple: true
+      options:
+        - Not sure
+        - Navi48Bringup kext
+        - Navi48Accel (auxiliary kext)
+        - RDNA4FB (display)
+        - Navi48Metal bundle
+        - n48xlate translator
+        - RADV (Mesa patches)
+        - Tools or scripts
+        - Documentation
+    validations:
+      required: false
+
+  - type: textarea
+    id: boot-args
+    attributes:
+      label: boot-args and OpenCore options that differ from the defaults
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: Give the steps, in order, that lead to the problem. Say whether it happens every time.
+    validations:
+      required: true
+
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (redacted excerpts)
+      description: Attach short excerpts, not whole system logs. Remove serial numbers, MLB, ROM, SystemUUID, Wi-Fi names, MAC and IP addresses and home paths.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: How often it happens, photos of the screen, or what you tried already.
+    validations:
+      required: false

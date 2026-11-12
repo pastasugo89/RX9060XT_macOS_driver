@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/pastasugo89/RX9060XT_macOS_driver/security/advisories/new
+    about: Report security problems privately. Do not open a public issue for them.
+  - name: README, safety and status
+    url: https://github.com/pastasugo89/RX9060XT_macOS_driver/blob/main/README.md
+    about: Read the README, the status table and the safety notes before you open an issue.

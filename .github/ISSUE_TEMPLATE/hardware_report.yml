@@ -1,0 +1,128 @@
+name: Hardware report
+description: Report a test on a Navi 44 or Navi 48 card, including a result on other hardware
+title: "[Hardware] "
+labels: ["hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hardware reports are the most useful contribution at this stage. A failed boot or a freeze is a valid result.
+        Remove private data before you post: serial numbers (including the monitor serial in an EDID dump), `MLB`,
+        `ROM`, `SystemUUID`, Wi-Fi network names, MAC and IP addresses and home-directory paths.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I have read the Safety section of the README.
+          required: true
+        - label: I have a boot entry that starts macOS without this driver, and I can recover the machine.
+          required: true
+        - label: I have removed private data from everything I attach.
+          required: true
+
+  - type: dropdown
+    id: gpu-family
+    attributes:
+      label: GPU
+      options:
+        - RX 9060 XT (Navi 44, 1002:7590)
+        - Other Navi 44 card
+        - RX 9070 XT (Navi 48)
+        - Other Navi 48 card
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: pci-ids
+    attributes:
+      label: PCI device and subsystem IDs
+      placeholder: "device 1002:7590, subsystem xxxx:yyyy"
+    validations:
+      required: true
+
+  - type: input
+    id: board
+    attributes:
+      label: Board and card vendor
+      placeholder: "for example: motherboard model, card brand"
+    validations:
+      required: true
+
+  - type: input
+    id: cpu
+    attributes:
+      label: CPU and chipset
+      placeholder: "for example: Ryzen 7 7700, B650"
+    validations:
+      required: true
+
+  - type: input
+    id: monitors
+    attributes:
+      label: Monitor and connection
+      placeholder: "for example: 1440p 120 Hz, DisplayPort"
+    validations:
+      required: true
+
+  - type: input
+    id: macos-build
+    attributes:
+      label: macOS build
+      placeholder: "26.6.2 (25G83)"
+    validations:
+      required: true
+
+  - type: input
+    id: opencore
+    attributes:
+      label: OpenCore version
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Build versions tested
+      description: Kext version, Metal bundle version, and any auxiliary kext or RDNA4FB versions.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Driver loads and the desktop is accelerated
+        - Driver loads and the display works, not accelerated
+        - Driver loads, no display
+        - Boot hangs or freezes
+        - Build check only, not run on hardware
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: What did you test, and what did you see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: boot-args
+    attributes:
+      label: boot-args and OpenCore options that differ from the defaults
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (redacted excerpts)
+      render: text
+    validations:
+      required: false
