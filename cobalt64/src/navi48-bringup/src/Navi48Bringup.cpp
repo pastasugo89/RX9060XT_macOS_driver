@@ -7096,6 +7096,12 @@ void Navi48Bringup::runStages(uint32_t target) {
 	setProperty("Navi48,StageResult", static_cast<uint64_t>(r), 32);
 	if (r != kIOReturnSuccess) setProperty("Navi48,StageFailed", amdgpu::stage_name(ctx.failedAt));
 	if (ctx.smuOnline) setProperty("SMU,FirmwareVersion", static_cast<uint64_t>(ctx.smuVersion), 32);
+	{   // 0.0.672 (black band): the display UCLK pin's outcome, readable without root (ioreg -l | grep UclkPin)
+		const n48uclk::Result &up = amdgpu::smu_uclk_pin_result();
+		char t[160];
+		snprintf(t, sizeof(t), "%s: set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x)", n48uclk::verdict_name(up.verdict), up.setMhz, up.minMhz, up.maxMhz, up.kr);
+		setProperty("Navi48,UclkPin", t);
+	}
 	if (ctx.mesFailed) setProperty("Navi48,MESFailed", true);
 	if (ctx.reached >= amdgpu::BringupStage::ComputeDispatch || ctx.failedAt == amdgpu::BringupStage::ComputeDispatch) {
 		setProperty("Navi48,ComputeDispatch", ctx.computePassed ? "passed" : "failed");

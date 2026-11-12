@@ -75,6 +75,9 @@
 #include "amdgpu_smu.h"
 #include "amdgpu_log.h"
 #include "n4x_safety_pure.h"      // check_protections (the protection gate below)
+#include "smu_uclkpin_pure.h"     // 0.0.672 (black band): the display UCLK pin decisions
+
+#include <pexpert/pexpert.h>      // PE_parse_boot_argn: navi48-uclkpin (0.0.672)
 
 #include <kern/thread.h>          // current_thread(): the owner of the shared mailbox lock (0.0.604)
 #include <libkern/OSAtomic.h>
@@ -731,9 +734,52 @@ smu_hw_init(DeviceContext &dev, bool runSmcHwSetup)
         SMU_LOG("hw_init: smc_hw_setup non-fatal failure: 0x%x — "
                 "proceeding anyway", (unsigned)hwr);
     }
+    // 0.0.672 (black band): with DPM_UCLK running, keep the memory clock at its maximum so no UCLK switch blackout can starve the scanout
+    // (smu_uclkpin_pure.h). Only when smc_hw_setup completed (it returns early, before EnableAllSmuFeatures, on a driver-table failure: then we
+    // enabled nothing and leave the clocks alone, verdict not-run). Before the protection gate, which only reads.
+    if (hwr == kIOReturnSuccess) (void)smu_pin_uclk_for_display(dev);
     // The gate runs after the features are enabled (or not), and its verdict decides how far the ladder may go.
     (void)smu_read_protections(dev);
     return kIOReturnSuccess;
+}
+
+// ---- 0.0.672 (black band): the display UCLK pin. Decisions in smu_uclkpin_pure.h; three PPSMC messages at most, each through
+// smu_send_msg_with_param (which takes the shared mailbox lock itself). Never fatal: any failure leaves the PMFW default (the 0.0.671 state).
+static n48uclk::Result gUclkPin = { n48uclk::kNotRun, 0u, 0u, 0u, 0u };
+const n48uclk::Result &smu_uclk_pin_result() { return gUclkPin; }
+
+kern_return_t
+smu_pin_uclk_for_display(const DeviceContext &dev)
+{
+    using namespace n48uclk;
+    Result r = { kNotRun, 0u, 0u, 0u, 0u };
+    uint32_t v = 0;
+    const bool present = PE_parse_boot_argn("navi48-uclkpin", &v, sizeof(v));
+    if (!enabled(present, v)) {
+        r.verdict = kOff; gUclkPin = r;
+        SMU_LOG("uclk-pin: OFF (boot-arg navi48-uclkpin=0): the memory clock stays under PMFW DPM control (0.0.671 behaviour)");
+        return kIOReturnSuccess;
+    }
+    uint32_t mn = 0, mx = 0;
+    const kern_return_t kmin = smu_send_msg_with_param(dev, kMsgGetMinDpmFreq, query_param(), &mn);
+    const kern_return_t kmax = smu_send_msg_with_param(dev, kMsgGetMaxDpmFreq, query_param(), &mx);
+    r.minMhz = (kmin == kIOReturnSuccess) ? mn : 0u; r.maxMhz = (kmax == kIOReturnSuccess) ? mx : 0u;
+    if (kmax != kIOReturnSuccess) {
+        r.verdict = kQueryFailed; r.kr = (uint32_t)kmax; gUclkPin = r;
+        SMU_LOG("uclk-pin: GetMaxDpmFreq(UCLK) failed kr=0x%x: nothing sent, PMFW default kept", (unsigned)kmax);
+        return kmax;
+    }
+    if (!max_ok(mx, kmin == kIOReturnSuccess, mn)) {
+        r.verdict = kImplausible; gUclkPin = r;
+        SMU_LOG("uclk-pin: UCLK DPM range %u..%u MHz is not plausible: nothing sent, PMFW default kept", mn, mx);
+        return kIOReturnSuccess;
+    }
+    const kern_return_t ks = smu_send_msg_with_param(dev, kMsgSetSoftMinByFreq, set_param(mx), nullptr);
+    r.kr = (uint32_t)ks; r.setMhz = mx;
+    r.verdict = (ks == kIOReturnSuccess) ? kPinned : kSetFailed;
+    gUclkPin = r;
+    SMU_LOG("uclk-pin: UCLK DPM range %u..%u MHz; SetSoftMinByFreq(UCLK, %u MHz) kr=0x%x -> %s", mn, mx, mx, (unsigned)ks, verdict_name(r.verdict));
+    return ks;
 }
 
 //============================================================

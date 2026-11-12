@@ -34,6 +34,8 @@
 #include <stdint.h>
 #include "amdgpu_regs.h"
 
+#include "smu_uclkpin_pure.h"   // 0.0.672: n48uclk::Result
+
 namespace amdgpu {
 
 //
@@ -250,6 +252,11 @@ kern_return_t smu_hw_init(DeviceContext &dev, bool runSmcHwSetup);
 // after the features are enabled (or, with runSmcHwSetup false, without enabling anything). Until it passes, smu_protections_verified()
 // is false and the bring-up ladder does not go beyond SMUInit (amdgpu_init.cpp, bringup_to).
 kern_return_t smu_read_protections(const DeviceContext &dev);
+
+// 0.0.672 (black band): pin the UCLK soft minimum to the UCLK DPM maximum (smu_uclkpin_pure.h). smu_hw_init calls it after smc_hw_setup;
+// boot-arg navi48-uclkpin=0 turns it off. Never fatal. smu_uclk_pin_result() is the outcome for the registry (Navi48,UclkPin).
+kern_return_t smu_pin_uclk_for_display(const DeviceContext &dev);
+const n48uclk::Result &smu_uclk_pin_result();
 bool smu_protections_verified();
 
 // [ADDED here] Feature control + clock clamps. These live in the

@@ -32,6 +32,7 @@
 #include "navi48_scanout_pure.h"    // build 0.0.603: the decisions (host-tested)
 #include "amd/native_disp_pure.h"     // 0.0.618 (V1): vbl_period_ns / vbl_delay_ns (the vblank timing sample)
 #include "amd/native_disp.h"          // 0.0.659 (M6): n48m6_latched_on (the scan_query flag)
+#include "navi48_ufmon_pure.h"      // build 0.0.672 (black band): the scanout underflow monitor (host-tested)
 #include "navi48_modetrial_pure.h"   // build 0.0.605 (native S2d): the timed mode trial - decisions AND sequences, host-tested through a Hw interface
 #include "Navi48DisplayOps.h"          // build 0.0.652 (M5): the monitor B's mode constants (fbEdid reads blocks 0 and 1 over DDC line 3)
 
@@ -1642,6 +1643,7 @@ static uint32_t scan_restore(const char *why, bool force, uint32_t expectGen, ui
 // The watchdog thread: started by Acquire, one per acquisition. IRQ-INDEPENDENT: it polls the plane itself every 50 ms (which also keeps the
 // Status counters honest when no interrupt arrives), restores after 5 s without a scanout call, and performs the restores the IRQ handler
 // requests. It ends when its acquisition ends. (The pattern is the kext's other pollers: kernel_thread_start, IOSleep, fall off the end.)
+static void ufmon_poll(uint32_t gen);   // 0.0.672 (black band): defined after the mode trial's register access (mt_rd / mt_wr)
 static void scan_watchdog_loop(uint32_t myGen) {
 	for (;;) {
 		IOSleep(50);
@@ -1662,6 +1664,7 @@ static void scan_watchdog_loop(uint32_t myGen) {
 		if (why) gScan.wdRestores++;
 		IOLockUnlock(l);
 		if (why) { N48LOG("n48scan: WATCHDOG restoring the console: %s", why); (void)scan_restore(why, false, myGen, nullptr); break; }
+		ufmon_poll(myGen);   // 0.0.672: no lock held here (gMtLock is a leaf, taken with try-lock inside)
 	}
 }
 static void scan_watchdog(void *arg, wait_result_t) {
@@ -2100,6 +2103,48 @@ static bool mt_wr(void *, uint32_t abs, uint32_t v) {
 	}
 	amdgpu::WREG32(*gDcn.dev, abs, v);
 	return true;
+}
+// ---- build 0.0.672 (black band): the scanout underflow monitor (dcn/navi48_ufmon_pure.h). Called by the scanout watchdog every 50 ms with NO lock held.
+// Reads HUBP0_DCHUBP_CNTL and ODM0_OPTC_INPUT_GLOBAL_CONTROL (mt_rd); clears a set status with the mode trial's write-1 strobes through mt_wr (the DCN allowlist),
+// only under a TRY-lock of gMtLock (a leaf: the trial and the 60 Hz hold own the pipe while they hold it; busy = read-only sample). Boot-arg navi48-ufmon=0: off.
+namespace { n48ufmon::Mon gUf; uint32_t gUfOn = 2u; }   // 2 = boot-arg not read yet
+static void ufmon_publish() {
+	if (gDcn.owner == nullptr) return;
+	char t[200];
+	snprintf(t, sizeof(t), "events %llu (hubp %llu optc %llu), last at uptime %llu ms frame %llu, baseline-stale %llu, clears %llu, refused %llu, busy %llu, polls %llu",
+	         (unsigned long long)gUf.events, (unsigned long long)gUf.hubpEvents, (unsigned long long)gUf.optcEvents, (unsigned long long)(gUf.lastNs / 1000000ull),
+	         (unsigned long long)gUf.lastFrame, (unsigned long long)gUf.baselineStale, (unsigned long long)gUf.clears, (unsigned long long)gUf.clearRefused,
+	         (unsigned long long)gUf.busySkips, (unsigned long long)gUf.polls);
+	gDcn.owner->setProperty("Navi48,DisplayUnderflow", t);
+}
+static void ufmon_poll(uint32_t gen) {
+	if (gUfOn == 2u) { uint32_t v = 0; const bool p = PE_parse_boot_argn("navi48-ufmon", &v, sizeof(v)); gUfOn = n48ufmon::enabled(p, v) ? 1u : 0u;
+	                   N48LOG("ufmon: scanout underflow monitor %s", gUfOn ? "ON (50 ms, clears with the write-1 strobes; boot-arg navi48-ufmon=0 turns it off)" : "OFF (navi48-ufmon=0)"); }
+	if (!gUfOn || !gDcn.armed || gDcn.dev == nullptr) return;
+	// A mode trial / the 60 Hz hold judges underflow itself: while it runs (gMt.busy) the monitor never clears (it would hide an event from the trial).
+	const bool locked = __atomic_load_n(&gMt.busy, __ATOMIC_SEQ_CST) == 0u && mt_ensure_lock() && IOLockTryLock(gMtLock);
+	const uint32_t hubp = mt_rd(nullptr, n48mt::kRegHubpCntl), optc = mt_rd(nullptr, n48mt::kRegOptcInGlobal);
+	uint32_t fc = 0; (void)dcn41_otg_get_frame_count(&gDcn.d, 0u, &fc);
+	const uint64_t t = now_ns();
+	const n48ufmon::Step st = n48ufmon::step(gUf, gen, hubp, optc, t, fc, !locked);
+	if (st.act == n48ufmon::kClear) {
+		bool wrote = false;
+		if (n48ufmon::hubp_needs_clear(hubp)) wrote |= mt_wr(nullptr, n48mt::kRegHubpCntl, n48mt::uf::hubp_clear_value(hubp));
+		if (n48ufmon::optc_needs_clear(optc)) wrote |= mt_wr(nullptr, n48mt::kRegOptcInGlobal, n48mt::uf::optc_clear_value(optc));
+		if (wrote) {
+			IODelay(20);
+			const uint32_t h2 = mt_rd(nullptr, n48mt::kRegHubpCntl), o2 = mt_rd(nullptr, n48mt::kRegOptcInGlobal);
+			if (!n48mt::uf::unreadable(h2) && (h2 & (n48mt::uf::kHubpClear | n48mt::uf::kHubpTimeoutClear)) != 0u) (void)mt_wr(nullptr, n48mt::kRegHubpCntl, n48mt::uf::hubp_unstrobe_value(h2));
+			if (!n48mt::uf::unreadable(o2) && (o2 & n48mt::uf::kOptcClear) != 0u && !n48mt::uf::clear_refused(o2)) (void)mt_wr(nullptr, n48mt::kRegOptcInGlobal, n48mt::uf::optc_unstrobe_value(o2));
+			const uint32_t h3 = mt_rd(nullptr, n48mt::kRegHubpCntl), o3 = mt_rd(nullptr, n48mt::kRegOptcInGlobal);
+			n48ufmon::after_clear(gUf, true, n48mt::uf::hubp_bad(h3) || n48mt::uf::optc_bad(o3));
+		} else n48ufmon::after_clear(gUf, false, true);
+	}
+	if (locked) IOLockUnlock(gMtLock);
+	if (st.stale) N48LOG("ufmon: baseline (scanout gen %u): a status set BEFORE monitoring was cleared, not counted: HUBP0_DCHUBP_CNTL %#010x ODM0_OPTC_INPUT_GLOBAL_CONTROL %#010x", gen, hubp, optc);
+	if (st.log) N48LOG("ufmon: UNDERFLOW #%llu at uptime %llu ms, OTG0 frame %u: HUBP0_DCHUBP_CNTL %#010x (status %u timeout %u) ODM0_OPTC_INPUT_GLOBAL_CONTROL %#010x%s",
+	                   (unsigned long long)gUf.events, (unsigned long long)(t / 1000000ull), fc, hubp, n48mt::uf::hubp_status(hubp), n48mt::uf::hubp_timeout(hubp), optc, locked ? "" : " (mode trial busy: not cleared)");
+	if (st.counted || st.stale) ufmon_publish();
 }
 static void mt_sleep(void *, uint32_t ms) { /*nolock*/ IOSleep(ms); }   // never called with the scanout lock held; 0.0.606: the resync's msleep(60) runs under gMtLock (see the lock rank above)
 static void mt_delay_us(void *, uint32_t us) { IODelay(us); }         // 0.0.606: the polls of the sequences (a few us to 200 us each)
