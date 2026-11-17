@@ -76,6 +76,7 @@
 #include "amdgpu_log.h"
 #include "n4x_safety_pure.h"      // check_protections (the protection gate below)
 #include "smu_uclkpin_pure.h"     // 0.0.672 (black band): the display UCLK pin decisions
+#include "smu_gfxmax_pure.h"      // 0.0.676: the boot GFXCLK cap (navi48-gfxmax)
 
 #include <pexpert/pexpert.h>      // PE_parse_boot_argn: navi48-uclkpin (0.0.672)
 
@@ -872,6 +873,12 @@ smu_set_soft_freq_range(const DeviceContext &dev, uint32_t clk_id,
     return firstErr;
 }
 
+// 0.0.676 (clock ladder): the boot GFXCLK cap. Set once by Navi48Bringup::runStages before the ladder, read by smu_set_power_state(BootCap).
+static volatile uint32_t gGfxBootCapMhz = 0u;
+void smu_set_gfx_boot_cap(uint32_t mhz) { __atomic_store_n(&gGfxBootCapMhz, mhz, __ATOMIC_RELEASE); }
+uint32_t smu_gfx_boot_cap() { return __atomic_load_n(&gGfxBootCapMhz, __ATOMIC_ACQUIRE); }
+uint32_t smu_gfx_boot_state() { return smu_gfx_boot_cap() != 0u ? SMUPowerState::BootCap : SMUPowerState::Low; }
+
 kern_return_t
 smu_set_power_state(const DeviceContext &dev, uint32_t state)
 {
@@ -913,6 +920,21 @@ smu_set_power_state(const DeviceContext &dev, uint32_t state)
         }
 #endif
         break;
+    case SMUPowerState::BootCap: {
+        // 0.0.676: as Low (soft max only, no soft min), with the navi48-gfxmax cap bounded to the PMFW range instead of the PMFW minimum.
+        uint32_t lo = 0, hi = 0;
+        kern_return_t r = smu_send_msg_with_param(dev, PPSMC::GetMinDpmFreq, PPCLK::GFXCLK << 16, &lo);
+        if (r != kIOReturnSuccess) return r;
+        r = smu_send_msg_with_param(dev, PPSMC::GetMaxDpmFreq, PPCLK::GFXCLK << 16, &hi);
+        if (r != kIOReturnSuccess) return r;
+        max_mhz = n48gfx::cap_mhz(smu_gfx_boot_cap(), lo, hi);
+        if (max_mhz == 0u) {
+            SMU_LOG("set_power_state: invalid PMFW GFXCLK range %u..%u MHz; refusing", lo, hi);
+            return kIOReturnNotReady;
+        }
+        SMU_LOG("set_power_state: PMFW GFXCLK range %u..%u MHz; boot cap navi48-gfxmax=%u -> %u MHz", lo, hi, smu_gfx_boot_cap(), max_mhz);
+        break;
+    }
     case SMUPowerState::Nominal:
         // Same as auto.
         min_mhz = 0;

@@ -2453,11 +2453,11 @@ void uclkPinDescribe(char *t, size_t n) {
 	// 0.0.674: the fallback's stage (which one stopped the underflows is the last one reached, when no underflow came after it), and the times of stage 1 and of the pin.
 	const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
 	snprintf(t, n, "%s: mode %s, set %u MHz (UCLK DPM %u..%u MHz, kr 0x%x), last %s; pins %u releases %u; %s, %s; stage 1 at %llu ms, pin at %llu ms; "
-	         "triggers %llu repins %llu releases %llu (quiet %llu) failures %llu",
+	         "triggers %llu repins %llu releases %llu (quiet %llu; 10-min release %s) failures %llu",
 	         n48uclk::verdict_name(up.verdict), n48uclk::mode_name(up.mode), up.setMhz, up.minMhz, up.maxMhz, up.kr, n48uclk::why_name(up.why), up.pins, up.releases,
 	         n48uclk::fb::status_text(gFb), gFb.armed ? "armed" : "not armed yet", (unsigned long long)gFb.stage1AtMs, (unsigned long long)gFb.pinAtMs,
 	         (unsigned long long)gFb.triggers, (unsigned long long)gFb.repins, (unsigned long long)gFb.releases, (unsigned long long)gFb.quietReleases,
-	         (unsigned long long)gFb.failures);
+	         gFb.quietAllowed ? "armed" : gFb.quietReleases ? "used" : "off", (unsigned long long)gFb.failures);
 }
 static void uclk_publish() {
 	if (gDcn.owner == nullptr) return;
@@ -2539,7 +2539,13 @@ static void arb_monitor_loop() {
 	const uint64_t t0 = now_ms();
 	{
 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
-		n48uclk::fb::init(gFb, up.mode, up.verdict == n48uclk::kPinned);
+		// 0.0.676: the one time-limited release of an AUTO pin is OFF unless navi48-uclkpin-release=1 (a pin then holds for the boot).
+		uint32_t rel = 0;
+		const bool relPresent = PE_parse_boot_argn("navi48-uclkpin-release", &rel, sizeof(rel));
+		const bool quietRelease = n48uclk::fb::quiet_release_enabled(relPresent, rel);
+		n48uclk::fb::init(gFb, up.mode, up.verdict == n48uclk::kPinned, quietRelease);
+		N48LOG("disparb: UCLK fallback: the 10-minute release of an AUTO pin is %s", quietRelease ? "ON (navi48-uclkpin-release=1)" :
+		       "OFF (0.0.676 default: a fallback pin holds for the rest of the boot; navi48-uclkpin-release=1 restores the release)");
 	}
 	uint32_t monGen = 1u, lastScanGen = scanGeneration(), lastModeGen = __atomic_load_n(&gArbModeGen, __ATOMIC_ACQUIRE);
 	bool wasOn = false;

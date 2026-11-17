@@ -19,6 +19,7 @@
 #include "amd/native_s1b.h"   // 0.0.600 (native S1b): navi48-native=1, default OFF
 #include "amd/n4x_safety.h"   // n4x safety: the thermal watchdog (navi48-safety); 0.0.675: TRIP clamps GFXCLK low with hysteresis, never refuses submissions
 #include "amd/gfx_v12_0_cg.h"  // 0.0.675: GFX clock gating (navi48-cg, navi48-cg-ints), Linux gfx_v12_0_update_gfx_clock_gating
+#include "amd/smu_gfxmax_pure.h"  // 0.0.676: n48gfx::requested_of (navi48-gfxmax)
 #include "amd/native_s1c.h"   // 0.0.612: n1c_latch_pci_bars
 #include "Navi48NativeClient.hpp"   // 0.0.601 (native S1c): the N48N user client
 #include "Navi48UserClient.hpp"
@@ -6951,8 +6952,18 @@ void Navi48Bringup::runStages(uint32_t target) {
 	uint32_t clamp = 1;
 	PE_parse_boot_argn("navi48-idle-clamp", &clamp, sizeof(clamp));
 	ctx.idleClamp = (clamp != 0);
+	// 0.0.676 (clock ladder): navi48-gfxmax=<MHz> caps GFXCLK at that clock instead of the PMFW minimum (idle clamp on only; absent = 0.0.675).
+	{
+		uint32_t gfxmax = 0;
+		const bool gfxmaxPresent = PE_parse_boot_argn("navi48-gfxmax", &gfxmax, sizeof(gfxmax));
+		amdgpu::smu_set_gfx_boot_cap(ctx.idleClamp ? n48gfx::requested_of(gfxmaxPresent, gfxmax) : 0u);
+		if (gfxmaxPresent)
+			N48LOG("navi48-gfxmax=%u: %s", gfxmax, !ctx.idleClamp ? "ignored (navi48-idle-clamp=0: the PMFW picks)" :
+			       amdgpu::smu_gfx_boot_cap() ? "the idle clamp and the thermal RESTORE cap GFXCLK there (bounded to the PMFW range)" : "ignored (0 or above 10000)");
+	}
 	// 0.0.675: the clock policy the thermal watchdog restores after a TRIP clamp (the idle clamp's Low, or Auto when navi48-idle-clamp=0).
-	n4xs::set_restore_state(ctx.idleClamp ? amdgpu::SMUPowerState::Low : amdgpu::SMUPowerState::Auto);
+	// 0.0.676: BootCap instead of Low when navi48-gfxmax set a cap.
+	n4xs::set_restore_state(ctx.idleClamp ? amdgpu::smu_gfx_boot_state() : amdgpu::SMUPowerState::Auto);
 	uint32_t kcq = 1;
 	PE_parse_boot_argn("navi48-kcq", &kcq, sizeof(kcq));
 	ctx.wantKcq = (kcq != 0);
@@ -7146,6 +7157,18 @@ void Navi48Bringup::runStages(uint32_t target) {
 		amdgpu::gfx_cg_describe(t, sizeof(t));
 		setProperty("Navi48,ClockGating", t);
 		N48LOG("clock gating: %s", t);
+	}
+	{   // 0.0.676: the PMFW zero-RPM fan mode (boot-arg navi48-fan-zerorpm; absent = nothing read or written). Once, after the full bring-up ladder
+		// (EnableAllSmuFeatures ran, the protections are verified) and before any client: smu_fan_od.cpp. ioreg -l | grep Navi48,Fan.
+		const bool fanPath = r == kIOReturnSuccess && ctx.reached == (amdgpu::BringupStage)target && target >= (uint32_t)amdgpu::BringupStage::PM4Test &&
+		                     !ctx.mesFailed && ctx.smuOnline;
+		(void)amdgpu::smu_fan_zerorpm_boot(dev, fanPath);
+		char t[640];
+		amdgpu::smu_fan_describe(t, sizeof(t));
+		setProperty("Navi48,Fan", t);
+		N48LOG("fan: %s", t);
+		const uint32_t cap = amdgpu::smu_gfx_boot_cap();
+		if (cap) setProperty("Navi48,GfxMax", static_cast<uint64_t>(cap), 32);
 	}
 	publishPDB0On(this, ctx);
 	publishSDMAQ1On(this, ctx);

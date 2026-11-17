@@ -106,13 +106,19 @@ struct State {
     uint64_t offSinceMs, winStartMs, retryAtMs, lastEventMs, stage1AtMs, pinAtMs;
     uint64_t triggers, repins, releases, quietReleases, stage1s, failures;
 };
-inline void init(State &s, uint32_t mode, bool pinnedAtBoot) {
+// 0.0.676: the time-limited release is OFF by default (on 2026-11-14 the 0.0.675 quiet release at ~671 s was followed within 10-42 s by four
+// OPTC-only underflows, a re-pin and a visible band): an AUTO pin is kept for the rest of the boot. Boot-arg navi48-uclkpin-release=1 restores
+// the 0.0.674/0.0.675 behaviour (one release after kQuietReleaseMs without a counted underflow).
+inline bool quiet_release_enabled(bool present, uint32_t v) { return present && v == 1u; }
+// quietRelease: quiet_release_enabled(...) for this boot. The default argument keeps the 0.0.674 meaning of the three-argument form for the
+// host tests; the kernel passes the boot-arg's answer (navi48_dcn.cpp arb_monitor_loop).
+inline void init(State &s, uint32_t mode, bool pinnedAtBoot, bool quietRelease = true) {
     s = State{};
     s.latched = mode == kModeForce;
     s.pinned = pinnedAtBoot;
     s.everPinned = pinnedAtBoot;
     s.stage = pinnedAtBoot ? kStagePinned : kStageNone;
-    s.quietAllowed = mode == kModeAuto;
+    s.quietAllowed = mode == kModeAuto && quietRelease;
 }
 // The registry's words for the fallback (Navi48,UclkPin, Navi48,DisplayArb): the highest stage reached, and whether the pin is on now.
 inline const char *status_text(const State &s) {

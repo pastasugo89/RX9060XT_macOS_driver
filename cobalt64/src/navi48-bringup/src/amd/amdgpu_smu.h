@@ -263,6 +263,12 @@ kern_return_t smu_uclk_display_pin(const DeviceContext &dev, bool pin, uint32_t 
 const n48uclk::Result &smu_uclk_pin_result();
 bool smu_protections_verified();
 
+// 0.0.676: the PMFW zero-RPM fan mode through the OverDrive table (smu_fan_od.cpp, smu_od_pure.h). Once per boot after the full ladder
+// (fullPath: the ladder reached its target with MES up and the protections verified); boot-arg navi48-fan-zerorpm (absent = nothing read or
+// written). Returns the n48od verdict. smu_fan_describe is the Navi48,Fan registry text.
+uint32_t smu_fan_zerorpm_boot(const DeviceContext &dev, bool fullPath);
+void smu_fan_describe(char *t, size_t n);
+
 // [ADDED here] Feature control + clock clamps. These live in the
 // reference's user-client (dext/MacAMDGPU.cpp, selectors 33 and 40)
 // rather than in smu_v14_0.cpp; this kext has no user client, so the
@@ -293,7 +299,15 @@ namespace SMUPowerState {
     constexpr uint32_t Nominal = 2;   // same as Auto
     constexpr uint32_t High    = 3;   // min 1500 MHz, max untouched
     constexpr uint32_t Peak    = 4;   // min = max = 2400 MHz
+    constexpr uint32_t BootCap = 5;   // 0.0.676: Low with the navi48-gfxmax cap instead of the PMFW minimum (Low when no cap). Kernel only:
+                                      // the user client still takes 0..4.
 }
+
+// 0.0.676 (clock ladder, smu_gfxmax_pure.h): the boot GFXCLK cap from navi48-gfxmax=<MHz> (0 = none). Navi48Bringup::runStages sets it before the
+// ladder; smu_gfx_boot_state() is the state the idle clamp sends and the thermal watchdog restores (BootCap with a cap, Low without one).
+void smu_set_gfx_boot_cap(uint32_t mhz);
+uint32_t smu_gfx_boot_cap();
+uint32_t smu_gfx_boot_state();
 
 // *** DANGER *** moves real GFX clocks. See smu_smc_hw_setup's note.
 kern_return_t smu_set_power_state(const DeviceContext &dev, uint32_t state);

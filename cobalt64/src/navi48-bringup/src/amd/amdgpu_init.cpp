@@ -921,12 +921,13 @@ kern_return_t bringup_to(BringupContext &ctx, BringupStage target) {
     // test still passing (the suite runs perhaps 2x slower). Only GFXCLK is
     // touched; display scanout runs off DISPCLK/DCFCLK and is unaffected.
     // `navi48test power 0` restores the automatic state for benchmarking.
+    // 0.0.676: with navi48-gfxmax=<MHz> the clamp is that cap (BootCap, bounded to the PMFW range) instead of the PMFW minimum; without it, Low.
     if (ctx.idleClamp && ctx.smuOnline && ctx.dev) {
-        kern_return_t pr = smu_set_power_state(*ctx.dev, SMUPowerState::Low);
-        INIT_LOG("idle clamp: GFXCLK -> low %s (%#x) — the GFX core is powered but "
+        kern_return_t pr = smu_set_power_state(*ctx.dev, smu_gfx_boot_state());
+        INIT_LOG("idle clamp: GFXCLK -> %s %s (%#x) — the GFX core is powered but "
                  "ungated, so an unclamped idle burns full board power. "
                  "`navi48test power 0` to unclamp.",
-                 pr == kIOReturnSuccess ? "applied" : "FAILED", pr);
+                 smu_gfx_boot_cap() ? "the navi48-gfxmax cap" : "low", pr == kIOReturnSuccess ? "applied" : "FAILED", pr);
     }
     return kIOReturnSuccess;
 }
