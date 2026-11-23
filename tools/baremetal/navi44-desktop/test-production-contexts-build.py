@@ -146,7 +146,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.676'), 676)   # zero-RPM fan option + gfxmax + UCLK pin kept: the 0.0.675 tree plus the reviewed 0.0.676 patch
         self.assertEqual(build.release_build('0.0.677'), 677)   # GFX doorbell in Linux units: the 0.0.676 tree plus the reviewed 0.0.677 patch
         self.assertEqual(build.release_build('0.0.678'), 678)   # ComputeDispatch fix + DPM gate: the 0.0.677 tree plus the reviewed 0.0.678 patch
-        for version in ('0.0.665', '0.0.679', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.679'), 679)   # Linux GFX doorbell by default: the 0.0.678 tree plus the reviewed 0.0.679 patch
+        for version in ('0.0.665', '0.0.680', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
@@ -280,6 +281,26 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.INSTALLED_677['kernel_sha256'], build.DPM_BASE_SHA)
         self.assertIn(b'Navi48,Dpm', build.DPM_REQUIRED_STRINGS)
         self.assertIn(b'navi48-cdfix', build.DPM_REQUIRED_STRINGS)
+
+    def test_gfxdb_overlay_refuses_another_version_and_an_unreviewed_patch(self):
+        candidate = self.root / 'candidate-gfxdb'
+        candidate.mkdir()
+        patch = self.root / 'unreviewed-679.diff'
+        patch.write_text('not the reviewed GFX doorbell patch\n')
+        with self.assertRaises(ValueError):
+            build.gfxdb_overlay(candidate, patch, '0.0.678')
+        with self.assertRaises(ValueError):
+            build.gfxdb_overlay(candidate, patch, '0.0.679')
+        self.assertEqual(sorted(p.name for p in candidate.iterdir()), [])
+
+    def test_gfxdb_patch_is_the_pinned_file_and_touches_only_the_reviewed_files(self):
+        patch = build.ROOT / 'research/builds/macos-20261123/kernel-679/PATCHES/kernel-0.0.679-over-0.0.678.diff'
+        if not patch.exists():
+            self.skipTest('the 0.0.679 patch is a local (git-ignored) research file')
+        self.assertEqual(build.sha(patch), build.GFXDB_PATCH_SHA)
+        touched = sorted(line.split()[-1][2:] for line in patch.read_text().splitlines() if line.startswith('diff -ruN '))
+        self.assertEqual(touched, sorted(build.GFXDB_FILES))
+        self.assertEqual(build.INSTALLED_678['kernel_sha256'], build.GFXDB_BASE_SHA)
 
     def test_668_overlay_sets_its_version_and_build_number(self):
         baseline, source, candidate = (self.root / name for name in ('baseline668', 'source668', 'candidate668'))

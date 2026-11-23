@@ -17,6 +17,13 @@
 //  doorbell at the old offset, so the window filter does not drop it and the doorbell is NOT the busy source. The Linux index stays available as
 //  an OPT-IN (navi48-gfxdb=1) for a Linux-parity A/B; the default is the pre-0.0.677 index, i.e. exactly 0.0.676. The MES ring and the kernel
 //  compute queue keep their dword indices.
+//  0.0.679 (2026-11-23, 0.0.678 boot marks): the fetcher is idle after PM4Test and busy for good (CP_CPF_STATUS 0x88000001: CPF_BUSY +
+//  CPF_CMP_BUSY + POST_WPTR_GFX_BUSY) from the FIRST step of ComputeDispatch, its IB test, before any dispatch. PM4Test rings the GFX doorbell
+//  (byte 0x22C) only BEFORE it maps the kernel compute queue; the IB test's kick is the first GFX doorbell after a compute HQD is active. Byte
+//  0x22C lies in the MEC doorbell window, owned by no compute queue: with an active HQD the compute side of the fetcher takes it as well (an
+//  unmatched doorbell, CPF_CMP_BUSY) while the GFX CP also takes it (DOORBELL_HIT). Linux never writes there: its GFX doorbell is byte 0x458,
+//  inside the GFX window only. So Linux's index is the DEFAULT from 0.0.679; navi48-gfxdb=0 restores the 0.0.676..0.0.678 index. A boot mark
+//  after a NOP-only doorbell probe at the start of ComputeDispatch ("ComputeDispatch/doorbell probe") separates the doorbell from the IB.
 //
 #pragma once
 #include <stdint.h>
@@ -24,9 +31,9 @@
 namespace n48db {
 
 enum Mode : uint32_t { kModeLinux = 1, kModeLegacy = 0 };
-// navi48-gfxdb: 1 = Linux (opt-in); absent, 0 or anything else = the pre-0.0.677 index (the default, as 0.0.676).
-inline uint32_t mode_of(bool present, uint32_t v) { return present && v == 1u ? kModeLinux : kModeLegacy; }
-inline const char *mode_name(uint32_t m) { return m == kModeLegacy ? "dword index gfx_ring0, as 0.0.676 (default)" : "Linux qword index (gfx_ring0 << 1) (navi48-gfxdb=1)"; }
+// navi48-gfxdb (0.0.679): absent or anything but 0 = Linux's index (the default); 0 = the 0.0.676..0.0.678 index (the kill switch).
+inline uint32_t mode_of(bool present, uint32_t v) { return present && v == 0u ? kModeLegacy : kModeLinux; }
+inline const char *mode_name(uint32_t m) { return m == kModeLegacy ? "dword index gfx_ring0, as 0.0.676-0.0.678 (navi48-gfxdb=0)" : "Linux qword index (gfx_ring0 << 1) (default since 0.0.679)"; }
 
 // The kernel GFX queue's doorbell index (DWORD units of BAR2, the number the MQD, the MES frames and the doorbell write all use).
 inline uint32_t kgq_index(uint32_t gfx_ring0, uint32_t mode) { return mode == kModeLegacy ? gfx_ring0 : gfx_ring0 << 1; }

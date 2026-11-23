@@ -760,6 +760,15 @@ kern_return_t run_stage(BringupContext &ctx, BringupStage s) {
         // readback on success; sub-marks after the IB test and the dispatch.
         INIT_LOG("ComputeDispatch: navi48-cdfix %s", compute_cdfix_on() ? "on (GFX12 compute preamble, per-SE CU masks, no SH readback on success)"
                                                                         : "OFF (=0): the 0.0.677 dispatch stream");
+        // 0.0.679: separate the GFX doorbell from the IB. A mark here (after the IH drain / fault clear), then 16 NOPs and the GFX doorbell - the
+        // first GFX doorbell since PM4Test mapped the kernel compute queue - and a mark after it, before the IB test's CONTEXT_CONTROL + IB.
+        if (cp_busy_marks_on() && !ctx.cpLegacyRb) {
+            cp_busy_mark(dev, "ComputeDispatch/start");
+            const kern_return_t pr = cp_ring_fetch_probe(dev, ctx.cp, 16, 500000);
+            INIT_LOG("ComputeDispatch: doorbell probe (16 NOPs + the GFX doorbell, index %u) %s (kr=%#x)", ctx.cp.doorbell_index,
+                     pr == kIOReturnSuccess ? "consumed" : "NOT consumed", pr);
+            cp_busy_mark(dev, "ComputeDispatch/doorbell probe");
+        }
         kern_return_t r = compute_dispatch_test(dev, ctx.gmc, ctx.cp, &ctx.computeResult, ctx.hsaAbi);
         const ComputeTestResult &cr = ctx.computeResult;
         ctx.computePassed = (r == kIOReturnSuccess) && cr.lanes_mismatched == 0;

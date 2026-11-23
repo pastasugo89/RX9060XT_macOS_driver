@@ -987,6 +987,7 @@ void cp_doorbell_describe(char *t, size_t n);
 // Both are called from the bring-up thread only, before any client exists.
 void cp_busy_mark(const DeviceContext &dev, const char *where);
 void cp_busy_marks_describe(char *t, size_t n);
+bool cp_busy_marks_on();   // 0.0.679: navi48-cpmark (the ComputeDispatch doorbell probe runs only with the marks)
 void cp_queue_census(const DeviceContext &dev, const char *where);
 
 } // namespace amdgpu

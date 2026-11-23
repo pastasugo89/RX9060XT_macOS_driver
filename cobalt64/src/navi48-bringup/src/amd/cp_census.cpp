@@ -64,6 +64,8 @@ void cp_busy_mark(const DeviceContext &dev, const char *where)
     }
 }
 
+bool cp_busy_marks_on() { return mark_enabled(); }   // 0.0.679
+
 void cp_busy_marks_describe(char *t, size_t n)
 {
     if (!mark_enabled()) { snprintf(t, n, "off (navi48-cpmark=0)"); return; }

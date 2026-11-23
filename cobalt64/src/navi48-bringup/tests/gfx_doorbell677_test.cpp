@@ -1,4 +1,4 @@
-// 0.0.677 host test: the kernel GFX queue's doorbell (amd/cp_doorbell_pure.h: Linux's units as an opt-in, the 0.0.676 index by default) and source pins on its consumers.
+// 0.0.677 host test (0.0.679: Linux's units by default, navi48-gfxdb=0 = the 0.0.676 index): the kernel GFX queue's doorbell (amd/cp_doorbell_pure.h) and source pins on its consumers.
 // Build: clang++ -std=c++17 -I src tests/gfx_doorbell677_test.cpp ; run: ./a.out <kernel source dir (holding src/)> <linux drm/amd dir>
 #include <stdint.h>
 #include <stdio.h>
@@ -30,8 +30,10 @@ static void test_pure() {
     expect(old == 0x8B && byte_offset(old) == 0x22C, "the old index 0x8B, byte 0x22C");
     expect(where(old, gfxLo, gfxHi, mecLo, mecHi) == kInMec && !qword_aligned(old), "the old doorbell lands in the COMPUTE window, at an odd dword");
     // the boot-arg
-    expect(mode_of(false, 0) == kModeLegacy && mode_of(true, 1) == kModeLinux && mode_of(true, 0) == kModeLegacy && mode_of(true, 7) == kModeLegacy,
-           "navi48-gfxdb: opt-in (1); the default is the 0.0.676 index (the CP takes that doorbell: DOORBELL_HIT set live)");
+    // 0.0.679: Linux's index is the default (the 0.0.676..0.0.678 index sits in the MEC window and leaves the fetcher busy once the KCQ is mapped);
+    // navi48-gfxdb=0 is the kill switch.
+    expect(mode_of(false, 0) == kModeLinux && mode_of(true, 1) == kModeLinux && mode_of(true, 0) == kModeLegacy && mode_of(true, 7) == kModeLinux,
+           "navi48-gfxdb: Linux's index by default (0.0.679); 0 = the 0.0.676..0.0.678 index");
     // the legacy doorbell map (navi48-doorbell-legacy=1: gfx_ring0 = 0) keeps 0 either way
     expect(kgq_index(0, kModeLinux) == 0 && kgq_index(0, kModeLegacy) == 0, "legacy map: index 0 in both modes");
     // the MES ring is untouched by 0.0.677 and is inside the MEC window

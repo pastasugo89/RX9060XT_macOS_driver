@@ -2523,9 +2523,9 @@ cp_init_full(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     // Pin doorbell index for the GFX ring from the doorbell_index map.
     // gfx_ring0 = 0 for RDNA4 (gfx1201). Real driver would allocate
     // from a doorbell ID pool.
-    // 0.0.677: navi48-gfxdb=1 selects Linux's index, gfx_ring0 << 1 (gfx_v12_0.c:927: QWORD-aligned, inside the GFX window that
-    // cp_set_doorbell_range programs). The default stays the unshifted gfx_ring0 (0.0.676): the CP takes that doorbell too (DOORBELL_HIT
-    // set live), see cp_doorbell_pure.h.
+    // 0.0.679: Linux's index, gfx_ring0 << 1 (gfx_v12_0.c:927: QWORD-aligned, inside the GFX window that cp_set_doorbell_range programs and
+    // outside the MEC window) is the DEFAULT; navi48-gfxdb=0 keeps the unshifted gfx_ring0 (0.0.676..0.0.678), whose byte 0x22C lies inside the
+    // MEC window and leaves the fetcher busy once a compute queue is mapped. See cp_doorbell_pure.h.
     {
         uint32_t v = 0;
         const bool present = PE_parse_boot_argn("navi48-gfxdb", &v, sizeof(v));
