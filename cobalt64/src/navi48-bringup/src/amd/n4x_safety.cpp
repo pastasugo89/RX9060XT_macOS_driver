@@ -200,6 +200,14 @@ bool clamped() {
     return __atomic_load_n(&gClampApplied, __ATOMIC_ACQUIRE) != 0;
 }
 
+bool hotspot_c(int32_t &temperature) {
+    if (!active() || __atomic_load_n(&gHotValid, __ATOMIC_ACQUIRE) == 0) return false;
+    const ThmDecode sample = decode_thm_cur_temp(__atomic_load_n(&gRaw, __ATOMIC_ACQUIRE));
+    if (!sample.valid) return false;
+    temperature = sample.tempC;
+    return true;
+}
+
 void set_restore_state(uint32_t smuPowerState) {
     __atomic_store_n(&gRestoreState, smuPowerState, __ATOMIC_RELEASE);
 }
