@@ -910,6 +910,8 @@ kern_return_t bringup_to(BringupContext &ctx, BringupStage target) {
         }
         ctx.reached = (BringupStage)s;
         INIT_LOG("stage %u (%s) done", s, stage_name((BringupStage)s));
+        // 0.0.677: which stage first leaves the command fetcher busy (unbanked status reads only; navi48-cpmark=0 off).
+        if (s >= (uint32_t)BringupStage::CPInit) cp_busy_mark(*ctx.dev, stage_name((BringupStage)s));
     }
     INIT_LOG("reached stage %u (%s)", (unsigned)ctx.reached, stage_name(ctx.reached));
 

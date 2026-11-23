@@ -979,4 +979,14 @@ kern_return_t cp_init_full(DeviceContext &dev,
                            GMCContext &gmc, CPContext &cp,
                            bool legacy_rb);
 
+// 0.0.677: the kernel GFX queue's doorbell index, byte offset, mode (navi48-gfxdb) and window, for the registry (Navi48,GfxDoorbell).
+void cp_doorbell_describe(char *t, size_t n);
+
+// 0.0.677 (cp_census.cpp, cp_census_pure.h): boot-time observation of the CP's busy state. cp_busy_mark reads UNBANKED status registers only
+// (16 samples; navi48-cpmark=0 off); cp_queue_census reads the per-queue HQD registers behind GRBM_GFX_CNTL selects (navi48-cpcensus=1 only).
+// Both are called from the bring-up thread only, before any client exists.
+void cp_busy_mark(const DeviceContext &dev, const char *where);
+void cp_busy_marks_describe(char *t, size_t n);
+void cp_queue_census(const DeviceContext &dev, const char *where);
+
 } // namespace amdgpu

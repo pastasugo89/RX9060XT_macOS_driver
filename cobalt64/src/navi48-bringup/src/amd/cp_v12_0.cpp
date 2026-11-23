@@ -165,9 +165,15 @@
 #include "amdgpu_log.h"
 #include "amdgpu_ucode_psp.h"
 #include "cp_pm4_gfx12.h"
+#include "cp_doorbell_pure.h"   // 0.0.677: the kernel GFX queue's doorbell in Linux's units (navi48-gfxdb)
+#include <pexpert/pexpert.h>    // 0.0.677: PE_parse_boot_argn (navi48-gfxdb)
 #include "../fw/fw_table.h"
 
 namespace amdgpu {
+
+// 0.0.677: the kernel GFX queue's doorbell (cp_init_full), for cp_doorbell_describe.
+static uint32_t gGfxDbMode = n48db::kModeLinux, gGfxDbIndex = 0, gGfxDbWhere = n48db::kOutside;
+static bool gGfxDbSet = false;
 
 //------------------------------------------------------------------
 // GC register addressing. Every CP register carries its own SOC15
@@ -2113,9 +2119,12 @@ cp_set_doorbell_range(const DeviceContext &dev, const CPContext &cp,
     // doorbell index as `(idx * 2) << 2` (GFX12 8-byte doorbell
     // stride × shift-into-DOORBELL_RANGE_LOWER field). Total
     // multiplier: × 8 (byte offset). Same formula for the MEC.
+    // 0.0.677: from the map's gfx_ring0, as Linux (adev->doorbell_index.gfx_ring0), not from the queue's index (which is now gfx_ring0 << 1);
+    // the same register value as before 0.0.677 in both navi48-gfxdb modes.
+    (void)cp;
     cp_wreg_logged(dev, "CP_RB_DOORBELL_RANGE_LOWER",
                    CP_REG(dev, CP_RB_DOORBELL_RANGE_LOWER),
-                   (cp.doorbell_index * 2u) << 2);
+                   n48db::window_reg(dev.doorbell.index.gfx_ring0));
     cp_wreg_logged(dev, "CP_RB_DOORBELL_RANGE_UPPER",
                    CP_REG(dev, CP_RB_DOORBELL_RANGE_UPPER),
                    (dev.doorbell.index.gfx_userqueue_end * 2u) << 2);
@@ -2195,6 +2204,14 @@ cp_enable(const DeviceContext &dev, bool enable)
            enable ? "running" : "halted",
            enable ? 0u : 1u, enable ? 0u : 1u, tmp, RREG32(dev, r));
     return kIOReturnSuccess;
+}
+
+// 0.0.677: the kernel GFX queue's doorbell choice, for the registry (Navi48,GfxDoorbell).
+void cp_doorbell_describe(char *t, size_t n)
+{
+    if (!gGfxDbSet) { snprintf(t, n, "not set (cp_init_full did not run)"); return; }
+    snprintf(t, n, "index %u (byte %#llx), %s, %s, %s", gGfxDbIndex, (unsigned long long)n48db::byte_offset(gGfxDbIndex), n48db::mode_name(gGfxDbMode),
+             n48db::where_name(gGfxDbWhere), n48db::qword_aligned(gGfxDbIndex) ? "qword-aligned" : "NOT qword-aligned");
 }
 
 // ----- cp_kick_doorbell: write wptr to the BAR2 doorbell slot -----
@@ -2506,10 +2523,24 @@ cp_init_full(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     // Pin doorbell index for the GFX ring from the doorbell_index map.
     // gfx_ring0 = 0 for RDNA4 (gfx1201). Real driver would allocate
     // from a doorbell ID pool.
-    cp.doorbell_index = dev.doorbell.index.gfx_ring0;
-    CP_LOG("cp_init_full: doorbell_index=%u (bar2=%p size=%llu)",
-           cp.doorbell_index, dev.bar2,
-           (unsigned long long)dev.bar2Size);
+    // 0.0.677: navi48-gfxdb=1 selects Linux's index, gfx_ring0 << 1 (gfx_v12_0.c:927: QWORD-aligned, inside the GFX window that
+    // cp_set_doorbell_range programs). The default stays the unshifted gfx_ring0 (0.0.676): the CP takes that doorbell too (DOORBELL_HIT
+    // set live), see cp_doorbell_pure.h.
+    {
+        uint32_t v = 0;
+        const bool present = PE_parse_boot_argn("navi48-gfxdb", &v, sizeof(v));
+        gGfxDbMode = n48db::mode_of(present, v);
+    }
+    cp.doorbell_index = n48db::kgq_index(dev.doorbell.index.gfx_ring0, gGfxDbMode);
+    gGfxDbIndex = cp.doorbell_index;
+    gGfxDbWhere = n48db::where(cp.doorbell_index, n48db::window_reg(dev.doorbell.index.gfx_ring0),
+                               n48db::window_reg(dev.doorbell.index.gfx_userqueue_end),
+                               n48db::window_reg(dev.doorbell.index.kiq), n48db::window_reg(dev.doorbell.index.userqueue_end));
+    gGfxDbSet = true;
+    CP_LOG("cp_init_full: doorbell_index=%u (byte %#llx, %s, %s, %s) (bar2=%p size=%llu)",
+           cp.doorbell_index, (unsigned long long)n48db::byte_offset(cp.doorbell_index), n48db::mode_name(gGfxDbMode),
+           n48db::where_name(gGfxDbWhere), n48db::qword_aligned(cp.doorbell_index) ? "qword-aligned" : "NOT qword-aligned",
+           dev.bar2, (unsigned long long)dev.bar2Size);
 
     // Skip MMIO programming if IP base isn't resolved (e.g. discovery
     // hasn't run yet). Storage stays staged.

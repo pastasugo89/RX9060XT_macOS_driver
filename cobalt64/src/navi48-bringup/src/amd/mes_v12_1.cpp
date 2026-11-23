@@ -94,6 +94,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <IOKit/IOLib.h>
+#include <pexpert/pexpert.h>   // 0.0.677: PE_parse_boot_argn (navi48-kiqsched)
 
 #include "amdgpu_mes.h"
 #include "amdgpu_psp.h"
@@ -1548,7 +1549,17 @@ mes_init_full(DeviceContext &dev, PSPContext &psp,
     // runs before mes_v12_0_enable in the kiq_hw_init flow. For uni-MES
     // KIQ pipe (1) shares microcode with sched pipe (0) but RLC
     // routing must be set first.  Audit-7 #5/#6.
-    mes_kiq_setting(dev, /*me=*/3, /*pipe=*/1, /*queue=*/0);
+    // 0.0.677 A/B: navi48-kiqsched=0 leaves RLC_CP_SCHEDULERS untouched. Linux writes it, but Linux also runs MES pipe 1 (the KIQ:
+    // CP_MES_CNTL 0x0C000000, its queue and its SET_HW_RESOURCES); this kext runs pipe 0 only (0x04000000), so the KIQ the scheduler register
+    // names never runs. Default unchanged.
+    {
+        uint32_t ks = 1;
+        if (PE_parse_boot_argn("navi48-kiqsched", &ks, sizeof(ks)) && ks == 0) {
+            MES_LOG("kiq_setting: SKIPPED (navi48-kiqsched=0): RLC_CP_SCHEDULERS stays %#x", RREG32(dev, MES_REG(dev, RLC_CP_SCHEDULERS)));
+        } else {
+            mes_kiq_setting(dev, /*me=*/3, /*pipe=*/1, /*queue=*/0);
+        }
+    }
 
     // (1) Enable MES microcode.
     r = mes_enable(dev, mes, true);

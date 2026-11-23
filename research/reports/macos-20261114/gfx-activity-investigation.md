@@ -293,3 +293,338 @@ Markers 675 → 676 are set by the build script.
   - `navi48-gfxmax=<MHz>`: the clock ladder.
   - `navi48-uclkpin-release=1`: only to reproduce the H1–H3 measurements.
 - Recovery: the OpenCore entry and `RECOVERY/pre-contexts-676-config.plist` (the 0.0.675 configuration).
+
+---
+
+## Follow-up 2026-11-17: Part A was wrong. The CP fetcher never idles, and the kernel GFX doorbell is in the wrong window
+
+### What the display-sleep test showed (orchestrator, 0.0.676 live)
+
+The display was off from 20:39:36. During that time:
+- The PMFW reports 100 % on both activity fields.
+- WindowServer submits about 80 command buffers/s at 0.5 ms each, so only a few percent of GPU time.
+
+The register samples while the display was off:
+
+| Register (200 samples) | Bit | Share of samples |
+|---|---|---|
+| GRBM_STATUS | GUI_ACTIVE | 100 % |
+| GRBM_STATUS | CP_BUSY | 100 % |
+| GRBM_STATUS | 3D blocks | 29.5 % |
+| GRBM_STATUS2 | CPF_BUSY | 99.5 % |
+| GRBM_STATUS2 | CPC_BUSY | 0 |
+| GRBM_STATUS2 | CPG_BUSY | 0 |
+| CP_STAT | (value 0) | 58 % |
+
+So the **command fetcher (CPF) is busy all the time while ME, PFP and the MEC are idle**. The Part A conclusion ("real 3D work at 500 MHz") is refuted.
+
+### The bug, from code against Linux (confidence: high that it is a bug; medium-high that it is the cause)
+
+**What Linux does** (`gfx_v12_0.c:927` and `:2844-2856`, MIT):
+- The kernel GFX ring uses `ring->doorbell_index = adev->doorbell_index.gfx_ring0 << 1`, which is 0x8B << 1 = **0x116**.
+- That single number goes into three places:
+  - the MQD's `CP_RB_DOORBELL_CONTROL.DOORBELL_OFFSET`;
+  - the MES ADD_QUEUE / RESET / REMOVE `doorbell_offset`;
+  - `WDOORBELL64(ring->doorbell_index)`, i.e. byte **0x458**, which is QWORD-aligned.
+- The doorbell windows are written in the same QWORD units:
+  - GFX = bytes [(0x8B·2)<<2, (0xFF·2)<<2] = **[0x458, 0x7F8]**;
+  - MEC = [(0x000·2)<<2, (0x8A·2)<<2] = **[0x000, 0x450]**.
+- Compute (`(mec_ring0+id) << 1`) and MES (`mes_ring0 << 1`) are shifted the same way.
+
+**What our kext does** (since 0.0.18):
+- It programs the two windows exactly as Linux does (`cp_set_doorbell_range`).
+- But it uses the **unshifted** `gfx_ring0` (0x8B) as the queue's doorbell (`cp_init_full`).
+- So the MQD says DOORBELL_OFFSET 0x8B. Every submission (`native_s1c.cpp` ring_put, `cp_kick_doorbell`) writes its 64-bit doorbell at byte **0x22C**.
+
+Byte 0x22C is **inside the compute window**, below the GFX window, at an odd dword. The consequences:
+- The GFX CP never receives the doorbell.
+- The write lands in the MEC range at an offset that no compute queue owns. That is an unmapped doorbell, and the MES is told to handle those (CP_UNMAPPED_DOORBELL ENABLE, `mes_enable_unmapped_doorbell_handling`).
+- The GFX queue only learns its wptr through the wptr-poll path (the MQD's `cp_rb_wptr_poll_addr` and CP_RB_WPTR_POLL_CNTL), or through the MES relaying the unmapped doorbell.
+
+Either path keeps the fetcher side of the CP busy without ME or PFP work. That is what the samples show. The header comment in `amd/amdgpu_ip.h`, which says "CP uses these numbers as DWORD indices directly … ring->doorbell_index = adev->doorbell_index.gfx_ring0", contradicts `gfx_v12_0.c:927`.
+
+Other differences found, which 0.0.677 does not change:
+
+| Difference | Ours | Linux | Status |
+|---|---|---|---|
+| MES pipe 1 (MES KIQ) | `CP_MES_CNTL` 0x04000000: pipe 1 never activated, no KIQ HQD, no set_hw_resources on pipe 1, yet `RLC_CP_SCHEDULERS` designates me3/pipe1/q0 with the enable bit | 0x0C000000; the Linux oracle dmesg prints both writes | Second candidate; registers below tell |
+| MES ring / KCQ doorbells | Also unshifted (dword 0x0B, 0x03..) | Shifted | Both sit inside the MEC window and work; a later alignment |
+| `sdma_hqd_mask` | 0x0F | 0xFC | MES "owns" SDMA queues 0–3 that we program by hand; SDMA is idle in the samples |
+
+### Read-only `regs` lists (no select writes; run as root with navi48test)
+
+```sh
+T="/Library/Application Support/Navi44/accelerated-trial/navi48test"
+
+# A. One snapshot: windows, the gfx queue's doorbell and pointers (bank 0 = the kernel GFX queue; GRBM_GFX_CNTL read to confirm the select is 0), MES, faults
+sudo "$T" regs <<'EOF2'
+0xA900 GRBM_GFX_CNTL(select;expect0)
+0xC200 GRBM_GFX_INDEX
+0x305A CP_RB_DOORBELL_RANGE_LOWER(expect0x458)
+0x305B CP_RB_DOORBELL_RANGE_UPPER(expect0x7f8)
+0x305C CP_MEC_DOORBELL_RANGE_LOWER(expect0)
+0x305D CP_MEC_DOORBELL_RANGE_UPPER(expect0x450)
+0x30ED CP_RB_DOORBELL_CONTROL(OFFSET[27:2],EN30,HIT31)
+0xA880 CP_UNMAPPED_DOORBELL
+0x21C2 CP_RB_WPTR_POLL_CNTL
+0x30EB CP_RB_WPTR_POLL_ADDR_LO
+0x30DE CP_GFX_MQD_BASE_ADDR
+0x30E0 CP_GFX_HQD_ACTIVE
+0x30E1 CP_GFX_HQD_VMID
+0x30E6 CP_GFX_HQD_BASE
+0x30E8 CP_GFX_HQD_RPTR
+0x30E9 CP_GFX_HQD_RPTR_ADDR
+0x30EF CP_GFX_HQD_CNTL
+0x30F0 CP_GFX_HQD_CSMD_RPTR
+0x30F1 CP_GFX_HQD_WPTR
+0x30F2 CP_GFX_HQD_WPTR_HI
+0x21C0 CP_RB0_RPTR
+0x3054 CP_RB0_WPTR
+0x3055 CP_RB0_WPTR_HI
+0x3041 CP_RB0_CNTL
+0x31A0 CP_RB_ACTIVE
+0xC807 CP_MES_CNTL(Linux0x0c000000)
+0xA98A RLC_CP_SCHEDULERS
+0xC80D CP_MES_HEADER_DUMP(bank-ambiguous)
+0xC813 CP_MES_INSTR_PNTR(bank-ambiguous)
+0xA803 CP_ME_CNTL
+0xC904 CP_MEC_RS64_CNTL
+0x2827 GCVM_L2_STATUS
+0x282C GCVM_L2_PROTECTION_FAULT_CNTL
+0x282D GCVM_L2_PROTECTION_FAULT_CNTL2
+0x2830 GCVM_L2_PROTECTION_FAULT_STATUS_LO32
+0x2831 GCVM_L2_PROTECTION_FAULT_STATUS_HI32
+0x2832 GCVM_L2_PROTECTION_FAULT_ADDR_LO32
+0x2833 GCVM_L2_PROTECTION_FAULT_ADDR_HI32
+0x2819 GCUTCL2_GROUP_RET_FAULT_STATUS
+0x2884 GCVM_CONTEXT0_CNTL
+0x288C GCVM_CONTEXT8_CNTL
+EOF2
+
+# B. Duty cycle of the fetcher's sub-units: 100 x 8 rows in one process (display off and on)
+for i in $(seq 1 100); do printf '0x2002 GRBM_STATUS2\n0x2087 CP_CPF_STATUS\n0x2088 CP_CPF_BUSY_STAT\n0x2093 CP_CPF_BUSY_STAT2\n0x2089 CP_CPF_STALLED_STAT1\n0x2084 CP_CPC_STATUS\n0x30E8 CP_GFX_HQD_RPTR\n0x30F1 CP_GFX_HQD_WPTR\n'; done > /tmp/cpf-duty.txt
+sudo "$T" regs < /tmp/cpf-duty.txt > ~/cpf-duty-$(date +%H%M%S).txt
+```
+
+Notes on these reads:
+- `regs` makes no select write.
+- The HQD rows read GRBM_GFX_CNTL bank 0 (ME0 / pipe 0 / queue 0, the kernel GFX queue), provided A's first row reads 0.
+- The CP_MES_* per-pipe rows are ambiguous without a select, and the select is not written.
+- Compute and MES HQD pointers need a select write, so they are skipped.
+
+**Decode** (`gc_12_0_0_sh_mask.h`):
+
+| Register | Bits |
+|---|---|
+| CP_CPF_STATUS | POST_WPTR_GFX_BUSY 0, CSF_BUSY 1, ROQ_RING 5, ROQ_IND1 6, HQD_BUSY 15, UTCL2IU_BUSY 17, RCIU_BUSY 18, RCIU_GFX 19, RCIU_CMP 20, GCRIU 23, **MES_HQD_BUSY 24**, **CPF_GFX_BUSY 26**, **CPF_CMP_BUSY 27**, **CPC_CPF_BUSY 30**, CPF_BUSY 31 |
+| CP_CPF_BUSY_STAT | CSF_RING 1, CSF_IND1 2, HQD_DISPATCH 12, HQD_IQ_TIMER 13, HQD_PQ_FETCHER 18, HQD_IB_FETCHER 19, HQD_CONSUMED_RPTR 22, HQD_FETCHER_ARB 23, **HQD_WPTR_POLL_BUSY 29**, HQD_PQ_BUSY 30, HQD_IB_BUSY 31 |
+| CP_CPF_BUSY_STAT2 | MES_HQD_DISPATCH 12, MES_HQD_MESSAGE 17, **MES_HQD_PQ_FETCHER 18**, MES_HQD_FETCHER_ARB 23, MES_HQD_PQ_BUSY 30, **MES_UNMAPPED_DOORBELL_BUSY 31** |
+| CP_CPF_STALLED_STAT1 | RING_FETCHING 0, INDR1_FETCHING 1, UTCL2IU_WAITING_ON_FREE 7 / TAGS 8, **GFX_UTCL1_WAITING_ON_TRANS 9**, CMP_UTCL1_WAITING_ON_TRANS 10 |
+
+**How to read the results:**
+
+| Observation | Meaning |
+|---|---|
+| CP_RB_DOORBELL_CONTROL OFFSET field = 0x8B and HIT (bit 31) never set, while CP_GFX_HQD_WPTR advances | Confirms the doorbell bug |
+| HQD_WPTR_POLL_BUSY, or MES_UNMAPPED_DOORBELL_BUSY / MES_HQD_* constantly set | The busy source; fixed by 0.0.677 |
+| MES_HQD_* constant together with CP_MES_CNTL = 0x04000000 | Points also at the missing MES KIQ pipe (the next fix) |
+| GFX_UTCL1_WAITING_ON_TRANS or UTCL2IU_* constant | A stalled translation. Check the fault registers in list A |
+
+Fault status 0x00840d5c decodes to: write, mapping error, client CID 6 = CPG, VMID 8. That is a CPG write in a native VMID, distinct from the CPF; noted, not chased here.
+
+## 0.0.677: the kernel GFX queue's doorbell in Linux's units (staged, not installed)
+
+**Change** (overlay `research/builds/macos-20261117/kernel-677/PATCHES/kernel-0.0.677-over-0.0.676.diff`, sha256 `3349a9c26bf2f6c25a58c332597aec5e337e8f6ea39e7aec35124187492b686f`):
+- **`amd/cp_doorbell_pure.h` (new):** `kgq_index` = gfx_ring0 << 1 (Linux), the window encoding, and a where/alignment check.
+- **`amd/cp_v12_0.cpp` `cp_init_full` (:2531-2534):** `cp.doorbell_index = kgq_index(gfx_ring0, mode)`. The index, byte offset, window and alignment are logged.
+- **`cp_set_doorbell_range` (:2127):** the GFX window comes from `gfx_ring0` itself, as in Linux. The register value is unchanged in both modes.
+- **`cp_doorbell_describe` (:2210)** and **`Navi48Bringup.cpp:7176`:** publish ioreg **`Navi48,GfxDoorbell`**.
+- **Consumers:** every user of the queue's doorbell already reads `cp.doorbell_index`, so all of them move together to 0x116 / byte 0x458: the MQD, MES ADD_QUEUE / RESET / REMOVE, the native ring doorbell, `cp_kick_doorbell` and the G1 / Apple-route helpers.
+- **Kill switch:** boot-arg **`navi48-gfxdb=0`** restores the pre-0.0.677 index exactly.
+- **Unchanged:** the MES ring and the compute queue doorbells.
+
+**Build and payload:**
+
+| Item | Value |
+|---|---|
+| Candidate | `research/builds/macos-20261117/kernel-677/kernel-contexts-v13`, base 0.0.676 verified, 8/8 CPU tests pass |
+| Kext sha256 | **`1015bef0355eda9a22134f5101fe3f64fa8b5ae4f8f2b7e1bbebdba83f530fe5`** |
+| Payload v13 | `research/builds/macos-20261117/kernel-677/kernel-payload-v13`, 126 files |
+| Config sha256 | `c42dc0d3236af1caeb8b5d2a90c60a0c3b534c5cd99e539cc90ddbb6392d3d23`; the only change is `Kernel/Add/7/BundlePath` |
+| Recovery | `RECOVERY/pre-contexts-677-config.plist` is the 0.0.676 configuration |
+| ocvalidate | 1.0.8: no issues |
+| Guard | Derived from the live 0.0.676 guard (`9db4950a…`) to `e97b4c89b9093d96021ff26117769816bf965f86fe84af72603fa35432e43eea`; exactly 5 lines change, each 676 → 677 |
+
+**Tests**, all pass:
+- `run-host-tests.sh` → `host-tests-677.stdout`:
+  - gfx_doorbell677: 26 checks, on HEAD and on the overlay. It checks the Linux formulas and the Navi10 map values parsed from the Linux sources; that the old index lands in the MEC window at an odd dword; and source pins on every consumer.
+  - fan_od676 141, disparb 140, ufmon 37, uclkpin 88, cg675, safety.
+  - native_s2a/s2d: same as clean HEAD.
+- Tool tests: `test-refresh60i-payload.py` (new, 21 tests), `g`, `h`, `test-production-contexts-build.py`, `test-production-kernel-guard.py`, `test-apply-refresh-guard.py`.
+
+**Risk and acceptance:**
+- **Risk.** If the GFX CP does not take a doorbell at 0x458, the boot ring test fails at PM4Test. The ladder then stops, the desktop has no acceleration, and recovery is a reboot with `navi48-gfxdb=0`. This is the configuration Linux runs on this card.
+- **Acceptance, read-only, after the boot:**
+  - `ioreg -l -w0 | grep GfxDoorbell` shows "index 278 (byte 0x458) … inside the GFX window, qword-aligned".
+  - List A shows CP_RB_DOORBELL_CONTROL OFFSET 0x116 with HIT set.
+  - List B with the display off shows CPF_BUSY far below 99 %.
+  - `navi48test metrics` shows GFX activity well below 100 % with the display off.
+- **If CPF stays busy**, the next candidate is the MES KIQ pipe: activate pipe 1 with its queue and set_hw_resources as `mes_v12_0_kiq_hw_init` does, or drop the RLC_CP_SCHEDULERS enable.
+
+---
+
+## Reassessment 2026-11-23: the doorbell is not the cause; 0.0.677 rebuilt as an observation build
+
+### What the live lists showed (orchestrator, 2026-11-17, display on, 0.0.676)
+
+**List A:**
+- The doorbell is received at the old offset: CP_RB_DOORBELL_CONTROL = 0xc000022c, i.e. offset 0x8B, EN, **HIT=1**.
+- The scheduler state: CP_MES_CNTL = 0x04000000 (MES pipe 0 only) and RLC_CP_SCHEDULERS = 0x30e8 (scheduler0 = 0xe8, me3/pipe1/queue0 enabled; scheduler1 = 0x30, disabled).
+- CP_ME_CNTL = 0x0100a000: PFP/ME pipe 1 disabled, CE halted.
+- All four MEC pipes are active.
+
+**List B:**
+- CP_CPF_STATUS = **0x88000001** in 100 % of samples: CPF_BUSY + **CPF_CMP_BUSY** + **POST_WPTR_GFX_BUSY**.
+- CP_CPF_BUSY_STAT = 0 and CP_CPF_BUSY_STAT2 = 0 in 100 %.
+- GRBM_STATUS2 = 0x14100000: CPF_BUSY, RLC_BUSY, EA_LINK_BUSY.
+- CP_GFX_HQD_RPTR = 0 and CP_GFX_HQD_WPTR = 0x1bb290, both constant.
+
+### (1) Is the 0.0.677 doorbell change still justified?
+
+No, not as a fix.
+- HIT=1 shows that the GFX CP takes the doorbell at dword 0x8B. The window filter does not drop it, so the doorbell is not the busy source. My 2026-11-17 conclusion on this point was wrong.
+- The Linux index stays in 0.0.677 only as an **opt-in A/B** (`navi48-gfxdb=1`). The **default is the 0.0.676 index**.
+
+### (2) The remaining candidates
+
+**CPF_CMP_BUSY and the MES KIQ slot.** "CPF busy on behalf of compute" is set permanently while every CPC/MEC bit and every HQD/MES busy-stat bit is clear. That suggests a request pending toward a compute-side consumer that never takes it.
+- The only compute-side difference from Linux that I found is the KIQ:
+  - Linux runs MES pipe 1 as the KIQ (`mes_v12_0_kiq_hw_init`): CP_MES_CNTL 0x0C000000, its queue, and SET_HW_RESOURCES on pipe 1.
+  - Linux and we both write RLC_CP_SCHEDULERS = me3/pipe1/q0 | 0x80.
+  - We never start pipe 1, so the scheduler queue that the RLC/CP are told about does not exist.
+- Confidence: medium, the best candidate so far. It is not proven.
+
+**The kernel compute queue.** This is the other compute-side object: the KCQ on MEC pipe 0, mapped through MES and idle. `navi48-kcq=0` (existing boot-arg) removes it for an A/B test.
+
+**POST_WPTR_GFX_BUSY.** This is the CPF's write-pointer posting toward the GFX queue. It may be the same stuck pipeline: the RS64 GFX ME posts its wptr through the CPF, and the CPF stays busy as a whole.
+
+**CP_GFX_HQD_RPTR = 0 and a constant WPTR.** This is very likely not a stall. Over the same period the desktop kept running and the kernel's own fences retired. On RS64 GFX12 the HQD registers are the queue's save/restore image. While the queue is resident, the live read pointer is the write-back word at RPTR_ADDR, which the kext's fence path uses. CP_RB0_RPTR (0x21C0) is the legacy view. This is low-confidence; the boot census below settles it.
+
+**Linux with GFXOFF disabled would be the reference.** No such measurement exists. The Linux oracle reaches GFXOFF at idle, which requires an idle CP, so on Linux the CPF does idle.
+
+### (3) Discriminators that need no live reads of banked registers
+
+0.0.677 now logs the evidence at boot itself.
+
+**Boot-time busy marks** (default on; `navi48-cpmark=0` turns them off):
+- They run after every bring-up stage from CPInit (CPInit, MESInit, GFXInit, SDMAInit, PM4Test, ComputeDispatch) and once at the end of runStages, after clock gating and the fan step.
+- Each mark takes 16 samples, 50 µs apart, of **unbanked status registers only**: GRBM_STATUS/2, CP_STAT, CP_CPF_STATUS, CP_CPF_BUSY_STAT/2, CP_CPF_STALLED_STAT1, CP_CPC_STATUS, CP_MES_CNTL, RLC_CP_SCHEDULERS. No select and no write.
+- It logs the first sample and per-bit counts: GUI_ACTIVE, CP_BUSY, CPF/CPC/CPG/RLC_BUSY, POST_WPTR_GFX_BUSY, HQD_BUSY, MES_HQD_BUSY, CPF_GFX_BUSY, CPF_CMP_BUSY, CPC_CPF_BUSY, MEC1_BUSY, MES_BUSY.
+- The results are in ioreg **`Navi48,CpBusyMarks`** and in `navi48test log | grep cpmark`.
+- The first stage whose mark shows CPF_CMP_BUSY 16/16 names the culprit:
+  - MESInit → the MES / KIQ setup;
+  - PM4Test → the KGQ or KCQ mapping;
+  - only at end-of-runStages → clock gating or the fan step.
+
+**Queue census** (opt-in, `navi48-cpcensus=1`):
+- Runs once at boot, before any client.
+- Reads the HQD registers of me0/p0/q0 (KGQ), me1/p0/q0–1 (KCQ slots), me3/p0/q0 (MES scheduler) and me3/p1/q0 (the KIQ slot), plus CP_MES_INSTR_PNTR and MSTATUS for the MES slots.
+- It uses kernel GRBM_GFX_CNTL select writes, as the bring-up already does in `cp_dump_gfx_hqd` and `mes_queue_init`, and restores select 0.
+- It never reads a *_HEADER_DUMP register.
+
+**A/B boot-args, one per boot, defaults unchanged:**
+
+| Boot-arg | Effect |
+|---|---|
+| `navi48-kiqsched=0` | Skips the RLC_CP_SCHEDULERS KIQ write |
+| `navi48-kcq=0` | Existing: no kernel compute queue |
+| `navi48-gfxdb=1` | Linux's GFX doorbell index |
+
+Compare `Navi48,CpBusyMarks` and the SMU activity (`navi48test metrics`) across boots.
+
+### The WindowServer crash of 2026-11-17
+
+**The crash mechanism is a RADV error-path bug (high confidence).** It is in our mesa fork, `research/ext/mesa-darwin/src/amd/vulkan/radv_cmd_buffer.c:1380-1420`:
+- `radv_create_cmd_buffer` calls `radv_create_cmd_stream`.
+- On failure, it calls `radv_destroy_cmd_buffer` **before** `list_inithead(&cmd_buffer->msrtss_transients)`, before `accel_struct_buffers` is created, and before `vk_object_base_init` of the push sets.
+- `radv_destroy_msrtss_transients` then walks a zeroed list head (`list_for_each_entry_safe`) and dereferences NULL: SIGSEGV in `radv_destroy_cmd_buffer`.
+- `radv_create_cmd_stream` fails when `ws->cs_create` → `radv_amdgpu_cs_get_new_ib` cannot get an IB buffer object.
+
+So **any** kernel refusal of a GTT/VRAM buffer object becomes a WindowServer crash. Refusals in `native_s1c.cpp` (BoCreate) include:
+- `BoCreate refused (NoMemory)` for GTT wired pages;
+- the shared VRAM budget;
+- the visible-VRAM cap;
+- the global GTT plus host-import cap;
+- `NoResources`, when a session runs out of BO handles;
+- `gpu_gate` (HUNG).
+
+"Crashing at every login until reboot" points to a persistent kernel state, not to the reads themselves. Candidates:
+- a HUNG latch;
+- a session closed "LEAKED (HUNG)" whose memory stays held;
+- a global pool exhausted by a leak.
+
+**Fix for the bundle (not part of this kernel build):** initialise `msrtss_transients`, `ray_history`, `accel_struct_buffers` and the push-set bases before `radv_create_cmd_stream`, or make the destroy path tolerate them uninitialised.
+
+**Could the `regs` reads have caused it?**
+- `doRegRead` (`Navi48UserClient.cpp`) is a bare uncached RREG32 of a bounds-checked BAR5 dword. It takes no lock, so it cannot block WindowServer's paths, and it writes no select register.
+- The only plausible hardware side effect is reading debug FIFOs: CP_ME/PFP/MEC/MES `*_HEADER_DUMP`, which hang-dump code reads to pop entries. It could also be reading MES-owned registers while MES runs.
+- The 2026-11-12 loop read CP_ME/PFP_HEADER_DUMP about 100 times each with no effect. The 2026-11-17 list A added CP_MES_HEADER_DUMP and CP_MES_INSTR_PNTR.
+- A GPU stall caused that way would show up as `native-s1c: HUNG:` / `stall:` lines.
+- Conclusion: not excluded, not likely. The orchestrator's new rule (no live CP/HQD/MES/select reads) is right regardless, and 0.0.677 moves those reads to boot.
+
+**Read-only check of that boot.** The unified log keeps kernel lines across reboots; no root is needed on an admin account:
+
+```sh
+/usr/bin/log show --start '2026-11-17 20:35:00' --end '2026-11-17 21:30:00' --style compact \
+  --predicate '(process == "kernel" AND eventMessage CONTAINS "Navi48Bringup") OR (process == "WindowServer" AND (eventMessage CONTAINS "radv" OR eventMessage CONTAINS "n48"))' \
+  | grep -E 'HUNG|stall|open refused|BoCreate refused|client closed|LEAKED|radv-darwin|ERROR_OUT_OF' | head -80
+```
+
+| Result | Meaning |
+|---|---|
+| `HUNG:` / `stall:` lines just before the crash | A GPU stall, possibly read-related; investigate further |
+| `BoCreate refused` with a budget or cap reason | A leak, unrelated to the reads |
+
+### 0.0.677 as rebuilt (staged, not installed)
+
+The doorbell-only build of 2026-11-17 was never installed. It was replaced by this build.
+
+**Overlay:** `research/builds/macos-20261117/kernel-677/PATCHES/kernel-0.0.677-over-0.0.676.diff`, sha256 `85943e2fbe677da7e2178a50a4a081385a3b77b20437bb30e35aa566054daca8`.
+
+**New files:**
+- `amd/cp_census_pure.h`: register tables checked against Linux offsets, BASE_IDX and bit positions; counting; switches.
+- `amd/cp_census.cpp`: the marks, the census, and the registry text.
+
+**Changed files** (HEAD-worktree line numbers):
+
+| File | Change |
+|---|---|
+| `amd/amdgpu_init.cpp:914` | A mark after each stage from CPInit |
+| `Navi48Bringup.cpp:7180-7184` | The end mark, the census and `Navi48,CpBusyMarks` |
+| `amd/mes_v12_1.cpp:1552-1563` | `navi48-kiqsched=0` A/B |
+| `amd/cp_doorbell_pure.h`, `amd/cp_v12_0.cpp` | The GFX doorbell index as an opt-in only (`navi48-gfxdb=1`); `Navi48,GfxDoorbell` |
+| `amd/amdgpu_cp.h` | Declarations |
+| `Info.plist` | 0.0.677 |
+
+**Default behaviour:** exactly 0.0.676, plus boot-time unbanked status reads and two registry properties.
+
+**Build and payload:**
+
+| Item | Value |
+|---|---|
+| Kext sha256 | **`c0840881940cfc154a7cf82dbcb8599d853e6099ffd504d40150dbfeaf10ae1d`** |
+| Candidate | `kernel-contexts-v13`; 0.0.676 base verified; 8/8 CPU tests pass |
+| Payload v13 | `kernel-payload-v13`, 126 files, staged against the live guard `9db4950a…` (re-checked 2026-11-23; 0.0.676 is loaded) |
+| Guard | `e97b4c89b9093d96021ff26117769816bf965f86fe84af72603fa35432e43eea`; 5 lines, each 676 → 677 |
+| Config sha256 | `c42dc0d3236af1caeb8b5d2a90c60a0c3b534c5cd99e539cc90ddbb6392d3d23`; only the BundlePath changes |
+| ocvalidate | 1.0.8: no issues |
+
+**Tests** (all pass):
+- `host-tests-677.stdout`:
+  - cp_census677: 126 checks, on HEAD and on the overlay. Offsets, BASE_IDX and bits are parsed from Linux `gc_12_0_0_offset.h` / `sh_mask.h`. It checks the live sample decode, that there is no register write before the opt-in census, and that select 0 is restored.
+  - gfx_doorbell677: 26 checks.
+  - fan_od676, disparb, ufmon, uclkpin, cg675, safety.
+  - native_s2a/s2d: same as clean HEAD.
+- Tool tests: `test-refresh60i-payload.py` (21), g, h, `test-production-contexts-build.py`, the guard test, and the apply-refresh-guard test.
+
+**Risk.** The marks are 16 × 10 MMIO reads per stage, about 1 ms, at boot only. The census and the A/B switches are opt-in. Recovery: `RECOVERY/pre-contexts-677-config.plist`, the 0.0.676 configuration.

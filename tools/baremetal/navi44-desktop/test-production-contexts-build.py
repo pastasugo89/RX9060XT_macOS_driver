@@ -144,7 +144,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.674'), 674)   # two-stage fallback: the 0.0.673 tree plus the reviewed 0.0.674 patch
         self.assertEqual(build.release_build('0.0.675'), 675)   # clock gating + thermal policy: the 0.0.674 tree plus the reviewed 0.0.675 patch
         self.assertEqual(build.release_build('0.0.676'), 676)   # zero-RPM fan option + gfxmax + UCLK pin kept: the 0.0.675 tree plus the reviewed 0.0.676 patch
-        for version in ('0.0.665', '0.0.677', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.677'), 677)   # GFX doorbell in Linux units: the 0.0.676 tree plus the reviewed 0.0.677 patch
+        for version in ('0.0.665', '0.0.678', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
@@ -234,6 +235,25 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.sha(patch), build.FAN_PATCH_SHA)
         touched = sorted(line.split()[-1][2:] for line in patch.read_text().splitlines() if line.startswith('diff -ruN '))
         self.assertEqual(touched, sorted(build.FAN_FILES))
+
+    def test_doorbell_overlay_refuses_another_version_and_an_unreviewed_patch(self):
+        candidate = self.root / 'candidate-doorbell'
+        candidate.mkdir()
+        patch = self.root / 'unreviewed-677.diff'
+        patch.write_text('not the reviewed doorbell patch\n')
+        with self.assertRaises(ValueError):
+            build.doorbell_overlay(candidate, patch, '0.0.676')
+        with self.assertRaises(ValueError):   # the pinned sha256 of kernel-0.0.677-over-0.0.676.diff does not match this file
+            build.doorbell_overlay(candidate, patch, '0.0.677')
+        self.assertEqual(sorted(p.name for p in candidate.iterdir()), [])   # nothing written before the checks pass
+
+    def test_doorbell_patch_is_the_pinned_file_and_touches_only_the_reviewed_files(self):
+        patch = build.ROOT / 'research/builds/macos-20261117/kernel-677/PATCHES/kernel-0.0.677-over-0.0.676.diff'
+        if not patch.exists():
+            self.skipTest('the 0.0.677 patch is a local (git-ignored) research file')
+        self.assertEqual(build.sha(patch), build.DOORBELL_PATCH_SHA)
+        touched = sorted(line.split()[-1][2:] for line in patch.read_text().splitlines() if line.startswith('diff -ruN '))
+        self.assertEqual(touched, sorted(build.DOORBELL_FILES))
 
     def test_668_overlay_sets_its_version_and_build_number(self):
         baseline, source, candidate = (self.root / name for name in ('baseline668', 'source668', 'candidate668'))

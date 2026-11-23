@@ -149,6 +149,22 @@ FAN_FILES = ('Info.plist', 'src/Navi48Bringup.cpp', 'src/amd/amdgpu_init.cpp', '
              'src/amd/smu_od_pure.h', 'src/amd/smu_uclkpin_pure.h', 'src/amd/smu_v14_0.cpp', 'src/dcn/navi48_dcn.cpp')   # the files the patch changes (three new)
 FAN_REQUIRED_STRINGS = (b'Navi48,Fan', b'navi48-fan-zerorpm', b'navi48-gfxmax', b'navi48-uclkpin-release',
                         b'fan-od: TransferTableDram2Smu(OVERDRIVE')   # 0.0.676: the property, the three boot-args, the upload line
+# 0.0.677 (payload v13, observing the busy command fetcher): built on the reviewed 0.0.676 candidate TREE (kernel-contexts-v12, checked against its manifest):
+# kernel-0.0.677-over-0.0.676.diff (--patch, sha256 pinned here) adds boot-time CP busy marks after every stage from CPInit (unbanked status reads; navi48-cpmark=0
+# off; ioreg Navi48,CpBusyMarks), an opt-in per-queue census (navi48-cpcensus=1), two opt-in A/B switches (navi48-gfxdb=1: Linux's GFX doorbell index;
+# navi48-kiqsched=0: no RLC_CP_SCHEDULERS KIQ write) and ioreg Navi48,GfxDoorbell. Default behaviour = 0.0.676 plus the reads. Version markers 676 -> 677.
+# 0.0.676 (payload v12) is the kernel installed now: 0.0.677 replaces it.
+INSTALLED_676 = {'bundle_path': 'Navi48Bringup-contexts-0.0.676.kext',
+                 'kernel_sha256': '5867c432e22960ba204b9d7074b0785c2f46d8fcdbb44dd04732d9c59a21f30a',
+                 'config_sha256': '86925433d4bf6f23cb8ad35aa1571a1e61d005bc7e216356bb19d65765e4c287', 'version': '0.0.676'}
+DOORBELL_VERSION = '0.0.677'
+DOORBELL_BASE = ROOT / 'research/builds/macos-20261114/kernel-676/kernel-contexts-v12'
+DOORBELL_BASE_SHA = '5867c432e22960ba204b9d7074b0785c2f46d8fcdbb44dd04732d9c59a21f30a'   # the 0.0.676 candidate binary (kernel-contexts-v12's manifest)
+DOORBELL_PATCH_SHA = '85943e2fbe677da7e2178a50a4a081385a3b77b20437bb30e35aa566054daca8'   # kernel-0.0.677-over-0.0.676.diff
+DOORBELL_FILES = ('Info.plist', 'src/Navi48Bringup.cpp', 'src/amd/amdgpu_cp.h', 'src/amd/amdgpu_init.cpp', 'src/amd/cp_census.cpp', 'src/amd/cp_census_pure.h',
+                  'src/amd/cp_doorbell_pure.h', 'src/amd/cp_v12_0.cpp', 'src/amd/mes_v12_1.cpp')   # the files the patch changes (three new)
+DOORBELL_REQUIRED_STRINGS = (b'Navi48,GfxDoorbell', b'navi48-gfxdb', b'Linux qword index (gfx_ring0 << 1)', b'Navi48,CpBusyMarks', b'navi48-cpmark',
+                             b'navi48-cpcensus', b'navi48-kiqsched')   # 0.0.677: the properties, the switches, the doorbell mode words
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -211,8 +227,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.676)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-6])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.677)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-7])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -230,14 +246,14 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION):
         return recorded_active_baseline(path)
     # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
                          '0.0.670': (INSTALLED_669, '0.0.669'), FIX_VERSION: (INSTALLED_669, '0.0.669'),
                          BLACKBAND_VERSION: (INSTALLED_671, '0.0.671'), DISPARB_VERSION: (INSTALLED_671, '0.0.671'),
                          FALLBACK_VERSION: (INSTALLED_673, '0.0.673'), GATING_VERSION: (INSTALLED_674, '0.0.674'),
-                         FAN_VERSION: (INSTALLED_675, '0.0.675')}[version]
+                         FAN_VERSION: (INSTALLED_675, '0.0.675'), DOORBELL_VERSION: (INSTALLED_676, '0.0.676')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -357,6 +373,11 @@ def fan_base_verified(baseline):
     return candidate_base_verified(baseline, FAN_BASE, FAN_BASE_SHA, '0.0.675')
 
 
+def doorbell_base_verified(baseline):
+    """0.0.677's base: the reviewed 0.0.676 candidate tree and its binary, both checked against kernel-contexts-v12's manifest."""
+    return candidate_base_verified(baseline, DOORBELL_BASE, DOORBELL_BASE_SHA, '0.0.676')
+
+
 def blackband_overlay(candidate, patch, version):
     """0.0.672: the black-band patch over the 0.0.671 candidate tree (patch -p1; the patch must be the reviewed file), then the markers
     671 -> 672 (kN1cKextBuild and the Metal ops build number; Info.plist comes with the patch). The changed files must be exactly the
@@ -473,6 +494,29 @@ def fan_overlay(candidate, patch, version):
     return sorted(changed)
 
 
+def doorbell_overlay(candidate, patch, version):
+    """0.0.677: the GFX doorbell patch over the 0.0.676 candidate tree (patch -p1; the patch must be the reviewed file), then the markers 676 -> 677
+    (kN1cKextBuild and the Metal ops build number; Info.plist comes with the patch). The changed files must be exactly the reviewed set."""
+    if version != DOORBELL_VERSION:
+        raise ValueError('The doorbell overlay is only for ' + DOORBELL_VERSION)
+    patch = patch.resolve()   # patch -d changes directory: the patch path must be absolute
+    if sha(patch) != DOORBELL_PATCH_SHA:
+        raise ValueError('The doorbell patch is not the reviewed file')
+    before = tree_files(candidate)
+    subprocess.run(['patch', '-p1', '-s', '--forward', '--batch', '--no-backup-if-mismatch', '-d', str(candidate), '-i', str(patch)], check=True)
+    build = release_build(version)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 676;', 'kN1cKextBuild = %d;' % build, 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 676u', 'sizeof(N48MetalOps), %du' % build, 2)
+    if (candidate / 'Info.plist').read_text().count('<string>' + version + '</string>') != 2:
+        raise ValueError('The patch does not set Info.plist to ' + version)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    expected = set(DOORBELL_FILES) | set(BLACKBAND_MARKER_FILES)
+    if changed != expected:
+        raise ValueError('Candidate changed files outside the reviewed doorbell set: ' + ', '.join(sorted(changed ^ expected)))
+    return sorted(changed)
+
+
 def overlay_candidate(candidate, source, version=RELEASE):
     """Preserve initialization/firmware; replace only the reviewed context files."""
     build = release_build(version)
@@ -554,13 +598,14 @@ def test_path(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch) or 0.0.675 (GFX clock gating + thermal policy on the 0.0.674 tree: needs --active-baseline-manifest (payload v10) and --patch) or 0.0.676 (zero-RPM fan option, navi48-gfxmax, UCLK pin kept on the 0.0.675 tree: needs --active-baseline-manifest (payload v11) and --patch)')
+    parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch) or 0.0.675 (GFX clock gating + thermal policy on the 0.0.674 tree: needs --active-baseline-manifest (payload v10) and --patch) or 0.0.676 (zero-RPM fan option, navi48-gfxmax, UCLK pin kept on the 0.0.675 tree: needs --active-baseline-manifest (payload v11) and --patch) or 0.0.677 (GFX doorbell in Linux units on the 0.0.676 tree: needs --active-baseline-manifest (payload v12) and --patch)')
     parser.add_argument('--patch', type=Path,
                         help='0.0.672: the black-band patch over the 0.0.671 candidate tree (PATCH-vs-671-deployed.diff); 0.0.673: the display-arbitration patch '
                              'over the 0.0.672 candidate tree (kernel-0.0.673-over-0.0.672.diff); 0.0.674: the fallback patch over the 0.0.673 candidate tree '
                              '(kernel-0.0.674-over-0.0.673.diff); 0.0.675: the clock-gating + thermal patch over the 0.0.674 candidate tree '
                              '(kernel-0.0.675-over-0.0.674.diff); 0.0.676: the fan / gfxmax / UCLK-release patch over the 0.0.675 candidate tree '
-                             '(kernel-0.0.676-over-0.0.675.diff). Each sha256 is pinned')
+                             '(kernel-0.0.676-over-0.0.675.diff); 0.0.677: the GFX doorbell patch over the 0.0.676 candidate tree '
+                             '(kernel-0.0.677-over-0.0.676.diff). Each sha256 is pinned')
     parser.add_argument('--active-baseline-manifest', type=Path,
                         help='offline: the kernel the candidate replaces, from this verified manifest (EFI not mounted): the 665 '
                              'baseline manifest for 0.0.666/0.0.667; payload v3 (kernel-payload-v3/manifest.json) for 0.0.668, which is required there')
@@ -579,9 +624,10 @@ def main():
     fallback = version == FALLBACK_VERSION     # 0.0.674: built on the 0.0.673 candidate tree plus the reviewed two-stage fallback patch
     gating = version == GATING_VERSION         # 0.0.675: built on the 0.0.674 candidate tree plus the reviewed clock-gating + thermal patch
     fan = version == FAN_VERSION               # 0.0.676: built on the 0.0.675 candidate tree plus the reviewed fan / gfxmax / UCLK-release patch
-    patched = blackband or disparb or fallback or gating or fan
+    doorbell = version == DOORBELL_VERSION     # 0.0.677: built on the 0.0.676 candidate tree plus the reviewed GFX doorbell patch
+    patched = blackband or disparb or fallback or gating or fan or doorbell
     tests = TESTS + (REFRESH_TESTS if refresh or fix or patched else ())
-    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION) and not args.active_baseline_manifest:
+    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION) and not args.active_baseline_manifest:
         raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
@@ -597,7 +643,7 @@ def main():
             raise ValueError(version + ' is built from its reviewed patch: pass --patch')
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         overlay = {'source': 'patch', 'patch': str(args.patch), 'patch_sha256': sha(args.patch),
-                   'patch_files': list(FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
+                   'patch_files': list(DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
                    'head_at_build': revision}
     else:
         revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
@@ -633,10 +679,13 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+    copy_source(DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
                 REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if fan:
+    if doorbell:
+        # 0.0.677: no rebuild of any base. The base is the reviewed 0.0.676 candidate tree and binary (checked against its manifest).
+        manifest['base_verified'] = doorbell_base_verified(baseline)
+    elif fan:
         # 0.0.676: no rebuild of any base. The base is the reviewed 0.0.675 candidate tree and binary (checked against its manifest).
         manifest['base_verified'] = fan_base_verified(baseline)
     elif gating:
@@ -668,7 +717,11 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if fan:
+    if doorbell:
+        manifest['changed_source_files'] = doorbell_overlay(candidate, args.patch, version)
+        manifest['doorbell_overlay'] = {'patch': str(args.patch), 'patch_sha256': DOORBELL_PATCH_SHA,
+                                        'marker_files': list(BLACKBAND_MARKER_FILES)}
+    elif fan:
         manifest['changed_source_files'] = fan_overlay(candidate, args.patch, version)
         manifest['fan_overlay'] = {'patch': str(args.patch), 'patch_sha256': FAN_PATCH_SHA,
                                    'marker_files': list(BLACKBAND_MARKER_FILES)}
@@ -716,8 +769,9 @@ def main():
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
     required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched else ())
                 + (FIX_REQUIRED_STRINGS if fix or patched else ()) + (BLACKBAND_REQUIRED_STRINGS if patched else ())
-                + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan else ()) + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan else ())
-                + (GATING_REQUIRED_STRINGS if gating or fan else ()) + (FAN_REQUIRED_STRINGS if fan else ()))
+                + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan or doorbell else ()) + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan or doorbell else ())
+                + (GATING_REQUIRED_STRINGS if gating or fan or doorbell else ()) + (FAN_REQUIRED_STRINGS if fan or doorbell else ())
+                + (DOORBELL_REQUIRED_STRINGS if doorbell else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]

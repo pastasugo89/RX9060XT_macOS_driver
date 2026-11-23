@@ -7170,6 +7170,19 @@ void Navi48Bringup::runStages(uint32_t target) {
 		const uint32_t cap = amdgpu::smu_gfx_boot_cap();
 		if (cap) setProperty("Navi48,GfxMax", static_cast<uint64_t>(cap), 32);
 	}
+	if (ctx.reached >= amdgpu::BringupStage::CPInit) {   // 0.0.677: the kernel GFX queue's doorbell (Linux's index only with navi48-gfxdb=1)
+		char t[200];
+		amdgpu::cp_doorbell_describe(t, sizeof(t));
+		setProperty("Navi48,GfxDoorbell", t);
+		N48LOG("gfx doorbell: %s", t);
+		// 0.0.677: the command processor's busy state after clock gating and the fan step (marks: unbanked reads), the optional queue census
+		// (navi48-cpcensus=1), and the marks of every stage for the registry (ioreg -l | grep CpBusyMarks).
+		amdgpu::cp_busy_mark(dev, "end of runStages");
+		amdgpu::cp_queue_census(dev, "end of runStages");
+		char m[1400];
+		amdgpu::cp_busy_marks_describe(m, sizeof(m));
+		setProperty("Navi48,CpBusyMarks", m);
+	}
 	publishPDB0On(this, ctx);
 	publishSDMAQ1On(this, ctx);
 	publishSRBMOn(this, ctx);
