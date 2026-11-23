@@ -112,7 +112,7 @@ RDNA4FB  (display framebuffer kext, BSD-3-Clause upstream; patches here add Navi
 
 | Path | Contents | Licence |
 |---|---|---|
-| `cobalt64/` | Driver code and build inputs (kext, Metal bundle, RADV patches, translator, native tools). Subtree of Cobalt64 with Navi 44 changes. | MIT, with exceptions listed in [Licences](#licences) |
+| `cobalt64/` | Driver code and build inputs (kext, Metal bundle, RADV patches, translator, native tools). Subtree of Cobalt64 with Navi 44 changes. | PolyForm Noncommercial, with upstream code under its own licence (see [Licences](#licences)) |
 | `tools/` | Host tests, Linux checks, deployment and recovery scripts. Most are for the maintainer's machines. | See [Licences](#licences) |
 | `baselines/0.0.665/` | Reproducible source and build record for kext 0.0.665 (issue #1). | See that directory |
 | `research/reports/` | Analysis reports, mostly in Italian. The `macos-20261101/` and `macos-20261112/` reports are in English. | See [Licences](#licences) |
@@ -228,30 +228,30 @@ These do not need the GPU or macOS:
 
 ## Licences
 
-This repository has no single licence. Each part is licensed under the file named in the table. Where a directory has no
-licence file, the table says so.
+The project as a whole is licensed under the **PolyForm Noncommercial License 1.0.0** (see [`LICENSE`](LICENSE)):
+you may use, study, modify and share it for any noncommercial purpose, including personal use, research, hobby
+projects and use by noncommercial organisations. **Commercial use, including selling this driver or a product built on
+it, is not permitted.** Contributions are accepted under the same licence.
 
-| Part | Path | Licence and file |
-|---|---|---|
-| Cobalt64 base, Navi 44 changes, Metal bundle, Navi48Accel, native tools, tests | `cobalt64/` (except below) | MIT. [`cobalt64/LICENSE`](cobalt64/LICENSE) |
-| Navi48Bringup kext | `cobalt64/src/navi48-bringup/` | BSD 3-Clause. [`LICENSE`](cobalt64/src/navi48-bringup/LICENSE) and [`NOTICE`](cobalt64/src/navi48-bringup/NOTICE) |
-| n48xlate and the changes to NullMoth's translator and metal2vulkan | `cobalt64/third-party/metal2vulkan-n48/` | LGPL-3.0-or-later. [`COPYING`](cobalt64/third-party/metal2vulkan-n48/COPYING) and [`NOTICE`](cobalt64/third-party/metal2vulkan-n48/NOTICE) |
-| RADV Darwin patches | `cobalt64/mesa-patches/` | The patches are changes to Mesa and carry Mesa's licence (MIT). See [`README.txt`](cobalt64/mesa-patches/README.txt) |
-| RDNA4FB patches | `cobalt64/third-party/rdna4fb-n44/` | Patches to RDNA4FB, which is BSD 3-Clause. See [`THIRD-PARTY-LICENSES.txt`](cobalt64/third-party/THIRD-PARTY-LICENSES.txt) |
-| Third-party licence texts | `cobalt64/third-party/THIRD-PARTY-LICENSES.txt` | Lists the licences of the code that the kext adapts. |
-| Host tests and tools | `tools/` | No licence file and no licence statement yet. |
-| Reports, notes and dumps | `research/`, top-level `*.md` | No licence file yet. |
+Code that comes from other projects keeps its own licence, and its notices stay with it. PolyForm applies to this
+project's own work on top of it.
+
+| Part | Path | Licence of the upstream code | File |
+|---|---|---|---|
+| Cobalt64 base (Navi48-MacOS contributors) | `cobalt64/` | MIT | [`cobalt64/LICENSE`](cobalt64/LICENSE) |
+| Navi48Bringup kext base (the Navi48 project) | `cobalt64/src/navi48-bringup/` | BSD 3-Clause | [`LICENSE`](cobalt64/src/navi48-bringup/LICENSE), [`NOTICE`](cobalt64/src/navi48-bringup/NOTICE) |
+| n48xlate and the changes to NullMoth's translator / metal2vulkan | `cobalt64/third-party/metal2vulkan-n48/` | **LGPL-3.0-or-later** (this directory stays LGPL, it is not relicensed) | [`COPYING`](cobalt64/third-party/metal2vulkan-n48/COPYING), [`NOTICE`](cobalt64/third-party/metal2vulkan-n48/NOTICE) |
+| RADV Darwin patches | `cobalt64/mesa-patches/` | MIT (Mesa) | [`README.txt`](cobalt64/mesa-patches/README.txt) |
+| RDNA4FB patches | `cobalt64/third-party/rdna4fb-n44/` | BSD 3-Clause (RDNA4FB) | [`THIRD-PARTY-LICENSES.txt`](cobalt64/third-party/THIRD-PARTY-LICENSES.txt) |
+| Code adapted from Linux amdgpu, NullMoth's plugin (PolyForm Noncommercial) and other projects | where marked | the original file's licence and SPDX header | [`THIRD-PARTY-LICENSES.txt`](cobalt64/third-party/THIRD-PARTY-LICENSES.txt) |
 
 Notes:
 
-- **Linux amdgpu.** The kext uses the register headers, which AMD distributes under MIT. The kernel driver sources are
-  GPL-2.0 or dual-licensed, depending on the file. Where code is taken from them, keep that file's own licence and
-  SPDX header.
-- **Not included, and not to be redistributed:**
-  - **AMD firmware** (from linux-firmware). It is under AMD's firmware licence. Fetch it yourself. Do not redistribute it.
-  - **Apple software.** macOS, Apple's frameworks, binaries, installers and shader compilers are not part of this project.
-  - **Other projects' code.** Mesa, RDNA4FB, NullMoth's translator, OpenCore and metal2vulkan are fetched from upstream.
-    NullMoth's other components have different licences (PolyForm Noncommercial) and are not part of this repository.
+- Versions published before 2026-11-23 were released under MIT / BSD 3-Clause; those grants are not withdrawn for
+  those versions. From 2026-11-23 the project's own work is PolyForm Noncommercial.
+- **Not included, and not to be redistributed:** AMD firmware (AMD's firmware licence; fetch it yourself), Apple
+  software (macOS, frameworks, binaries, shader compilers), and the full upstream trees of Mesa, RDNA4FB, NullMoth's
+  driver, OpenCore and metal2vulkan (fetched from upstream).
 
 ## Credits
 

@@ -110,8 +110,9 @@ AI-assisted contributions are allowed. You must:
 
 ## Licence and sign-off
 
-Your contribution is licensed under the licence of the directory it changes. The table in the
-[README](README.md#licences) shows which licence applies to each part.
+By contributing you license your contribution under the PolyForm Noncommercial License 1.0.0 (see [`LICENSE`](LICENSE)),
+except inside `cobalt64/third-party/metal2vulkan-n48/`, which stays LGPL-3.0-or-later. Code adapted from another project
+keeps that project's licence and header; the table in the [README](README.md#licences) lists them.
 
 Please sign off each commit with `git commit -s`. The sign-off certifies the
 [Developer Certificate of Origin](https://developercertificate.org). It is requested, not enforced by a bot.
