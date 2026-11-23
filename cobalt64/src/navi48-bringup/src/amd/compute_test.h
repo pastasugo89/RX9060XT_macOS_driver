@@ -131,10 +131,15 @@ kern_return_t compute_dispatch_test(DeviceContext &dev,
                                     bool vaddIr = false);
 
 // NATIVE S1b (0.0.600): the hand-written shader's bytes, and compute_dispatch_test's PM4 stream (steps 5 (a)-(k), hsaAbi = false)
-// for a caller-chosen code VA and result VA. `pkt` needs room for 64 dwords; the return is the dword count (0 = refused). No
-// hardware access; the existing compute_dispatch_test is untouched.
+// for a caller-chosen code VA and result VA. `pkt` needs room for 64 dwords (0.0.678 with navi48-cdfix on: 64 + the 33-dword GFX12 compute
+// preamble = 97); the return is the dword count (0 = refused). No hardware access.
 const uint8_t *compute_store_magic_code(uint32_t *size_out);
 uint32_t compute_build_va_dispatch_ib(const DeviceContext &dev, uint32_t *pkt, uint32_t max_dw,
                                       uint64_t code_va, uint64_t res_va);
+
+// 0.0.678 (compute_cdfix_pure.h): navi48-cdfix (absent or non-zero = on). On: the GFX12 compute preamble at the head of every dispatch IB built
+// above, CU masks only for the SEs that exist, and the COMPUTE_* MMIO readback only after a failed dispatch. Off: the 0.0.677 stream.
+bool compute_cdfix_on();
+void compute_cdfix_describe(char *t, size_t n);
 
 } // namespace amdgpu

@@ -312,6 +312,13 @@ uint32_t smu_gfx_boot_state();
 // *** DANGER *** moves real GFX clocks. See smu_smc_hw_setup's note.
 kern_return_t smu_set_power_state(const DeviceContext &dev, uint32_t state);
 
+// 0.0.678 (dpm_boot.cpp, dpm_gate_pure.h): once, at the end of runStages. Samples the command fetcher (unbanked status registers, 64 x 1 ms);
+// when it is idle in at least 75 % of the samples and navi48-dpm is not 0, replaces the boot clamp by PMFW DPM (Auto: SetSoftMax 0xffff +
+// SetSoftMin 0, as Linux AUTO; BootCap with navi48-gfxmax) and sends SetWorkloadMask(bootup default). Sets the thermal restore target either
+// way. Returns the n48dpm::Verdict. dpm_describe is the Navi48,Dpm text.
+uint32_t dpm_boot_gate(const DeviceContext &dev, bool idleClamp, bool fullPath, uint32_t capMhz);
+void dpm_describe(char *t, size_t n);
+
 //=====================================================================
 //  Telemetry — the SMU metrics table
 //=====================================================================

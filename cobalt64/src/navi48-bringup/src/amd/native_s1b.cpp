@@ -47,7 +47,7 @@ static NativeS1bState gN;
 static bool           gLatched;        // set when the VM self-test begins to touch the GPU: the Apple verbs and SubmitIB refuse from then on
 static bool           gRefusedLogged[2];
 static uint32_t       sIb[64];        // staging for one IB's dwords
-static uint32_t       sPkt[64];       // the compute builder's output
+static uint32_t       sPkt[128];      // the compute builder's output (0.0.678: room for the 33-dword GFX12 compute preamble)
 constexpr uint32_t    kPatWords = 16; // dwords each WRITE_DATA writes and the CPU checks
 constexpr uint32_t    kPoison   = 0xDEADBEEEu;   // bit 0 CLEAR: no poison word can ever decode as a VALID page-table entry
 
@@ -219,7 +219,7 @@ static LegResult leg_compute(bool *timedOut, uint32_t *bad) {
     poison_page_range(kPgResult, 0, 0x1000u);
     amdgpu_hdp_flush(dev);
     const uint64_t codeVa = va_of_page(kPgShader), resVa = va_of_page(kPgResult), ibVa = va_of_page(kPgDispatchIb);
-    const uint32_t n = compute_build_va_dispatch_ib(dev, sPkt, 64, codeVa, resVa);
+    const uint32_t n = compute_build_va_dispatch_ib(dev, sPkt, (uint32_t)(sizeof(sPkt) / sizeof(sPkt[0])), codeVa, resVa);
     if (n == 0) { NAT_LOG("leg compute FAIL the dispatch builder refused"); return kLegFail; }
     if (!stage_page(kPgDispatchIb, sPkt, n)) { NAT_LOG("leg compute FAIL the dispatch IB did not stage"); return kLegFail; }
     clear_gfx_faults();

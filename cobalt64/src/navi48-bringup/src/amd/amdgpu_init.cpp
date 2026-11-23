@@ -756,6 +756,10 @@ kern_return_t run_stage(BringupContext &ctx, BringupStage s) {
 
     case BringupStage::ComputeDispatch: {
         pre_test_snapshot(ctx, "ComputeDispatch");
+        // 0.0.678 (navi48-cdfix, compute_cdfix_pure.h): the GFX12 compute preamble in the dispatch IB, CU masks for the SEs that exist, no SH
+        // readback on success; sub-marks after the IB test and the dispatch.
+        INIT_LOG("ComputeDispatch: navi48-cdfix %s", compute_cdfix_on() ? "on (GFX12 compute preamble, per-SE CU masks, no SH readback on success)"
+                                                                        : "OFF (=0): the 0.0.677 dispatch stream");
         kern_return_t r = compute_dispatch_test(dev, ctx.gmc, ctx.cp, &ctx.computeResult, ctx.hsaAbi);
         const ComputeTestResult &cr = ctx.computeResult;
         ctx.computePassed = (r == kIOReturnSuccess) && cr.lanes_mismatched == 0;
@@ -926,8 +930,8 @@ kern_return_t bringup_to(BringupContext &ctx, BringupStage target) {
     // 0.0.676: with navi48-gfxmax=<MHz> the clamp is that cap (BootCap, bounded to the PMFW range) instead of the PMFW minimum; without it, Low.
     if (ctx.idleClamp && ctx.smuOnline && ctx.dev) {
         kern_return_t pr = smu_set_power_state(*ctx.dev, smu_gfx_boot_state());
-        INIT_LOG("idle clamp: GFXCLK -> %s %s (%#x) — the GFX core is powered but "
-                 "ungated, so an unclamped idle burns full board power. "
+        INIT_LOG("idle clamp: GFXCLK -> %s %s (%#x) — held until the 0.0.678 DPM gate at the end of runStages "
+                 "(navi48-dpm=0 keeps it for the boot). "
                  "`navi48test power 0` to unclamp.",
                  smu_gfx_boot_cap() ? "the navi48-gfxmax cap" : "low", pr == kIOReturnSuccess ? "applied" : "FAILED", pr);
     }

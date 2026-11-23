@@ -88,8 +88,11 @@
 //
 
 #include <IOKit/IOLib.h>
+#include <pexpert/pexpert.h>
 
 #include "compute_test.h"
+#include "compute_cdfix_pure.h"
+#include "asic_profile.h"
 #include "vadd_ir_abi.h"
 #include "amdgpu_cp.h"
 #include "amdgpu_gmc.h"
@@ -488,7 +491,57 @@ void dump_sh_readback(const DeviceContext &dev, const char *when)
            RREG32(dev, gc0(dev, Reg::COMPUTE_DISPATCH_INITIATOR)));
 }
 
+// 0.0.678 (compute_cdfix_pure.h): navi48-cdfix, read once. On = the GFX12 compute preamble at the head of every dispatch IB built here, CU
+// masks only for the SEs that exist, and no COMPUTE_* MMIO readback unless the dispatch failed. Off (=0) = the 0.0.677 stream.
+int gCdfixOn = -1;
+uint32_t gCdfixNumSe = 0, gCdfixPreambles = 0;
+
+uint32_t cdfix_num_se(const DeviceContext &dev)
+{
+    return n48cdfix::num_se_of(dev.gcTopo.valid, dev.gcTopo.numSe, N4X_ASIC_MAX_SE);
+}
+
+// The CU-mask value for SE `se` (0..3): all CUs on the 0.0.677 stream, Mesa's per-SE value with the fix.
+uint32_t cu_mask(const DeviceContext &dev, uint32_t se)
+{
+    return compute_cdfix_on() ? n48cdfix::se_mask(se, cdfix_num_se(dev)) : kAllCUsEnabled;
+}
+
+// The preamble at pkt[at..] when the fix is on (at unchanged when off). 0 = it did not fit / refused.
+uint32_t emit_cdfix_preamble(const DeviceContext &dev, uint32_t *pkt, uint32_t at, uint32_t cap, bool log)
+{
+    if (!compute_cdfix_on()) return at;
+    const uint32_t numSe = cdfix_num_se(dev);
+    const uint32_t end = n48cdfix::emit_preamble(pkt, at, cap, dev.ip.getBase(IPBlock::GC, 0), numSe);
+    if (end == 0) { CS_LOG("cdfix: the GFX12 compute preamble did not fit (%u + %u > %u dwords) or underflowed; refused", at, n48cdfix::kPreambleDwords, cap); return 0; }
+    gCdfixNumSe = numSe;
+    gCdfixPreambles++;
+    if (log)
+        for (uint32_t r = 0; r < n48cdfix::kRowCount; r++)
+            CS_LOG("  preamble %s (gc_off %#06x, %u reg%s, %s) <- %#010x%s", n48cdfix::kRows[r].name, n48cdfix::kRows[r].off, n48cdfix::kRows[r].n,
+                   n48cdfix::kRows[r].n > 1 ? "s" : "", n48cdfix::kRows[r].index ? "SET_SH_REG_INDEX idx 2" : "SET_SH_REG",
+                   n48cdfix::value_of(n48cdfix::kRows[r].off, numSe), n48cdfix::kRows[r].n > 1 ? " (first)" : "");
+    return end;
+}
+
 } // anonymous namespace
+
+bool compute_cdfix_on()
+{
+    if (gCdfixOn < 0) {
+        uint32_t v = 1;
+        const bool present = PE_parse_boot_argn("navi48-cdfix", &v, sizeof(v));
+        gCdfixOn = n48cdfix::fix_on(present, v) ? 1 : 0;
+    }
+    return gCdfixOn == 1;
+}
+
+void compute_cdfix_describe(char *t, size_t n)
+{
+    if (!compute_cdfix_on()) { snprintf(t, n, "off (navi48-cdfix=0): the 0.0.677 dispatch stream (no compute preamble, all-CU masks on SE0..3, SH readback)"); return; }
+    snprintf(t, n, "on: GFX12 compute preamble (%u dwords) in %u dispatch IB(s), CU masks for %u SE(s), SH readback only on failure",
+             n48cdfix::kPreambleDwords, gCdfixPreambles, gCdfixNumSe);
+}
 
 //====================================================================
 // compute_dispatch_test
@@ -873,6 +926,8 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
             return r.kr;
         }
     }
+    // 0.0.678: which step of this stage leaves the command fetcher busy (unbanked status reads; navi48-cpmark=0 off).
+    cp_busy_mark(dev, "ComputeDispatch/IB test");
 
     //----------------------------------------------------------------
     // 5. The dispatch IB. Compute-typed PACKET3 headers throughout, CU masks
@@ -887,10 +942,13 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     const uint32_t usr_lo = (uint32_t)(usr_va & 0xFFFFFFFFu);
     const uint32_t usr_hi = (uint32_t)(usr_va >> 32);
 
-    uint32_t pkt[64];
+    uint32_t pkt[128];
     uint32_t n = 0;
 
     CS_LOG("--- PM4 register writes (dispatch IB, compute-typed headers) ---");
+    // 0.0.678 (navi48-cdfix): the GFX12 compute preamble first (Mesa gfx12_init_compute_preamble_state + RADV's gfx-queue additions).
+    n = emit_cdfix_preamble(dev, pkt, n, 128, true);
+    if (n == 0 && compute_cdfix_on()) { r.kr = kIOReturnInternalError; return r.kr; }
 
     // (a) COMPUTE_PGM_LO/HI — the shader address, >> 8.
     {
@@ -912,7 +970,7 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     }
     // (d) CU masks SE0/SE1 (0x1bb6-7) via SET_SH_REG_INDEX index 3.
     {
-        const uint32_t v[2] = { kAllCUsEnabled, kAllCUsEnabled };
+        const uint32_t v[2] = { cu_mask(dev, 0), cu_mask(dev, 1) };
         static const char *const names[2] = { "COMPUTE_STATIC_THREAD_MGMT_SE0", "COMPUTE_STATIC_THREAD_MGMT_SE1" };
         n = emit_set_sh_reg_index3(dev, pkt, n, Reg::COMPUTE_STATIC_THREAD_MGMT_SE0, v, 2, names);
     }
@@ -924,7 +982,7 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     }
     // (f) CU masks SE2/SE3 (0x1bb9-a) via SET_SH_REG_INDEX index 3.
     {
-        const uint32_t v[2] = { kAllCUsEnabled, kAllCUsEnabled };
+        const uint32_t v[2] = { cu_mask(dev, 2), cu_mask(dev, 3) };
         static const char *const names[2] = { "COMPUTE_STATIC_THREAD_MGMT_SE2", "COMPUTE_STATIC_THREAD_MGMT_SE3" };
         n = emit_set_sh_reg_index3(dev, pkt, n, Reg::COMPUTE_STATIC_THREAD_MGMT_SE2, v, 2, names);
     }
@@ -981,7 +1039,10 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     //----------------------------------------------------------------
     // 5b. Submit the dispatch IB and wait.
     //----------------------------------------------------------------
-    dump_sh_readback(dev, "before submit");
+    if (!compute_cdfix_on()) {   // 0.0.677 stream: sixteen COMPUTE_* MMIO reads of the live GFX pipe (0.0.678: only after a failure)
+        dump_sh_readback(dev, "before submit");
+        cp_busy_mark(dev, "ComputeDispatch/SH readback");
+    }
 
     const uint32_t wptr_before = cp.wptr;
     uint32_t fence = 0;
@@ -1008,6 +1069,7 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
            data_landed ? "appeared" : "did not appear",
            (unsigned long long)data_us,
            cp.rptr_cpu ? *cp.rptr_cpu : 0xFFFFFFFFu, cp.wptr);
+    cp_busy_mark(dev, "ComputeDispatch/dispatch");   // 0.0.678
 
     //----------------------------------------------------------------
     // 6. Read back every lane through the GPU's view of VRAM.
@@ -1034,13 +1096,12 @@ compute_dispatch_test(DeviceContext &dev, GMCContext &gmc, CPContext &cp,
     CS_LOG("  result[32] = %08x (must still be the poison %#010x): %s",
            guard, kComputePoison, r.output_guard_passed ? "PASS" : "FAIL");
 
-    dump_sh_readback(dev, "after submit");
-
     //----------------------------------------------------------------
     // 7. Verdict.
     //----------------------------------------------------------------
     const bool passed = (mismatched == 0) && r.output_guard_passed;
     r.kr = passed ? kIOReturnSuccess : (fence_landed ? kIOReturnIOError : kIOReturnTimeout);
+    if (!compute_cdfix_on() || !passed) dump_sh_readback(dev, "after submit");   // 0.0.678: with the fix, only when the dispatch failed
 
     if (passed && fence_landed) {
         if (vaddIr) {
@@ -1106,9 +1167,12 @@ const uint8_t *compute_store_magic_code(uint32_t *size_out)
 uint32_t compute_build_va_dispatch_ib(const DeviceContext &dev, uint32_t *pkt, uint32_t max_dw,
                                       uint64_t code_va, uint64_t res_va)
 {
-    if (pkt == nullptr || max_dw < 64) return 0;
+    const uint32_t need = compute_cdfix_on() ? 64u + n48cdfix::kPreambleDwords : 64u;
+    if (pkt == nullptr || max_dw < need) return 0;
     if (gc0(dev, Reg::COMPUTE_DISPATCH_INITIATOR) < kPacket3SetShRegStart) return 0;   // the guard compute_dispatch_test applies
     uint32_t n = 0;
+    n = emit_cdfix_preamble(dev, pkt, n, max_dw, false);   // 0.0.678 (navi48-cdfix): the same GFX12 compute preamble as compute_dispatch_test
+    if (n == 0 && compute_cdfix_on()) return 0;
     {   // (a) PGM_LO/HI: the shader address >> 8 (PGM_HI is [7:0] = VA bits 47:40)
         const uint32_t v[2] = { (uint32_t)((code_va >> 8) & 0xFFFFFFFFu), (uint32_t)((code_va >> 40) & 0xFFu) };
         static const char *const names[2] = { "COMPUTE_PGM_LO", "COMPUTE_PGM_HI" };
@@ -1125,7 +1189,7 @@ uint32_t compute_build_va_dispatch_ib(const DeviceContext &dev, uint32_t *pkt, u
         n = emit_set_sh_reg(dev, pkt, n, Reg::COMPUTE_RESOURCE_LIMITS, v, 1, names);
     }
     {   // (d) CU masks SE0/SE1, index 3
-        const uint32_t v[2] = { kAllCUsEnabled, kAllCUsEnabled };
+        const uint32_t v[2] = { cu_mask(dev, 0), cu_mask(dev, 1) };
         static const char *const names[2] = { "COMPUTE_STATIC_THREAD_MGMT_SE0", "COMPUTE_STATIC_THREAD_MGMT_SE1" };
         n = emit_set_sh_reg_index3(dev, pkt, n, Reg::COMPUTE_STATIC_THREAD_MGMT_SE0, v, 2, names);
     }
@@ -1135,7 +1199,7 @@ uint32_t compute_build_va_dispatch_ib(const DeviceContext &dev, uint32_t *pkt, u
         n = emit_set_sh_reg(dev, pkt, n, Reg::COMPUTE_TMPRING_SIZE, v, 1, names);
     }
     {   // (f) CU masks SE2/SE3, index 3
-        const uint32_t v[2] = { kAllCUsEnabled, kAllCUsEnabled };
+        const uint32_t v[2] = { cu_mask(dev, 2), cu_mask(dev, 3) };
         static const char *const names[2] = { "COMPUTE_STATIC_THREAD_MGMT_SE2", "COMPUTE_STATIC_THREAD_MGMT_SE3" };
         n = emit_set_sh_reg_index3(dev, pkt, n, Reg::COMPUTE_STATIC_THREAD_MGMT_SE2, v, 2, names);
     }

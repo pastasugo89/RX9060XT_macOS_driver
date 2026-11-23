@@ -7179,9 +7179,15 @@ void Navi48Bringup::runStages(uint32_t target) {
 		// (navi48-cpcensus=1), and the marks of every stage for the registry (ioreg -l | grep CpBusyMarks).
 		amdgpu::cp_busy_mark(dev, "end of runStages");
 		amdgpu::cp_queue_census(dev, "end of runStages");
-		char m[1400];
+		char m[2000];   // 0.0.678: room for the ComputeDispatch sub-marks and the mark after native S1b
 		amdgpu::cp_busy_marks_describe(m, sizeof(m));
 		setProperty("Navi48,CpBusyMarks", m);
+	}
+	if (ctx.reached >= amdgpu::BringupStage::ComputeDispatch || ctx.failedAt == amdgpu::BringupStage::ComputeDispatch) {   // 0.0.678: navi48-cdfix
+		char t[240];
+		amdgpu::compute_cdfix_describe(t, sizeof(t));
+		setProperty("Navi48,ComputeDispatchFix", t);
+		N48LOG("compute dispatch fix: %s", t);
 	}
 	publishPDB0On(this, ctx);
 	publishSDMAQ1On(this, ctx);
@@ -7192,6 +7198,22 @@ void Navi48Bringup::runStages(uint32_t target) {
 		(void)amdgpu::native_s1b_run(ctx);
 		publishNativeS1bOn(this);
 		if (amdgpu::native_s1b_latched()) publishNativeVramOn(pciDevice, vramMB);   // 0.0.617 (K5): only on a native boot whose self-test latched
+	}
+	{   // 0.0.678: GFXCLK under PMFW DPM, behind the fail-safe idle gate (dpm_boot.cpp, dpm_gate_pure.h), LAST: after clock gating, the fan step
+		// and the native S1b self-test (its compute leg dispatches on the GFX ring too), before any client. navi48-dpm=0 keeps the clamp.
+		const bool dpmPath = r == kIOReturnSuccess && ctx.reached == (amdgpu::BringupStage)target && target >= (uint32_t)amdgpu::BringupStage::ComputeDispatch &&
+		                     !ctx.mesFailed && ctx.smuOnline && (ctx.kgqMapped || ctx.cpLegacyRb);
+		if (nativeGate == n48native::kGateOn && ctx.reached >= amdgpu::BringupStage::CPInit) {
+			amdgpu::cp_busy_mark(dev, "after native S1b");
+			char m[2000];
+			amdgpu::cp_busy_marks_describe(m, sizeof(m));
+			setProperty("Navi48,CpBusyMarks", m);
+		}
+		(void)amdgpu::dpm_boot_gate(dev, ctx.idleClamp, dpmPath, amdgpu::smu_gfx_boot_cap());
+		char t[700];
+		amdgpu::dpm_describe(t, sizeof(t));
+		setProperty("Navi48,Dpm", t);
+		N48LOG("dpm: %s", t);
 	}
 	N48LOG("stages: ladder %s — reached %u (%s), result 0x%x", r == kIOReturnSuccess ? "complete" : "stopped",
 	       (unsigned)ctx.reached, amdgpu::stage_name(ctx.reached), r);

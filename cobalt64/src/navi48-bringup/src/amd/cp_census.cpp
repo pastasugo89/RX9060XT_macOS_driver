@@ -15,7 +15,7 @@
 namespace amdgpu {
 namespace {
 
-constexpr uint32_t kKeep = 12;   // the marks kept for the registry
+constexpr uint32_t kKeep = 16;   // the marks kept for the registry (0.0.678: 12 -> 16 for the ComputeDispatch sub-marks)
 struct Kept { const char *where; uint32_t n; uint32_t cpf, cmp, postWptr, mesHqd, guiActive, cpfFirst, mesCntl; };
 Kept gKept[kKeep];
 uint32_t gKeptN = 0;
