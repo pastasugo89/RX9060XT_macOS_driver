@@ -790,12 +790,18 @@ static void t15_admission_budget(const std::string &root) {
         expect(admit(u, 64, 64, true, 3000u, 501u, 64 - 8) == kPerPidLimit, "T15: the 9th record of one process is refused (per-process cap 8)");
         expect(admit(u, 64, 64, true, 3001u, 501u, 64 - 8) == kVerdictOk, "T15: another process of the same uid is still admitted");
     }
-    // per uid: 16 processes x 2 records = 32 for one uid; the next process of that uid is refused, another uid is not
+    // A replacement GPU process can open past 32 records. The per-UID limit
+    // still leaves room for other users and the system reserve.
     {
         Use u[64] = {};
-        for (uint32_t k = 0; k < 32; k++) u[k] = Use{ true, true, 4000u + k / 2u, 600u };
-        expect(admit(u, 64, 64, true, 4100u, 600u, 64 - 32) == kPerUidLimit, "T15: a uid holds at most 32 records together");
-        expect(admit(u, 64, 64, true, 4100u, 601u, 64 - 32) == kVerdictOk, "T15: another uid is admitted");
+        u[0] = Use{ true, false, 1u, 88u };
+        for (uint32_t k = 0; k < 48; k++) {
+            expect(admit(u, 64, 64, true, 4000u + k / 2u, 600u, 63 - k) == kVerdictOk,
+                   "T15: one UID can open all 48 records with WindowServer active");
+            u[k + 1] = Use{ true, true, 4000u + k / 2u, 600u };
+        }
+        expect(admit(u, 64, 64, true, 4100u, 600u, 15) == kPerUidLimit, "T15: the 49th record of one UID is refused");
+        expect(admit(u, 64, 64, true, 4100u, 601u, 15) == kVerdictOk, "T15: another UID can open a record at the per-UID limit");
     }
     // the application total: unreachable with the reserve at 64 (free > 9 implies fewer than 55 open), so tested with a smaller table
     {
