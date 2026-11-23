@@ -196,6 +196,13 @@ GFXDB_PATCH_SHA = '630521cfc90d9c32484b93a1c35979960d8618cdaf38a95d7e7bd6d336b29
 GFXDB_FILES = ('Info.plist', 'src/amd/amdgpu_cp.h', 'src/amd/amdgpu_init.cpp', 'src/amd/cp_census.cpp', 'src/amd/cp_doorbell_pure.h', 'src/amd/cp_v12_0.cpp')
 GFXDB_REQUIRED_STRINGS = (b'Linux qword index (gfx_ring0 << 1) (default since 0.0.679)', b'ComputeDispatch/doorbell probe', b'ComputeDispatch/start',
                           b'navi48-gfxdb=0')   # 0.0.679: the default mode text, the probe marks, the kill-switch text
+ADMISSION_VERSION = '0.0.680'
+ADMISSION_BASE = ROOT / 'research/builds/macos-20261123/kernel-679/kernel-contexts-v15'
+INSTALLED_679 = {'bundle_path': 'Navi48Bringup-contexts-0.0.679.kext',
+                 'kernel_sha256': '7c68c4bfefb0db0572be21a609e241bdea727260317b0403ecfaef672ead5df3',
+                 'config_sha256': '85b88aeb822e8bd8177e857cece9de30ecbc2f6337451848abc4afda6dcdfcc0', 'version': '0.0.679'}
+ADMISSION_HEADER = 'src/amd/native_g4_pure.h'
+ADMISSION_HEADER_SHA = '31d3cb2bbd6532a7fc1ac9c39746fb6a96088cc24ca04958cbc859fe1635470d'
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -258,8 +265,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.679)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.680)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9]|680)', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -277,7 +284,7 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION, ADMISSION_VERSION):
         return recorded_active_baseline(path)
     # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
@@ -285,7 +292,8 @@ def recorded_active_release(path, version):
                          BLACKBAND_VERSION: (INSTALLED_671, '0.0.671'), DISPARB_VERSION: (INSTALLED_671, '0.0.671'),
                          FALLBACK_VERSION: (INSTALLED_673, '0.0.673'), GATING_VERSION: (INSTALLED_674, '0.0.674'),
                          FAN_VERSION: (INSTALLED_675, '0.0.675'), DOORBELL_VERSION: (INSTALLED_676, '0.0.676'),
-                         DPM_VERSION: (INSTALLED_677, '0.0.677'), GFXDB_VERSION: (INSTALLED_678, '0.0.678')}[version]
+                         DPM_VERSION: (INSTALLED_677, '0.0.677'), GFXDB_VERSION: (INSTALLED_678, '0.0.678'),
+                         ADMISSION_VERSION: (INSTALLED_679, '0.0.679')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -605,6 +613,24 @@ def gfxdb_overlay(candidate, patch, version):
     return sorted(changed)
 
 
+def admission_overlay(candidate, source):
+    """Apply the reviewed admission header and version markers to the 0.0.679 tree."""
+    header = (source / ADMISSION_HEADER).read_bytes()
+    if hashlib.sha256(header).hexdigest() != ADMISSION_HEADER_SHA:
+        raise ValueError('The admission header differs from the reviewed fix')
+    before = tree_files(candidate)
+    (candidate / ADMISSION_HEADER).write_bytes(header)
+    replace_exact(candidate / 'Info.plist', '<string>0.0.679</string>', '<string>0.0.680</string>', 2)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 679;', 'kN1cKextBuild = 680;', 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 679u', 'sizeof(N48MetalOps), 680u', 2)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    expected = {ADMISSION_HEADER, 'Info.plist', *BLACKBAND_MARKER_FILES}
+    if changed != expected:
+        raise ValueError('Candidate changed files outside the admission overlay: ' + ', '.join(sorted(changed ^ expected)))
+    return sorted(changed)
+
+
 def overlay_candidate(candidate, source, version=RELEASE):
     """Preserve initialization/firmware; replace only the reviewed context files."""
     build = release_build(version)
@@ -717,10 +743,11 @@ def main():
     doorbell = version == DOORBELL_VERSION     # 0.0.677: built on the 0.0.676 candidate tree plus the reviewed GFX doorbell patch
     dpm = version == DPM_VERSION               # 0.0.678: built on the 0.0.677 candidate tree plus the reviewed ComputeDispatch fix + DPM gate patch
     gfxdb = version == GFXDB_VERSION           # 0.0.679: built on the 0.0.678 candidate tree plus the reviewed GFX doorbell default patch
+    admission = version == ADMISSION_VERSION  # 0.0.680: built on the 0.0.679 candidate tree with the admission limit fix
     patched = blackband or disparb or fallback or gating or fan or doorbell or dpm or gfxdb
-    tests = TESTS + (REFRESH_TESTS if refresh or fix or patched else ())
-    if version in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION) and not args.active_baseline_manifest:
-        raise ValueError('0.0.668 is built on the installed 0.0.667 kernel: pass --active-baseline-manifest (payload v3 manifest)')
+    tests = TESTS + (REFRESH_TESTS if refresh or fix or patched or admission else ())
+    if (version == '0.0.668' or refresh or fix or patched or admission) and not args.active_baseline_manifest:
+        raise ValueError(version + ' requires --active-baseline-manifest for the installed kernel')
     if args.active_baseline_manifest:
         active = recorded_active_release(args.active_baseline_manifest, version)
         active_source = 'recorded:' + str(args.active_baseline_manifest)
@@ -738,7 +765,8 @@ def main():
                    'patch_files': list(GFXDB_FILES if gfxdb else DPM_FILES if dpm else DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
                    'head_at_build': revision}
     else:
-        revision, overlay = overlay_provenance(args.worktree_overlay, FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
+        revision, overlay = overlay_provenance(args.worktree_overlay, (ADMISSION_HEADER,) if admission else
+                                               FIX_OVERLAY if fix else REFRESH_OVERLAY if refresh else OVERLAY)
     spec = importlib.util.spec_from_file_location('eight_repro', Path(__file__).with_name('build-eight-sessions.py'))
     repro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repro)
@@ -771,10 +799,12 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+    copy_source(ADMISSION_BASE / 'candidate-source' if admission else GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
                 REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if gfxdb:
+    if admission:
+        manifest['base_verified'] = candidate_base_verified(baseline, ADMISSION_BASE, INSTALLED_679['kernel_sha256'], INSTALLED_679['version'])
+    elif gfxdb:
         # 0.0.679: no rebuild of any base. The base is the reviewed 0.0.678 candidate tree and binary (checked against its manifest).
         manifest['base_verified'] = gfxdb_base_verified(baseline)
     elif dpm:
@@ -815,7 +845,9 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if gfxdb:
+    if admission:
+        manifest['changed_source_files'] = admission_overlay(candidate, SOURCE)
+    elif gfxdb:
         manifest['changed_source_files'] = gfxdb_overlay(candidate, args.patch, version)
         manifest['gfxdb_overlay'] = {'patch': str(args.patch), 'patch_sha256': GFXDB_PATCH_SHA,
                                      'marker_files': list(BLACKBAND_MARKER_FILES)}
@@ -873,13 +905,14 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched else ())
-                + (FIX_REQUIRED_STRINGS if fix or patched else ()) + (BLACKBAND_REQUIRED_STRINGS if patched else ())
-                + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan or doorbell or dpm or gfxdb else ())
-                + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan or doorbell or dpm or gfxdb else ())
-                + (GATING_REQUIRED_STRINGS if gating or fan or doorbell or dpm or gfxdb else ()) + (FAN_REQUIRED_STRINGS if fan or doorbell or dpm or gfxdb else ())
-                + (DOORBELL_REQUIRED_STRINGS if doorbell or dpm or gfxdb else ()) + (DPM_REQUIRED_STRINGS if dpm or gfxdb else ())
-                + (GFXDB_REQUIRED_STRINGS if gfxdb else ()))
+    recent = gfxdb or admission
+    required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched or admission else ())
+                + (FIX_REQUIRED_STRINGS if fix or patched or admission else ()) + (BLACKBAND_REQUIRED_STRINGS if patched or admission else ())
+                + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan or doorbell or dpm or recent else ())
+                + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan or doorbell or dpm or recent else ())
+                + (GATING_REQUIRED_STRINGS if gating or fan or doorbell or dpm or recent else ()) + (FAN_REQUIRED_STRINGS if fan or doorbell or dpm or recent else ())
+                + (DOORBELL_REQUIRED_STRINGS if doorbell or dpm or recent else ()) + (DPM_REQUIRED_STRINGS if dpm or recent else ())
+                + (GFXDB_REQUIRED_STRINGS if recent else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]
