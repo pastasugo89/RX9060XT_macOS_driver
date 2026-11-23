@@ -148,7 +148,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.678'), 678)   # ComputeDispatch fix + DPM gate: the 0.0.677 tree plus the reviewed 0.0.678 patch
         self.assertEqual(build.release_build('0.0.679'), 679)   # Linux GFX doorbell by default: the 0.0.678 tree plus the reviewed 0.0.679 patch
         self.assertEqual(build.release_build('0.0.680'), 680)
-        for version in ('0.0.665', '0.0.681', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.681'), 681)
+        for version in ('0.0.665', '0.0.682', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
