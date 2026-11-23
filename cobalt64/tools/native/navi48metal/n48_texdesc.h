@@ -11,7 +11,7 @@
 // MTLTextureType values (asserted in Navi48Device.m)
 enum { N48TD_MTL_1D = 0, N48TD_MTL_1DARRAY = 1, N48TD_MTL_2D = 2, N48TD_MTL_2DARRAY = 3, N48TD_MTL_2DMS = 4, N48TD_MTL_CUBE = 5, N48TD_MTL_CUBEARRAY = 6, N48TD_MTL_3D = 7, N48TD_MTL_2DMSARRAY = 8, N48TD_MTL_BUFFER = 9 };
 // MTLTextureUsage bits
-enum { N48TD_USE_SHADERWRITE = 2, N48TD_USE_RENDERTARGET = 4 };
+enum { N48TD_USE_SHADERREAD = 1, N48TD_USE_SHADERWRITE = 2, N48TD_USE_RENDERTARGET = 4 };
 // VkImageType / VkImageViewType values and the create flag (asserted in Navi48Device.m)
 enum { N48TD_VK_IMAGE_1D = 0, N48TD_VK_IMAGE_2D = 1, N48TD_VK_IMAGE_3D = 2 };
 enum { N48TD_VK_VIEW_1D = 0, N48TD_VK_VIEW_2D = 1, N48TD_VK_VIEW_3D = 2, N48TD_VK_VIEW_CUBE = 3, N48TD_VK_VIEW_1D_ARRAY = 4, N48TD_VK_VIEW_2D_ARRAY = 5 };
@@ -33,7 +33,7 @@ typedef struct {
     unsigned levels;        // mip levels (0 -> 1)
     unsigned depth;         // depth (0 -> 1)
     int is1D, is3D;
-    unsigned dropStorage;   // bundle 31: ShaderWrite on a multisample texture is accepted and the texture is made WITHOUT a storage image (1)
+    unsigned dropStorage;   // The requested ShaderWrite usage has no backing storage image.
 } n48td_t;
 
 // d_* are the raw descriptor fields.  usage is MTLTextureUsage.  Returns 1 when accepted (and fills *o), else 0 with o->why set.
@@ -60,7 +60,16 @@ static inline int n48td_map(unsigned long tt, unsigned long w, unsigned long h, 
         if (sampleCount != 1) { o->why = "multisampled cube textures are not supported"; return 0; }
         if (arrayLength != 1) { o->why = "a cube texture has arrayLength 1 (arrays of cubes are CubeArray, not supported)"; return 0; }
         if (depth != 1) { o->why = "a cube texture has depth 1"; return 0; }
-        if (usage & N48TD_USE_SHADERWRITE) { o->why = "ShaderWrite on a cube texture is not supported (a storage image cannot be a cube view here)"; return 0; }
+        // ANGLE requests ShaderWrite together with sampling or rendering even
+        // for its 1x1 cube placeholder. Keep the supported uses and reject
+        // an actual storage binding in the encoder.
+        if (usage & N48TD_USE_SHADERWRITE) {
+            if (!(usage & (N48TD_USE_SHADERREAD | N48TD_USE_RENDERTARGET))) {
+                o->why = "ShaderWrite on a cube texture requires a supported sampling or render-target use";
+                return 0;
+            }
+            o->dropStorage = 1;
+        }
         o->kind = N48TD_K_CUBE; o->imageType = N48TD_VK_IMAGE_2D; o->viewType = N48TD_VK_VIEW_CUBE; o->layers = N48TD_CUBE_FACES; o->flags = N48TD_VK_CREATE_CUBE_COMPATIBLE; o->layersIvar = N48TD_CUBE_FACES;
         o->ok = 1; return 1;
     }
@@ -81,6 +90,12 @@ static inline int n48td_map(unsigned long tt, unsigned long w, unsigned long h, 
     o->viewType = is1D ? (tt == N48TD_MTL_1DARRAY ? N48TD_VK_VIEW_1D_ARRAY : N48TD_VK_VIEW_1D) : is3D ? N48TD_VK_VIEW_3D : N48TD_VK_VIEW_2D;
     o->layers = is1D ? (unsigned)arrayLength : 1; o->layersIvar = is1D ? (unsigned)arrayLength : 0; o->flags = 0;
     o->ok = 1; return 1;
+}
+
+static inline unsigned long n48td_reported_usage(const n48td_t *desc, unsigned long usage) {
+    // Let callers choose a non-storage path. Multisample retains its existing public usage.
+    if (desc->kind == N48TD_K_CUBE && desc->dropStorage) return usage & ~(unsigned long)N48TD_USE_SHADERWRITE;
+    return usage;
 }
 
 // The texture's own layer count (what n48Layers returns for a root texture): barriers, region checks, mip blits, readbacks.

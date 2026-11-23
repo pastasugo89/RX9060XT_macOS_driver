@@ -2587,7 +2587,7 @@ static void n48_add_protocols(Class c, const char **names, unsigned n, const cha
 // bundle 9: n48_texdesc.h carries the numeric Metal / Vulkan values (it includes neither header); these asserts tie them to the real enums.
 _Static_assert((int)MTLTextureType1D == N48TD_MTL_1D && (int)MTLTextureType1DArray == N48TD_MTL_1DARRAY && (int)MTLTextureType2D == N48TD_MTL_2D && (int)MTLTextureType2DArray == N48TD_MTL_2DARRAY &&
                (int)MTLTextureType2DMultisample == N48TD_MTL_2DMS && (int)MTLTextureTypeCube == N48TD_MTL_CUBE && (int)MTLTextureTypeCubeArray == N48TD_MTL_CUBEARRAY && (int)MTLTextureType3D == N48TD_MTL_3D, "MTLTextureType values");
-_Static_assert((int)MTLTextureUsageShaderWrite == N48TD_USE_SHADERWRITE && (int)MTLTextureUsageRenderTarget == N48TD_USE_RENDERTARGET, "MTLTextureUsage values");
+_Static_assert((int)MTLTextureUsageShaderRead == N48TD_USE_SHADERREAD && (int)MTLTextureUsageShaderWrite == N48TD_USE_SHADERWRITE && (int)MTLTextureUsageRenderTarget == N48TD_USE_RENDERTARGET, "MTLTextureUsage values");
 _Static_assert((int)VK_IMAGE_TYPE_1D == N48TD_VK_IMAGE_1D && (int)VK_IMAGE_TYPE_2D == N48TD_VK_IMAGE_2D && (int)VK_IMAGE_TYPE_3D == N48TD_VK_IMAGE_3D, "VkImageType values");
 _Static_assert((int)VK_IMAGE_VIEW_TYPE_1D == N48TD_VK_VIEW_1D && (int)VK_IMAGE_VIEW_TYPE_2D == N48TD_VK_VIEW_2D && (int)VK_IMAGE_VIEW_TYPE_3D == N48TD_VK_VIEW_3D && (int)VK_IMAGE_VIEW_TYPE_CUBE == N48TD_VK_VIEW_CUBE &&
                (int)VK_IMAGE_VIEW_TYPE_1D_ARRAY == N48TD_VK_VIEW_1D_ARRAY && (int)VK_IMAGE_VIEW_TYPE_2D_ARRAY == N48TD_VK_VIEW_2D_ARRAY, "VkImageViewType values");
@@ -2615,7 +2615,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
     BOOL _impShared, _iosNoBase;   // P4: _imem is a shared import-cache entry (give it back with n48_imp_put, never vkFreeMemory); _iosNoBase = a protected IOSurface with no CPU mapping: a GPU-only texture (no _imem/_ibuf/_ibase, n48IsIOS is NO)
     BOOL _disp; VkBuffer _dbuf;   // S5.2a: CoreDisplay display surface (D-copy source); _dbuf = a VkBuffer over _imem when path (a) has no _ibuf
     BOOL _led;   // build 16 (P5 Step 0): entered in the live-import ledger (removed in -dealloc)
-    BOOL _stDropped;   // bundle 31: ShaderWrite on a multisample texture: created without a storage image; a storage bind of it fails its encode
+    BOOL _stDropped;   // A storage bind fails encoding if the backing image lacks the requested ShaderWrite usage.
 }
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLTextureDescriptor *)d error:(NSError **)err;
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid;
@@ -2727,6 +2727,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     if (!n48_radv_open(err)) return nil;
     _is1D = is1D; _arr1D = tt == MTLTextureType1DArray; _layers = ti.layersIvar; _tdk = ti.kind; _is3D = is3D; _levels = levels; _depth = depth; _samples = ti.samples > 1 ? ti.samples : 0;
     _stDropped = ti.dropStorage ? YES : NO;
+    _usage = (MTLTextureUsage)n48td_reported_usage(&ti, d.usage);
     if (ti.samples > 1 && d.storageMode != MTLStorageModePrivate) { if (err) *err = n48_err(31, [NSString stringWithFormat:@"multisample textures are Private storage only (storage mode %lu)", (unsigned long)d.storageMode]); return nil; }
     if (is1D && (d.height != 1 || _w > N48R.lim.maxImageDimension1D || _layers > N48R.lim.maxImageArrayLayers)) {
         if (err) { *err = n48_err(37, [NSString stringWithFormat:@"1D texture %lux%lu array %lu outside RADV limits (width <= %u, layers <= %u, height 1)", (unsigned long)_w, (unsigned long)_h,
@@ -2745,7 +2746,7 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     BOOL canRT = isDS ? ((ff & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) : (!is1D && !is3D && !(_fmt->flags & N48F_A8) && (ff & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT));
     if ((d.usage & MTLTextureUsageRenderTarget) && !canRT) {
         if (err) *err = n48_err(39, [NSString stringWithFormat:@"pixel format %lu (vk %d) type %lu cannot be a render target on RADV (features 0x%x)", (unsigned long)_pf, _fmt->vk, (unsigned long)tt, ff]); return nil; }
-    BOOL wantSt = (d.usage & MTLTextureUsageShaderWrite) != 0 && !ti.dropStorage;   // bundle 31: a multisample ShaderWrite texture has no storage image (n48td_map)
+    BOOL wantSt = (d.usage & MTLTextureUsageShaderWrite) != 0 && !ti.dropStorage;
     if (wantSt && !(ff & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)) {
         if (err) *err = n48_err(40, [NSString stringWithFormat:@"pixel format %lu (vk %d) has no storage-image support on RADV (features 0x%x)", (unsigned long)_pf, _fmt->vk, ff]); return nil; }
     VkImageUsageFlags iu = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -2772,7 +2773,11 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     VkImageCreateInfo ic = { .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, .imageType = vit, .format = _fmt->vk,
         .extent = { (uint32_t)_w, (uint32_t)_h, is3D ? (uint32_t)_depth : 1 }, .mipLevels = (uint32_t)_levels, .arrayLayers = ti.layers, .samples = (VkSampleCountFlagBits)ti.samples,   // bundle 10: 1 except a 2D multisample texture
         .flags = icf, .tiling = VK_IMAGE_TILING_OPTIMAL, .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, .usage = iu };
-    if (ti.dropStorage) N48_ONCE("ShaderWrite ignored on a multisample texture: storage usage dropped");   // bundle 31
+    if (ti.dropStorage && ti.kind == N48TD_K_CUBE) {
+        N48_ONCE("cube texture created without ShaderWrite: storage usage dropped");
+    } else if (ti.dropStorage) {
+        N48_ONCE("ShaderWrite ignored on a multisample texture: storage usage dropped");
+    }
     VkResult r = vkCreateImage(N48R.dev, &ic, NULL, &_img);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(32, [NSString stringWithFormat:@"vkCreateImage = %d", r]); return nil; }
     VkMemoryRequirements mr; vkGetImageMemoryRequirements(N48R.dev, _img, &mr);
@@ -5459,7 +5464,7 @@ N48_DNR(N48CommandBuffer)
             for (uint32_t k = 0; k < p->count; k++) {
                 uint32_t ix = p->binding - 480 + k; N48Texture *t = ix < 128 ? st->tex[ix] : nil;
                 if (!t) { [self n48Fail:[NSString stringWithFormat:@"%s: writable texture(%u) is used by the shader but was never bound", nm, ix]]; return NO; }
-                if ([t n48StorageDropped]) { [self n48Fail:[NSString stringWithFormat:@"%s: writable texture(%u) is multisampled and was created without ShaderWrite (storage usage dropped): the shader cannot write it", nm, ix]]; return NO; }   // bundle 31
+                if ([t n48StorageDropped]) { [self n48Fail:[NSString stringWithFormat:@"%s: writable texture(%u) was created without ShaderWrite (storage usage dropped): the shader cannot write it", nm, ix]]; return NO; }
                 [self n48Retain:t];
                 ii[nii++] = (VkDescriptorImageInfo){ VK_NULL_HANDLE, [t n48AttViewLevel:0], VK_IMAGE_LAYOUT_GENERAL };   // storage images: single-level, identity-swizzle view
             }

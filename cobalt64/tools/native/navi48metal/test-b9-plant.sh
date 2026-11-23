@@ -65,7 +65,7 @@ plant 18 $T "(tt != N48TD_MTL_1DARRAY && arrayLength != 1) || arrayLength < 1 ||
 plant 19 $T "        if (sampleCount != 1) { o->why = \"multisampled cube textures are not supported\"; return 0; }
 " "" "TEX 19: a multisampled cube is accepted"
 plant 20 $T "    if (tt == N48TD_MTL_CUBEARRAY) { o->why" "    if (0) { o->why" "TEX 20: CubeArray is no longer refused"
-plant 21 $T "        if (usage & N48TD_USE_SHADERWRITE) { o->why = \"ShaderWrite on a cube texture" "        if (0) { o->why = \"ShaderWrite on a cube texture" "TEX 21: ShaderWrite on a cube is accepted"
+plant 21 $T '            if (!(usage & (N48TD_USE_SHADERREAD | N48TD_USE_RENDERTARGET))) {' '            if (0) {' 'TEX 21: a write-only cube is accepted'
 plant 22 $T "        if (arrayLength < 1) { o->why = \"a 2D-array texture needs arrayLength >= 1\"; return 0; }
 " "" "TEX 22: a 2DArray with arrayLength 0 is accepted"
 plant 23 $T "o->viewType = N48TD_VK_VIEW_2D_ARRAY; o->layers = (unsigned)arrayLength;" "o->viewType = arrayLength > 1 ? N48TD_VK_VIEW_2D_ARRAY : N48TD_VK_VIEW_2D; o->layers = (unsigned)arrayLength;" "TEX 23: a 2DArray of length 1 gets a plain 2D view"
