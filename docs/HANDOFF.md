@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25 evening. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, late evening (before a usage-limit stop). Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -39,9 +39,9 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 ## Work in flight (subagents) and where their output goes
 | Item | State | Output |
 |---|---|---|
-| Kernel 0.0.682: IH storm guard + EOP-wake fence waits (opt-in), soft GPU recovery (opt-in), F1 no ring-space spin under global locks + log 2 s bound expiries, F3 sleep waits + VMID backoff | running | research/builds/macos-20261125/kernel-682/ |
+| Kernel 0.0.682 (agent still running; worktree has its uncommitted files amd/ih_storm_pure.h, wait_pure.h, softrec_pure.h + tests ih_storm682/wait682/softrec682): IH storm guard + EOP-wake fence waits (opt-in), soft GPU recovery (opt-in), F1 no ring-space spin under global locks + log 2 s bound expiries, F3 sleep waits + VMID backoff | running | research/builds/macos-20261125/kernel-682/ |
 | Bundle format-copy patch (sRGB/linear twins) | part of the 0.0.682 agent | research/builds/macos-20261125/bundle-formatcopy/ |
-| Bundle 40: texture views of cube/2D-array textures | running | research/builds/macos-20261125/bundle40-views/ |
+| Bundle 40: texture views of cube/2D-array textures | DONE, committed 3648b5e, built, NOT installed | research/builds/macos-20261125/bundle40-views/ (tar sha efd12548...) |
 | RADV release build (asserts/validation off, faster dlopen) | running | research/builds/macos-20261125/radv-release/ |
 | macOS 26.7.2 upgrade evaluation | done: do NOT upgrade now (stack pinned to 25G83); port project | research/reports/macos-20261125/macos-26.7-upgrade.md |
 | AMDHV repo audit | done: hypervisor (VMX->SVM) experiment, no licence, not useful for the GPU | research/reports/macos-20261125/amdhv-audit.md |
@@ -52,6 +52,16 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 - RADV patch 0012 (cmd-buffer teardown crash fix): dylib `research/builds/macos-20261123/radv-crashfix/` (sha e64dad00...).
 - Bundle stability patch: `research/builds/macos-20261125/stability/0001-bundle-radv-debug-validation-off.patch`.
 - RDNA4FB 0.0.10 (refresh from OTG V_TOTAL readback): `research/builds/macos-20261123/rdna4fb-0.0.10/` (install script there).
+
+## If you take over now
+- Running subagents may have been cut off: check research/builds/macos-20261125/kernel-682/ and radv-release/ for
+  partial output; `git status` shows uncommitted 0.0.682 work in cobalt64/src/navi48-bringup (do not discard it).
+- Do not install anything without the user's go-ahead and a stable boot latch.
+- Plan agreed with the user: install ONE combined Metal bundle (41 = bundle 40 + translator v3.0 dylib + RADV 0012
+  (release build if verified) + stability patch 0001) together with kernel 0.0.682 (new behaviours opt-in by boot-arg).
+- User reports to keep in mind: login freezes ~2 s (stability report F1-F8), Discord voice crash = Krisp/MKL on Ryzen
+  (workaround: noise suppression None + no ML voice detection, or MKL_ENABLE_INSTRUCTIONS=AVX2), Music hang = Apple
+  accountsd/passd deadlock (not ours). macOS 26.7.x upgrade: NO for now (research/reports/macos-20261125/macos-26.7-upgrade.md).
 
 ## Next planned steps
 1. Assemble bundle 40/41 = bundle 39 + cube views + translator v3.0 + RADV 0012 (+ release build if verified) +
