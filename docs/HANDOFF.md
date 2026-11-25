@@ -44,7 +44,7 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 | Bundle 40: texture views of cube/2D-array textures | running | research/builds/macos-20261125/bundle40-views/ |
 | RADV release build (asserts/validation off, faster dlopen) | running | research/builds/macos-20261125/radv-release/ |
 | macOS 26.7.2 upgrade evaluation | running | research/reports/macos-20261125/macos-26.7-upgrade.md |
-| AMDHV repo audit | running | research/reports/macos-20261125/amdhv-audit.md |
+| AMDHV repo audit | done: hypervisor (VMX->SVM) experiment, no licence, not useful for the GPU | research/reports/macos-20261125/amdhv-audit.md |
 
 ## Ready but not installed
 - Translator rebased on NullMoth v3.0: patches/0004, dylib `research/builds/macos-20261123/xlate-v29/libn48xlate.dylib`
