@@ -19,6 +19,21 @@ from pathlib import Path
 
 BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
 PROBE = Path(__file__).with_name('browser-frame-probe.js')
+WEBGL_PROBE = r'''(() => {
+    const stats = {requests: 0, accepted: 0, creationErrors: 0, losses: 0, restores: 0};
+    Object.defineProperty(window, '__navi44WebGLProbe', {value: stats});
+    window.addEventListener('webglcontextcreationerror', () => ++stats.creationErrors, true);
+    window.addEventListener('webglcontextlost', () => ++stats.losses, true);
+    window.addEventListener('webglcontextrestored', () => ++stats.restores, true);
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type) {
+        const webgl = ['webgl', 'webgl2', 'experimental-webgl'].includes(type);
+        if (webgl) ++stats.requests;
+        const context = Reflect.apply(original, this, arguments);
+        if (webgl && context) ++stats.accepted;
+        return context;
+    };
+})()'''
 
 
 class CDP:
@@ -92,12 +107,19 @@ def endpoint(port, path):
         return json.load(f)
 
 
+def gpu_processes(browser):
+    processes = browser.call('SystemInfo.getProcessInfo').get('processInfo', [])
+    return [process['id'] for process in processes if process['type'].lower() == 'gpu']
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--url', default='https://vorssaint.com')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--diagnostic-log', type=Path, help='Keep stderr from this isolated profile for diagnosis')
     p.add_argument('--disable-graphite', action='store_true', help='Disable Skia Graphite only for this isolated test')
+    p.add_argument('--watch-webgl', action='store_true',
+                   help='Record page WebGL context creation and loss, with GPU process snapshots')
     args = p.parse_args()
     if urllib.parse.urlsplit(args.url).scheme not in ('http', 'https'): p.error('Use an HTTP(S) URL')
     if args.output.exists(): p.error('Output already exists')
@@ -107,7 +129,7 @@ def main():
         with log.open('wb') as stderr:
             proc = subprocess.Popen([BRAVE, '--user-data-dir='+profile, '--no-first-run',
                 '--no-default-browser-check', '--remote-debugging-address=127.0.0.1',
-                '--remote-debugging-port=0'] + (['--enable-logging=stderr'] if args.diagnostic_log else []) + (['--disable-features=SkiaGraphite'] if args.disable_graphite else []) + [args.url], stdout=subprocess.DEVNULL, stderr=stderr)
+                '--remote-debugging-port=0'] + (['--enable-logging=stderr'] if args.diagnostic_log else []) + (['--disable-features=SkiaGraphite'] if args.disable_graphite else []) + ['about:blank' if args.watch_webgl else args.url], stdout=subprocess.DEVNULL, stderr=stderr)
             browser = page = None
             try:
                 deadline = time.monotonic() + 25
@@ -120,9 +142,18 @@ def main():
                 browser = CDP('ws://127.0.0.1:%d%s' % (port, browserpath))
                 info = browser.call('SystemInfo.getInfo')
                 pages = endpoint(port, '/json/list')
-                target = next((x for x in pages if x.get('type') == 'page' and x.get('url','').startswith(('http:', 'https:'))), None)
+                target_urls = ('about:blank',) if args.watch_webgl else ('http:', 'https:')
+                target = next((x for x in pages if x.get('type') == 'page' and x.get('url', '').startswith(target_urls)), None)
                 if not target: raise RuntimeError('No test page available')
                 page = CDP(target['webSocketDebuggerUrl'])
+                if args.watch_webgl:
+                    gpu_before = gpu_processes(browser)
+                    # Enable Page before registering the hook for the next document.
+                    page.call('Page.enable')
+                    page.call('Page.addScriptToEvaluateOnNewDocument', source=WEBGL_PROBE)
+                    navigation = page.call('Page.navigate', url=args.url)
+                    if navigation.get('errorText'):
+                        raise RuntimeError('Page navigation failed: ' + navigation['errorText'])
                 # Let navigation and site initialization settle before measuring.
                 time.sleep(8)
                 page_state = page.call('Runtime.evaluate',
@@ -145,6 +176,14 @@ def main():
                           'gpu_feature_status_before': info.get('gpu',{}).get('featureStatus',{}),
                           'gpu_feature_status_after': info_after.get('gpu',{}).get('featureStatus',{}),
                           'frame_probe': frame, 'disable_graphite': args.disable_graphite, 'note':'Isolated profile; session contention can differ from normal use.'}
+                if args.watch_webgl:
+                    webgl = page.call('Runtime.evaluate', expression='window.__navi44WebGLProbe',
+                                      returnByValue=True).get('result', {}).get('value')
+                    if not isinstance(webgl, dict):
+                        raise RuntimeError('WebGL instrumentation returned no value')
+                    result['webgl_probe'] = {'main_document_contexts': webgl,
+                                             'gpu_processes_before_navigation': gpu_before,
+                                             'gpu_processes_after_sample': gpu_processes(browser)}
                 args.output.write_text(json.dumps(result, indent=2)+'\n')
                 print(json.dumps(result, indent=2))
             finally:

@@ -21,6 +21,8 @@
 #include "amd/n48log.h"
 #include "amd/amdgpu_smu.h"
 #include <IOKit/IOLib.h>
+#include <kern/clock.h>
+#include <libkern/c++/OSNumber.h>
 
 #define UCLOG(fmt, ...) IOLog("Navi48UC: " fmt "\n", ##__VA_ARGS__)
 
@@ -465,6 +467,65 @@ IOReturn Navi48UserClient::doCapConsume(IOExternalMethodArguments *args) {
 	return kIOReturnSuccess;
 }
 
+namespace {
+
+void telemetry_number(OSDictionary *snapshot, const char *key, uint64_t value) {
+	if (OSNumber *number = OSNumber::withNumber(value, 64)) {
+		snapshot->setObject(key, number);
+		number->release();
+	}
+}
+
+void publish_telemetry(Navi48Bringup &owner, IOReturn status, const Navi48Metrics &m) {
+	OSDictionary *snapshot = OSDictionary::withCapacity(28);
+	if (!snapshot) return;
+	uint64_t uptime = 0, ns = 0;
+	clock_get_uptime(&uptime);
+	absolutetime_to_nanoseconds(uptime, &ns);
+	telemetry_number(snapshot, "Schema", 1);
+	telemetry_number(snapshot, "SampleUptimeMs", ns / 1000000ull);
+	telemetry_number(snapshot, "WatchdogActive", n4xs::active());
+	telemetry_number(snapshot, "WatchdogLevel", n4xs::level());
+	telemetry_number(snapshot, "ThermalClampActive", n4xs::clamped());
+	int32_t hotspot = 0;
+	if (n4xs::hotspot_c(hotspot)) telemetry_number(snapshot, "THMHotspotC", hotspot);
+	telemetry_number(snapshot, "PhysicalVRAMBytes", owner.deviceContext()->vramSizeBytes);
+	amdgpu::N1cVramSnapshot vram {};
+	if (amdgpu::n1c_vram_snapshot(*owner.bringupContext(), vram)) {
+		telemetry_number(snapshot, "VRAMVisibleTotalBytes", vram.visibleTotal);
+		telemetry_number(snapshot, "VRAMVisibleFreeBytes", vram.visibleFree);
+		telemetry_number(snapshot, "VRAMHighTotalBytes", vram.highTotal);
+		telemetry_number(snapshot, "VRAMHighFreeBytes", vram.highFree);
+	}
+	telemetry_number(snapshot, "SMUStatus", static_cast<uint32_t>(status));
+	if (status == kIOReturnSuccess) {
+		telemetry_number(snapshot, "SMUInterfaceVersion", m.if_version);
+		telemetry_number(snapshot, "SMULayoutVerified", m.layout_verified);
+		telemetry_number(snapshot, "SMUValuesPlausible", m.values_plausible);
+		if (m.values_plausible) {
+			telemetry_number(snapshot, "GFXClockMHz", m.gfxclk_mhz);
+			telemetry_number(snapshot, "SoCClockMHz", m.socclk_mhz);
+			telemetry_number(snapshot, "MemoryClockMHz", m.uclk_mhz);
+			telemetry_number(snapshot, "FabricClockMHz", m.fclk_mhz);
+			telemetry_number(snapshot, "GPUActivityPercent", m.gfx_activity_pct);
+			telemetry_number(snapshot, "MemoryActivityPercent", m.mem_activity_pct);
+			telemetry_number(snapshot, "SMUEdgeC", m.temp_edge_c);
+			telemetry_number(snapshot, "SMUHotspotC", m.temp_hotspot_c);
+			telemetry_number(snapshot, "SMUMemoryC", m.temp_mem_c);
+			telemetry_number(snapshot, "FanRPM", m.fan_rpm);
+			telemetry_number(snapshot, "FanPWMPercent", m.fan_pwm_pct);
+			telemetry_number(snapshot, "SocketPowerW", m.socket_power_w);
+			telemetry_number(snapshot, "BoardPowerW", m.board_power_w);
+			telemetry_number(snapshot, "PCIeGeneration", m.pcie_gen);
+			telemetry_number(snapshot, "PCIeLanes", m.pcie_width);
+		}
+	}
+	owner.setProperty("Navi48,Telemetry", snapshot);
+	snapshot->release();
+}
+
+} // namespace
+
 IOReturn Navi48UserClient::doMetrics(IOExternalMethodArguments *args) {
 	if (!args->structureOutput || args->structureOutputSize < sizeof(Navi48Metrics))
 		return kIOReturnBadArgument;
@@ -473,12 +534,15 @@ IOReturn Navi48UserClient::doMetrics(IOExternalMethodArguments *args) {
 
 	amdgpu::SmuMetricsResult res {};
 	amdgpu::SmuSeq smuSeq;   // 0.0.604: the whole table-transfer sequence under the shared mailbox lock (PPSMC and DAL)
-	kern_return_t r = amdgpu::smu_read_metrics(*dev, &res);
-	if (r != kIOReturnSuccess) return r;
+	const kern_return_t r = smuSeq.held ? amdgpu::smu_read_metrics(*dev, &res) : kIOReturnNoMemory;
+	Navi48Metrics out {};
+	if (r != kIOReturnSuccess) {
+		publish_telemetry(*owner, r, out);
+		return r;
+	}
 	amdgpu::smu_log_metrics(res);
 	const amdgpu::SmuMetrics &m = res.metrics;
 
-	Navi48Metrics out {};
 	out.if_version      = res.if_version;
 	out.layout_verified = res.layout_verified ? 1u : 0u;
 	out.values_plausible = res.values_plausible ? 1u : 0u;
@@ -498,6 +562,7 @@ IOReturn Navi48UserClient::doMetrics(IOExternalMethodArguments *args) {
 	out.pcie_gen         = m.PcieRate;
 	out.pcie_width       = m.PcieWidth;
 	out.metrics_counter  = m.MetricsCounter;
+	publish_telemetry(*owner, r, out);
 	memcpy(args->structureOutput, &out, sizeof(out));
 	args->structureOutputSize = sizeof(out);
 	return kIOReturnSuccess;

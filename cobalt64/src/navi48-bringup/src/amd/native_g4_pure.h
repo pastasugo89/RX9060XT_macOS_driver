@@ -249,7 +249,9 @@ constexpr uint32_t kWsReserve = 1u;        // WindowServer always keeps a record
 constexpr uint32_t kSystemReserve = 8u;    // a further share for system processes (uid < 501, root tools); applications leave it free
 constexpr uint32_t kReserved = kWsReserve + kSystemReserve;
 constexpr uint32_t kPerPid = 8u;           // open application records of one process
-constexpr uint32_t kPerUid = 32u;          // open application records of one uid
+// Leave space for another login inside the 55-record application budget while
+// allowing a desktop session with many GPU clients to start a new GPU process.
+constexpr uint32_t kPerUid = 48u;
 constexpr uint32_t app_total_cap(uint32_t logical) { return logical > kReserved ? logical - kReserved : 0u; }
 enum Verdict : uint32_t { kVerdictOk = 0u, kReservedForSystem = 1u, kAppTotal = 2u, kPerPidLimit = 3u, kPerUidLimit = 4u };
 struct Use { bool open; bool app; uint32_t pid; uint32_t uid; };   // one record: open now, admitted as an application, its opener

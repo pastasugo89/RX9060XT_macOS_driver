@@ -49,6 +49,11 @@ bool n1c_is_open();   // any session open
 bool n1c_hello_done();
 bool n1c_hung();
 
+struct N1cVramSnapshot {
+    uint64_t visibleTotal, visibleFree, highTotal, highFree;
+};
+bool n1c_vram_snapshot(const BringupContext &ctx, N1cVramSnapshot &out);
+
 // Selector bodies. The caller (the client) has already checked scalar counts and struct sizes EXACTLY. Every one returns NotReady
 // until Hello succeeded. Locking is described in the contract: all but QueryInfo / ReadRegs / WaitSeq take the client lock.
 IOReturn n1c_hello(const N1cRef &ref, uint64_t clientAbi, uint64_t flags, uint64_t out[4]);

@@ -51,7 +51,13 @@ int main(int argc, char **argv) {
     CHECK(!cube_ok(64, 64, 1, 0, 1, 1, &t), "cube with arrayLength 0 -> refused");
     CHECK(!cube_ok(64, 64, 4, 1, 1, 1, &t), "cube with depth 4 -> refused");
     CHECK(cube_ok(64, 64, 0, 1, 1, 1, &t), "cube with depth 0 (the unset default) -> accepted");
-    CHECK(!cube_ok(64, 64, 1, 1, 1, N48TD_USE_SHADERWRITE | 1, &t) && t.why && strstr(t.why, "ShaderWrite"), "ShaderWrite on a cube -> refused with a ShaderWrite message (\"%s\")", t.why ? t.why : "");
+    CHECK(!cube_ok(64, 64, 1, 1, 1, N48TD_USE_SHADERWRITE, &t) && t.why && strstr(t.why, "ShaderWrite"), "write-only cube -> refused");
+    const unsigned long angleUsage = N48TD_USE_SHADERREAD | N48TD_USE_SHADERWRITE | N48TD_USE_RENDERTARGET;
+    CHECK(cube_ok(1, 1, 1, 1, 1, angleUsage, &t) && t.dropStorage && t.viewType == N48TD_VK_VIEW_CUBE && t.layers == 6 &&
+          n48td_reported_usage(&t, angleUsage) == (N48TD_USE_SHADERREAD | N48TD_USE_RENDERTARGET),
+          "ANGLE cube placeholder retains sampling and render-target usage across six faces");
+    CHECK(cube_ok(64, 64, 1, 1, 1, N48TD_USE_SHADERREAD | N48TD_USE_SHADERWRITE, &t) && t.dropStorage,
+          "cube with sampling and ShaderWrite -> accepted without storage");
     CHECK(cube_ok(64, 64, 1, 1, 1, N48TD_USE_RENDERTARGET | 1, &t), "RenderTarget on a cube -> accepted (per-layer 2D views)");
     CHECK(!n48td_map(N48TD_MTL_CUBEARRAY, 64, 64, 1, 2, 1, 1, 1, &t) && t.why && strstr(t.why, "cube-array"), "CubeArray -> refused with a clear message (\"%s\")", t.why ? t.why : "");
     CHECK(!n48td_map(N48TD_MTL_CUBEARRAY, 64, 64, 1, 1, 1, 1, 1, &t), "CubeArray with arrayLength 1 -> refused too");
@@ -71,6 +77,7 @@ int main(int argc, char **argv) {
     // bundle 31: ShaderWrite on a multisample texture is accepted; its storage usage is dropped (no VK_IMAGE_USAGE_STORAGE_BIT), the rest of the mapping is unchanged
     CHECK(n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 1, N48TD_USE_SHADERWRITE, &t) && t.ok && t.dropStorage == 1 && t.kind == N48TD_K_2DMS && t.imageType == N48TD_VK_IMAGE_2D && t.samples == 4 && t.layers == 1,
           "ShaderWrite on a multisample texture -> accepted with storage dropped (bundle 31)");
+    CHECK(n48td_reported_usage(&t, N48TD_USE_SHADERWRITE) == N48TD_USE_SHADERWRITE, "multisample reports its original usage");
     CHECK(n48td_map(N48TD_MTL_2DMS, 32, 16, 1, 1, 4, 1, 5, &t) && t.dropStorage == 0, "multisample without ShaderWrite -> storage not dropped");
     CHECK(n48td_map(N48TD_MTL_2D, 32, 16, 1, 1, 1, 1, N48TD_USE_SHADERWRITE, &t) && t.dropStorage == 0, "a 2D texture with ShaderWrite -> storage kept (dropStorage 0)");
     CHECK(!n48td_map(N48TD_MTL_2DMSARRAY, 32, 16, 1, 1, 4, 1, 1, &t) && !n48td_map(N48TD_MTL_BUFFER, 32, 16, 1, 1, 1, 1, 1, &t), "2DMultisampleArray, TextureBuffer -> still refused");

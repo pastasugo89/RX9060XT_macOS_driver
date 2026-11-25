@@ -97,10 +97,15 @@ int main() {
     for (uint32_t k = 0; k < 8; k++) open_record(k, 3000u, 501u, true);
     expect(app_budget_locked(N1cOpener{ true, 3000u, 501u }) == kPerPidLimit, "per-process cap: 8 records of one pid, the 9th is refused");
     expect(app_budget_locked(N1cOpener{ true, 3001u, 501u }) == kVerdictOk, "per-process cap does not block another process");
-    // 4. per uid: 32 records of one uid; a new process of that uid is refused; another uid is not
+    // 4. per uid: a new process can open beyond the previous limit of 32 records.
     reset();
-    for (uint32_t k = 0; k < 32; k++) open_record(k, 4000u + k / 2u, 600u, true);
-    expect(app_budget_locked(N1cOpener{ true, 4100u, 600u }) == kPerUidLimit, "per-uid cap: 32 records per uid");
+    open_record(0u, 1u, 88u, false);
+    for (uint32_t k = 0; k < 32; k++) open_record(k + 1, 4000u + k / 2u, 600u, true);
+    expect(app_budget_locked(N1cOpener{ true, 4100u, 600u }) == kVerdictOk, "a new process is admitted at 32 records per UID");
+    for (uint32_t k = 32; k < 47; k++) open_record(k + 1, 4000u + k / 2u, 600u, true);
+    expect(app_budget_locked(N1cOpener{ true, 4100u, 600u }) == kVerdictOk, "the 48th record is admitted");
+    open_record(48u, 4100u, 600u, true);
+    expect(app_budget_locked(N1cOpener{ true, 4101u, 600u }) == kPerUidLimit, "the 49th record of one UID is refused");
     expect(app_budget_locked(N1cOpener{ true, 4100u, 601u }) == kVerdictOk, "per-uid cap does not block another uid");
     // 5. records that are closed (DEAD or Free) do not count; the closed app role does not count
     reset();
@@ -149,4 +154,4 @@ if failures:
         print('FAIL:', f)
     raise SystemExit(1)
 print('PASS: 64-context admission: applications need no allow-list entry; 55 application records with 9 kept for WindowServer and system; '
-      'per-process 8, per-uid 32; refusals kIOReturnNoResources; the real kernel budget functions and n1c_open wiring are checked. Host model, not live IOKit.')
+      'per-process 8, per-uid 48; refusals kIOReturnNoResources; the real kernel budget functions and n1c_open wiring are checked. Host model, not live IOKit.')

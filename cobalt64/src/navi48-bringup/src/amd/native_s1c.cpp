@@ -218,6 +218,23 @@ static IOLock *lazy_lock(IOLock **slot) {
     }
     return *slot;
 }
+
+bool n1c_vram_snapshot(const BringupContext &ctx, N1cVramSnapshot &out) {
+    IOLock *lock = __atomic_load_n(&gCliLock, __ATOMIC_ACQUIRE);
+    if (!lock || !IOLockTryLock(lock)) return false;
+    const auto &gmc = ctx.gmc;
+    const bool ready = gCtx == &ctx && gmc.vram_alloc.is_inited();
+    if (ready) {
+        out = {gmc.vram_alloc.size(), gmc.vram_alloc.bytes_free(), 0, 0};
+        if (gmc.vram_alloc_hi.is_inited()) {
+            out.highTotal = gmc.vram_alloc_hi.size();
+            out.highFree = gmc.vram_alloc_hi.bytes_free();
+        }
+    }
+    IOLockUnlock(lock);
+    return ready;
+}
+
 static uint64_t now_ns() {
     uint64_t t = 0, ns = 0;
     clock_get_uptime(&t);
