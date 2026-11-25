@@ -203,6 +203,7 @@ static inline int n48g_sync_step(int elapsedMs, int found) { return n48g_sync_st
 // ---- the GPU family claim (bundle build 6, C1 finding B) ----
 // Metal 3 implies argument buffers / bindless resources / MTLBuffer.gpuAddress; this bundle has none of them (gpuAddress returns 0, "argument buffers / pointers are not implemented"). So Metal3 is NOT claimed.
 // Mac2 and Common1..3 stay (what the compositor and the apps' base paths use). argumentBuffersSupport reports tier 1 (MTLArgumentBuffersTier1 == 0), the lowest.
+#define N48G_FAMILY_MAC1     2001
 #define N48G_FAMILY_MAC2     2002
 #define N48G_FAMILY_COMMON1  3001
 #define N48G_FAMILY_COMMON2  3002

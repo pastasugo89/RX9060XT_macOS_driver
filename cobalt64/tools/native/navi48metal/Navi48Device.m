@@ -356,6 +356,7 @@ static struct {
     BOOL dbClamp;   // bundle 10: depthBiasClamp enabled on the device (a non-zero clamp in setDepthBias is passed on only then)
     BOOL dualSrc;   // bundle 32: dualSrcBlend enabled on the device (and maxFragmentDualSrcAttachments >= 1): Source1* blend factors are mapped only then
     BOOL hostExt; uint64_t hostAlign; uint64_t impTotal;   // 11h.6: external_memory_host enabled, minImportedHostPointerAlignment, bytes currently imported
+    BOOL textureBC;
     BOOL dynamicRaster;   // extended dynamic cull mode and front face enabled and entry points resolved
     BOOL budgetExt;   // bundle 33: VK_EXT_memory_budget advertised by RADV and enabled on the device (the T1 vidmem line reads it)
 } N48R;
@@ -648,7 +649,7 @@ static BOOL n48_radv_open_once(NSError **err) {
         VkPhysicalDeviceFeatures pf; vkGetPhysicalDeviceFeatures(N48R.pd, &pf);
         // translated AIR uses Int64 (10a); 11e: storage images are translated with format Unknown + Read/WriteWithoutFormat (add-air.py)
         // bundle 32: dualSrcBlend is enabled when RADV has it (the Source1* blend factors and the second fragment output need it)
-        VkPhysicalDeviceFeatures ef = { .dualSrcBlend = pf.dualSrcBlend, .shaderInt64 = pf.shaderInt64, .fragmentStoresAndAtomics = pf.fragmentStoresAndAtomics, .shaderStorageImageReadWithoutFormat = pf.shaderStorageImageReadWithoutFormat,
+        VkPhysicalDeviceFeatures ef = { .textureCompressionBC = pf.textureCompressionBC, .dualSrcBlend = pf.dualSrcBlend, .shaderInt64 = pf.shaderInt64, .fragmentStoresAndAtomics = pf.fragmentStoresAndAtomics, .shaderStorageImageReadWithoutFormat = pf.shaderStorageImageReadWithoutFormat,
                                         .shaderStorageImageWriteWithoutFormat = pf.shaderStorageImageWriteWithoutFormat,
                                         .depthBiasClamp = pf.depthBiasClamp, .depthBounds = pf.depthBounds,   // bundle 10: setDepthBias:slopeScale:clamp:
                                         .occlusionQueryPrecise = pf.occlusionQueryPrecise };   // build 18 (P2): Counting visibility mode
@@ -708,6 +709,7 @@ static BOOL n48_radv_open_once(NSError **err) {
                                    .enabledExtensionCount = nDevExts, .ppEnabledExtensionNames = devExts };
         r = vkCreateDevice(N48R.pd, &dci, NULL, &N48R.dev);
         if (r != VK_SUCCESS) { N48R.err = n48_err(7, [NSString stringWithFormat:@"vkCreateDevice = %d", r]); goto fail; }
+        N48R.textureBC = ef.textureCompressionBC;
         if (enableDynamicRaster) {
             n48_vkCmdSetCullMode = (PFN_vkCmdSetCullModeEXT)vkGetDeviceProcAddr(N48R.dev, "vkCmdSetCullModeEXT");
             n48_vkCmdSetFrontFace = (PFN_vkCmdSetFrontFaceEXT)vkGetDeviceProcAddr(N48R.dev, "vkCmdSetFrontFaceEXT");
@@ -2464,7 +2466,32 @@ static uint64_t n48_now(void) { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); 
 #define N48F_A8 1u
 #define N48F_ARGB 8u   // bundle 29 fix 4: Apple private pixel format 84 (ARGB8): stored as RGBA8 bytes (A,R,G,B in memory); reads reorder the channels (n48_view_map)
 #define N48F_UINT 4u   // bundle 19: an unsigned-integer colour format (RG16Uint): clears fill .uint32, the magenta fallback is masked off, /private/tmp/n48m-nouint restores the old refusal. (2u is N48F_DS below.)
+#define N48F_BC 16u
+// bpp is bytes per storage unit: a single texel or a 4x4 BC block.
 typedef struct { MTLPixelFormat mtl; VkFormat vk; uint32_t bpp; uint32_t flags; } N48Fmt;
+static const N48Fmt n48_bc_fmts[] = {
+    { MTLPixelFormatBC1_RGBA,           VK_FORMAT_BC1_RGBA_UNORM_BLOCK, 8, N48F_BC },
+    { MTLPixelFormatBC1_RGBA_sRGB,      VK_FORMAT_BC1_RGBA_SRGB_BLOCK,  8, N48F_BC },
+    { MTLPixelFormatBC2_RGBA,           VK_FORMAT_BC2_UNORM_BLOCK,     16, N48F_BC },
+    { MTLPixelFormatBC2_RGBA_sRGB,      VK_FORMAT_BC2_SRGB_BLOCK,      16, N48F_BC },
+    { MTLPixelFormatBC3_RGBA,           VK_FORMAT_BC3_UNORM_BLOCK,     16, N48F_BC },
+    { MTLPixelFormatBC3_RGBA_sRGB,      VK_FORMAT_BC3_SRGB_BLOCK,      16, N48F_BC },
+    { MTLPixelFormatBC4_RUnorm,         VK_FORMAT_BC4_UNORM_BLOCK,      8, N48F_BC },
+    { MTLPixelFormatBC4_RSnorm,         VK_FORMAT_BC4_SNORM_BLOCK,      8, N48F_BC },
+    { MTLPixelFormatBC5_RGUnorm,        VK_FORMAT_BC5_UNORM_BLOCK,     16, N48F_BC },
+    { MTLPixelFormatBC5_RGSnorm,        VK_FORMAT_BC5_SNORM_BLOCK,     16, N48F_BC },
+    { MTLPixelFormatBC6H_RGBFloat,      VK_FORMAT_BC6H_SFLOAT_BLOCK,   16, N48F_BC },
+    { MTLPixelFormatBC6H_RGBUfloat,     VK_FORMAT_BC6H_UFLOAT_BLOCK,   16, N48F_BC },
+    { MTLPixelFormatBC7_RGBAUnorm,      VK_FORMAT_BC7_UNORM_BLOCK,     16, N48F_BC },
+    { MTLPixelFormatBC7_RGBAUnorm_sRGB, VK_FORMAT_BC7_SRGB_BLOCK,      16, N48F_BC },
+};
+
+static NSUInteger n48_blocks(NSUInteger texels) { return texels / 4 + (texels % 4 != 0); }
+static BOOL n48_bc_compatible(VkFormat a, VkFormat b) {
+    // All formats in n48_bc_fmts are contiguous Vulkan pairs, starting at an
+    // odd enum value (BC1_RGBA_UNORM_BLOCK). Each pair shares one block class.
+    return (a - VK_FORMAT_BC1_RGBA_UNORM_BLOCK) / 2 == (b - VK_FORMAT_BC1_RGBA_UNORM_BLOCK) / 2;
+}
 static const N48Fmt n48_fmts[] = {
     { MTLPixelFormatBGRA8Unorm,      VK_FORMAT_B8G8R8A8_UNORM, 4, 0 },
     { MTLPixelFormatBGRA8Unorm_sRGB, VK_FORMAT_B8G8R8A8_SRGB,  4, 0 },
@@ -2539,6 +2566,8 @@ static VkImageView n48_desc_swizzle_view(MTLTextureDescriptor *d, const N48Fmt *
 }
 static const N48Fmt *n48_fmt(MTLPixelFormat f) {
     for (size_t i = 0; i < sizeof n48_fmts / sizeof *n48_fmts; i++) if (n48_fmts[i].mtl == f) return ((n48_fmts[i].flags & N48F_UINT) && n48_nouint()) ? NULL : &n48_fmts[i];
+    for (size_t i = 0; i < sizeof n48_bc_fmts / sizeof *n48_bc_fmts; i++)
+        if (n48_bc_fmts[i].mtl == f) return &n48_bc_fmts[i];
     return NULL;
 }
 // bundle 35: the bits per channel of an unsigned-integer colour format (the Metal clear converts each channel to that width). R8Uint = 8, R32Uint = 32, RG16Uint (and any other) = 16.
@@ -2682,6 +2711,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (VkImageView)n48AttViewLevel:(uint32_t)lv layer:(uint32_t)ly;   // bundle 9: cube / 2D array render targets and attachments are per-layer 2D views
 - (VkFormat)vkFormat;
 - (uint32_t)bytesPerPixel;
+- (BOOL)isCompressed;
 - (VkImageLayout)layout;
 - (void)setLayout:(VkImageLayout)l;
 - (NSUInteger)width;
@@ -2717,10 +2747,38 @@ static void n48_tex_to(VkCommandBuffer cmd, N48Texture *t, VkImageLayout nl) {
 static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteger slice, const char *what) {
     if (level >= [t mipmapLevelCount] || slice >= [t n48ViewLayers]) { N48LOG("%s: mip level %lu / slice %lu: the texture has %lu level(s) and %u slice(s); refused", what, (unsigned long)level, (unsigned long)slice, (unsigned long)[t mipmapLevelCount], [t n48ViewLayers]); return NO; }
     NSUInteger lw = MAX((NSUInteger)1, t.width >> level), lh = MAX((NSUInteger)1, t.height >> level), ld = MAX((NSUInteger)1, t.depth >> level);   // depth is 1 for everything but 3D
-    if (!r.size.width || !r.size.height || !r.size.depth || r.origin.x + r.size.width > lw || r.origin.y + r.size.height > lh || r.origin.z + r.size.depth > ld) {
+    if (!r.size.width || !r.size.height || !r.size.depth || r.origin.x > lw || r.size.width > lw - r.origin.x ||
+        r.origin.y > lh || r.size.height > lh - r.origin.y || r.origin.z > ld || r.size.depth > ld - r.origin.z) {
         N48LOG("%s: region origin %lu,%lu,%lu size %lux%lux%lu outside the %lux%lux%lu level %lu; refused", what, (unsigned long)r.origin.x, (unsigned long)r.origin.y,
                (unsigned long)r.origin.z, (unsigned long)r.size.width, (unsigned long)r.size.height, (unsigned long)r.size.depth, (unsigned long)lw, (unsigned long)lh, (unsigned long)ld, (unsigned long)level); return NO; }
+    if ([t isCompressed] && (r.origin.x % 4 || r.origin.y % 4 ||
+        (r.size.width % 4 && r.size.width != lw - r.origin.x) ||
+        (r.size.height % 4 && r.size.height != lh - r.origin.y))) {
+        N48LOG("%s: BC regions must be block-aligned except at the mip edge; refused", what);
+        return NO;
+    }
     return YES;
+}
+
+static BOOL n48_zero_bc_texture(N48Texture *texture, id dev, uint32_t bytesPerBlock, NSError **err) {
+    const NSUInteger row = n48_blocks(texture.width) * bytesPerBlock;
+    const NSUInteger length = row * n48_blocks(texture.height);
+    N48Buffer *zero = [[N48Buffer alloc] initWithDevice:dev length:length options:MTLResourceStorageModeShared error:err];
+    if (!zero || ![zero contents]) return NO;
+    memset([zero contents], 0, length);
+    return n48_oneshot(err, ^(VkCommandBuffer cmd) {
+        n48_tex_to(cmd, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        for (uint32_t level = 0; level < [texture n48Levels]; level++) {
+            VkBufferImageCopy copy = {
+                .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, level, 0, 1 },
+                .imageExtent = { MAX(1u, (uint32_t)texture.width >> level), MAX(1u, (uint32_t)texture.height >> level), 1 },
+            };
+            for (uint32_t layer = 0; layer < [texture n48Layers]; layer++) {
+                copy.imageSubresource.baseArrayLayer = layer;
+                vkCmdCopyBufferToImage(cmd, [zero vkBuffer], [texture vkImage], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+            }
+        }
+    });
 }
 
 @implementation N48Texture
@@ -2747,6 +2805,12 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
         if (err) { *err = n48_err(31, [NSString stringWithFormat:@"%s (type %lu %lux%lu depth %lu mips %lu array %lu samples %lu usage 0x%lx)", ti.why, (unsigned long)tt, (unsigned long)_w, (unsigned long)_h,
             (unsigned long)d.depth, (unsigned long)d.mipmapLevelCount, (unsigned long)d.arrayLength, (unsigned long)d.sampleCount, (unsigned long)d.usage]); } return nil; }
     BOOL is1D = ti.is1D, is3D = ti.is3D;
+    const BOOL bc = (_fmt->flags & N48F_BC) != 0;
+    if (bc && (!N48R.textureBC || is1D || is3D || ti.samples != 1 ||
+        (d.usage & (MTLTextureUsageRenderTarget | MTLTextureUsageShaderWrite)))) {
+        if (err) *err = n48_err(31, @"BC textures require Vulkan BC support and a single-sampled 2D, array or cube texture without GPU write usage");
+        return nil;
+    }
     NSUInteger levels = ti.levels, depth = ti.depth;
     { NSUInteger md = MAX(MAX(_w, _h), is3D ? depth : (NSUInteger)1), maxLevels = 1; while (md > 1) { md >>= 1; maxLevels++; }
       if (levels > maxLevels) { if (err) *err = n48_err(42, [NSString stringWithFormat:@"%lu mip levels for a %lux%lux%lu texture (at most %lu)", (unsigned long)levels, (unsigned long)_w, (unsigned long)_h, (unsigned long)depth, (unsigned long)maxLevels]); return nil; } }
@@ -2826,7 +2890,11 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
     r = vkBindImageMemory(N48R.dev, _img, _mem, 0);
     if (r != VK_SUCCESS) { if (err) *err = n48_err(35, [NSString stringWithFormat:@"vkBindImageMemory = %d", r]); return nil; }
     }
-    if (isDS) {   // bundle 37: a new single-sampled depth/stencil texture is zeroed before any GPU use (n48_zinit.h), then tracked in TRANSFER_DST_OPTIMAL
+    if (bc) {
+        // vkCmdClearColorImage is invalid for BC; initialize all subresources
+        // via a zeroed staging buffer so a pooled allocation cannot leak data.
+        if (!n48_zero_bc_texture(self, dev, _fmt->bpp, err)) return nil;
+    } else if (isDS) {   // bundle 37: a new single-sampled depth/stencil texture is zeroed before any GPU use (n48_zinit.h), then tracked in TRANSFER_DST_OPTIMAL
         // Without a clear, the first pass reads the memory the pool last gave away (a DontCare pass, or a Load that n48rp_ds turns into DontCare on the UNDEFINED layout).
         if (n48zi_decide_depth_stencil(n48zi_killed(), n48zi_ws(), (uint32_t)ti.samples, (uint64_t)mr.size) == N48ZI_CLEAR) {
             if (!(iu & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) N48_ONCE("zinit: depth/stencil texture (pixel format %lu) has no TRANSFER_DST usage on this RADV: not zeroed", (unsigned long)_pf);
@@ -2910,6 +2978,7 @@ N48_DNR(N48Texture)
     _swz = (MTLTextureSwizzleChannels){ MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleAlpha };
     _opts = ((NSUInteger)d.storageMode << 4) | ((NSUInteger)d.cpuCacheMode) | ((NSUInteger)d.hazardTrackingMode << 8);
     _fmt = n48_fmt(_pf);
+    if (_fmt && (_fmt->flags & N48F_BC)) IOSFAIL(30, @"BC textures cannot be backed by an IOSurface or a host buffer");
     // m11h9: any pixel format of the table whose bytes per pixel equal the surface's bytes per element (BGR10A2Unorm 'l10r' and RGBA16Float 'RGhA' are what the compositor's
     // display surfaces use); an A8 / render-target mismatch is refused below by the same rules as an ordinary texture.
     if (!_fmt) IOSFAIL(71, @"pixel format %lu is not in the format table", (unsigned long)_pf);
@@ -3115,6 +3184,7 @@ N48_DNR(N48Texture)
     _swz = (MTLTextureSwizzleChannels){ MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleAlpha };
     _opts = ((NSUInteger)d.storageMode << 4) | ((NSUInteger)d.cpuCacheMode) | ((NSUInteger)d.hazardTrackingMode << 8);
     _fmt = n48_fmt(_pf);
+    if (_fmt && (_fmt->flags & N48F_BC)) BFAIL(30, @"BC textures cannot be backed by an IOSurface or a host buffer");
     if (!_fmt) BFAIL(120, @"pixel format %lu not supported", (unsigned long)_pf);
     if (d.textureType != MTLTextureType2D || d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) BFAIL(121, @"only single 2D textures (no mips/array/MSAA)");
     if ((_fmt->flags & N48F_A8) && (d.usage & MTLTextureUsageRenderTarget)) BFAIL(121, @"A8Unorm render targets are not supported");
@@ -3197,16 +3267,19 @@ N48_DNR(N48Texture)
     }
     if ([self storageMode] == MTLStorageModePrivate) { N48LOG("replaceRegion: texture %p is Private: CPU access refused (no NSError channel; no-op)", (__bridge void *)self); return; }
     if (!n48_region_ok(self, r, lvl, slice, "replaceRegion")) return;
-    uint32_t bpp = _fmt->bpp; NSUInteger rowBytes = r.size.width * bpp, nz = r.size.depth;
+    const BOOL bc = [self isCompressed];
+    const NSUInteger rows = bc ? n48_blocks(r.size.height) : r.size.height;
+    const NSUInteger rowBytes = (bc ? n48_blocks(r.size.width) : r.size.width) * _fmt->bpp;
+    const NSUInteger nz = r.size.depth;
     if (_is1D && bpr < rowBytes) bpr = rowBytes;   // Metal ignores bytesPerRow for 1D textures (the test passes 0)
     if (bpr < rowBytes) { N48LOG("replaceRegion: bytesPerRow %lu < row size %lu; refused", (unsigned long)bpr, (unsigned long)rowBytes); return; }
-    if (nz > 1 && bpi < bpr * r.size.height) { N48LOG("replaceRegion: bytesPerImage %lu < bytesPerRow*height %lu; refused", (unsigned long)bpi, (unsigned long)(bpr * r.size.height)); return; }
+    if (nz > 1 && bpi < bpr * rows) { N48LOG("replaceRegion: bytesPerImage %lu < bytesPerRow*height %lu; refused", (unsigned long)bpi, (unsigned long)(bpr * rows)); return; }
     NSError *err = nil;
     NSUInteger opts = MTLResourceStorageModeShared;
-    N48Buffer *stg = [[N48Buffer alloc] initWithDevice:_dev length:rowBytes * r.size.height * nz options:opts error:&err];
+    N48Buffer *stg = [[N48Buffer alloc] initWithDevice:_dev length:rowBytes * rows * nz options:opts error:&err];
     if (!stg) { N48LOG("replaceRegion: staging buffer failed: %s", err.localizedDescription.UTF8String); return; }
-    for (NSUInteger z = 0; z < nz; z++) for (NSUInteger y = 0; y < r.size.height; y++)
-        memcpy((uint8_t *)[stg contents] + (z * r.size.height + y) * rowBytes, (const uint8_t *)bytes + z * bpi + y * bpr, rowBytes);
+    for (NSUInteger z = 0; z < nz; z++) for (NSUInteger y = 0; y < rows; y++)
+        memcpy((uint8_t *)[stg contents] + (z * rows + y) * rowBytes, (const uint8_t *)bytes + z * bpi + y * bpr, rowBytes);
     VkBuffer sb = [stg vkBuffer];
     BOOL ok = n48_oneshot(&err, ^(VkCommandBuffer cmd) {
         n48_tex_to(cmd, self, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -3232,12 +3305,15 @@ N48_DNR(N48Texture)
     }
     if ([self storageMode] == MTLStorageModePrivate) { N48LOG("getBytes: texture %p is Private: CPU access refused (no NSError channel; no-op)", (__bridge void *)self); return; }
     if (!n48_region_ok(self, r, lvl, slice, "getBytes")) return;
-    uint32_t bpp = _fmt->bpp; NSUInteger rowBytes = r.size.width * bpp, nz = r.size.depth;
+    const BOOL bc = [self isCompressed];
+    const NSUInteger rows = bc ? n48_blocks(r.size.height) : r.size.height;
+    const NSUInteger rowBytes = (bc ? n48_blocks(r.size.width) : r.size.width) * _fmt->bpp;
+    const NSUInteger nz = r.size.depth;
     if (_is1D && bpr < rowBytes) bpr = rowBytes;
     if (bpr < rowBytes) { N48LOG("getBytes: bytesPerRow %lu < row size %lu; refused", (unsigned long)bpr, (unsigned long)rowBytes); return; }
-    if (nz > 1 && bpi < bpr * r.size.height) { N48LOG("getBytes: bytesPerImage %lu < bytesPerRow*height %lu; refused", (unsigned long)bpi, (unsigned long)(bpr * r.size.height)); return; }
+    if (nz > 1 && bpi < bpr * rows) { N48LOG("getBytes: bytesPerImage %lu < bytesPerRow*height %lu; refused", (unsigned long)bpi, (unsigned long)(bpr * rows)); return; }
     NSError *err = nil;
-    N48Buffer *stg = [[N48Buffer alloc] initWithDevice:_dev length:rowBytes * r.size.height * nz options:MTLResourceStorageModeShared error:&err];
+    N48Buffer *stg = [[N48Buffer alloc] initWithDevice:_dev length:rowBytes * rows * nz options:MTLResourceStorageModeShared error:&err];
     if (!stg) { N48LOG("getBytes: staging buffer failed: %s", err.localizedDescription.UTF8String); return; }
     VkBuffer sb = [stg vkBuffer]; VkImageLayout was = [self layout];
     BOOL ok = n48_oneshot(&err, ^(VkCommandBuffer cmd) {
@@ -3249,8 +3325,8 @@ N48_DNR(N48Texture)
         vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &mb, 0, NULL, 0, NULL);
         if (was != VK_IMAGE_LAYOUT_UNDEFINED) n48_tex_to(cmd, self, was);
     });
-    if (ok) for (NSUInteger z = 0; z < nz; z++) for (NSUInteger y = 0; y < r.size.height; y++)
-        memcpy((uint8_t *)dst + z * bpi + y * bpr, (const uint8_t *)[stg contents] + (z * r.size.height + y) * rowBytes, rowBytes);
+    if (ok) for (NSUInteger z = 0; z < nz; z++) for (NSUInteger y = 0; y < rows; y++)
+        memcpy((uint8_t *)dst + z * bpi + y * bpr, (const uint8_t *)[stg contents] + (z * rows + y) * rowBytes, rowBytes);
     N48LOG("getBytes: %lux%lux%lu level %lu: %s", (unsigned long)r.size.width, (unsigned long)r.size.height, (unsigned long)nz, (unsigned long)lvl, ok ? "ok" : err.localizedDescription.UTF8String);
 }
 - (void)getBytes:(void *)dst bytesPerRow:(NSUInteger)bpr fromRegion:(MTLRegion)r mipmapLevel:(NSUInteger)lvl {
@@ -3314,7 +3390,7 @@ N48_RESOURCE_SPI
 - (id)remoteStorageTexture { return nil; }
 - (id)newRemoteTextureViewForDevice:(id)d { (void)d; return nil; }
 - (MTLTextureSwizzleChannels)swizzle { return _swz; }
-- (BOOL)isCompressed { return NO; }
+- (BOOL)isCompressed { return (_fmt->flags & N48F_BC) != 0; }
 - (BOOL)isDrawable { return NO; }
 - (void)didModifyData {}
 - (BOOL)canGenerateMipmapLevels { return _levels > 1; }
@@ -3379,6 +3455,9 @@ N48_RESOURCE_SPI
         f = root->_fmt; }
     if (!f) VFAIL(94, @"view pixel format %lu not supported", (unsigned long)pf);
     if (pf != root->_pf) {
+        if (((f->flags | root->_fmt->flags) & N48F_BC) &&
+            (!(f->flags & root->_fmt->flags & N48F_BC) || !n48_bc_compatible(f->vk, root->_fmt->vk)))
+            VFAIL(95, @"BC views must keep the block format class");
         if (f->bpp != root->_fmt->bpp) VFAIL(95, @"view pixel format %lu has %u bytes per pixel, the texture has %u", (unsigned long)pf, f->bpp, root->_fmt->bpp);
         if (!(root->_usage & MTLTextureUsagePixelFormatView)) VFAIL(96, @"the texture was not created with MTLTextureUsagePixelFormatView");
     }
@@ -3431,7 +3510,10 @@ static NSUInteger n48_alup(NSUInteger v, NSUInteger a) { return (NSUInteger)n48h
 static BOOL n48_heap_tex_sa(MTLTextureDescriptor *d, NSUInteger *size, NSUInteger *align) {
     const N48Fmt *f = n48_fmt_any(d.pixelFormat); if (!f) return NO;   // bundle 10: depth/stencil sizing too
     NSUInteger layers = (NSUInteger)n48td_heap_layers((unsigned long)d.textureType, d.arrayLength), lv = d.mipmapLevelCount ? d.mipmapLevelCount : 1, dp = d.textureType == MTLTextureType3D ? (d.depth ? d.depth : 1) : 1, tot = 0;
-    for (NSUInteger L = 0; L < lv; L++) tot += MAX((NSUInteger)1, d.width >> L) * MAX((NSUInteger)1, d.height >> L) * MAX((NSUInteger)1, dp >> L) * layers * f->bpp;   // m11h9: every level, 3D depth
+    for (NSUInteger L = 0; L < lv; L++) {
+        const NSUInteger w = MAX((NSUInteger)1, d.width >> L), h = MAX((NSUInteger)1, d.height >> L);
+        tot += (f->flags & N48F_BC ? n48_blocks(w) * n48_blocks(h) : w * h) * MAX((NSUInteger)1, dp >> L) * layers * f->bpp;
+    }   // m11h9: every level, 3D depth
     if (d.textureType == MTLTextureType2DMultisample && d.sampleCount > 1) tot *= d.sampleCount;   // bundle 10: every sample is stored
     *size = n48_alup(tot, N48_HEAP_ALIGN); *align = N48_HEAP_ALIGN; return YES;
 }
@@ -6334,9 +6416,19 @@ N48_ENCODER_USE(self->_decl)
 // m11h9: one buffer<->image copy region for a level / slice (2D, 1D arrays) or a box (3D: baseArrayLayer 0, depth in the extent, bufferImageHeight from bytesPerImage).
 static VkBufferImageCopy n48_bic(N48Texture *t, NSUInteger off, NSUInteger bpr, NSUInteger bpi, NSUInteger level, NSUInteger slice, MTLOrigin o, MTLSize sz) {
     BOOL is3 = [t textureType] == MTLTextureType3D; uint32_t bpp = [t bytesPerPixel];
-    return (VkBufferImageCopy){ .bufferOffset = off, .bufferRowLength = (uint32_t)(bpr / bpp), .bufferImageHeight = (is3 && sz.depth > 1 && bpr) ? (uint32_t)(bpi / bpr) : 0,
+    return (VkBufferImageCopy){ .bufferOffset = off, .bufferRowLength = (uint32_t)(bpr / bpp) * ([t isCompressed] ? 4u : 1u), .bufferImageHeight = (is3 && sz.depth > 1 && bpr) ? (uint32_t)(bpi / bpr) : 0,
         .imageSubresource = { [t n48CopyAspect], n48td_image_level(level, [t n48BaseLevel]), n48td_image_layer(is3, slice, [t n48BaseLayer]), 1 },   // bundle 10: colour, or the one depth / stencil aspect
         .imageOffset = { (int32_t)o.x, (int32_t)o.y, is3 ? (int32_t)o.z : 0 }, .imageExtent = { (uint32_t)sz.width, (uint32_t)sz.height, is3 ? (uint32_t)sz.depth : 1 } };
+}
+// Vulkan row length is in texels even for BC. Validate the last copied
+// block against the buffer length, allowing padding after earlier rows.
+static BOOL n48_bc_buffer_ok(N48Texture *t, NSUInteger length, NSUInteger offset, NSUInteger pitch, MTLSize size) {
+    const NSUInteger blockBytes = [t bytesPerPixel];
+    const NSUInteger rowBytes = n48_blocks(size.width) * blockBytes;
+    const NSUInteger rows = n48_blocks(size.height);
+    if (offset > length || offset % blockBytes || !pitch || pitch % blockBytes ||
+        pitch < rowBytes || pitch > INT32_MAX || rowBytes > length - offset) return NO;
+    return rows - 1 <= (length - offset - rowBytes) / pitch;
 }
 static BOOL n48_blit_region_ok(N48Texture *t, MTLOrigin o, MTLSize sz, NSUInteger level, NSUInteger slice, const char *what) {
     return n48_region_ok(t, (MTLRegion){ o, sz }, level, slice, what);
@@ -6363,6 +6455,9 @@ N48_DNR(N48BlitEncoder)
     [_cb n48Retain:t]; [_cb n48Retain:b];
     if (![t n48CopyAspect] || [t n48Samples] > 1) { [_cb n48Fail:@"blit copyFromTexture:toBuffer: a combined depth/stencil texture or a multisample texture cannot be copied to a buffer here"]; return; }   // bundle 10
     if (!n48_blit_region_ok(t, so, sz, sl, ss, "blit copyFromTexture:toBuffer:")) { [_cb n48Fail:@"blit copyFromTexture:toBuffer: region outside the texture level"]; return; }
+    if ([t isCompressed] && !n48_bc_buffer_ok(t, [b length], doff, bpr, sz)) {
+        [_cb n48Fail:@"blit copyFromTexture:toBuffer: invalid BC block offset, row pitch or buffer length"]; return;
+    }
     n48_ios_use(_cb, t, YES, NO);
     VkCommandBuffer cmd = [_cb vk];
     n48_tex_to(cmd, t, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -6379,6 +6474,9 @@ N48_DNR(N48BlitEncoder)
     if (![t n48CopyAspect] || [t n48Samples] > 1) { [_cb n48Fail:@"blit copyFromBuffer:toTexture: a combined depth/stencil texture or a multisample texture cannot be filled from a buffer here"]; return; }   // bundle 10
     if (bpr % [t bytesPerPixel]) { [_cb n48Fail:@"blit copyFromBuffer:toTexture: bytesPerRow is not a multiple of the pixel size"]; return; }
     if (!n48_blit_region_ok(t, dorg, sz, dl, ds, "blit copyFromBuffer:toTexture:")) { [_cb n48Fail:@"blit copyFromBuffer:toTexture: region outside the texture level"]; return; }
+    if ([t isCompressed] && !n48_bc_buffer_ok(t, [(N48Buffer *)src length], so, bpr, sz)) {
+        [_cb n48Fail:@"blit copyFromBuffer:toTexture: invalid BC block offset, row pitch or buffer length"]; return;
+    }
     n48_ios_usek(_cb, t, YES, YES, N48DF_W_BLIT);
     VkCommandBuffer cmd = [_cb vk];
     n48_tex_to(cmd, t, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -6393,6 +6491,10 @@ N48_DNR(N48BlitEncoder)
     if ([a n48Aspects] != [b n48Aspects] || [a n48Samples] != [b n48Samples]) { [_cb n48Fail:@"blit copyFromTexture:toTexture: the textures differ in aspects (colour / depth / stencil) or sample count"]; return; }   // bundle 10
     if (!n48_blit_region_ok(a, so, sz, sl, ss, "blit copyFromTexture:toTexture: (source)") || !n48_blit_region_ok(b, dorg, sz, dl, ds, "blit copyFromTexture:toTexture: (destination)")) {
         [_cb n48Fail:@"blit copyFromTexture:toTexture: region outside a texture level"]; return; }
+    if (([a isCompressed] || [b isCompressed]) &&
+        (!([a isCompressed] && [b isCompressed]) || !n48_bc_compatible([a vkFormat], [b vkFormat]))) {
+        [_cb n48Fail:@"blit copyFromTexture:toTexture: BC textures must share a block format class"]; return;
+    }
     BOOL a3 = [a textureType] == MTLTextureType3D, b3 = [b textureType] == MTLTextureType3D;
     BOOL sameImage = [a vkImage] == [b vkImage];
     if (sameImage && n48cr_overlap(n48td_image_level(sl, [a n48BaseLevel]), n48td_image_layer(a3, ss, [a n48BaseLayer]), so.x, so.y, so.z,
@@ -6438,6 +6540,7 @@ N48_ENCODER_USE(nil)
     if (![tex isKindOfClass:[N48Texture class]]) { [_cb n48Fail:@"blit generateMipmapsForTexture: bad class"]; return; }
     N48Texture *t = tex; uint32_t nl = (uint32_t)[t mipmapLevelCount];   // bundle 40: a view's own levels (a root's are its levels); the chain runs inside the view
     if ([t n48IsDS] || [t n48Samples] > 1) { [_cb n48Fail:@"blit generateMipmapsForTexture: depth/stencil and multisample textures cannot be mip-mapped here"]; return; }   // bundle 10
+    if ([t isCompressed] && nl > 1) { [_cb n48Fail:@"BC mipmaps must be uploaded as compressed levels"]; return; }
     if (nl <= 1) { N48_ONCE("generateMipmapsForTexture: the texture has a single level; nothing to generate"); return; }
     VkFormatProperties fp = {0}; vkGetPhysicalDeviceFormatProperties(N48R.pd, [t vkFormat], &fp);
     if ((fp.optimalTilingFeatures & (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT)) != (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT)) {
@@ -6871,11 +6974,22 @@ static void n48_set_required(id pipe, id desc) {
 // llvmVersion: pvm.x86 0xb04f `mov eax,0x7d17` = 32023 (CONFIRMED).
 - (int)llvmVersion { return 0x7d17; }
 
+- (BOOL)supportsBCTextureCompression {
+    if (!N48R.ok || !N48R.textureBC || !vkGetPhysicalDeviceFormatProperties) return NO;
+    const VkFormatFeatureFlags needed = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+        VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+    for (size_t i = 0; i < sizeof n48_bc_fmts / sizeof *n48_bc_fmts; i++)
+        if ((n48_fmt_feats(&n48_bc_fmts[i]) & needed) != needed) return NO;
+    return YES;
+}
+
 #if N48_9D
 - (BOOL)supportsFamily:(NSInteger)family {
+    // Mac1 is the legacy subset used by older Metal applications to query BC.
+    if (family == N48G_FAMILY_MAC1) return [self supportsBCTextureCompression];
     // Bundle build 6 (C1 finding B): Metal3 is NOT claimed (it implies argument buffers / gpuAddress, which this bundle does not implement). Mac2 and Common1..3 are kept. Table: n48_gate.h, test-gate.c.
     if (family == N48G_FAMILY_METAL3 && !n48_is_ws()) N48_ONCE("supportsFamily(Metal3) -> NO for this application: argument buffers / gpuAddress are not implemented (build 6; WindowServer keeps YES)");
-    return n48g_supports_family((long)family, n48_is_ws() ? 1 : 0) ? YES : NO;   // Apple1..9 (1001..1009), Mac1, MacCatalyst, Metal3, Metal4, unknown -> NO
+    return n48g_supports_family((long)family, n48_is_ws() ? 1 : 0) ? YES : NO;   // Apple1..9 (1001..1009), MacCatalyst, Metal3, Metal4, unknown -> NO
 }
 // The lowest tier (MTLArgumentBuffersTier1 == 0); the base class's value is unknown, so it is pinned here (build 6, C1 finding B).
 - (NSUInteger)argumentBuffersSupport {   // WindowServer: the base class's answer, exactly as before build 6; applications: Tier1

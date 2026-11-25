@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, after isolated hardware validation of the Metal 42 candidate. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after isolated hardware validation of the Metal 43 candidate. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -90,9 +90,30 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
   change built on a copy of the deployed kernel source and passed 143 host checks. It is for a
   future kernel build. PMFW IF 0x33 RPM and physical speed regulation remain unverified.
 
+## Metal 43 candidate for Basemark GPU
+
+Basemark GPU 1.2.3 lists Metal only when its compression probe returns a
+supported format. With bundle 41, the probe found the RX 9060 XT and returned
+an empty list. The legacy Mac1 check gates the BC7 query.
+
+Metal 43 includes the Metal 42 changes and supports BC1–BC7 sampled textures
+when RADV exposes the corresponding formats. The implementation uses
+block-aligned upload and readback, handles CPU row padding and small mip edges,
+and initializes compressed allocations by copying blocks from a zeroed staging
+buffer. The Mac1 and BC capability queries depend on verified RADV format
+features.
+
+The isolated test on the RX 9060 XT passed the capability queries, padded BC7
+rows, zeroed allocations, 1×1 mip readback, private upload and fragment decoding.
+The cubemap and raster tests passed too. The signed candidate is at
+`research/builds/macos-20261125/bundle43-bc-textures/`. Use the
+`stage43-bc-textures-v1` profile and `--allow-skip` when staging from live 41.
+Basemark detection and benchmark startup through the installed bundle are
+separate verification steps.
+
 ## Next planned steps
 
-1. After approval, install Metal 42 and retest WindowServer, Aquarium and
+1. After approval, install Metal 43, verify Basemark detection and retest WindowServer, Aquarium and
    `tools/baremetal/navi44-gpu-diagnostics/test-brave-webgl2-cubemap.py`. Compare pipeline
    timing at login using the existing T1 logs.
 2. Validate fan spin-up and speed regulation with an independent tachometer or visual observation
