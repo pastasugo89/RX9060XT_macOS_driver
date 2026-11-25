@@ -2608,6 +2608,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
     BOOL _is1D, _arr1D; NSUInteger _layers;   // m11h3: MTLTextureType1D / 1DArray (VkImageType 1D, arrayLayers = _layers); 2D textures keep _is1D NO, _layers 0
     // m11h9: mip levels (2D and 3D), 3D textures (VkImageType 3D, _depth slices) and A8 (the view carries a swizzle, so an identity view per level is made on demand for attachments / storage)
     NSUInteger _levels, _depth; BOOL _is3D, _viewSwz; NSMutableDictionary<NSNumber *, NSNumber *> *_lvViews;
+    unsigned _baseLevel, _baseLayer;   // bundle 40: a view's first mip level and first slice inside the root's VkImage (0 for a root texture)
     N48Buffer *_hostBuf; NSUInteger _hoff;   // no-copy: the texture is backed by this buffer's memory at _hoff (copy path b, as an IOSurface texture)
     N48_RES_IVARS
     uint64_t _acct;   // bytes added to n48_alloc_total for this texture's image memory
@@ -2620,7 +2621,7 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLTextureDescriptor *)d error:(NSError **)err;
 - (void)n48AdoptHeap:(N48Heap *)h offset:(NSUInteger)o size:(NSUInteger)sz bid:(uint64_t)bid;
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLTextureDescriptor *)d iosurface:(IOSurfaceRef)s plane:(NSUInteger)plane error:(NSError **)err;
-- (instancetype)initViewOf:(N48Texture *)root pixelFormat:(MTLPixelFormat)pf swizzle:(MTLTextureSwizzleChannels)swz error:(NSError **)err;
+- (instancetype)initViewOf:(N48Texture *)root textureType:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl pixelFormat:(MTLPixelFormat)pf swizzle:(MTLTextureSwizzleChannels)swz error:(NSError **)err;
 - (instancetype)initWithDevice:(id)dev descriptor:(MTLTextureDescriptor *)d buffer:(N48Buffer *)b offset:(NSUInteger)off bytesPerRow:(NSUInteger)bpr error:(NSError **)err;
 - (NSUInteger)n48IOSOffset;
 - (IOSurfaceRef)n48UCSurface;   // build 16 (F3): the retained surface (also for a GPU-only texture), NULL for a buffer-backed one
@@ -2641,6 +2642,9 @@ _Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_
 - (VkImageView)n48SampleView;   // bundle 29 fix 2: the view sampled reads bind (the descriptor-swizzled view when there is one)
 - (uint32_t)n48Layers;
 - (uint32_t)n48Levels;
+- (uint32_t)n48ViewLayers;   // bundle 40: the slices this object addresses: a view's own range (a root's are n48Layers)
+- (uint32_t)n48BaseLevel;    // bundle 40: the root's mip level of this view's level 0 (0 for a root texture)
+- (uint32_t)n48BaseLayer;    // bundle 40: the root's slice of this view's slice 0 (0 for a root texture)
 - (unsigned)n48Aspects;   // bundle 10: VkImageAspectFlags of every barrier / attachment view of this texture (colour for the colour world)
 - (BOOL)n48IsDS;
 - (BOOL)n48IsUInt;   // bundle 19: an unsigned-integer colour format (RG16Uint)
@@ -2686,7 +2690,7 @@ static void n48_tex_to(VkCommandBuffer cmd, N48Texture *t, VkImageLayout nl) {
     [t setLayout:nl];
 }
 static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteger slice, const char *what) {
-    if (level >= [t mipmapLevelCount] || slice >= [t n48Layers]) { N48LOG("%s: mip level %lu / slice %lu: the texture has %lu level(s) and %u slice(s); refused", what, (unsigned long)level, (unsigned long)slice, (unsigned long)[t mipmapLevelCount], [t n48Layers]); return NO; }
+    if (level >= [t mipmapLevelCount] || slice >= [t n48ViewLayers]) { N48LOG("%s: mip level %lu / slice %lu: the texture has %lu level(s) and %u slice(s); refused", what, (unsigned long)level, (unsigned long)slice, (unsigned long)[t mipmapLevelCount], [t n48ViewLayers]); return NO; }
     NSUInteger lw = MAX((NSUInteger)1, t.width >> level), lh = MAX((NSUInteger)1, t.height >> level), ld = MAX((NSUInteger)1, t.depth >> level);   // depth is 1 for everything but 3D
     if (!r.size.width || !r.size.height || !r.size.depth || r.origin.x + r.size.width > lw || r.origin.y + r.size.height > lh || r.origin.z + r.size.depth > ld) {
         N48LOG("%s: region origin %lu,%lu,%lu size %lux%lux%lu outside the %lux%lux%lu level %lu; refused", what, (unsigned long)r.origin.x, (unsigned long)r.origin.y,
@@ -2822,19 +2826,26 @@ static BOOL n48_region_ok(N48Texture *t, MTLRegion r, NSUInteger level, NSUInteg
 }
 // A single-level, identity-swizzle view for attachments, input attachments and storage images. Level 0 of a one-level, unswizzled texture is the sampling view itself.
 // Bundle 9: a cube or 2D-array texture is attached one layer at a time (a plain 2D view of layer ly); every other texture has only layer 0.
+// Bundle 40: a view numbers its levels and slices from itself. Its own sampling view serves only a one-level 2D view of one layer; every other (lv, ly) is a 2D view of
+// the root's VkImage at (_baseLevel + lv, _baseLayer + ly), made here and kept in the view's _lvViews.
 - (VkImageView)n48AttViewLevel:(uint32_t)lv { return [self n48AttViewLevel:lv layer:0]; }
 - (VkImageView)n48AttViewLevel:(uint32_t)lv layer:(uint32_t)ly {
-    if (_root) return _view;
+    if (_root) {
+        if (lv == 0 && ly == 0 && _levels <= 1 && !n48td_is_layered2d(_tdk)) return _view;
+        if (lv >= _levels || ly >= n48td_nlayers((unsigned)_layers)) { N48LOG("n48AttViewLevel %u layer %u: outside the view (%lu level(s), %u layer(s)); falling back to the sampling view", lv, ly, (unsigned long)_levels, n48td_nlayers((unsigned)_layers)); return _view; }
+    }
     BOOL sameAsp = !_aspects || _aspects == n48dp_view_aspect(_aspects);   // bundle 10: the sampling view is the attachment view unless a combined depth/stencil format needs both aspects
-    if (lv == 0 && ly == 0 && _levels <= 1 && !_viewSwz && !n48td_is_layered2d(_tdk) && sameAsp) return _view;
-    n48td_att_t av; if (!n48td_att_view(_tdk, (unsigned)_layers, ly, &av)) { N48LOG("n48AttViewLevel %u layer %u: the texture has %u layer(s); falling back to the sampling view", lv, ly, n48td_nlayers((unsigned)_layers)); return _view; }
+    if (!_root && lv == 0 && ly == 0 && _levels <= 1 && !_viewSwz && !n48td_is_layered2d(_tdk) && sameAsp) return _view;
+    n48td_att_t av;
+    if (_root) { av.viewType = N48TD_VK_VIEW_2D; av.baseLayer = ly; av.layerCount = 1; }   // bundle 40: relative to the view (the base is added in the range below)
+    else if (!n48td_att_view(_tdk, (unsigned)_layers, ly, &av)) { N48LOG("n48AttViewLevel %u layer %u: the texture has %u layer(s); falling back to the sampling view", lv, ly, n48td_nlayers((unsigned)_layers)); return _view; }
     @synchronized (self) {
         if (!_lvViews) _lvViews = [NSMutableDictionary dictionary];
         NSNumber *key = @(((unsigned long long)ly << 32) | lv);
         NSNumber *have = _lvViews[key]; if (have) return (VkImageView)(uintptr_t)have.unsignedLongLongValue;
-        VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = _img,
+        VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = [self vkImage],
             .viewType = (VkImageViewType)av.viewType, .format = _fmt->vk,
-            .subresourceRange = { n48dp_barrier_aspect(_aspects), lv, 1, av.baseLayer, av.layerCount } };   // bundle 10: colour, or every depth/stencil aspect of the format
+            .subresourceRange = { n48dp_barrier_aspect(_root ? _root->_aspects : _aspects), _baseLevel + lv, 1, _baseLayer + av.baseLayer, av.layerCount } };   // bundle 10: colour, or every depth/stencil aspect of the format
         VkImageView v = VK_NULL_HANDLE; VkResult r = vkCreateImageView(N48R.dev, &vc, NULL, &v);
         if (r != VK_SUCCESS) { N48LOG("n48AttViewLevel %u layer %u: vkCreateImageView = %d; falling back to the sampling view", lv, ly, r); return _view; }
         _lvViews[key] = @((unsigned long long)(uintptr_t)v); return v;
@@ -3175,7 +3186,7 @@ N48_DNR(N48Texture)
     BOOL ok = n48_oneshot(&err, ^(VkCommandBuffer cmd) {
         n48_tex_to(cmd, self, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         VkBufferImageCopy bic = { .bufferOffset = 0, .bufferRowLength = 0, .bufferImageHeight = 0,
-            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)lvl, n48td_base_layer(self->_is3D, slice), 1 }, .imageOffset = { (int32_t)r.origin.x, (int32_t)r.origin.y, (int32_t)r.origin.z },
+            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, n48td_image_level(lvl, self->_baseLevel), n48td_image_layer(self->_is3D, slice, self->_baseLayer), 1 }, .imageOffset = { (int32_t)r.origin.x, (int32_t)r.origin.y, (int32_t)r.origin.z },
             .imageExtent = { (uint32_t)r.size.width, (uint32_t)r.size.height, (uint32_t)nz } };
         vkCmdCopyBufferToImage(cmd, sb, [self vkImage], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bic);
         n48_tex_to(cmd, self, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -3206,7 +3217,7 @@ N48_DNR(N48Texture)
     VkBuffer sb = [stg vkBuffer]; VkImageLayout was = [self layout];
     BOOL ok = n48_oneshot(&err, ^(VkCommandBuffer cmd) {
         n48_tex_to(cmd, self, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        VkBufferImageCopy bic = { .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)lvl, n48td_base_layer(self->_is3D, slice), 1 }, .imageOffset = { (int32_t)r.origin.x, (int32_t)r.origin.y, (int32_t)r.origin.z },
+        VkBufferImageCopy bic = { .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, n48td_image_level(lvl, self->_baseLevel), n48td_image_layer(self->_is3D, slice, self->_baseLayer), 1 }, .imageOffset = { (int32_t)r.origin.x, (int32_t)r.origin.y, (int32_t)r.origin.z },
             .imageExtent = { (uint32_t)r.size.width, (uint32_t)r.size.height, (uint32_t)nz } };
         vkCmdCopyImageToBuffer(cmd, [self vkImage], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, sb, 1, &bic);
         VkMemoryBarrier mb = { .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER, .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT, .dstAccessMask = VK_ACCESS_HOST_READ_BIT };
@@ -3225,6 +3236,9 @@ N48_DNR(N48Texture)
 - (VkImageView)n48SampleView { return _smpView ? _smpView : _view; }
 - (uint32_t)n48Layers { return _root ? [_root n48Layers] : n48td_nlayers((unsigned)_layers); }
 - (uint32_t)n48Levels { return _root ? [_root n48Levels] : (uint32_t)(_levels ? _levels : 1); }
+- (uint32_t)n48ViewLayers { return n48td_nlayers((unsigned)_layers); }   // bundle 40: the slices this object addresses (a view's own range; a root's is n48Layers)
+- (uint32_t)n48BaseLevel { return _baseLevel; }   // bundle 40: the root's mip level of this view's level 0 (0 for a root)
+- (uint32_t)n48BaseLayer { return _baseLayer; }   // bundle 40: the root's slice of this view's slice 0 (0 for a root)
 - (unsigned)n48Aspects { return n48dp_barrier_aspect(_root ? [_root n48Aspects] : _aspects); }
 - (BOOL)n48IsDS { return (_root ? [_root n48Aspects] : _aspects) != 0 && (_root ? [_root n48Aspects] : _aspects) != N48DP_ASP_COLOR; }
 - (BOOL)n48IsUInt { return _fmt != NULL && (_fmt->flags & N48F_UINT) != 0; }
@@ -3245,7 +3259,7 @@ N48_DNR(N48Texture)
 - (NSUInteger)width { return _w; }
 - (NSUInteger)height { return _h; }
 - (NSUInteger)depth { return _is3D ? _depth : 1; }
-- (NSUInteger)mipmapLevelCount { return _root ? 1 : (_levels ? _levels : 1); }
+- (NSUInteger)mipmapLevelCount { return _levels ? _levels : 1; }   // bundle 40: a view's own levels (a root's are its levels)
 - (NSUInteger)sampleCount { return [self n48Samples]; }
 - (NSUInteger)arrayLength { return n48td_array_length(_tdk, (unsigned)_layers); }
 - (NSUInteger)usage { return _usage; }
@@ -3255,8 +3269,8 @@ N48_DNR(N48Texture)
 - (BOOL)isSparse { return NO; }
 - (BOOL)allowGPUOptimizedContents { return YES; }
 - (id)parentTexture { return _root; }
-- (NSUInteger)parentRelativeLevel { return 0; }
-- (NSUInteger)parentRelativeSlice { return 0; }
+- (NSUInteger)parentRelativeLevel { return _baseLevel; }   // bundle 40: a view's first level in its parent (0 for a root)
+- (NSUInteger)parentRelativeSlice { return _baseLayer; }   // bundle 40: a view's first slice in its parent (0 for a root)
 - (id)buffer { return _hostBuf; }
 - (NSUInteger)bufferOffset { return _hoff; }
 - (NSUInteger)bufferBytesPerRow { return _hostBuf ? _ibpr : 0; }
@@ -3284,19 +3298,20 @@ N48_RESOURCE_SPI
 - (NSUInteger)numFaces { return 1; }
 - (NSUInteger)resourceIndex { return 0; }
 - (void *)virtualAddress { return [self n48IsIOS] ? (void *)_ibase : NULL; }
-// Views. Only same-size reinterpretation of a whole single-level 2D texture: a level range {0,1}, a slice range {0,1}, textureType 2D, an optional swizzle.
-// The root must have been created with MTLTextureUsagePixelFormatView when the pixel format changes (that sets VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT), and must not be
-// IOSurface-backed roots are allowed since bundle 31: a view shares the root's VkImage, and every IOSurface entry point resolves a view to its owner (n48Owner).
+// Views (bundle 40 widens bundle 9's single-level 2D view). A view of a 2D, cube or 2D-array texture names a texture type, a mip-level range and a slice range, all counted
+// in the ROOT's levels and slices; n48_texdesc.h (n48td_view_map) decides which combinations exist. The root must have been created with MTLTextureUsagePixelFormatView when the
+// pixel format changes (that sets VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT). IOSurface-backed roots are allowed since bundle 31: a view shares the root's VkImage, and every
+// IOSurface entry point resolves a view to its owner (n48Owner).
 - (id)n48View:(MTLPixelFormat)pf type:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl swizzle:(MTLTextureSwizzleChannels)sw {
-    if (tt != MTLTextureType2D || lv.location != 0 || lv.length != 1 || sl.location != 0 || sl.length != 1) {
-        N48LOG("newTextureView: type %lu levels %lu+%lu slices %lu+%lu: only a 2D view of level 0 slice 0 exists (no mips/arrays); nil", (unsigned long)tt, (unsigned long)lv.location,
-               (unsigned long)lv.length, (unsigned long)sl.location, (unsigned long)sl.length); return nil; }
-    NSError *e = nil; N48Texture *v = [[N48Texture alloc] initViewOf:self pixelFormat:pf swizzle:sw error:&e];
-    if (!v) N48LOG("newTextureView: refused: %s", e.localizedDescription.UTF8String);
+    NSError *e = nil; N48Texture *v = [[N48Texture alloc] initViewOf:self textureType:tt levels:lv slices:sl pixelFormat:pf swizzle:sw error:&e];
+    if (!v) N48LOG("newTextureView: refused: %s", e ? e.localizedDescription.UTF8String : "no reason given");
     return v;
 }
 - (id)newTextureViewWithPixelFormat:(MTLPixelFormat)pf {
-    return [self n48View:pf type:MTLTextureType2D levels:NSMakeRange(0, 1) slices:NSMakeRange(0, 1) swizzle:(MTLTextureSwizzleChannels){ MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleAlpha }];
+    unsigned long tt = 0, lvLoc = 0, lvLen = 0, slLoc = 0, slLen = 0;   // bundle 40: the same type and the whole range (Metal's rule); before, a 2D texture's view was its level 0 only
+    n48td_view_default(_tdk, n48td_nlayers((unsigned)_layers), (unsigned)(_levels ? _levels : 1), &tt, &lvLoc, &lvLen, &slLoc, &slLen);
+    return [self n48View:pf type:(MTLTextureType)tt levels:NSMakeRange((NSUInteger)lvLoc, (NSUInteger)lvLen) slices:NSMakeRange((NSUInteger)slLoc, (NSUInteger)slLen)
+                   swizzle:(MTLTextureSwizzleChannels){ MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleAlpha }];
 }
 - (id)newTextureViewWithPixelFormat:(MTLPixelFormat)pf textureType:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl {
     return [self n48View:pf type:tt levels:lv slices:sl swizzle:(MTLTextureSwizzleChannels){ MTLTextureSwizzleRed, MTLTextureSwizzleGreen, MTLTextureSwizzleBlue, MTLTextureSwizzleAlpha }];
@@ -3320,14 +3335,19 @@ N48_RESOURCE_SPI
     return [self newTextureViewWithPixelFormat:(MTLPixelFormat)out.pf textureType:(MTLTextureType)out.tt levels:NSMakeRange((NSUInteger)out.lvLoc, (NSUInteger)out.lvLen)
                                         slices:NSMakeRange((NSUInteger)out.slLoc, (NSUInteger)out.slLen) swizzle:osw];
 }
-- (instancetype)initViewOf:(N48Texture *)root pixelFormat:(MTLPixelFormat)pf swizzle:(MTLTextureSwizzleChannels)swz error:(NSError **)err {
+- (instancetype)initViewOf:(N48Texture *)root textureType:(MTLTextureType)tt levels:(NSRange)lv slices:(NSRange)sl pixelFormat:(MTLPixelFormat)pf swizzle:(MTLTextureSwizzleChannels)swz error:(NSError **)err {
     self = [super init]; if (!self) return nil;
     #define VFAIL(code, ...) do { if (err) *err = n48_err(code, [NSString stringWithFormat:__VA_ARGS__]); return nil; } while (0)
     if (!root || root->_root) VFAIL(92, @"a view needs a root texture");
     if (root->_hostBuf) VFAIL(93, @"views of buffer-backed textures are not implemented");   // bundle 31: IOSurface-backed roots are shared (below)
     if (root->_is1D) VFAIL(99, @"views of 1D / 1DArray textures are not implemented");
-    if (n48td_is_layered2d(root->_tdk)) VFAIL(98, @"views of cube / 2D-array textures are not implemented");
+    if (root->_is3D) VFAIL(99, @"views of 3D textures are not implemented");
     if (root->_samples > 1) VFAIL(100, @"views of multisample textures are not implemented");
+    n48td_view_t vd;   // bundle 40: the view's type, mip levels and slices (n48_texdesc.h decides; a refusal says why)
+    if (!n48td_view_map(root->_tdk, n48td_nlayers((unsigned)root->_layers), (unsigned)(root->_levels ? root->_levels : 1), (unsigned long)tt, (unsigned long)lv.location, (unsigned long)lv.length,
+                        (unsigned long)sl.location, (unsigned long)sl.length, &vd))
+        VFAIL(98, @"%s (texture type %lu, levels %lu+%lu, slices %lu+%lu; the texture has %lu level(s) and %u slice(s))", vd.why, (unsigned long)tt, (unsigned long)lv.location,
+              (unsigned long)lv.length, (unsigned long)sl.location, (unsigned long)sl.length, (unsigned long)(root->_levels ? root->_levels : 1), n48td_nlayers((unsigned)root->_layers));
     const N48Fmt *f = n48_fmt(pf);
     if (root->_aspects) {   // bundle 10: a view of a depth/stencil texture keeps the texture's own format (no reinterpretation) and its single sampling aspect
         if (pf != root->_pf) VFAIL(101, @"pixel-format views of a depth/stencil texture (%lu -> %lu) are not supported", (unsigned long)root->_pf, (unsigned long)pf);
@@ -3346,17 +3366,18 @@ N48_RESOURCE_SPI
         const VkFormatFeatureFlags vf = root->_iosLinear ? vp.linearTilingFeatures : vp.optimalTilingFeatures;
         if ((vf & rf) != rf) VFAIL(102, @"view pixel format %lu (vk %d) lacks features 0x%x of the shared IOSurface image (texture pixel format %lu, vk %d)", (unsigned long)pf, f->vk, rf & ~vf, (unsigned long)root->_pf, root->_fmt->vk);
     }
-    _root = root; _dev = root->_dev; _w = root->_w; _h = root->_h; _pf = pf; _fmt = f; _usage = root->_usage; _opts = root->_opts; _swz = swz;
     if (swz.red > 5 || swz.green > 5 || swz.blue > 5 || swz.alpha > 5) VFAIL(97, @"bad swizzle");
-    if (root->_is3D) VFAIL(99, @"views of 3D textures are not implemented");
+    _root = root; _dev = root->_dev; _pf = pf; _fmt = f; _usage = root->_usage; _opts = root->_opts; _swz = swz;
+    _w = (NSUInteger)n48td_mip_dim(root->_w, vd.baseLevel); _h = (NSUInteger)n48td_mip_dim(root->_h, vd.baseLevel);   // the view's size at its first level
+    _tdk = vd.kind; _layers = vd.layers; _levels = vd.levels; _depth = 1; _baseLevel = vd.baseLevel; _baseLayer = vd.baseLayer;
+    _stDropped = root->_stDropped; _viewSwz = YES;   // a view of a root whose storage was dropped has no storage either (n48FillSet refuses it)
     VkComponentMapping vcm = n48_view_map(f, swz);   // composes the client swizzle with the format's own (A8: (0,0,0,R))
-    _levels = 1; _depth = 1; _viewSwz = YES;
-    VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = [root vkImage], .viewType = VK_IMAGE_VIEW_TYPE_2D, .format = f->vk,
-        .components = vcm, .subresourceRange = { root->_aspects ? n48dp_view_aspect(root->_aspects) : VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } };
+    VkImageViewCreateInfo vc = { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, .image = [root vkImage], .viewType = (VkImageViewType)vd.viewType, .format = f->vk,
+        .components = vcm, .subresourceRange = { root->_aspects ? n48dp_view_aspect(root->_aspects) : VK_IMAGE_ASPECT_COLOR_BIT, vd.baseLevel, vd.levels, vd.baseLayer, vd.layers } };
     VkResult r = vkCreateImageView(N48R.dev, &vc, NULL, &_view);
     if (r != VK_SUCCESS) VFAIL(98, @"vkCreateImageView = %d", r);
-    N48LOGR("N48Texture view %p of %p: pf %lu -> %lu (vk format %d -> %d), swizzle %u%u%u%u", (__bridge void *)self, (__bridge void *)root, (unsigned long)root->_pf, (unsigned long)pf, root->_fmt->vk, f->vk,
-           swz.red, swz.green, swz.blue, swz.alpha);
+    N48LOGR("N48Texture view %p of %p: pf %lu -> %lu (vk format %d -> %d), viewType %u, levels %u+%u, slices %u+%u, swizzle %u%u%u%u", (__bridge void *)self, (__bridge void *)root,
+           (unsigned long)root->_pf, (unsigned long)pf, root->_fmt->vk, f->vk, vd.viewType, vd.baseLevel, vd.levels, vd.baseLayer, vd.layers, swz.red, swz.green, swz.blue, swz.alpha);
     #undef VFAIL
     return self;
 }
@@ -5613,7 +5634,7 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
         _encSamples = (unsigned)tsm;
         // m11h9: a mip level of a 2D texture can be the attachment (the compositor renders into the base level of mipmapped textures and generates the rest)
         NSUInteger lvl = ca.level;
-        if (lvl >= [t mipmapLevelCount] || ca.slice >= [t n48Layers] || ca.depthPlane != 0) { N48LOG("render pass: attachment %lu level %lu slice %lu depthPlane %lu outside the texture (%lu level(s)); refused", (unsigned long)i, (unsigned long)lvl, (unsigned long)ca.slice, (unsigned long)ca.depthPlane, (unsigned long)[t mipmapLevelCount]); return nil; }
+        if (lvl >= [t mipmapLevelCount] || ca.slice >= [t n48ViewLayers] || ca.depthPlane != 0) { N48LOG("render pass: attachment %lu level %lu slice %lu depthPlane %lu outside the texture (%lu level(s)); refused", (unsigned long)i, (unsigned long)lvl, (unsigned long)ca.slice, (unsigned long)ca.depthPlane, (unsigned long)[t mipmapLevelCount]); return nil; }
         if (na == 0) { _w = (uint32_t)MAX((NSUInteger)1, t.width >> lvl); _h = (uint32_t)MAX((NSUInteger)1, t.height >> lvl); }
         n48_ios_use(_cb, t, ca.loadAction != MTLLoadActionClear, YES);   // 11h.6: IOSurface contents are never discarded (only Clear skips the upload)
         [_cb n48DispNote:t bits:(N48DF_W_PASS | (ca.loadAction == MTLLoadActionClear ? N48DF_W_CLEAR : 0)) pso:nil];   // native #12 P1
@@ -5657,7 +5678,7 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
         if ([dt n48IsView] && asp != n48dp_view_aspect(asp)) { N48LOG("render pass: a view of a combined depth/stencil texture cannot be an attachment; refused"); return nil; }
         if (dtI && stI && (da.level != sa.level || da.slice != sa.slice)) { N48LOG("render pass: the depth and stencil attachments name different levels / slices; refused"); return nil; }
         NSUInteger lvl = dtI ? da.level : sa.level, slc = dtI ? da.slice : sa.slice, dpl = dtI ? da.depthPlane : sa.depthPlane;
-        if (lvl >= [dt mipmapLevelCount] || slc >= [dt n48Layers] || dpl != 0) { N48LOG("render pass: the depth/stencil attachment level %lu slice %lu depthPlane %lu is outside the texture; refused", (unsigned long)lvl, (unsigned long)slc, (unsigned long)dpl); return nil; }
+        if (lvl >= [dt mipmapLevelCount] || slc >= [dt n48ViewLayers] || dpl != 0) { N48LOG("render pass: the depth/stencil attachment level %lu slice %lu depthPlane %lu is outside the texture; refused", (unsigned long)lvl, (unsigned long)slc, (unsigned long)dpl); return nil; }
         NSUInteger tsm = [dt n48Samples];
         if (_encSamples && tsm != _encSamples) { N48LOG("render pass: the depth/stencil attachment has %lu samples, the colour attachments %u; refused", (unsigned long)tsm, _encSamples); return nil; }
         _encSamples = (unsigned)tsm;
@@ -6284,7 +6305,7 @@ N48_ENCODER_USE(self->_decl)
 static VkBufferImageCopy n48_bic(N48Texture *t, NSUInteger off, NSUInteger bpr, NSUInteger bpi, NSUInteger level, NSUInteger slice, MTLOrigin o, MTLSize sz) {
     BOOL is3 = [t textureType] == MTLTextureType3D; uint32_t bpp = [t bytesPerPixel];
     return (VkBufferImageCopy){ .bufferOffset = off, .bufferRowLength = (uint32_t)(bpr / bpp), .bufferImageHeight = (is3 && sz.depth > 1 && bpr) ? (uint32_t)(bpi / bpr) : 0,
-        .imageSubresource = { [t n48CopyAspect], (uint32_t)level, n48td_base_layer(is3, slice), 1 },   // bundle 10: colour, or the one depth / stencil aspect
+        .imageSubresource = { [t n48CopyAspect], n48td_image_level(level, [t n48BaseLevel]), n48td_image_layer(is3, slice, [t n48BaseLayer]), 1 },   // bundle 10: colour, or the one depth / stencil aspect
         .imageOffset = { (int32_t)o.x, (int32_t)o.y, is3 ? (int32_t)o.z : 0 }, .imageExtent = { (uint32_t)sz.width, (uint32_t)sz.height, is3 ? (uint32_t)sz.depth : 1 } };
 }
 static BOOL n48_blit_region_ok(N48Texture *t, MTLOrigin o, MTLSize sz, NSUInteger level, NSUInteger slice, const char *what) {
@@ -6347,8 +6368,8 @@ N48_DNR(N48BlitEncoder)
     BOOL a3 = [a textureType] == MTLTextureType3D, b3 = [b textureType] == MTLTextureType3D;
     n48_tex_to(cmd, a, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     n48_tex_to(cmd, b, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VkImageCopy ic = { .srcSubresource = { [a n48Aspects], (uint32_t)sl, a3 ? 0 : (uint32_t)ss, 1 }, .srcOffset = { (int32_t)so.x, (int32_t)so.y, a3 ? (int32_t)so.z : 0 },
-        .dstSubresource = { [b n48Aspects], (uint32_t)dl, b3 ? 0 : (uint32_t)ds, 1 }, .dstOffset = { (int32_t)dorg.x, (int32_t)dorg.y, b3 ? (int32_t)dorg.z : 0 },
+    VkImageCopy ic = { .srcSubresource = { [a n48Aspects], n48td_image_level(sl, [a n48BaseLevel]), n48td_image_layer(a3, ss, [a n48BaseLayer]), 1 }, .srcOffset = { (int32_t)so.x, (int32_t)so.y, a3 ? (int32_t)so.z : 0 },
+        .dstSubresource = { [b n48Aspects], n48td_image_level(dl, [b n48BaseLevel]), n48td_image_layer(b3, ds, [b n48BaseLayer]), 1 }, .dstOffset = { (int32_t)dorg.x, (int32_t)dorg.y, b3 ? (int32_t)dorg.z : 0 },
         .extent = { (uint32_t)sz.width, (uint32_t)sz.height, (a3 || b3) ? (uint32_t)sz.depth : 1 } };
     vkCmdCopyImage(cmd, [a vkImage], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, [b vkImage], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ic);
     n48_full_barrier(cmd);
@@ -6375,7 +6396,7 @@ N48_ENCODER_USE(nil)
 // destination are different levels, so the regions never overlap); each blit is ordered after the previous by a full memory barrier.
 - (void)generateMipmapsForTexture:(id)tex {
     if (![tex isKindOfClass:[N48Texture class]]) { [_cb n48Fail:@"blit generateMipmapsForTexture: bad class"]; return; }
-    N48Texture *t = tex; uint32_t nl = [t n48Levels];
+    N48Texture *t = tex; uint32_t nl = (uint32_t)[t mipmapLevelCount];   // bundle 40: a view's own levels (a root's are its levels); the chain runs inside the view
     if ([t n48IsDS] || [t n48Samples] > 1) { [_cb n48Fail:@"blit generateMipmapsForTexture: depth/stencil and multisample textures cannot be mip-mapped here"]; return; }   // bundle 10
     if (nl <= 1) { N48_ONCE("generateMipmapsForTexture: the texture has a single level; nothing to generate"); return; }
     VkFormatProperties fp = {0}; vkGetPhysicalDeviceFormatProperties(N48R.pd, [t vkFormat], &fp);
@@ -6385,12 +6406,13 @@ N48_ENCODER_USE(nil)
     [_cb n48Retain:t];
     VkCommandBuffer cmd = [_cb vk];
     n48_tex_to(cmd, t, VK_IMAGE_LAYOUT_GENERAL);
+    const uint32_t lvBase = [t n48BaseLevel], layBase = [t n48BaseLayer], layN = [t n48ViewLayers];   // bundle 40: the view's first level, first slice and slice count in the root
     for (uint32_t L = 1; L < nl; L++) {
         n48_full_barrier(cmd);
         int32_t sw = (int32_t)MAX((NSUInteger)1, [t width] >> (L - 1)), sh = (int32_t)MAX((NSUInteger)1, [t height] >> (L - 1)), sd = (int32_t)MAX((NSUInteger)1, [t depth] >> (L - 1));
         int32_t dw = (int32_t)MAX((NSUInteger)1, [t width] >> L), dh = (int32_t)MAX((NSUInteger)1, [t height] >> L), dd = (int32_t)MAX((NSUInteger)1, [t depth] >> L);
-        VkImageBlit bl = { .srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, L - 1, 0, [t n48Layers] }, .srcOffsets = { { 0, 0, 0 }, { sw, sh, sd } },
-                           .dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, L, 0, [t n48Layers] }, .dstOffsets = { { 0, 0, 0 }, { dw, dh, dd } } };
+        VkImageBlit bl = { .srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, lvBase + L - 1, layBase, layN }, .srcOffsets = { { 0, 0, 0 }, { sw, sh, sd } },
+                           .dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, lvBase + L, layBase, layN }, .dstOffsets = { { 0, 0, 0 }, { dw, dh, dd } } };
         vkCmdBlitImage(cmd, [t vkImage], VK_IMAGE_LAYOUT_GENERAL, [t vkImage], VK_IMAGE_LAYOUT_GENERAL, 1, &bl, fl);
     }
     n48_full_barrier(cmd);

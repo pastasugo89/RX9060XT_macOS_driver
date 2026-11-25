@@ -126,4 +126,61 @@ static inline int n48td_att_view(unsigned kind, unsigned layersIvar, unsigned lo
 static inline unsigned long n48td_heap_layers(unsigned long tt, unsigned long arrayLength) {
     return tt == N48TD_MTL_1DARRAY ? arrayLength : tt == N48TD_MTL_2DARRAY ? arrayLength : tt == N48TD_MTL_CUBE ? N48TD_CUBE_FACES : tt == N48TD_MTL_CUBEARRAY ? N48TD_CUBE_FACES * arrayLength : 1;
 }
+
+// ---- bundle 40: texture views of cube, 2D-array and 2D textures ----
+// A view is named by a Metal request (newTextureViewWithPixelFormat:textureType:levels:slices:) whose levels and slices count the ROOT's. n48td_view_map accepts the
+// combinations the root's VkImage can express: a cube view of a cube root (VK_IMAGE_VIEW_TYPE_CUBE over its six faces), a 2D view of one slice (VK_IMAGE_VIEW_TYPE_2D at
+// baseArrayLayer = the slice: a face of a cube, or an element of a 2D array), and a 2D-array view (VK_IMAGE_VIEW_TYPE_2D_ARRAY) of a cube or 2D-array root. Each may cover any
+// mip-level range of the root. Refused with a reason: a cube view of a 2D-array root (its image is not CUBE_COMPATIBLE), a 2D-array view of a 2D root, cube arrays, and every other type.
+typedef struct {
+    int ok;                       // 1: the view is accepted
+    const char *why;              // refusal text (ok == 0)
+    unsigned kind;                // N48TD_K_* of the view object (textureType and arrayLength follow from the kind, as for a root texture)
+    unsigned viewType;            // N48TD_VK_VIEW_* of the Vulkan image view
+    unsigned baseLevel, levels;   // the view's mip levels, in the root's VkImage
+    unsigned baseLayer, layers;   // the view's slices, in the root's VkImage (array layers)
+} n48td_view_t;
+
+// max(1, dim >> level): the size of a view's first level when the view starts at mip level `level` of a root of size dim (a shift of 64 or more gives 1).
+static inline unsigned long n48td_mip_dim(unsigned long dim, unsigned long level) {
+    unsigned long d = level >= 8 * sizeof dim ? 0 : dim >> level;
+    return d ? d : 1;
+}
+// A view numbers its levels and slices from its own base in the root's VkImage. (A 3D texture is never a view: its depth stays in the extent, layer 0.)
+static inline uint32_t n48td_image_level(unsigned long level, uint32_t baseLevel) { return baseLevel + (uint32_t)level; }
+static inline uint32_t n48td_image_layer(int is3D, unsigned long slice, uint32_t baseLayer) { return n48td_base_layer(is3D, slice) + baseLayer; }
+
+// The request behind the one-argument newTextureViewWithPixelFormat:. Metal's rule: the same texture type, every mip level, every slice (a 2D texture has one).
+// A 2D texture's view therefore covers all its levels; a single-level 2D texture (the common case) keeps the level-0, slice-0 view bundle 9 made.
+static inline void n48td_view_default(unsigned kind, unsigned layers, unsigned levels, unsigned long *tt, unsigned long *lvLoc, unsigned long *lvLen, unsigned long *slLoc, unsigned long *slLen) {
+    *tt = N48TD_MTL_2D; *lvLoc = 0; *lvLen = levels ? levels : 1; *slLoc = 0; *slLen = 1;
+    if (kind == N48TD_K_CUBE) { *tt = N48TD_MTL_CUBE; *slLen = N48TD_CUBE_FACES; }
+    else if (kind == N48TD_K_2DARRAY) { *tt = N48TD_MTL_2DARRAY; *slLen = layers ? layers : 1; }
+}
+
+// The check and the mapping of one request. rootKind is the root's N48TD_K_*; rootLayers and rootLevels are its slice and mip-level counts (0 counts as 1).
+static inline int n48td_view_map(unsigned rootKind, unsigned rootLayers, unsigned rootLevels, unsigned long tt, unsigned long lvLoc, unsigned long lvLen,
+                                 unsigned long slLoc, unsigned long slLen, n48td_view_t *o) {
+    unsigned long nl = rootLayers ? rootLayers : 1, nlev = rootLevels ? rootLevels : 1;
+    o->ok = 0; o->why = NULL; o->kind = N48TD_K_2D; o->viewType = N48TD_VK_VIEW_2D; o->baseLevel = 0; o->levels = 1; o->baseLayer = 0; o->layers = 1;
+    if (rootKind != N48TD_K_2D && rootKind != N48TD_K_CUBE && rootKind != N48TD_K_2DARRAY) { o->why = "views of 1D, 1DArray, 3D and multisample textures are not implemented"; return 0; }
+    if (lvLen == 0 || lvLoc >= nlev || lvLen > nlev - lvLoc) { o->why = "the view's mip levels must be a non-empty range of the texture's levels"; return 0; }
+    if (slLen == 0 || slLoc >= nl || slLen > nl - slLoc) { o->why = "the view's slices must be a non-empty range of the texture's slices"; return 0; }
+    switch (tt) {
+    case N48TD_MTL_CUBE:
+        if (rootKind != N48TD_K_CUBE) { o->why = "a cube view needs a cube texture (a 2D-array texture's image is not cube-compatible)"; return 0; }
+        if (slLoc != 0 || slLen != N48TD_CUBE_FACES) { o->why = "a cube view covers all six faces (slices 0+6)"; return 0; }
+        o->kind = N48TD_K_CUBE; o->viewType = N48TD_VK_VIEW_CUBE; o->layers = N48TD_CUBE_FACES; break;
+    case N48TD_MTL_2D:
+        if (slLen != 1) { o->why = "a 2D view covers one slice (a face of a cube or an element of a 2D array)"; return 0; }
+        o->kind = N48TD_K_2D; o->viewType = N48TD_VK_VIEW_2D; o->layers = 1; break;
+    case N48TD_MTL_2DARRAY:
+        if (rootKind == N48TD_K_2D) { o->why = "a 2D-array view of a 2D texture is not implemented"; return 0; }
+        o->kind = N48TD_K_2DARRAY; o->viewType = N48TD_VK_VIEW_2D_ARRAY; o->layers = (unsigned)slLen; break;
+    default:
+        o->why = "this view type is not implemented (2D, 2D-array and cube views only; cube-array views are refused)"; return 0;
+    }
+    o->baseLevel = (unsigned)lvLoc; o->levels = (unsigned)lvLen; o->baseLayer = (unsigned)slLoc;
+    o->ok = 1; return 1;
+}
 #endif

@@ -10,13 +10,15 @@ case "$SCR" in */b9-plant.*) ;; *) echo "bad scratch dir $SCR"; exit 2;; esac
 trap 'rm -rf -- "$SCR"' EXIT
 escaped=0; total=0; HAVEVK=0
 [ -f /opt/homebrew/lib/libvulkan.dylib ] && [ -f /opt/homebrew/include/vulkan/vulkan.h ] && HAVEVK=1
-fresh() { rm -rf -- "$SCR/w"; mkdir -p "$SCR/w"; cp "$D"/n48_cienv.h "$D"/n48_texdesc.h "$D"/Navi48Device.m "$D"/test-cienv.c "$D"/test-texdesc.c "$D"/test-vkimage.c "$SCR/w/"; }
+fresh() { rm -rf -- "$SCR/w"; mkdir -p "$SCR/w"; cp "$D"/n48_cienv.h "$D"/n48_texdesc.h "$D"/Navi48Device.m "$D"/Info.plist "$D"/test-cienv.c "$D"/test-texdesc.c "$D"/test-b40-views.c "$D"/test-vkimage.c "$SCR/w/"; }
 run_tests() {   # prints one line per failed test into $OUT; returns 0 when everything passed
   OUT=""; local bad=0 rc
   ( cd "$SCR/w" && cc -O1 -Wall -Wextra -Werror -o t-cienv test-cienv.c ) >/dev/null 2>&1 || { OUT="test-cienv: compile error"; bad=1; }
   [ $bad -eq 0 ] && { ( cd "$SCR/w" && ./t-cienv . ) >"$SCR/o1" 2>&1 || { OUT="test-cienv: $(/usr/bin/grep -m1 '^FAIL' "$SCR/o1" | cut -c1-110)"; bad=1; }; }
   ( cd "$SCR/w" && cc -O1 -Wall -Wextra -Werror -o t-texdesc test-texdesc.c ) >/dev/null 2>&1 || { OUT="$OUT | test-texdesc: compile error"; bad=1; }
   if [ -x "$SCR/w/t-texdesc" ]; then ( cd "$SCR/w" && ./t-texdesc . ) >"$SCR/o2" 2>&1 || { OUT="$OUT | test-texdesc: $(/usr/bin/grep -m1 '^FAIL' "$SCR/o2" | cut -c1-110)"; bad=1; }; fi
+  ( cd "$SCR/w" && cc -O1 -Wall -Wextra -Werror -o t-b40 test-b40-views.c ) >/dev/null 2>&1 || { OUT="$OUT | test-b40-views: compile error"; bad=1; }
+  if [ -x "$SCR/w/t-b40" ]; then ( cd "$SCR/w" && ./t-b40 . ) >"$SCR/o4" 2>&1 || { OUT="$OUT | test-b40-views: $(/usr/bin/grep -m1 '^FAIL' "$SCR/o4" | cut -c1-110)"; bad=1; }; fi
   if [ $HAVEVK -eq 1 ]; then
     ( cd "$SCR/w" && clang -I/opt/homebrew/include test-vkimage.c -L/opt/homebrew/lib -lvulkan -o t-vkimage ) >/dev/null 2>&1 || { OUT="$OUT | test-vkimage: compile error"; bad=1; }
     if [ -x "$SCR/w/t-vkimage" ]; then ( cd "$SCR/w" && ./t-vkimage ) >"$SCR/o3" 2>&1 || { OUT="$OUT | test-vkimage: $(/usr/bin/grep -m1 -E '^FAIL' "$SCR/o3" | cut -c1-110)"; bad=1; }; fi
@@ -37,7 +39,7 @@ PY
   if [ $rc -ne 0 ]; then echo "PLANT $id: $desc: THE PLANT ITSELF DID NOT APPLY"; escaped=$((escaped+1)); return; fi
   if run_tests; then echo "PLANT $id: $desc: *** ESCAPED (every test passed) ***"; escaped=$((escaped+1)); else echo "PLANT $id: $desc: CAUGHT by ${OUT# | }"; fi
 }
-fresh; total=$((total+1)); if run_tests; then echo "BASELINE: the unmodified scratch copy passes (cienv, texdesc$([ $HAVEVK -eq 1 ] && echo ', vkimage' || echo '; no vulkan: vkimage skipped'))"; else echo "BASELINE: FAILED: $OUT"; escaped=$((escaped+1)); fi
+fresh; total=$((total+1)); if run_tests; then echo "BASELINE: the unmodified scratch copy passes (cienv, texdesc, b40-views$([ $HAVEVK -eq 1 ] && echo ', vkimage' || echo '; no vulkan: vkimage skipped'))"; else echo "BASELINE: FAILED: $OUT"; escaped=$((escaped+1)); fi
 C=n48_cienv.h; T=n48_texdesc.h; M=Navi48Device.m
 # ---- item 1: the Core Image switch ----
 plant 1  $C "    if (get(N48CE_VAR) != NULL) return N48CE_ALREADY_SET;
@@ -52,8 +54,8 @@ plant 7  $M "    int r = n48ce_apply((n48ce_getenv_fn)getenv, setenv);" "    int
 plant 10 $T "o->flags = N48TD_VK_CREATE_CUBE_COMPATIBLE; o->layersIvar = N48TD_CUBE_FACES;" "o->flags = 0; o->layersIvar = N48TD_CUBE_FACES;" "TEX 10: VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT is dropped"
 plant 11 $T "static inline uint32_t n48td_base_layer(int is3D, unsigned long slice) { return is3D ? 0u : (uint32_t)slice; }" "static inline uint32_t n48td_base_layer(int is3D, unsigned long slice) { (void)is3D; (void)slice; return 0u; }" "TEX 11: uploads always go to slice 0 (header)"
 plant 12 $M "
-            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)lvl, n48td_base_layer(self->_is3D, slice), 1 }" "
-            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)lvl, 0, 1 }" "TEX 12: replaceRegion always uploads to slice 0 (bundle)"
+            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, n48td_image_level(lvl, self->_baseLevel), n48td_image_layer(self->_is3D, slice, self->_baseLayer), 1 }" "
+            .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, n48td_image_level(lvl, self->_baseLevel), 0, 1 }" "TEX 12: replaceRegion always uploads to slice 0 (bundle)"
 plant 13 $T "static inline unsigned n48td_nlayers(unsigned layersIvar) { return layersIvar ? layersIvar : 1; }" "static inline unsigned n48td_nlayers(unsigned layersIvar) { (void)layersIvar; return 1; }" "TEX 13: n48Layers returns 1 (header)"
 plant 14 $M "- (uint32_t)n48Layers { return _root ? [_root n48Layers] : n48td_nlayers((unsigned)_layers); }" "- (uint32_t)n48Layers { return _root ? [_root n48Layers] : 1; }" "TEX 14: n48Layers returns 1 (bundle: slice 5 refused, barriers cover one layer)"
 plant 15 $T "        if (w != h) { o->why = \"a cube texture must be square (width must equal height)\"; return 0; }
@@ -71,12 +73,18 @@ plant 22 $T "        if (arrayLength < 1) { o->why = \"a 2D-array texture needs 
 plant 23 $T "o->viewType = N48TD_VK_VIEW_2D_ARRAY; o->layers = (unsigned)arrayLength;" "o->viewType = arrayLength > 1 ? N48TD_VK_VIEW_2D_ARRAY : N48TD_VK_VIEW_2D; o->layers = (unsigned)arrayLength;" "TEX 23: a 2DArray of length 1 gets a plain 2D view"
 plant 24 $T "if (n48td_is_layered2d(kind)) { a->viewType = N48TD_VK_VIEW_2D; a->baseLayer = (unsigned)layer; a->layerCount = 1; return 1; }" "if (n48td_is_layered2d(kind)) { a->viewType = N48TD_VK_VIEW_2D; a->baseLayer = 0; a->layerCount = 1; return 1; }" "TEX 24: every per-layer attachment view is layer 0"
 plant 25 $T "    if (layer >= n) return 0;" "    (void)n;" "TEX 25: the attachment view accepts a layer past the end"
-plant 26 $M "ca.slice >= [t n48Layers]" "ca.slice != 0" "TEX 26: the render pass still refuses every slice != 0"
+plant 26 $M "ca.slice >= [t n48ViewLayers]" "ca.slice != 0" "TEX 26: the render pass still refuses every slice != 0"
 plant 27 $M "[t n48AttViewLevel:(uint32_t)lvl layer:(uint32_t)ca.slice]" "[t n48AttViewLevel:(uint32_t)lvl layer:0]" "TEX 27: the render pass always attaches layer 0"
 plant 28 $M "n48td_heap_layers((unsigned long)d.textureType, d.arrayLength)" "(d.textureType == MTLTextureType1DArray ? d.arrayLength : 1)" "TEX 28: heap sizing ignores cube / array layers"
 plant 29 $M "| ti.flags;" ";" "TEX 29: the create flags never reach the image-format query and vkCreateImage"
-plant 30 $M "    if (n48td_is_layered2d(root->_tdk)) VFAIL(98, @\"views of cube / 2D-array textures are not implemented\");
-" "" "TEX 30: a 2D view of a cube root is built (its sliced view is not implemented)"
+plant 30 $T "        if (rootKind != N48TD_K_CUBE) { o->why = \"a cube view needs a cube texture (a 2D-array texture's image is not cube-compatible)\"; return 0; }
+" "" "TEX 30 (bundle 40): a cube view of a 2D-array texture is built (its image is not cube-compatible)"
+plant 34 $T "        if (slLoc != 0 || slLen != N48TD_CUBE_FACES) { o->why = \"a cube view covers all six faces (slices 0+6)\"; return 0; }
+" "" "B40 34: a cube view of part of the faces is built"
+plant 35 $T "        if (slLen != 1) { o->why = \"a 2D view covers one slice (a face of a cube or an element of a 2D array)\"; return 0; }
+" "" "B40 35: a 2D view of several slices is built"
+plant 36 $T "lvLoc >= nlev || lvLen > nlev - lvLoc) {" "lvLoc >= nlev || lvLen > nlev + 1 - lvLoc) {" "B40 36: a view one mip level past the root's last level is built (an off-by-one)"
+plant 37 $M "n48td_image_layer(is3, slice, [t n48BaseLayer])" "n48td_base_layer(is3, slice)" "B40 37: buffer and texture copies ignore the view's base layer"
 plant 31 $M "- (NSUInteger)arrayLength { return n48td_array_length(_tdk, (unsigned)_layers); }" "- (NSUInteger)arrayLength { return _layers ? _layers : 1; }" "TEX 31: a cube reports arrayLength 6"
 plant 32 $M "- (MTLTextureType)textureType { return (MTLTextureType)n48td_mtl_type(_tdk); }" "- (MTLTextureType)textureType { return MTLTextureType2D; }" "TEX 32: textureType returns 2D for everything"
 plant 33 $M "if (d.textureType != MTLTextureType2D || d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) IOSFAIL(72" "if (d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) IOSFAIL(72" "TEX 33: an IOSurface-backed texture accepts any texture type"

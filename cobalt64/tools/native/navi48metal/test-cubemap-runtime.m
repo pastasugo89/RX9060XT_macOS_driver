@@ -64,7 +64,29 @@ int main(int argc, const char *argv[]) {
                 if (result[i] != 48 + face * 24) { fprintf(stderr, "wrong mipmap value on face %lu\n", (unsigned long)face); return 1; }
             }
         }
-        puts("PASS: ANGLE cubemap descriptor, reported usage and six-face GPU mipmap readback");
+        // bundle 40: views of the mipmapped cube (a 2D view of one face, a cube view, a 2D-array view, the one-argument view). Each probe reads the texel a view names
+        // and must equal the root's texel at the level and face the view maps to (the faces hold 48 + 24 * face at every level, the mipmaps being box averages of constants).
+        id<MTLTexture> face = [tex newTextureViewWithPixelFormat:MTLPixelFormatRGBA8Unorm textureType:MTLTextureType2D levels:NSMakeRange(1, 1) slices:NSMakeRange(2, 1)];
+        id<MTLTexture> cube = [tex newTextureViewWithPixelFormat:MTLPixelFormatRGBA8Unorm textureType:MTLTextureTypeCube levels:NSMakeRange(0, 3) slices:NSMakeRange(0, 6)];
+        id<MTLTexture> arr = [tex newTextureViewWithPixelFormat:MTLPixelFormatRGBA8Unorm textureType:MTLTextureType2DArray levels:NSMakeRange(0, 3) slices:NSMakeRange(1, 3)];
+        id<MTLTexture> whole = [tex newTextureViewWithPixelFormat:MTLPixelFormatRGBA8Unorm];
+        if (!face || !cube || !arr || !whole) { fprintf(stderr, "a cube view was refused (face %d, cube %d, array %d, whole %d)\n", face != nil, cube != nil, arr != nil, whole != nil); return 1; }
+        if (face.textureType != MTLTextureType2D || face.width != 2 || face.height != 2 || face.mipmapLevelCount != 1 || face.arrayLength != 1 ||
+            cube.textureType != MTLTextureTypeCube || cube.mipmapLevelCount != 3 || arr.textureType != MTLTextureType2DArray || arr.arrayLength != 3 ||
+            whole.textureType != MTLTextureTypeCube || whole.mipmapLevelCount != 3) {
+            fprintf(stderr, "view shape is wrong (face %lu/%lu levels %lu, cube levels %lu, array length %lu)\n", (unsigned long)face.width, (unsigned long)face.textureType,
+                    (unsigned long)face.mipmapLevelCount, (unsigned long)cube.mipmapLevelCount, (unsigned long)arr.arrayLength);
+            return 1;
+        }
+        struct { __unsafe_unretained id<MTLTexture> view; NSUInteger viewLevel, viewSlice, rootLevel, rootSlice; } probes[] = {
+            { face, 0, 0, 1, 2 }, { arr, 0, 0, 0, 1 }, { cube, 2, 5, 2, 5 }, { whole, 1, 4, 1, 4 } };
+        for (size_t i = 0; i < sizeof probes / sizeof *probes; i++) {
+            uint8_t viaView[4] = {0}, viaRoot[4] = {0};
+            [probes[i].view getBytes:viaView bytesPerRow:4 bytesPerImage:4 fromRegion:MTLRegionMake2D(0, 0, 1, 1) mipmapLevel:probes[i].viewLevel slice:probes[i].viewSlice];
+            [tex getBytes:viaRoot bytesPerRow:4 bytesPerImage:4 fromRegion:MTLRegionMake2D(0, 0, 1, 1) mipmapLevel:probes[i].rootLevel slice:probes[i].rootSlice];
+            if (memcmp(viaView, viaRoot, 4) != 0 || viaView[0] != 48 + probes[i].rootSlice * 24) { fprintf(stderr, "view probe %lu reads the wrong texels\n", (unsigned long)i); return 1; }
+        }
+        puts("PASS: ANGLE cubemap descriptor, reported usage, six-face GPU mipmap readback and the cube / face / array views");
     }
     return 0;
 }

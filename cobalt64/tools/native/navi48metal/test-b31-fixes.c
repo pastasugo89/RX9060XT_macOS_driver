@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     check(at(s, "([[t n48Owner] n48IsIOS] && ca.loadAction != MTLLoadActionClear)") != NULL, "fix2: a render attachment view of an IOSurface root loads its contents like the root");
 
     // fix 2: the view's own VkImageView is used for the attachment / sampled binding (same image, the view's format)
-    check(at(s, "- (VkImageView)n48AttViewLevel:(uint32_t)lv layer:(uint32_t)ly {\n    if (_root) return _view;") != NULL, "fix2: a view's attachment is its own image view");
+    check(at(s, "- (VkImageView)n48AttViewLevel:(uint32_t)lv layer:(uint32_t)ly {\n    if (_root) {\n        if (lv == 0 && ly == 0 && _levels <= 1 && !n48td_is_layered2d(_tdk)) return _view;") != NULL, "fix2: a view's attachment is its own image view (bundle 40: a one-level 2D view; other levels and slices get their own view of the root image)");
 
     printf("test-b31-fixes: %d checks, %d failed\n", checks, fails);
     free(s); free(h);

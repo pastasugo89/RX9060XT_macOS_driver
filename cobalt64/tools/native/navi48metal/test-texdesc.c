@@ -153,13 +153,18 @@ int main(int argc, char **argv) {
         CHECK(strstr(m, "- (uint32_t)n48Layers { return _root ? [_root n48Layers] : n48td_nlayers((unsigned)_layers); }") != NULL, "n48Layers is the header's n48td_nlayers (cube 6, array N)");
         CHECK(strstr(m, "- (MTLTextureType)textureType { return (MTLTextureType)n48td_mtl_type(_tdk); }") != NULL, "textureType comes from the kind");
         CHECK(strstr(m, "- (NSUInteger)arrayLength { return n48td_array_length(_tdk, (unsigned)_layers); }") != NULL, "arrayLength comes from the kind (cube 1)");
-        CHECK(count(m, "n48td_base_layer(self->_is3D, slice)") == 2 && strstr(m, "n48td_base_layer(is3, slice)") != NULL, "replaceRegion, getBytes and the blit copies (n48_bic) all use n48td_base_layer(slice) as the base array layer");
+        CHECK(count(m, "n48td_image_layer(self->_is3D, slice, self->_baseLayer)") == 2 && strstr(m, "n48td_image_layer(is3, slice, [t n48BaseLayer])") != NULL &&
+              strstr(m, "n48td_image_layer(a3, ss, [a n48BaseLayer])") != NULL && strstr(m, "n48td_image_layer(b3, ds, [b n48BaseLayer])") != NULL,
+              "replaceRegion, getBytes, n48_bic and the texture copy address the layer through n48td_image_layer (bundle 40: the view's base layer + the slice)");
+        CHECK(count(m, "n48td_image_level(lvl, self->_baseLevel)") == 2 && strstr(m, "n48td_image_level(level, [t n48BaseLevel])") != NULL && strstr(m, "n48td_image_level(sl, [a n48BaseLevel])") != NULL,
+              "the same paths address the mip level through n48td_image_level (the view's base level + the level)");
         CHECK(!strstr(m, "self->_is3D ? 0 : (uint32_t)slice") && !strstr(m, "is3 ? 0 : (uint32_t)slice"), "no hand-written slice -> layer expression is left");
         CHECK(strstr(m, "n48td_heap_layers((unsigned long)d.textureType, d.arrayLength)") != NULL, "heap texture sizing counts the layers through n48td_heap_layers");
-        CHECK(strstr(m, "ca.slice >= [t n48Layers]") != NULL && !strstr(m, "ca.slice != 0"), "the render pass refuses slice >= n48Layers (not slice != 0)");
+        CHECK(strstr(m, "ca.slice >= [t n48ViewLayers]") != NULL && strstr(m, "slc >= [dt n48ViewLayers]") != NULL && !strstr(m, "ca.slice != 0"), "the render pass refuses slice >= n48ViewLayers (the view's own slices), not slice != 0");
         CHECK(strstr(m, "[t n48AttViewLevel:(uint32_t)lvl layer:(uint32_t)ca.slice]") != NULL, "the render pass attaches the per-layer view of ca.slice");
         CHECK(strstr(m, "BOOL wholeImg = [t n48Levels] > 1 || [t n48Layers] > 1;") != NULL, "a layered texture is moved to the attachment layout as a whole");
-        CHECK(strstr(m, "if (n48td_is_layered2d(root->_tdk)) VFAIL(98") != NULL, "views of cube / 2D-array textures are refused (their sliced views are not implemented)");
+        CHECK(strstr(m, "n48td_view_map(root->_tdk, n48td_nlayers((unsigned)root->_layers)") != NULL && strstr(m, "views of cube / 2D-array textures are not implemented") == NULL &&
+              strstr(m, "if (n48td_is_layered2d(root->_tdk)) VFAIL(98") == NULL, "bundle 40: every view request goes through n48td_view_map (the old cube / 2D-array refusal is gone)");
         CHECK(strstr(m, "if (d.textureType != MTLTextureType2D || d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) IOSFAIL(72") != NULL &&
               strstr(m, "if (d.textureType != MTLTextureType2D || d.depth != 1 || d.arrayLength != 1 || d.mipmapLevelCount != 1 || d.sampleCount != 1) BFAIL(121") != NULL, "IOSurface- and buffer-backed textures are still 2D only");
         CHECK(strstr(m, "_Static_assert((unsigned)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT == N48TD_VK_CREATE_CUBE_COMPATIBLE") != NULL && strstr(m, "(int)MTLTextureTypeCube == N48TD_MTL_CUBE") != NULL, "the header's numeric values are asserted against the real enums");
