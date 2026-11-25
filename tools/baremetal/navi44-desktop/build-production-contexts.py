@@ -212,6 +212,21 @@ TELEMETRY_PATCH_SHA = '0042045d144645c1976c10650897e88e90f38a1da39ae1dd0ed3c9c95
 TELEMETRY_FILES = ('src/Navi48UserClient.cpp', 'src/amd/n4x_safety.cpp', 'src/amd/n4x_safety.h',
                    'src/amd/native_s1c.cpp', 'src/amd/native_s1c.h')
 TELEMETRY_REQUIRED_STRINGS = (b'Navi48,Telemetry', b'THMHotspotC', b'SMULayoutVerified', b'VRAMVisibleFreeBytes')
+# 0.0.682: guarded interrupts (navi48-interrupts=2: IH storm guard, EOP-woken waits), opt-in soft recovery (navi48-softrec=1), and the wait fixes
+# F1 (no ring-space wait under the global locks, bound-expiry log) / F3 (sleep with backoff; navi48-waitsleep=0 restores the 0.0.681 step).
+RESILIENCE_VERSION = '0.0.682'
+RESILIENCE_BASE = ROOT / 'research/builds/macos-20261123/kernel-681/kernel-contexts-v17'
+INSTALLED_681 = {'bundle_path': 'Navi48Bringup-contexts-0.0.681.kext',
+                 'kernel_sha256': '738d4f68923d0684e3b056a4bd38baaa00c481682d60b7357c78ef998503b0b8',
+                 'config_sha256': 'd1c518a63da299d70428e511ca805d092011a17d5c95b621434cb64db33d4c34', 'version': '0.0.681'}
+RESILIENCE_PATCH_SHA = '0e9b301ded8b92eb97d6b7f21994ae022cf0c06656cf747edf33b6fbb15770ad'
+RESILIENCE_FILES = ('src/Navi48Bringup.cpp', 'src/Navi48Bringup.hpp', 'src/amd/amdgpu_ih.h', 'src/amd/ih_storm_pure.h', 'src/amd/ih_v7_0.cpp',
+                    'src/amd/native_s1c.cpp', 'src/amd/native_s1c.h', 'src/amd/native_s1c_pure.h', 'src/amd/softrec_pure.h', 'src/amd/wait_pure.h')
+RESILIENCE_REQUIRED_STRINGS = (b'Navi48,IRQStormTripped', b'navi48-softrec', b'navi48-waitsleep', b'STORM GUARD tripped', b'bound: %s: %s wait reached')
+# The host tests of the 0.0.682 pure headers (C++, cobalt64/src/navi48-bringup/tests), compiled and run against the candidate tree.
+RESILIENCE_HOST_TESTS = ('ih_storm682_test.cpp', 'wait682_test.cpp', 'softrec682_test.cpp')
+LINUX_AMD = ROOT / 'research/ext/amdgpu-port-study/linux-v7.3/drivers/gpu/drm/amd'
+GFX12_614 = ROOT / 'research/ext/amdgpu-port-study/drm-kmod/drivers/gpu/drm/amd/amdgpu/gfx_v12_0.c'
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
 TESTS = ('test-kernel-vmid-leases.py', 'test-kernel-context-close.py',
          'test-kernel-bo-release.py', 'test-kernel-wait-identity.py',
@@ -274,8 +289,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.681)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9]|68[01])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.682)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9]|68[0-2])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -293,7 +308,7 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION, ADMISSION_VERSION, TELEMETRY_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION, ADMISSION_VERSION, TELEMETRY_VERSION, RESILIENCE_VERSION):
         return recorded_active_baseline(path)
     # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
@@ -302,7 +317,8 @@ def recorded_active_release(path, version):
                          FALLBACK_VERSION: (INSTALLED_673, '0.0.673'), GATING_VERSION: (INSTALLED_674, '0.0.674'),
                          FAN_VERSION: (INSTALLED_675, '0.0.675'), DOORBELL_VERSION: (INSTALLED_676, '0.0.676'),
                          DPM_VERSION: (INSTALLED_677, '0.0.677'), GFXDB_VERSION: (INSTALLED_678, '0.0.678'),
-                         ADMISSION_VERSION: (INSTALLED_679, '0.0.679'), TELEMETRY_VERSION: (INSTALLED_680, '0.0.680')}[version]
+                         ADMISSION_VERSION: (INSTALLED_679, '0.0.679'), TELEMETRY_VERSION: (INSTALLED_680, '0.0.680'),
+                         RESILIENCE_VERSION: (INSTALLED_681, '0.0.681')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -659,6 +675,44 @@ def telemetry_overlay(candidate, patch):
     return sorted(changed)
 
 
+def resilience_overlay(candidate, patch):
+    """Apply only the reviewed 0.0.682 hunks to the deployed 0.0.681 tree, then bump the build markers."""
+    patch = patch.resolve()
+    if sha(patch) != RESILIENCE_PATCH_SHA:
+        raise ValueError('The 0.0.682 patch is not the reviewed file')
+    before = tree_files(candidate)
+    subprocess.run(['patch', '-p1', '-s', '--forward', '--batch', '--fuzz=0', '--no-backup-if-mismatch',
+                    '-d', str(candidate), '-i', str(patch)], check=True)
+    replace_exact(candidate / 'Info.plist', '<string>0.0.681</string>', '<string>0.0.682</string>', 2)
+    replace_exact(candidate / 'src/amd/native_s1c.h', 'kN1cKextBuild = 681;', 'kN1cKextBuild = 682;', 1)
+    replace_exact(candidate / 'src/Navi48MetalNub.cpp', 'sizeof(N48MetalOps), 681u', 'sizeof(N48MetalOps), 682u', 2)
+    after = tree_files(candidate)
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    expected = {*RESILIENCE_FILES, 'Info.plist', *BLACKBAND_MARKER_FILES}
+    if changed != expected:
+        raise ValueError('Candidate changed files outside the 0.0.682 overlay: ' + ', '.join(sorted(changed ^ expected)))
+    return sorted(changed)
+
+
+def run_host_tests(candidate, out):
+    """0.0.682: compile and run the C++ host tests of the new pure headers against the candidate tree (and Linux, when the study tree is present)."""
+    tests_dir = SOURCE / 'tests'
+    done = []
+    for name in RESILIENCE_HOST_TESTS:
+        exe = out / ('host-' + name.replace('.cpp', ''))
+        subprocess.run(['clang++', '-std=c++17', '-Wall', '-Wextra', '-Werror', '-I', str(candidate / 'src'), str(tests_dir / name), '-o', str(exe)], check=True)
+        args = [str(exe), str(candidate)]
+        if LINUX_AMD.is_dir():
+            args.append(str(LINUX_AMD))
+            if GFX12_614.is_file():
+                args.append(str(GFX12_614))
+        with (out / (name + '.log')).open('w') as log:
+            subprocess.run(args, stdout=log, stderr=subprocess.STDOUT, check=True)
+        exe.unlink()
+        done.append(name)
+    return done
+
+
 def overlay_candidate(candidate, source, version=RELEASE):
     """Preserve initialization/firmware; replace only the reviewed context files."""
     build = release_build(version)
@@ -739,7 +793,7 @@ def test_path(name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
-        epilog='0.0.680 requires the v15 baseline manifest. 0.0.681 requires the v16 baseline manifest and the reviewed telemetry --patch.')
+        epilog='0.0.680 requires the v15 baseline manifest. 0.0.681 requires the v16 baseline manifest and the reviewed telemetry --patch. 0.0.682 requires the v17 baseline manifest and the reviewed 0.0.682 --patch.')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch) or 0.0.675 (GFX clock gating + thermal policy on the 0.0.674 tree: needs --active-baseline-manifest (payload v10) and --patch) or 0.0.676 (zero-RPM fan option, navi48-gfxmax, UCLK pin kept on the 0.0.675 tree: needs --active-baseline-manifest (payload v11) and --patch) or 0.0.677 (GFX doorbell in Linux units on the 0.0.676 tree: needs --active-baseline-manifest (payload v12) and --patch) or 0.0.678 (ComputeDispatch fix + DPM gate on the 0.0.677 tree: needs --active-baseline-manifest (payload v13) and --patch) or 0.0.679 (Linux GFX doorbell by default on the 0.0.678 tree: needs --active-baseline-manifest (payload v14) and --patch)')
     parser.add_argument('--patch', type=Path,
@@ -774,7 +828,8 @@ def main():
     gfxdb = version == GFXDB_VERSION           # 0.0.679: built on the 0.0.678 candidate tree plus the reviewed GFX doorbell default patch
     admission = version == ADMISSION_VERSION  # 0.0.680: built on the 0.0.679 candidate tree with the admission limit fix
     telemetry = version == TELEMETRY_VERSION
-    patched = blackband or disparb or fallback or gating or fan or doorbell or dpm or gfxdb or telemetry
+    resilience = version == RESILIENCE_VERSION   # 0.0.682: built on the 0.0.681 candidate tree plus the reviewed 0.0.682 patch
+    patched = blackband or disparb or fallback or gating or fan or doorbell or dpm or gfxdb or telemetry or resilience
     tests = TESTS + (REFRESH_TESTS if refresh or fix or patched or admission else ())
     if (version == '0.0.668' or refresh or fix or patched or admission) and not args.active_baseline_manifest:
         raise ValueError(version + ' requires --active-baseline-manifest for the installed kernel')
@@ -792,7 +847,7 @@ def main():
             raise ValueError(version + ' is built from its reviewed patch: pass --patch')
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         overlay = {'source': 'patch', 'patch': str(args.patch), 'patch_sha256': sha(args.patch),
-                   'patch_files': list(TELEMETRY_FILES if telemetry else GFXDB_FILES if gfxdb else DPM_FILES if dpm else DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
+                   'patch_files': list(RESILIENCE_FILES if resilience else TELEMETRY_FILES if telemetry else GFXDB_FILES if gfxdb else DPM_FILES if dpm else DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
                    'head_at_build': revision}
     else:
         revision, overlay = overlay_provenance(args.worktree_overlay, (ADMISSION_HEADER,) if admission else
@@ -829,10 +884,12 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(TELEMETRY_BASE / 'candidate-source' if telemetry else ADMISSION_BASE / 'candidate-source' if admission else GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+    copy_source(RESILIENCE_BASE / 'candidate-source' if resilience else TELEMETRY_BASE / 'candidate-source' if telemetry else ADMISSION_BASE / 'candidate-source' if admission else GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
                 REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if telemetry:
+    if resilience:
+        manifest['base_verified'] = candidate_base_verified(baseline, RESILIENCE_BASE, INSTALLED_681['kernel_sha256'], INSTALLED_681['version'])
+    elif telemetry:
         manifest['base_verified'] = candidate_base_verified(baseline, TELEMETRY_BASE, INSTALLED_680['kernel_sha256'], INSTALLED_680['version'])
     elif admission:
         manifest['base_verified'] = candidate_base_verified(baseline, ADMISSION_BASE, INSTALLED_679['kernel_sha256'], INSTALLED_679['version'])
@@ -877,7 +934,9 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if telemetry:
+    if resilience:
+        manifest['changed_source_files'] = resilience_overlay(candidate, args.patch)
+    elif telemetry:
         manifest['changed_source_files'] = telemetry_overlay(candidate, args.patch)
     elif admission:
         manifest['changed_source_files'] = admission_overlay(candidate, SOURCE)
@@ -939,14 +998,15 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    recent = gfxdb or admission or telemetry
+    recent = gfxdb or admission or telemetry or resilience
     required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched or admission else ())
                 + (FIX_REQUIRED_STRINGS if fix or patched or admission else ()) + (BLACKBAND_REQUIRED_STRINGS if patched or admission else ())
                 + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan or doorbell or dpm or recent else ())
                 + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan or doorbell or dpm or recent else ())
                 + (GATING_REQUIRED_STRINGS if gating or fan or doorbell or dpm or recent else ()) + (FAN_REQUIRED_STRINGS if fan or doorbell or dpm or recent else ())
                 + (DOORBELL_REQUIRED_STRINGS if doorbell or dpm or recent else ()) + (DPM_REQUIRED_STRINGS if dpm or recent else ())
-                + (GFXDB_REQUIRED_STRINGS if recent else ()) + (TELEMETRY_REQUIRED_STRINGS if telemetry else ()))
+                + (GFXDB_REQUIRED_STRINGS if recent else ()) + (TELEMETRY_REQUIRED_STRINGS if telemetry or resilience else ())
+                + (RESILIENCE_REQUIRED_STRINGS if resilience else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]
@@ -958,6 +1018,8 @@ def main():
         with (out / (test + '.log')).open('w') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
         manifest['cpu_tests'].append(test)
+    if resilience:
+        manifest['host_tests'] = run_host_tests(candidate, out)
         save()
     if tree_files(candidate) != manifest['candidate_inputs']:
         raise ValueError('Candidate build changed recorded source inputs')

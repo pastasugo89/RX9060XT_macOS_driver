@@ -1,0 +1,1034 @@
+diff -ruN a/src/Navi48Bringup.cpp b/src/Navi48Bringup.cpp
+--- a/src/Navi48Bringup.cpp
++++ b/src/Navi48Bringup.cpp
+@@ -7340,6 +7340,7 @@
+ 			// (dcn41_ih_to_irq returns NONE for any other client). n48dcn classifies it, acknowledges
+ 			// it the way amdgpu_dm_irq_handler does — ack before anything else — counts it by kind and
+ 			// instance, and keeps its own small log budget, so these never land in irqOther.
++			if (n48ih::guarded(irqMode)) n48ih::census_note(irqCensus, e[i].client_id, e[i].src_id);   // 0.0.682: for the storm guard's trip log
+ 			if (n48dcn::ihEntry(e[i].client_id, e[i].src_id, e[i].src_data[0])) continue;
+ 			switch (e[i].src_id) {
+ 			case 181: irqEop++;
+@@ -7388,9 +7389,35 @@
+ 	// Apple's scheduler here is legal.
+ 	if (sawEop) n48::hw_hook_eop_bridge_fire(eopClient);
+ 	else if (sawTrap) n48::hw_hook_sdma_trap_bridge_fire(trapClient);   // one checkTimestamps covers every channel
++	// 0.0.682 (navi48-interrupts=2 only): wake the EOP-woken fence waits, then the storm guard (ih_storm_pure.h). Modes 0 and 1 never get here.
++	if (n48ih::guarded(irqMode)) {
++		if (sawEop) amdgpu::n1c_eop_signal();
++		uint64_t t = 0, nowNs = 0;
++		clock_get_uptime(&t);
++		absolutetime_to_nanoseconds(t, &nowNs);
++		const uint64_t ov = ctx.ih.overflows_seen;
++		const uint32_t dOv = ov >= irqOverflowsSeen ? (uint32_t)(ov - irqOverflowsSeen) : 0u;
++		irqOverflowsSeen = ov;
++		if (n48ih::storm_note(irqStorm, nowNs, total, dOv) == n48ih::kTripNow) stormTrip();
++	}
+ 	(void)count;
+ }
+ 
++// 0.0.682: the storm guard's trip. Runs on our work loop (the handler's), once per boot. The IH keeps writing its ring (RB_ENABLE stays 1, a full
++// ring drops entries through WPTR_OVERFLOW_ENABLE) but no longer signals the host; nothing re-arms it this boot. Fence waits fall back to timed polling.
++void Navi48Bringup::stormTrip() {
++	amdgpu::n1c_eop_wake_set(false);
++	const kern_return_t r = amdgpu::ih_cpu_intr_off(dev, gBringup.ih);
++	if (intSource) intSource->disable();
++	char top[400]; size_t o = 0; top[0] = 0;
++	for (uint32_t i = 0; i < n48ih::kKeys && irqCensus.cnt[i] != 0u && o + 24 < sizeof(top); i++)
++		o += (size_t)snprintf(top + o, sizeof(top) - o, " %02x:%02x=%u", irqCensus.key[i] >> 8, irqCensus.key[i] & 0xFF, irqCensus.cnt[i]);
++	N48LOG("irq: STORM GUARD tripped: %s (window: %u interrupts, %u entries, %u overflows; %llu empty runs this boot): IH_RB_CNTL ENABLE_INTR off (%#x), "
++	       "MSI source disabled, EOP wake off; the IH ring stays enabled and fence waits poll. Not re-armed this boot. client:src since boot:%s (+%u other)",
++	       n48ih::trip_name(irqStorm.trip), irqStorm.irqs, irqStorm.entries, irqStorm.overflows, (unsigned long long)irqStorm.emptyRuns, r, top, irqCensus.other);
++	setProperty("Navi48,IRQStormTripped", true);
++}
++
+ bool Navi48Bringup::armInterrupts() {
+ 	if (intArmed) return true;
+ 	if (!pciDevice) return false;
+@@ -7435,6 +7462,7 @@
+ }
+ 
+ void Navi48Bringup::disarmInterrupts() {
++	if (n48ih::guarded(irqMode)) amdgpu::n1c_eop_wake_set(false);   // 0.0.682: no EOP wake without the handler
+ 	if (intSource) {
+ 		intSource->disable();
+ 		if (workLoop) workLoop->removeEventSource(intSource);
+@@ -7525,7 +7553,9 @@
+ 		// a stage-17 run) with no storm. navi48-interrupts=0 falls back to the
+ 		// polled path, which is unchanged.
+ 		uint32_t wantIrq = 1;
+-		PE_parse_boot_argn("navi48-interrupts", &wantIrq, sizeof(wantIrq));
++		const bool irqArg = PE_parse_boot_argn("navi48-interrupts", &wantIrq, sizeof(wantIrq));
++		// 0.0.682: 2 = the same MSI path plus the storm guard and the EOP-woken fence waits (ih_storm_pure.h). 0 and 1 are unchanged.
++		irqMode = n48ih::mode_of(irqArg, wantIrq);
+ 		// n4x safety: the thermal watchdog (boot-arg navi48-safety; default ON on the Navi 44 profile). It only READS THM_TCON_CUR_TMP.
+ 		// Without a resolved sensor it starts in TRIP (fail closed) and refuses the writing entry points; navi48-safety=0 turns it off.
+ 		{
+@@ -7545,6 +7575,15 @@
+ 		}
+ 		if (wantIrq != 0) gBringup.wantInterrupts = armInterrupts();
+ 		stagePSP();        // no-op unless navi48-psp=1 or navi48-stage>=5
++		// 0.0.682: the EOP wake only once the ladder brought the IH up delivering interrupts (ENABLE_INTR=1) and only in mode 2.
++		if (n48ih::guarded(irqMode)) {
++			const bool on = n48ih::eop_wake_on(irqMode, intArmed, gBringup.ih.enabled && gBringup.ih.enable_cpu_intr, irqStorm.trip != n48ih::kTripNone);
++			if (on) amdgpu::n1c_eop_wake_set(true);
++			N48LOG("irq: navi48-interrupts=2: storm guard ON (1 s window: > %u interrupts, > %u entries or %u overflows trip it once), EOP wake %s "
++			       "(armed %u, IH enabled %u, ENABLE_INTR %u)", n48ih::kStormMaxIrqs, n48ih::kStormMaxEntries, n48ih::kStormMaxOverflows, on ? "ON" : "OFF",
++			       intArmed ? 1u : 0u, gBringup.ih.enabled ? 1u : 0u, gBringup.ih.enable_cpu_intr ? 1u : 0u);
++			setProperty("Navi48,IRQMode", 2ull, 32);
++		}
+ 		publishInterruptCounters();
+ 	}
+ 	// build 0.0.515: the read-only raster device the AGDC LINKCFG reply reads through
+diff -ruN a/src/Navi48Bringup.hpp b/src/Navi48Bringup.hpp
+--- a/src/Navi48Bringup.hpp
++++ b/src/Navi48Bringup.hpp
+@@ -38,6 +38,7 @@
+ #include "amd/rebar_pure.h"   // 0.0.663: Resizable BAR planning (pure)
+ #include "dcn/navi48_refresh_pure.h"   // 0.0.669: the 60 Hz scanout switch (decisions and sequence, host-tested)
+ #include "amd/amdgpu_init.h"
++#include "amd/ih_storm_pure.h"   // 0.0.682: navi48-interrupts=2 (storm guard, EOP wake)
+ struct Navi48Counters;
+ 
+ #define N48LOG(fmt, ...) ::amdgpu::n48_logf("Navi48Bringup: " fmt "\n", ##__VA_ARGS__)
+@@ -136,6 +137,11 @@
+ 	static void interruptTrampoline(OSObject *owner, IOInterruptEventSource *src, int count);
+ 	void handleInterrupt(int count);
+ 	void publishInterruptCounters();
++	void stormTrip();   // 0.0.682: the storm guard tripped (navi48-interrupts=2): ENABLE_INTR off, source disabled, EOP wake off
++	uint32_t         irqMode          { n48ih::kMsi };   // 0.0.682: n48ih::mode_of(navi48-interrupts)
++	n48ih::Storm     irqStorm         {};
++	n48ih::Census    irqCensus        {};
++	uint64_t         irqOverflowsSeen { 0 };
+ 
+ 	IOWorkLoop             *workLoop  { nullptr };
+ 	// --- 0.0.669 (refresh-60): `accel refresh 60 <timeout>` / `refresh 120` (action 109), `refresh confirm` / `refresh status` (action 110).
+diff -ruN a/src/amd/amdgpu_ih.h b/src/amd/amdgpu_ih.h
+--- a/src/amd/amdgpu_ih.h
++++ b/src/amd/amdgpu_ih.h
+@@ -231,6 +231,8 @@
+ // ih.enable_cpu_intr is true (it is false by default here).
+ kern_return_t ih_enable_interrupts(const DeviceContext &dev, IHContext &ih);
+ kern_return_t ih_disable_interrupts(const DeviceContext &dev, IHContext &ih);
++// 0.0.682: the storm guard's trip: ENABLE_INTR and RPTR_REARM off, the ring left running (polled). Clears ih.enable_cpu_intr.
++kern_return_t ih_cpu_intr_off(const DeviceContext &dev, IHContext &ih);
+ 
+ // Program the ring registers (BASE/CNTL/WPTR_ADDR/DOORBELL_RPTR) and
+ // reset the pointers. Does NOT set RB_ENABLE.
+diff -ruN a/src/amd/ih_storm_pure.h b/src/amd/ih_storm_pure.h
+--- a/src/amd/ih_storm_pure.h
++++ b/src/amd/ih_storm_pure.h
+@@ -0,0 +1,117 @@
++//
++//  ih_storm_pure.h - 0.0.682: the PURE half of the guarded interrupt mode (boot-arg navi48-interrupts=2). No kernel header is included:
++//  tests/ih_storm682_test.cpp compiles this file and drives the very functions the kext calls (Navi48Bringup.cpp handleInterrupt,
++//  amd/ih_v7_0.cpp ih_get_wptr, amd/native_s1c.cpp wait_relax via wait_pure.h).
++//
++//  Three pieces:
++//    1. The mode the boot-arg selects. 0 = polled (the production boot-args), 1 = the MSI path of 0.0.35 exactly as before (also the value
++//       when the boot-arg is absent, as in every build since 0.0.35), 2 = the MSI path with the storm guard below and EOP-woken fence waits.
++//    2. The storm guard: a 1 s window that counts handler runs, drained IH entries and ring overflows. Past any limit the guard trips ONCE per
++//       boot; the kext then clears IH_RB_CNTL.ENABLE_INTR and RPTR_REARM (the IH stops signalling the host, the ring keeps running with
++//       RB_ENABLE=1 and WPTR_OVERFLOW_ENABLE=1, as in polled mode), disables the event source and turns the EOP wake off. Fence waits go back
++//       to polling. Nothing is re-armed for the rest of the boot.
++//    3. The IH v7 overflow resync (rptr = the oldest vector not overwritten) and when the EOP wake may be used.
++//
++//  Design source: Vermilion src/vermilion-boot/phx_ih_irq.cpp (MIT, Copyright 2026 Vermilion contributors; https://github.com/leolivm/vermilion
++//  at 9a91901): a 1 s window, more than 50,000 interrupts disables ENABLE_INTR; overflow skips to wptr + 32 and pulses WPTR_OVERFLOW_CLEAR; an
++//  EOP vector wakes the fence waiters. Their code targets IH 6 (Navi 31) with absolute register numbers; NO register value was taken from it.
++//  The register fields here are IH 7 from Linux v7.3 (MIT, Copyright Advanced Micro Devices, Inc.):
++//    drivers/gpu/drm/amd/include/asic_reg/oss/osssys_7_0_0_sh_mask.h  IH_RB_WPTR__RB_OVERFLOW (bit 0), IH_RB_WPTR__OFFSET (bits 17:2),
++//                                                                     IH_RB_CNTL__ENABLE_INTR (bit 17), IH_RB_CNTL__RPTR_REARM (bit 21)
++//    drivers/gpu/drm/amd/amdgpu/ih_v7_0.c:453-491   ih_v7_0_get_wptr: shadow -> MMIO re-read -> rptr = (wptr + 32) & ptr_mask -> CLEAR pulse
++//    drivers/gpu/drm/amd/amdgpu/amdgpu_ih.c:209-240 amdgpu_ih_process: bounded passes (AMDGPU_IH_MAX_NUM_IVS) and restart_ih
++//  MIT notice for the Vermilion design (kept as their licence asks):
++//    Copyright (c) 2026 Vermilion contributors. Permission is hereby granted, free of charge, to any person obtaining a copy of this software
++//    and associated documentation files, to deal in the Software without restriction, subject to the condition that the above copyright
++//    notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED
++//    "AS IS", WITHOUT WARRANTY OF ANY KIND.
++//
++#pragma once
++#include <stdint.h>
++
++namespace n48ih {
++
++// ---- 1. the mode -------------------------------------------------------------------------------------------------------------------------------
++enum Mode : uint32_t { kPolled = 0u, kMsi = 1u, kMsiGuarded = 2u };
++// present = PE_parse_boot_argn found navi48-interrupts. Absent: 1 (the 0.0.35 default, unchanged). 0: polled. 2: guarded. Any other value: 1 (as
++// before 0.0.682, where every non-zero value armed the plain MSI path).
++constexpr uint32_t mode_of(bool present, uint32_t value) {
++    return !present ? (uint32_t)kMsi : value == 0u ? (uint32_t)kPolled : value == 2u ? (uint32_t)kMsiGuarded : (uint32_t)kMsi;
++}
++constexpr bool wants_msi(uint32_t mode) { return mode != kPolled; }
++constexpr bool guarded(uint32_t mode) { return mode == kMsiGuarded; }
++
++// ---- 2. the storm guard ------------------------------------------------------------------------------------------------------------------------------
++constexpr uint64_t kStormWindowNs   = 1000000000ull;   // Vermilion's window (phx_ih_irq.cpp irqEnable: nanoseconds_to_absolutetime(1000000000))
++constexpr uint32_t kStormMaxIrqs    = 50000u;          // Vermilion's limit (irqFilter: ++gIrqWinCnt > 50000)
++// Ours on top: drained entries (a single MSI may cover a whole ring) and overflows (the host is not keeping up). 200,000 entries is 24 full
++// 256 KiB rings per second; four overflows in one second means the ring was lost four times.
++constexpr uint32_t kStormMaxEntries = 200000u;
++constexpr uint32_t kStormMaxOverflows = 4u;
++enum Trip : uint32_t { kTripNone = 0u, kTripIrqs = 1u, kTripEntries = 2u, kTripOverflows = 3u };
++struct Storm {
++    uint64_t winStartNs;
++    uint32_t irqs, entries, overflows;   // in the current window
++    uint32_t trip;                       // the reason of the trip, kTripNone until it tripped (sticky for the boot)
++    uint64_t trippedAtNs;
++    uint64_t emptyRuns;                  // handler runs that drained nothing (whole boot)
++};
++enum Verdict : uint32_t { kKeep = 0u, kTripNow = 1u, kAlreadyTripped = 2u };
++// One handler run: `entries` drained, `overflowsTotal` = ih.overflows_seen after the drain (a running total; the guard keeps the delta).
++// Returns kTripNow exactly once (the run that crosses a limit); afterwards kAlreadyTripped.
++inline uint32_t storm_note(Storm &s, uint64_t nowNs, uint32_t entries, uint32_t overflowsInRun) {
++    if (s.trip != kTripNone) return kAlreadyTripped;
++    if (s.winStartNs == 0ull || nowNs < s.winStartNs || nowNs - s.winStartNs >= kStormWindowNs) {
++        s.winStartNs = nowNs == 0ull ? 1ull : nowNs; s.irqs = 0u; s.entries = 0u; s.overflows = 0u;
++    }
++    s.irqs++;
++    s.entries = entries > 0xFFFFFFFFu - s.entries ? 0xFFFFFFFFu : s.entries + entries;
++    s.overflows += overflowsInRun;
++    if (entries == 0u) s.emptyRuns++;
++    const uint32_t why = s.irqs > kStormMaxIrqs ? (uint32_t)kTripIrqs : s.entries > kStormMaxEntries ? (uint32_t)kTripEntries
++                       : s.overflows >= kStormMaxOverflows ? (uint32_t)kTripOverflows : (uint32_t)kTripNone;
++    if (why == kTripNone) return kKeep;
++    s.trip = why; s.trippedAtNs = nowNs;
++    return kTripNow;
++}
++inline const char *trip_name(uint32_t t) {
++    return t == kTripIrqs ? "more than 50000 interrupts in 1 s" : t == kTripEntries ? "more than 200000 IH entries in 1 s"
++         : t == kTripOverflows ? "4 IH ring overflows in 1 s" : "none";
++}
++// The per-source census the trip log prints (Vermilion keeps the same 16 client:src keys in gIhKey / gIhCnt).
++constexpr uint32_t kKeys = 16u;
++struct Census { uint16_t key[kKeys]; uint32_t cnt[kKeys]; uint32_t other; };
++inline void census_note(Census &c, uint8_t client, uint8_t src) {
++    const uint16_t k = (uint16_t)(((uint16_t)client << 8) | src);
++    for (uint32_t i = 0; i < kKeys; i++) {
++        if (c.cnt[i] != 0u && c.key[i] == k) { c.cnt[i]++; return; }
++        if (c.cnt[i] == 0u) { c.key[i] = k; c.cnt[i] = 1u; return; }
++    }
++    c.other++;
++}
++
++// IH_RB_CNTL bits the trip clears (osssys_7_0_0_sh_mask.h: ENABLE_INTR 0x00020000, RPTR_REARM 0x00200000). RB_ENABLE (bit 0),
++// WPTR_OVERFLOW_ENABLE (bit 16) and the writeback stay as they are: the ring keeps running exactly as in polled mode.
++constexpr uint32_t kCntlEnableIntr = 1u << 17;
++constexpr uint32_t kCntlRptrRearm  = 1u << 21;
++constexpr uint32_t cntl_after_trip(uint32_t cntl) { return cntl & ~(kCntlEnableIntr | kCntlRptrRearm); }
++
++// ---- 3a. the overflow resync (ih_v7_0_get_wptr) ---------------------------------------------------------------------------------------------------
++constexpr uint32_t kWptrOverflow = 1u;   // IH_RB_WPTR__RB_OVERFLOW_MASK
++constexpr bool wptr_overflowed(uint32_t w) { return (w & kWptrOverflow) != 0u; }
++// The read pointer after an overflow: the vector after wptr is the oldest one not overwritten. Linux: (wptr + 32) & ptr_mask with the
++// overflow bit cleared. Ours also aligns wptr down to the 32-byte vector first, so a damaged wptr can never put rptr between two vectors (the
++// drain could then never meet wptr and would walk a whole lap).
++constexpr uint32_t rptr_after_overflow(uint32_t wptrRaw, uint32_t ptrMask) { return (((wptrRaw & ~kWptrOverflow) & ~31u) + 32u) & ptrMask; }
++// The usable wptr: masked (Linux `wptr & ih->ptr_mask`), aligned down to a vector.
++constexpr uint32_t wptr_usable(uint32_t wptrRaw, uint32_t ptrMask) { return (wptrRaw & ptrMask) & ~31u; }
++
++// ---- 3b. the EOP wake (the wait steps themselves are in wait_pure.h) ------------------------------------------------------------------------
++// The EOP wake is used only when every condition holds: mode 2, the MSI armed, the IH ring delivering interrupts, the storm guard not tripped.
++constexpr bool eop_wake_on(uint32_t mode, bool armed, bool cpuIntr, bool tripped) { return guarded(mode) && armed && cpuIntr && !tripped; }
++// The kernel seqno RELEASE_MEM asks for an interrupt (INT_SEL 2, Linux gfx_v12_0_ring_emit_fence with AMDGPU_FENCE_FLAG_INT) only while the
++// EOP wake is on; otherwise INT_SEL 0 exactly as before.
++constexpr uint32_t kIntSelNone = 0u, kIntSelSendInt = 2u;   // amdgpu_pm4.h kPM4RMIntSelNone / kPM4RMIntSelSendInt
++constexpr uint32_t seq_int_sel(bool eopWake) { return eopWake ? kIntSelSendInt : kIntSelNone; }
++
++}  // namespace n48ih
+diff -ruN a/src/amd/ih_v7_0.cpp b/src/amd/ih_v7_0.cpp
+--- a/src/amd/ih_v7_0.cpp
++++ b/src/amd/ih_v7_0.cpp
+@@ -107,6 +107,7 @@
+ 
+ #include "amdgpu_ih.h"
+ #include "amdgpu_log.h"
++#include "ih_storm_pure.h"   // 0.0.682: the overflow resync arithmetic and the trip mask (host-tested)
+ 
+ namespace amdgpu {
+ 
+@@ -281,6 +282,24 @@
+     return kIOReturnSuccess;
+ }
+ 
++// ----- ih_cpu_intr_off: 0.0.682, the storm guard's trip (navi48-interrupts=2) -----
++//
++// Clear IH_RB_CNTL.ENABLE_INTR and RPTR_REARM only (n48ih::cntl_after_trip): the IH stops signalling the host; RB_ENABLE, the writeback and
++// WPTR_OVERFLOW_ENABLE stay, so the ring keeps running exactly as in polled mode. Not upstream (Linux has no storm guard; the design is
++// Vermilion's phx_ih_irq.cpp irqFilter, which clears ENABLE_INTR alone).
++kern_return_t
++ih_cpu_intr_off(const DeviceContext &dev, IHContext &ih)
++{
++    if (!dev.ip.isResolved(IPBlock::OSSSYS)) return kIOReturnNotReady;
++    const uint32_t reg = SOC15_REG_OFFSET(dev, IPBlock::OSSSYS, IHRegs::IH_RB_CNTL);
++    const uint32_t before = RREG32(dev, reg);
++    WREG32(dev, reg, n48ih::cntl_after_trip(before));
++    ih.enable_cpu_intr = false;
++    IH_LOG("storm guard: IH_RB_CNTL %#010x -> %#010x (ENABLE_INTR and RPTR_REARM off; the ring stays enabled, drained by polling)",
++           before, RREG32(dev, reg));
++    return kIOReturnSuccess;
++}
++
+ // ----- ih_rb_cntl: ih_v7_0_rb_cntl (ih_v7_0.c:187-208) -----
+ //
+ // Field shifts taken from osssys_7_0_0_sh_mask.h.
+@@ -492,23 +511,25 @@
+     // osssys_7_0_0_sh_mask.h:206 and ih_v7_0_get_wptr (ih_v7_0.c:462).
+     // NOT bit 31 of IH_RB_WPTR or IH_RB_CNTL.
+     if (!(wptr & (1u << kIH_RB_WPTR__RB_OVERFLOW__SHIFT)))
+-        return wptr & ih.ptr_mask;
++        return n48ih::wptr_usable(wptr, ih.ptr_mask);   // 0.0.682: masked AND aligned to a vector
+ 
+     // Re-read from MMIO to make sure the overflow really latched (the
+     // shadow can race with the engine on the same cache line) — mirrors
+     // ih_v7_0_get_wptr's second RREG32_NO_KIQ + its early-out.
+     wptr = RREG32(dev, wptr_reg);
+     if (!(wptr & (1u << kIH_RB_WPTR__RB_OVERFLOW__SHIFT)))
+-        return wptr & ih.ptr_mask;
++        return n48ih::wptr_usable(wptr, ih.ptr_mask);   // 0.0.682: masked AND aligned to a vector
+ 
+     wptr &= ~(1u << kIH_RB_WPTR__RB_OVERFLOW__SHIFT);
+ 
+     // When a ring buffer overflow happens, start parsing interrupts from the
+     // last not-overwritten vector (wptr + 32) so we can catch up.
+-    const uint32_t tmp = (wptr + 32) & ih.ptr_mask;
++    // 0.0.682: n48ih::rptr_after_overflow = Linux's (wptr + 32) & ptr_mask with wptr aligned down to a vector first.
++    const uint32_t tmp = n48ih::rptr_after_overflow(wptr, ih.ptr_mask);
+     ih.overflows_seen++;
+-    IH_LOG("ring buffer overflow (wptr=%#010x rptr=%#010x -> %#010x, count=%llu)",
+-           wptr, ih.rptr, tmp, (unsigned long long)ih.overflows_seen);
++    if (ih.overflows_seen <= 16u || (ih.overflows_seen & 1023u) == 0u)   // 0.0.682: bounded log (a storm must not become a log storm)
++        IH_LOG("ring buffer overflow (wptr=%#010x rptr=%#010x -> %#010x, count=%llu)",
++               wptr, ih.rptr, tmp, (unsigned long long)ih.overflows_seen);
+     ih.rptr = tmp;
+ 
+     const uint32_t cntl_reg = SOC15_REG_OFFSET(dev, IPBlock::OSSSYS,
+@@ -520,7 +541,7 @@
+     cntl &= ~(1u << kIH_RB_CNTL__WPTR_OVERFLOW_CLEAR__SHIFT);
+     WREG32(dev, cntl_reg, cntl);
+ 
+-    return wptr & ih.ptr_mask;
++    return n48ih::wptr_usable(wptr, ih.ptr_mask);
+ }
+ 
+ // ----- ih_set_rptr: ih_v7_0_set_rptr (ih_v7_0.c:499-513) -----
+diff -ruN a/src/amd/native_s1c.cpp b/src/amd/native_s1c.cpp
+--- a/src/amd/native_s1c.cpp
++++ b/src/amd/native_s1c.cpp
+@@ -21,6 +21,13 @@
+ //  oldest unretired submission belongs to a non-WindowServer session - the G1 recovery on its own initiative: ring dwords outside the live range (NOPs), one MES RESET
+ //  (reset_legacy_gfx) frame and one kernel probe RELEASE_MEM on the ring. Nothing in DCN, PSP or SMU. With the switch OFF the behaviour is 0.0.626's (one session, VMID 8).
+ //
++//  0.0.682: (F1) no wait for ring space with gRingLock held on the submit paths (the lock is dropped between tries; only the recovery's kernel
++//  probe still waits under it), and every expiry of a 2 s bound is logged with its caller, wait kind and seqnos (rate-limited, always on).
++//  (F3) the wait loops sleep (50 us doubling to 200 us, 1 ms for the production VMID retry) after a 50 us spin instead of spinning 5 ms
++//  (boot-arg navi48-waitsleep=0 restores the 0.0.681 step); with navi48-interrupts=2 the sleep is woken by the EOP interrupt and the kernel seqno
++//  RELEASE_MEM asks for one (INT_SEL 2). Soft recovery (navi48-softrec=1, default OFF; softrec_pure.h): with it ON this file ALSO writes SQ_CMD
++//  (wave kill of the guilty VMID only) and RLC_SAFE_MODE (the bracket around it), and never latches HUNG for a stall owned by a non-WindowServer session.
++//
+ #include <string.h>
+ #include <IOKit/IOLib.h>
+ #include <IOKit/IOBufferMemoryDescriptor.h>
+@@ -51,6 +58,8 @@
+ #include "native_g4_pure.h"   // 0.0.640 (G4): the APP role, the allow-list, the budget report, the close-path mapping rule (boot-arg navi48-apps=1, default OFF)
+ #include "production_context_retire.h"
+ #include "production_vm_lease_pure.h"
++#include "wait_pure.h"      // 0.0.682 (F1/F3): the wait steps (sleep with backoff instead of the 5 ms spin) and the bound-expiry log gate
++#include "softrec_pure.h"   // 0.0.682: the opt-in soft recovery (boot-arg navi48-softrec=1, default OFF)
+ #include <pexpert/pexpert.h>  // 0.0.623: PE_parse_boot_argn (navi48-g1)
+ 
+ #define N1C_LOG(fmt, ...) AMDGPU_LOG("native-s1c", fmt, ##__VA_ARGS__)
+@@ -254,6 +263,70 @@
+ }
+ static inline bool hung_now() { return __atomic_load_n(&gHang.hung, __ATOMIC_ACQUIRE); }
+ 
++// ---- 0.0.682: the wait steps (F3), the EOP wake (navi48-interrupts=2) and the bound-expiry log (F1) ----------------------------------------
++// gWaitLock is a LEAF lock: nothing is taken under it, and it is taken under any other lock. gEopGen changes only under it, so a waiter that
++// read the generation before checking its condition and finds it unchanged under the lock cannot miss the wakeup that follows.
++static IOLock *gWaitLock;
++static volatile UInt32 gEopGen;          // bumped by every handler run that drained an EOP vector (n1c_eop_signal)
++static volatile UInt32 gEopWake;         // 1 while the EOP wake is on (n1c_eop_wake_set; Navi48Bringup decides with n48ih::eop_wake_on)
++static volatile UInt32 gWaitLatch;       // 0 unset, 1 legacy (navi48-waitsleep=0), 2 sleep (default)
++static n48wait::LogGate gBoundLog;       // under gWaitLock
++static IOLock *lazy_lock(IOLock **slot);
++static bool wait_legacy() {
++    UInt32 l = __atomic_load_n(&gWaitLatch, __ATOMIC_ACQUIRE);
++    if (l == 0u) {
++        uint32_t v = 1u;
++        const bool present = PE_parse_boot_argn("navi48-waitsleep", &v, sizeof(v));
++        const UInt32 nl = (present && v == 0u) ? 1u : 2u;
++        if (OSCompareAndSwap(0u, nl, &gWaitLatch))
++            N1C_LOG("boot-arg navi48-waitsleep %s: native waits %s", present ? (v == 0u ? "=0" : "present, not 0") : "absent",
++                    nl == 1u ? "spin 1 us for 5 ms, then sleep 1 ms (the 0.0.681 step)" : "spin 50 us, then sleep 50 us doubling to 200 us (1 ms for the VMID retry)");
++        l = __atomic_load_n(&gWaitLatch, __ATOMIC_ACQUIRE);
++    }
++    return l == 1u;
++}
++static inline bool eop_wake_now() { return __atomic_load_n(&gEopWake, __ATOMIC_ACQUIRE) != 0u; }
++static inline uint32_t wait_gen() { return __atomic_load_n(&gEopGen, __ATOMIC_ACQUIRE); }
++static inline uint32_t seq_int_sel() { return eop_wake_now() ? kPM4RMIntSelSendInt : kPM4RMIntSelNone; }
++// One step of a wait loop. `gen` = wait_gen() read BEFORE the loop checked its condition.
++static void wait_relax(n48wait::Backoff &b, uint64_t el, uint32_t gen, uint32_t capUs) {
++    const uint32_t mode = wait_legacy() ? (uint32_t)n48wait::kLegacy : eop_wake_now() ? (uint32_t)n48wait::kEop : (uint32_t)n48wait::kSleep;
++    const n48wait::Step st = n48wait::next_step(mode, b, el, capUs);
++    if (st.kind == n48wait::kSpin1us) { IODelay(1); return; }
++    if (mode == n48wait::kLegacy) { IOSleep(1); return; }   // exactly the 0.0.681 step
++    IOLock *l = lazy_lock(&gWaitLock);
++    if (l == nullptr) { IOSleep(1); return; }
++    uint64_t dl = 0;
++    clock_interval_to_deadline(st.us, kMicrosecondScale, &dl);
++    IOLockLock(l);
++    if (st.kind == n48wait::kSleepUs || __atomic_load_n(&gEopGen, __ATOMIC_ACQUIRE) == gen)
++        (void)IOLockSleepDeadline(l, (void *)&gEopGen, dl, THREAD_UNINT);
++    IOLockUnlock(l);
++}
++void n1c_eop_signal() {
++    if (!eop_wake_now()) return;
++    IOLock *l = lazy_lock(&gWaitLock);
++    if (l == nullptr) return;
++    IOLockLock(l);
++    __atomic_add_fetch(&gEopGen, 1u, __ATOMIC_RELEASE);
++    IOLockWakeup(l, (void *)&gEopGen, false);
++    IOLockUnlock(l);
++}
++void n1c_eop_wake_set(bool on) {
++    IOLock *l = lazy_lock(&gWaitLock);
++    const UInt32 was = __atomic_exchange_n(&gEopWake, on ? 1u : 0u, __ATOMIC_SEQ_CST);
++    if (l != nullptr) {   // wake every sleeper: they re-plan their step under the new setting
++        IOLockLock(l);
++        __atomic_add_fetch(&gEopGen, 1u, __ATOMIC_RELEASE);
++        IOLockWakeup(l, (void *)&gEopGen, false);
++        IOLockUnlock(l);
++    }
++    if (was != (on ? 1u : 0u))
++        N1C_LOG("EOP wake %s: fence waits sleep on the end-of-pipe interrupt and the kernel seqno RELEASE_MEM uses INT_SEL %u", on ? "ON" : "OFF", on ? 2u : 0u);
++}
++bool n1c_eop_wake_on() { return eop_wake_now(); }
++static void bound_log(const char *caller, uint32_t kind, uint64_t own, uint64_t elNs);   // below the ring (it reads the owner log)
++
+ // ---- the sessions (0.0.627, G2) ------------------------------------------------------------------------------------------------------
+ static bool multi_on();   // boot-arg navi48-multisession=1 (latched once; below)
+ static bool g5_on();      // 0.0.650 (G5 Stage 1): navi48-g5=1 AND navi48-multisession=1 (latched once; below)
+@@ -344,6 +417,7 @@
+ }
+ // Rule 6.3(a): a bounded internal wait reached 2 s. Used as is for a TLB flush that did not acknowledge (never attributable to a session).
+ static void hang_from_wait() {
++    bound_log("hang_from_wait (TLB acknowledge or another internal 2 s bound)", n48wait::kInternal, 0ull, kWaitCapNs);   // 0.0.682 (F1)
+     const uint64_t em = emitted_now(), re = retired_now(em);
+     IOLockLock(gHangLock);
+     const bool det = hang_latch_wait(gHang);
+@@ -386,25 +460,31 @@
+     const uint64_t own = __atomic_load_n(&s->emitted, __ATOMIC_ACQUIRE);
+     const uint64_t start = now_ns();
+     bool stalled = false;
++    n48wait::Backoff bo {};
+     if (noBlame != nullptr) *noBlame = false;
+     for (;;) {
++        const uint32_t gen = wait_gen();
+         if (n48native::g2::own_idle(retired_now(emitted_now()), own)) return true;
+         if (hung_now()) return false;
+         const uint64_t el = now_ns() - start;
+         if (!stalled && el >= kWaitCapNs) {
++            bound_log("own_wait", n48wait::kOwnSeq, own, el);   // 0.0.682 (F1)
+             if (!multi_on()) { hang_from_wait(); return false; }   // switch OFF: exactly the 0.0.626 idle wait (latch, not idle)
+             if (stall_from_wait() == n48native::g2::kBoundNoBlame) { if (noBlame != nullptr) *noBlame = true; return false; }   // R2: progress within kHangNs: Timeout, no blame
+             stalled = true; continue;
+         }
+         if (stalled && el >= kWaitCapNs + kRecoverWaitNs) return false;
+-        if (el < 5000000ull) IODelay(1); else IOSleep(1);
++        wait_relax(bo, el, gen, n48wait::kFenceCapUs);   // 0.0.682 (F3)
+     }
+ }
+ 
+ // ---- the ring -------------------------------------------------------------------------------------------------------------------
+ // Everything that goes on the ring goes through here: the space check, the write, the owner record, the emitted-seq update and the kick. Caller holds
+ // gRingLock. Returns kOk, or kTimeout when the space wait reached 2 s (the CALLER decides what that means, after dropping the lock).
+-static uint32_t ring_put_locked(const uint32_t *dw, uint32_t n, uint64_t seq, uint8_t ownerSlot, uint32_t ownerId, Session *owner) {
++// 0.0.682 (F1): waitSpace = false (every submit path) never waits: no room -> kRingNoSpace at once, and the caller retries with the lock DROPPED.
++// Only the recovery's kernel probe (g2_recover, which freezes emission on purpose) still waits under the lock.
++constexpr uint32_t kRingNoSpace = 0xE00002C4u;   // kIOReturnNoSpace: internal to this file, never returned to a client
++static uint32_t ring_put_locked(const uint32_t *dw, uint32_t n, uint64_t seq, uint8_t ownerSlot, uint32_t ownerId, Session *owner, bool waitSpace = true) {
+     DeviceContext &dev = *gCtx->dev;
+     CPContext &cp = gCtx->cp;
+     const uint32_t mask = cp.ring_ptr_mask;
+@@ -414,6 +494,7 @@
+         sysmem_rmb();
+         const uint32_t r = *cp.rptr_cpu & mask;
+         if (ring_has_space(ring_free64(r, gWc, mask), n)) break;
++        if (!waitSpace) return kRingNoSpace;
+         const uint64_t el = now_ns() - t0;
+         if (el >= kWaitCapNs) {
+             N1C_LOG("ring space: need %u dwords (+%u slack), rptr %u wptr %u, no room in 2 s", n, kRingSlack, r, (uint32_t)(gWc & mask));
+@@ -451,17 +532,29 @@
+ // never take the same seqno. Returns kOk (*seqOut set), BadArg / InternalError for an unusable packet, or Timeout when the space wait reached 2 s (that
+ // latches HUNG, or with the switch ON goes to stall_handle, AFTER the ring lock is dropped and before anything was written).
+ static uint32_t ring_submit(Session *s, const uint64_t *va, const uint32_t *by, uint32_t nIbs, bool hasFence, uint64_t fenceAddr, uint64_t *seqOut) {
+-    IOLockLock(gRingLock);
+-    const uint64_t seq = emitted_now() + 1ull;
+-    const uint32_t n = build_submit(gSubmitBuf, (uint32_t)(sizeof(gSubmitBuf) / sizeof(gSubmitBuf[0])), va, by, nIbs, s->vmid, hasFence,
+-                                    fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq);
+-    if (n == 0u) { IOLockUnlock(gRingLock); return (uint32_t)kIOReturnInternalError; }
+-    const uint32_t er = ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s);
+-    IOLockUnlock(gRingLock);
+-    if (er == kTimeout) { (void)stall_from_wait(); return kTimeout; }   // 0.0.629 (R2): blames only when the hang clock expired; Timeout either way
+-    if (er != kOk) return er;
+-    *seqOut = seq;
+-    return kOk;
++    // 0.0.682 (F1): the space wait runs with gRingLock DROPPED between tries (before: a spin of up to 2 s under it). The seqno and the packet are
++    // rebuilt on every try under one hold of the lock, so two sessions can still never take the same seqno.
++    const uint64_t t0 = now_ns();
++    n48wait::Backoff bo {};
++    for (;;) {
++        const uint32_t gen = wait_gen();
++        IOLockLock(gRingLock);
++        const uint64_t seq = emitted_now() + 1ull;
++        const uint32_t n = build_submit(gSubmitBuf, (uint32_t)(sizeof(gSubmitBuf) / sizeof(gSubmitBuf[0])), va, by, nIbs, s->vmid, hasFence,
++                                        fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq, seq_int_sel());
++        if (n == 0u) { IOLockUnlock(gRingLock); return (uint32_t)kIOReturnInternalError; }
++        const uint32_t er = ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s, false);
++        IOLockUnlock(gRingLock);
++        if (er == kOk) { *seqOut = seq; return kOk; }
++        if (er != kRingNoSpace) return er;
++        const uint64_t el = now_ns() - t0;
++        if (el >= kWaitCapNs) {
++            bound_log("ring_submit", n48wait::kRingSpace, seq, el);
++            (void)stall_from_wait();   // 0.0.629 (R2): blames only when the hang clock expired; Timeout either way
++            return kTimeout;
++        }
++        wait_relax(bo, el, gen, n48wait::kFenceCapUs);
++    }
+ }
+ 
+ // 0.0.650: the verdict's inputs, read under ONE hold of gRingLock (the caller holds it): the ring space, the retired / emitted seqnos, WindowServer's id and last submit, the
+@@ -485,24 +578,27 @@
+     uint32_t rc = kOk;
+     bool waiting = false, stallDone = false, timedOut = false;
+     uint64_t t0 = 0;
++    n48wait::Backoff bo {};
+     for (;;) {
++        const uint32_t gen = wait_gen();
+         IOLockLock(gRingLock);
+         g5_fill_in_locked(s, K, need);
+         const uint64_t now = gG5In.now;
+         if (admission(gOwners, gG5In) == kAdmit) {
+             const uint64_t waitedNs = gG5Since[s->slot] != 0ull && now > gG5Since[s->slot] ? now - gG5Since[s->slot] : 0ull;
+-            since_clear(gG5Since, s->slot); waiting = false;
+             const uint64_t seq = emitted_now() + 1ull;
+             const uint32_t n = build_submit(gSubmitBuf, (uint32_t)(sizeof(gSubmitBuf) / sizeof(gSubmitBuf[0])), va, by, nIbs, s->vmid, hasFence,
+-                                            fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq);
++                                            fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq, seq_int_sel());
+             if (n == 0u) { IOLockUnlock(gRingLock); rc = (uint32_t)kIOReturnInternalError; break; }
+-            const uint32_t er = ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s);
+-            if (er == kOk) stat_admit(gG5, waitedNs);
+-            IOLockUnlock(gRingLock);
+-            if (er == kTimeout) { (void)stall_from_wait(); rc = kTimeout; break; }   // as ring_submit (R2): blames only when the hang clock expired
+-            if (er != kOk) { rc = er; break; }
+-            *seqOut = seq;
+-            break;
++            const uint32_t er = ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s, false);   // 0.0.682 (F1): no space -> wait below, lock dropped
++            if (er != kRingNoSpace) {
++                since_clear(gG5Since, s->slot);
++                waiting = false;
++                if (er == kOk) { stat_admit(gG5, waitedNs); *seqOut = seq; }
++                IOLockUnlock(gRingLock);
++                rc = er;
++                break;
++            }
+         }
+         since_mark(gG5Since, s->slot, now); waiting = true; t0 = gG5Since[s->slot];
+         IOLockUnlock(gRingLock);
+@@ -510,9 +606,9 @@
+         if (sess_poisoned(s)) { rc = n48native::g2::poison_rc(true); break; }
+         const uint64_t el = now_ns() - t0;
+         const uint32_t step = wait_step(el, stallDone);
+-        if (step == kGiveUp) { timedOut = true; rc = kTimeout; break; }   // the app gets DEVICE_LOST, but only after a stall that recovery did not clear
+-        if (step == kStallNow) { stallDone = true; (void)stall_from_wait(); continue; }   // kBoundNoBlame / Busy: keep waiting
+-        if (el < 5000000ull) IODelay(1); else IOSleep(1);
++        if (step == kGiveUp) { bound_log("ring_submit_app_g5", n48wait::kAdmission, 0ull, el); timedOut = true; rc = kTimeout; break; }   // the app gets DEVICE_LOST, but only after a stall that recovery did not clear
++        if (step == kStallNow) { bound_log("ring_submit_app_g5", n48wait::kAdmission, 0ull, el); stallDone = true; (void)stall_from_wait(); continue; }   // kBoundNoBlame / Busy: keep waiting
++        wait_relax(bo, el, gen, n48wait::kFenceCapUs);   // 0.0.682 (F3)
+     }
+     if (waiting) {   // the single exit of every path that left while still waiting
+         IOLockLock(gRingLock);
+@@ -533,8 +629,10 @@
+     const bool fair = g5_on() && !s->ws;
+     bool waiting = false;
+     uint32_t rc = n48native::g2::kBusy;
++    n48wait::Backoff bo {};
+     if (s->ws) __atomic_store_n(&gWsLastNs, start, __ATOMIC_RELEASE);
+     for (;;) {
++        const uint32_t gen = wait_gen();
+         IOLockLock(gCliLock);
+         IOLockLock(gRingLock);
+         rc = n48native::g2::kBusy;
+@@ -550,8 +648,9 @@
+                 if (rc == kOk) {
+                     const uint64_t seq = emitted + 1;
+                     const uint32_t n = build_submit(gSubmitBuf, (uint32_t)(sizeof(gSubmitBuf) / sizeof(gSubmitBuf[0])), va, by, nIbs, s->vmid, hasFence,
+-                                                    fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq);
+-                    rc = n ? ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s) : (uint32_t)kIOReturnInternalError;
++                                                    fenceAddr, gCtx->cp.wb_bus + kWbOffsetNativeSeq, seq, seq_int_sel());
++                    rc = n ? ring_put_locked(gSubmitBuf, n, seq, (uint8_t)s->slot, s->id, s, false) : (uint32_t)kIOReturnInternalError;
++                    if (rc == kRingNoSpace) rc = n48native::g2::kBusy;   // 0.0.682 (F1): never wait for space under gCliLock + gRingLock; retry below
+                     if (rc == kOk) {
+                         *seqOut = seq;
+                         if (fair) n48native::g5::stat_admit(gG5, waiting ? now_ns() - start : 0);
+@@ -567,8 +666,8 @@
+         IOLockUnlock(gCliLock);
+         if (rc != n48native::g2::kBusy) break;
+         const uint64_t elapsed = now_ns() - start;
+-        if (elapsed >= kWaitCapNs) { (void)stall_from_wait(); rc = kTimeout; break; }
+-        if (elapsed < 5000000ull) IODelay(1); else IOSleep(1);
++        if (elapsed >= kWaitCapNs) { bound_log("ring_submit_production", n48wait::kAdmission, 0ull, elapsed); (void)stall_from_wait(); rc = kTimeout; break; }
++        wait_relax(bo, elapsed, gen, n48wait::kRetryCapUs);   // 0.0.682 (F3): exponential backoff 50 us .. 1 ms; the global locks are retaken at most once per step
+     }
+     if (waiting) {
+         IOLockLock(gRingLock);
+@@ -579,6 +678,31 @@
+     return rc;
+ }
+ 
++// 0.0.682 (F1): the bound-expiry log. Always on, rate-limited (n48wait::log_gate: one line per 100 ms, 256 per boot, the dropped ones counted).
++static void bound_log(const char *caller, uint32_t kind, uint64_t own, uint64_t elNs) {
++    if (gCtx == nullptr) return;
++    const uint64_t em = emitted_now(), re = retired_now(em), now = now_ns();
++    IOLock *l = lazy_lock(&gWaitLock);
++    if (l == nullptr) return;
++    uint32_t sup = 0;
++    IOLockLock(l);
++    const bool print = n48wait::log_gate(gBoundLog, now, &sup);
++    IOLockUnlock(l);
++    if (!print) return;
++    n48native::g2::Guilty g {};
++    // Internal/TLB callers can already hold the ring lock.
++    if (kind != n48wait::kInternal && gRingLock != nullptr) {
++        IOLockLock(gRingLock);
++        g = n48native::g2::guilty_of(gOwners, re, em);
++        IOLockUnlock(gRingLock);
++    }
++    N1C_LOG("bound: %s: %s wait reached %llu ms; own/target seq %llu, emitted %llu, retired %llu; oldest unretired seq %llu owner %s slot %u session %u "
++            "hung %u recovering %u; %u earlier bound line(s) suppressed", caller, n48wait::kind_name(kind), (unsigned long long)(elNs / 1000000ull),
++            (unsigned long long)own, (unsigned long long)em, (unsigned long long)re, (unsigned long long)g.seq,
++            !g.known ? "unknown" : g.slot == n48native::g2::kOwnerKernel ? "kernel" : "session", g.slot, g.sessId, hung_now() ? 1u : 0u,
++            __atomic_load_n(&gRecovering, __ATOMIC_SEQ_CST), sup);
++}
++
+ // ---- the automatic recovery (0.0.627, G2; switch ON only) ----------------------------------------------------------------------------
+ // NOP every ring dword outside the live range [liveStart, gWc) - the G1 scrub rule (the older dwords have run; the free space must not hold stale
+ // packets if the RESET moves the read pointer). Caller holds gRingLock.
+@@ -644,6 +768,88 @@
+             g.slot, g.sessId, (unsigned long long)g.seq, (unsigned long long)collateral(g.seq, emAt), ok ? "RECOVERED, the other sessions continue" : "FAILED: latching HUNG");
+     return ok;
+ }
++// ---- 0.0.682: the opt-in soft recovery (boot-arg navi48-softrec=1, default OFF; softrec_pure.h) --------------------------------------------------
++static volatile UInt32 gSoftLatch;   // 0 unset, 1 off, 2 on
++struct SoftStat { uint64_t actedSeq, kills, killMoved, escalations, parked, writes, actedRepeats; };
++static SoftStat gSoft;               // written only by the stall owner (gRecovering serialises it)
++static bool softrec_on() {
++    UInt32 l = __atomic_load_n(&gSoftLatch, __ATOMIC_ACQUIRE);
++    if (l == 0u) {
++        uint32_t v = 0;
++        const bool present = PE_parse_boot_argn("navi48-softrec", &v, sizeof(v));
++        const UInt32 nl = n48softrec::latch_on(present, v) ? 2u : 1u;
++        if (OSCompareAndSwap(0u, nl, &gSoftLatch))
++            N1C_LOG("boot-arg navi48-softrec %s: soft recovery %s", present ? (v == 1u ? "=1" : "present, not 1") : "absent",
++                    nl == 2u ? "ON (needs navi48-multisession=1): a stall owned by a non-WindowServer session gets one VMID wave kill, then the G2 queue reset; HUNG is never latched for it"
++                             : "OFF (today's stall handling)");
++        l = __atomic_load_n(&gSoftLatch, __ATOMIC_ACQUIRE);
++    }
++    return l == 2u;
++}
++// The VMID that runs session `sessId`'s work at or after seqno `minSeq`. Production: the hardware binding (a binding is never handed to another
++// context while its lastSequence is unretired, production_vm_lease_pure.h plan/claim), UINT32_MAX when none. Otherwise the session's own VMID.
++// Caller holds gCliLock (the binding table's lock).
++static uint32_t hw_vmid_locked(uint64_t sessId, uint64_t minSeq, uint32_t fallback) {
++    if (!production_on()) return fallback;
++    for (uint32_t i = 0; i < n48production::kHardwareSlots; ++i) {
++        const n48production::Slot &b = gHardwareBindings[i];
++        if (b.state == n48production::SlotState::Ready && b.context == sessId && b.lastSequence >= minSeq) return n48production::vmid(i);
++    }
++    return UINT32_MAX;
++}
++struct SoftEnv {
++    uint64_t stalledAt;
++    uint32_t rd(uint32_t bi, uint32_t reg) { return RREG32(*gCtx->dev, SOC15_REG_OFFSET_BIDX(*gCtx->dev, IPBlock::GC, (int)bi, reg)); }
++    void wr(uint32_t bi, uint32_t reg, uint32_t v) { WREG32(*gCtx->dev, SOC15_REG_OFFSET_BIDX(*gCtx->dev, IPBlock::GC, (int)bi, reg), v); }
++    void delayUs(uint32_t us) { IODelay(us); }
++    bool moved() { return retired_now(emitted_now()) > stalledAt; }
++};
++static bool g2_recover(const n48native::g2::Guilty &g, Session *gs);
++// The soft path for a verdict that may not latch (kActed, kBadVmid, kKill). Never latches HUNG; always re-arms the hang clock and clears gRecovering.
++static void softrec_run(uint32_t v, const n48native::g2::Guilty &g, Session *gs, uint32_t vmid, uint64_t em, uint64_t re, uint64_t tried) {
++    using namespace n48softrec;
++    if (v == kActed) {
++        if (gSoft.actedRepeats++ < 8u)
++            N1C_LOG("softrec: stall at seq %llu (emitted %llu) still owned by slot %u session %u: already acted on it; nothing more, HUNG NOT latched "
++                    "(the other sessions get Timeout from their bounded waits)", (unsigned long long)g.seq, (unsigned long long)em, g.slot, g.sessId);
++    } else {
++        const Fault f = decode_fault(hub_rd(kFaultStatusLo32));   // read only, never cleared (sessstat's fault word relies on it)
++        gSoft.actedSeq = g.seq;
++        __atomic_store_n(&gs->poisoned, 1u, __ATOMIC_SEQ_CST);   // before the kill, as amdgpu_ring_soft_recovery sets the fence error first
++        uint32_t kr = kKillBadVmid;
++        KillStats ks { 0u, 0u };
++        const uint64_t t0 = now_ns();
++        if (v == kKill) {
++            IOLockLock(gRingLock);   // emission frozen while the kill runs (at most 10 x (safe mode + 1 ms))
++            SoftEnv e { re };
++            kr = kill(e, vmid, ks);
++            IOLockUnlock(gRingLock);
++            gSoft.kills++; gSoft.writes += ks.writes;
++            if (kr == kKillMoved) gSoft.killMoved++;
++        }
++        const uint64_t killUs = (now_ns() - t0) / 1000ull;
++        const bool moved = kr == kKillMoved;
++        bool g2ran = false, g2ok = false;
++        if (g2_after(v, moved) && n48native::g2::stall_action_budgeted(multi_on(), g.known, g.slot, true, false, mes_timeout_seen(), g1_holds(), tried) == n48native::g2::kStallRecover) {
++            gSoft.escalations++; g2ran = true;
++            g2ok = g2_recover(g, gs);   // strikes the application itself
++        }
++        if (!g2ran && __atomic_load_n(&gs->app, __ATOMIC_ACQUIRE)) (void)n48native::g4::strike_add(gStrikes, gs->appKey);
++        if (!moved && !g2ok) gSoft.parked++;
++        N1C_LOG("softrec: stall at seq %llu (emitted %llu retired %llu) owned by slot %u session %u VMID %u: %s; wave kill %s (%u SQ_CMD write(s), %u safe-mode poll(s), %llu us); "
++                "G2 queue reset %s; fault status %#010x (latched %u, VMID %u, CID %#x, %s); session POISONED; HUNG NOT latched%s",
++                (unsigned long long)g.seq, (unsigned long long)em, (unsigned long long)re, g.slot, g.sessId, vmid, verdict_name(v),
++                v == kKill ? kill_name(kr) : "not attempted", ks.writes, ks.safeModePolls, (unsigned long long)killUs,
++                !g2ran ? "not run" : g2ok ? "RECOVERED" : "FAILED", f.raw, fault_latched(f) ? 1u : 0u, f.vmid, f.cid, f.rw ? "write" : "read",
++                (moved || g2ok) ? "" : ": the ring did not move; waits of the other sessions return Timeout until it does");
++    }
++    const uint64_t em2 = emitted_now(), re2 = retired_now(em2);
++    IOLockLock(gHangLock);
++    gHang.lastRetired = re2; gHang.tProgress = now_ns();
++    __atomic_store_n(&gRecovering, 0u, __ATOMIC_SEQ_CST);
++    IOLockUnlock(gHangLock);
++}
++
+ // A stall was detected and THIS call owns it (it set gRecovering). The owner of the oldest unretired seqno is the guilty session; a non-WindowServer user
+ // session is recovered (switch ON), everything else latches HUNG exactly as before. Clears gRecovering. Returns true when THIS call latched HUNG.
+ // Called with at most the caller's own session lock (never gCliLock / gRingLock).
+@@ -672,9 +878,28 @@
+     const bool user = gs != nullptr && __atomic_load_n(&gs->open, __ATOMIC_ACQUIRE) && __atomic_load_n(&gs->id, __ATOMIC_ACQUIRE) == g.sessId &&
+                       __atomic_load_n(&gs->hello, __ATOMIC_ACQUIRE);
+     const bool ws = user && __atomic_load_n(&gs->ws, __ATOMIC_ACQUIRE);
++    // 0.0.682 (soft recovery, switch ON only): the guilty work's VMID and WindowServer's, read under the same lock as the binding table.
++    uint32_t gVmid = UINT32_MAX, wsVmid = UINT32_MAX;
++    const bool soft = softrec_on();
++    if (soft) {
++        if (user) gVmid = hw_vmid_locked(g.sessId, g.seq, __atomic_load_n(&gs->vmid, __ATOMIC_ACQUIRE));
++        for (uint32_t i = 0; i < kMaxSessions; i++) {
++            Session *w = slot_ptr(i);
++            if (w != nullptr && __atomic_load_n(&w->open, __ATOMIC_ACQUIRE) && __atomic_load_n(&w->ws, __ATOMIC_ACQUIRE)) {
++                wsVmid = hw_vmid_locked(__atomic_load_n(&w->id, __ATOMIC_ACQUIRE), 0ull, __atomic_load_n(&w->vmid, __ATOMIC_ACQUIRE));
++                break;
++            }
++        }
++    }
+     IOLockUnlock(gCliLock); // never hold the client lock across MES or GPU waits
+     if (stall_cancel_if_progress(re)) return false;
+     const uint64_t tried = gG2.recoveries + gG2.failed;   // 0.0.629 (R3): attempts this boot (gRecovering, held by this call, serialises the counters)
++    if (soft) {
++        const n48softrec::Input in { true, multi_on(), g.known, user, ws, g.seq, gVmid, wsVmid != UINT32_MAX, wsVmid, gSoft.actedSeq };
++        const uint32_t v = n48softrec::decide(in);
++        if (!n48softrec::may_latch(v)) { softrec_run(v, g, gs, gVmid, em, re, tried); return false; }
++        N1C_LOG("softrec: stall at seq %llu: %s: today's stall handling", (unsigned long long)g.seq, n48softrec::verdict_name(v));
++    }
+     const uint32_t act = stall_action_budgeted(multi_on(), g.known, g.slot, user, ws, mes_timeout_seen(), g1_holds(), tried);
+     N1C_LOG("stall: seq emitted %llu retired %llu; the oldest unretired seq %llu belongs to %s (slot %u, session %u%s): %s", (unsigned long long)em, (unsigned long long)re,
+             (unsigned long long)g.seq, !g.known ? "an unknown owner" : g.slot == kOwnerKernel ? "the kernel" : user ? "a user session" : "a non-user context", g.slot, g.sessId,
+@@ -1885,15 +2110,19 @@
+     if (rrc != kOk) return (IOReturn)rrc;
+     const uint64_t to = wait_timeout_ns(timeoutNs);
+     const uint64_t start = now_ns();
++    n48wait::Backoff bo {};
++    uint64_t el = 0;
+     for (;;) {
++        const uint32_t gen = wait_gen();
+         if (!wait_snapshot(ref, s, snapshot)) return kIOReturnAborted;
+         if (snapshot.poisoned) return kIOReturnAborted;
+         if (res == 0ull || snapshot.retired >= res) { out[0] = 0; out[1] = snapshot.retired; out[2] = snapshot.emitted; return kIOReturnSuccess; }
+         if (hung_now()) return kIOReturnAborted;
+-        const uint64_t el = now_ns() - start;
++        el = now_ns() - start;
+         if (el >= to) break;
+-        if (el < 5000000ull) IODelay(1); else IOSleep(1);
++        wait_relax(bo, el, gen, n48wait::kFenceCapUs);   // 0.0.682 (F3)
+     }
++    if (el >= kWaitCapNs) bound_log("n1c_wait", n48wait::kUserWait, res, el);   // 0.0.682 (F1): only the 2 s bound, not a caller's shorter timeout
+     const bool detectedHang = hang_poll();
+     if (!wait_snapshot(ref, s, snapshot)) return kIOReturnAborted;
+     if (detectedHang) return kIOReturnTimeout;               // this call's wait detected the hang
+diff -ruN a/src/amd/native_s1c.h b/src/amd/native_s1c.h
+--- a/src/amd/native_s1c.h
++++ b/src/amd/native_s1c.h
+@@ -141,4 +141,9 @@
+ // accel action 103 `sessstat 5`: the G5 page (exists only with G5 ON). `o` receives n48native::g2::kOutN (13) scalars; read-only.
+ IOReturn n1c_g5_stat(uint64_t *o);
+ 
++// ---- 0.0.682: the EOP wake of the fence waits (navi48-interrupts=2 only; ih_storm_pure.h eop_wake_on decides, Navi48Bringup calls) -----------------
++void n1c_eop_wake_set(bool on);   // on: waits sleep on the EOP event and the kernel seqno RELEASE_MEM asks for an interrupt; off: neither (the default)
++void n1c_eop_signal();            // a handler run drained at least one end-of-pipe vector: wake the waiters (no-op while the wake is off)
++bool n1c_eop_wake_on();
++
+ } // namespace amdgpu
+diff -ruN a/src/amd/native_s1c_pure.h b/src/amd/native_s1c_pure.h
+--- a/src/amd/native_s1c_pure.h
++++ b/src/amd/native_s1c_pure.h
+@@ -333,10 +333,11 @@
+ 
+ // ---- the Submit packet builder ----------------------------------------------------------------------------------------------------
+ // One RELEASE_MEM in upstream emit_fence form: GCR SEQ | GL2_WB, CACHE_FLUSH_AND_INV_TS, DATA_SEL 2 (64-bit), INT_SEL 0. 8 dwords.
+-inline uint32_t emit_release_mem(uint32_t *o, uint64_t addr, uint64_t data) {
++// 0.0.682: intSel = INT_SEL (0 = none, as before; 2 = send an interrupt after the write confirms, gfx_v12_0_ring_emit_fence with AMDGPU_FENCE_FLAG_INT).
++inline uint32_t emit_release_mem(uint32_t *o, uint64_t addr, uint64_t data, uint32_t intSel = amdgpu::kPM4RMIntSelNone) {
+     o[0] = amdgpu::cp_p3(amdgpu::kP3_RELEASE_MEM, 6);
+     o[1] = amdgpu::pm4_release_mem_dw1();
+-    o[2] = amdgpu::pm4_release_mem_dw2(amdgpu::kPM4RMDataSel64, amdgpu::kPM4RMIntSelNone);
++    o[2] = amdgpu::pm4_release_mem_dw2(amdgpu::kPM4RMDataSel64, intSel);
+     o[3] = (uint32_t)(addr & 0xFFFFFFF8u);
+     o[4] = (uint32_t)(addr >> 32);
+     o[5] = (uint32_t)(data & 0xFFFFFFFFu);
+@@ -348,7 +349,7 @@
+ // THEN the kernel seqno (so a retired seqno implies the user fence landed), then nothing. Returns the dword count, or 0 (and writes
+ // nothing beyond `cap`) when the arguments are unusable: n out of range, a misaligned fence/seq address, or a too-small buffer.
+ inline uint32_t build_submit(uint32_t *o, uint32_t cap, const uint64_t *ibVa, const uint32_t *ibBytes, uint32_t n, uint32_t vmid,
+-                             bool hasFence, uint64_t fenceAddr, uint64_t seqAddr, uint64_t seq) {
++                             bool hasFence, uint64_t fenceAddr, uint64_t seqAddr, uint64_t seq, uint32_t seqIntSel = amdgpu::kPM4RMIntSelNone) {
+     if (n < 1u || n > N48N_MAX_IBS || vmid > 15u || (seqAddr & 7ull) != 0ull || (hasFence && (fenceAddr & 7ull) != 0ull)) return 0u;
+     const uint32_t need = submit_dwords(n, hasFence);
+     if (cap < need) return 0u;
+@@ -363,7 +364,7 @@
+         o[k++] = (ibBytes[i] / 4u) | (vmid << 24);
+     }
+     if (hasFence) k += emit_release_mem(o + k, fenceAddr, seq);
+-    k += emit_release_mem(o + k, seqAddr, seq);
++    k += emit_release_mem(o + k, seqAddr, seq, seqIntSel);   // 0.0.682: only the kernel seqno may ask for the EOP interrupt (navi48-interrupts=2)
+     return k == need ? k : 0u;
+ }
+ 
+diff -ruN a/src/amd/softrec_pure.h b/src/amd/softrec_pure.h
+--- a/src/amd/softrec_pure.h
++++ b/src/amd/softrec_pure.h
+@@ -0,0 +1,149 @@
++//
++//  softrec_pure.h - 0.0.682: the PURE half of the opt-in soft recovery (boot-arg navi48-softrec=1, default OFF). No kernel header is included:
++//  tests/softrec682_test.cpp compiles this file and drives the decision and the kill sequence the kext runs (amd/native_s1c.cpp stall_handle).
++//
++//  What it adds to the G2 recovery (native_g2_pure.h, 0.0.627), only with the switch ON and only with navi48-multisession=1:
++//    1. A stall whose guilty submission (the owner of the oldest unretired seqno, native_g2_pure.h guilty_of) belongs to a user session that is
++//       NOT WindowServer first gets a WAVE KILL of that session's VMID: SQ_CMD = KILL | BROADCAST | CHECK_VMID | VM_ID, one write per ms for
++//       10 ms at most, each inside the RLC safe-mode bracket, until the stalled seqno retires. The session is poisoned before the first write.
++//       Nothing is reset.
++//    2. If the kill does not move the ring, today's G2 queue recovery (MES RESET of the GFX queue, reset_legacy_gfx) runs as before, within its
++//       per-boot budget. That is a queue reset, not a GPU reset.
++//    3. ONCE PER STALL: the guilty seqno that got (1) is remembered; a later detection of the same stall does nothing.
++//    4. If the guilty session is not WindowServer, the global HUNG latch is NEVER set by this stall, whatever (1) and (2) did: the guilty session
++//       is poisoned (its calls return Aborted), the others get Timeout from their own bounded waits and may retry. A stall owned by WindowServer,
++//       by the kernel, or by an unknown owner latches HUNG exactly as before (the switch changes nothing for them).
++//
++//  Sources:
++//    * Design: Vermilion src/vermilion-boot/PhxRecover.h and phx_recover.cpp (MIT, Copyright 2026 Vermilion contributors,
++//      https://github.com/leolivm/vermilion at 9a91901): the stall clock, "acted once per stall", the VMID-only kill value, 10 tries 1 ms apart,
++//      never VMID 0-7, never a broadcast without CHECK_VMID, nothing reset. Their register numbers are GC 11 absolute dword indices and were NOT
++//      used. MIT notice kept below.
++//    * Registers and encodings, GC 12.0.0, from Linux (MIT, Copyright Advanced Micro Devices, Inc.):
++//        linux-v7.3 include/asic_reg/gc/gc_12_0_0_offset.h:7315-7316  regSQ_CMD 0x111b, BASE_IDX 0
++//        linux-v7.3 include/asic_reg/gc/gc_12_0_0_sh_mask.h:23932-23945 SQ_CMD CMD [3:0], MODE [6:4], CHECK_VMID bit 7, VM_ID [31:28]
++//        linux-v7.3 include/asic_reg/gc/gc_12_0_0_sh_mask.h:9002-9025 GCVM_L2_PROTECTION_FAULT_STATUS_LO32 fields (VMID [23:20], ...)
++//        linux-v7.3 include/asic_reg/gc/gc_12_0_0_offset.h:2790        regGCVM_L2_PROTECTION_FAULT_STATUS_LO32 0x15d0 (read only, for the log)
++//        drm-kmod (Linux 6.14 base) amdgpu/gfx_v12_0.c:4617-4630 gfx_v12_0_ring_soft_recovery: CMD 3, MODE 1, CHECK_VMID 1, VM_ID vmid, written
++//            between amdgpu_gfx_rlc_enter_safe_mode / exit_safe_mode
++//        linux-v7.3 amdgpu/amdgpu_ring.c:450-477 amdgpu_ring_soft_recovery: 10 ms deadline, repeat until the fence signals
++//        the safe-mode handshake: RLC_SAFE_MODE (GC BASE_IDX 1, 0x0980), CMD bit 0, MESSAGE at bit 1 (gfx_v12_0_cg_pure.h, already used by 0.0.675)
++//      NOTE: Linux v7.3 no longer registers .soft_recovery for gfx_v12_0 (gfx_v12_0.c:5306-5323 uses MES queue reset, reset_kgq). The kill is
++//      therefore NOT what current upstream does on GC 12; it is what Linux 6.14 did. That is why it is opt-in and falls back to the MES reset.
++//
++//  MIT notice for the Vermilion design:
++//    Copyright (c) 2026 Vermilion contributors. Permission is hereby granted, free of charge, to any person obtaining a copy of this software
++//    and associated documentation files, to deal in the Software without restriction, subject to the condition that the above copyright
++//    notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED
++//    "AS IS", WITHOUT WARRANTY OF ANY KIND.
++//
++#pragma once
++#include <stdint.h>
++
++namespace n48softrec {
++
++// ---- registers (GC 12.0.0) -----------------------------------------------------------------------------------------------------------------------
++constexpr uint32_t kSqCmd           = 0x111bu;   // GC BASE_IDX 0, write-only
++constexpr uint32_t kSqCmdBaseIdx    = 0u;
++constexpr uint32_t kRlcSafeMode     = 0x0980u;   // GC BASE_IDX 1
++constexpr uint32_t kRlcSafeModeBaseIdx = 1u;
++constexpr uint32_t kRlcCntl         = 0x4c00u;   // RLC_CNTL, GC BASE_IDX 1 (gc_12_0_0_offset.h), RLC_ENABLE_F32 bit 0
++constexpr uint32_t kRlcCntlBaseIdx  = 1u;
++constexpr uint32_t kFaultStatusLo32 = 0x15d0u;   // GCVM_L2_PROTECTION_FAULT_STATUS_LO32, GC BASE_IDX 0 (read for the log only; never written)
++
++// SQ_CMD fields (gc_12_0_0_sh_mask.h)
++constexpr uint32_t kSqCmdCmdKill       = 0x3u;       // CMD = SQ_IND_CMD_CMD_KILL
++constexpr uint32_t kSqCmdModeBroadcast = 0x1u << 4;  // MODE = SQ_IND_CMD_MODE_BROADCAST
++constexpr uint32_t kSqCmdCheckVmid     = 0x1u << 7;  // CHECK_VMID
++constexpr uint32_t kSqCmdVmidShift     = 28u;        // VM_ID [31:28]
++constexpr uint32_t kKillBase = kSqCmdCmdKill | kSqCmdModeBroadcast | kSqCmdCheckVmid;   // 0x93: the same encoding as GC 11 (gfx_v11_0) - checked
++static_assert(kKillBase == 0x93u, "SQ_CMD kill encoding");
++
++// The native VMIDs this kext lends to sessions (native_g2_pure.h vmid_of_slot: 8..15). Never 0-7 (the kernel's VMID 0 and the MES range).
++constexpr uint32_t kFirstUserVmid = 8u, kLastUserVmid = 15u;
++constexpr bool user_vmid(uint32_t v) { return v >= kFirstUserVmid && v <= kLastUserVmid; }
++// The kill value for one user VMID; 0 for anything else (the caller then does not write).
++constexpr uint32_t kill_value(uint32_t vmid) { return user_vmid(vmid) ? (kKillBase | (vmid << kSqCmdVmidShift)) : 0u; }
++
++constexpr uint32_t kKillTries = 10u, kKillStepUs = 1000u;   // amdgpu_ring_soft_recovery: 10 ms
++constexpr uint32_t kSafeModePollUs = 10000u;                // the bracket waits 10 ms at most here (Linux 100 ms); no ack -> no write
++
++// ---- the switch ------------------------------------------------------------------------------------------------------------------------------------
++constexpr bool latch_on(bool present, uint32_t value) { return present && value == 1u; }
++
++// ---- the decision --------------------------------------------------------------------------------------------------------------------------------------
++enum Verdict : uint32_t {
++    kOff = 0u,          // the switch is off (or multisession is off): today's stall_handle, unchanged
++    kNotUser = 1u,      // owner unknown, the kernel's probe, or not an open user session: today's path (latch)
++    kWsGuilty = 2u,     // WindowServer owns the stalled work: today's path (G2 refuses it, so HUNG is latched)
++    kActed = 3u,        // this stall (the same guilty seqno) already had its soft recovery: nothing more, NO latch
++    kBadVmid = 4u,      // the guilty session's VMID is not 8..15, or it is WindowServer's: no kill; the G2 reset may still run; NO latch
++    kKill = 5u,         // kill the guilty VMID's waves, then the G2 reset if needed; NO latch
++};
++inline const char *verdict_name(uint32_t v) {
++    return v == kOff ? "off" : v == kNotUser ? "owner not a user session" : v == kWsGuilty ? "WindowServer owns the stall"
++         : v == kActed ? "already acted on this stall" : v == kBadVmid ? "guilty VMID not killable" : v == kKill ? "kill" : "?";
++}
++struct Input {
++    bool on, multi;
++    bool guiltyKnown, userSession, guiltyIsWs;
++    uint64_t guiltySeq;
++    uint32_t guiltyVmid;
++    bool wsBound; uint32_t wsVmid;   // WindowServer's session holds a VMID now, and which
++    uint64_t actedSeq;               // the guilty seqno the last soft recovery acted on (0 = none this boot)
++};
++inline uint32_t decide(const Input &in) {
++    if (!in.on || !in.multi) return kOff;
++    if (!in.guiltyKnown || !in.userSession) return kNotUser;
++    if (in.guiltyIsWs) return kWsGuilty;
++    if (in.actedSeq != 0ull && in.actedSeq == in.guiltySeq) return kActed;
++    if (!user_vmid(in.guiltyVmid) || (in.wsBound && in.wsVmid == in.guiltyVmid)) return kBadVmid;
++    return kKill;
++}
++// Whether the stall may latch the global HUNG after the soft path ran. Only the verdicts that leave today's path in charge can latch.
++constexpr bool may_latch(uint32_t v) { return v == kOff || v == kNotUser || v == kWsGuilty; }
++// Whether the G2 queue reset may follow (only after a kill that did not move the ring, or when the VMID cannot be killed).
++constexpr bool g2_after(uint32_t v, bool killMoved) { return (v == kKill && !killMoved) || v == kBadVmid; }
++
++// ---- the fault status (logged, never written) ----------------------------------------------------------------------------------------------------
++struct Fault { uint32_t raw; bool more, mapping, rw; uint32_t walker, perm, cid, vmid; };
++constexpr Fault decode_fault(uint32_t st) {
++    return Fault{ st, (st & 1u) != 0u, ((st >> 8) & 1u) != 0u, ((st >> 18) & 1u) != 0u, (st >> 1) & 7u, (st >> 4) & 0xFu, (st >> 9) & 0x1FFu, (st >> 20) & 0xFu };
++}
++constexpr bool fault_latched(const Fault &f) { return f.mapping || f.perm != 0u; }
++
++// ---- the kill sequence --------------------------------------------------------------------------------------------------------------------------------
++// E provides: uint32_t rd(uint32_t baseIdx, uint32_t reg); void wr(uint32_t baseIdx, uint32_t reg, uint32_t v); void delayUs(uint32_t us);
++//             bool moved();   (the stalled seqno retired)
++enum KillResult : uint32_t { kKillMoved = 0u, kKillStuck = 1u, kKillBadVmid = 2u, kKillRlcOff = 3u, kKillSafeModeTimeout = 4u };
++inline const char *kill_name(uint32_t r) {
++    return r == kKillMoved ? "moved" : r == kKillStuck ? "stuck after 10 ms" : r == kKillBadVmid ? "bad VMID" : r == kKillRlcOff ? "RLC not running" : r == kKillSafeModeTimeout ? "RLC safe mode not acknowledged" : "?";
++}
++struct KillStats { uint32_t writes; uint32_t safeModePolls; };
++template <class E> inline uint32_t kill(E &e, uint32_t vmid, KillStats &st) {
++    st = KillStats{ 0u, 0u };
++    const uint32_t v = kill_value(vmid);
++    if (v == 0u) return kKillBadVmid;
++    const uint32_t cntl = e.rd(kRlcCntlBaseIdx, kRlcCntl);
++    if (cntl == 0xFFFFFFFFu || (cntl & 1u) == 0u) return kKillRlcOff;   // amdgpu_gfx_rlc_enter_safe_mode only acts with the RLC running
++    for (uint32_t i = 0; i < kKillTries; i++) {
++        // gfx_v12_0_set_safe_mode: CMD | 1 << MESSAGE, then wait for CMD to clear
++        e.wr(kRlcSafeModeBaseIdx, kRlcSafeMode, 0x1u | (1u << 1));
++        bool acked = false;
++        for (uint32_t p = 0; p < kSafeModePollUs; p++) {
++            const uint32_t r = e.rd(kRlcSafeModeBaseIdx, kRlcSafeMode);
++            if (r != 0xFFFFFFFFu && (r & 1u) == 0u) { acked = true; break; }
++            st.safeModePolls++;
++            e.delayUs(1u);
++        }
++        if (!acked) { e.wr(kRlcSafeModeBaseIdx, kRlcSafeMode, 0x1u); return kKillSafeModeTimeout; }   // gfx_v12_0_unset_safe_mode
++        e.wr(kSqCmdBaseIdx, kSqCmd, v);
++        st.writes++;
++        e.wr(kRlcSafeModeBaseIdx, kRlcSafeMode, 0x1u);                                                 // exit_safe_mode -> unset_safe_mode
++        e.delayUs(kKillStepUs);
++        if (e.moved()) return kKillMoved;
++    }
++    return kKillStuck;
++}
++
++}  // namespace n48softrec
+diff -ruN a/src/amd/wait_pure.h b/src/amd/wait_pure.h
+--- a/src/amd/wait_pure.h
++++ b/src/amd/wait_pure.h
+@@ -0,0 +1,71 @@
++//
++//  wait_pure.h - 0.0.682: the PURE half of the kernel's wait steps and of the bound-expiry log (F1 / F3 of
++//  research/reports/macos-20261125/stability-performance.md). No kernel header: tests/wait682_test.cpp drives these functions.
++//
++//  Before 0.0.682 every native wait loop (own_wait, n1c_wait, the ring-space wait, the G5 and production admission loops) did
++//      if (elapsed < 5 ms) IODelay(1); else IOSleep(1);
++//  i.e. up to 5 ms of pure busy-spin per wait, and ring_submit_production re-took gCliLock + gRingLock every 1 us of it. With 13+ GPU
++//  clients at login on 8 VMIDs that is most of WindowServer's 4:40 of system CPU in 18 minutes.
++//
++//  0.0.682 (boot-arg navi48-waitsleep, default 1):
++//    kSleep  (default) a 50 us spin, then a timed sleep whose length doubles from 50 us up to a cap: 200 us for fence and ring-space waits,
++//            1000 us for the production VMID retry (which no longer retakes the global locks more often than that). Every overall bound
++//            (kWaitCapNs, kHangNs, kG5WaitBoundNs, the caller's timeout) is unchanged: only the step inside the bound changes.
++//    kEop    (navi48-interrupts=2 with the IH delivering, see ih_storm_pure.h eop_wake_on) the same steps, but the sleep is on the EOP event:
++//            an end-of-pipe vector ends it early. The timeout is the polling fallback.
++//    kLegacy (navi48-waitsleep=0) exactly the 0.0.681 step: 1 us spin for 5 ms, then 1 ms sleeps.
++//  Why the sleep is safe without interrupts: every one of these loops already blocked (IOSleep(1)) after 5 ms, so each runs in a thread that
++//  may block with the locks it holds at that point; a timed sleep only moves that point to 50 us. Without an interrupt nothing ends the sleep
++//  early, so the cost is at most one step (<= 200 us for a fence) of extra latency per wait, against 5 ms of spinning.
++//
++#pragma once
++#include <stdint.h>
++
++namespace n48wait {
++
++enum Mode : uint32_t { kLegacy = 0u, kSleep = 1u, kEop = 2u };
++// navi48-waitsleep: absent or non-zero -> kSleep; 0 -> kLegacy. kEop is chosen at run time (the EOP wake on) and only over kSleep.
++constexpr uint32_t mode_of(bool present, uint32_t value, bool eopWake) {
++    return (present && value == 0u) ? (uint32_t)kLegacy : eopWake ? (uint32_t)kEop : (uint32_t)kSleep;
++}
++
++constexpr uint64_t kLegacySpinNs   = 5000000ull;   // 0.0.601..0.0.681: IODelay(1) for the first 5 ms
++constexpr uint64_t kSpinNs         = 50000ull;     // 0.0.682: spin at most 50 us
++constexpr uint32_t kFirstSleepUs   = 50u;
++constexpr uint32_t kFenceCapUs     = 200u;         // fence / ring-space waits: 50, 100, 200, 200, ...
++constexpr uint32_t kRetryCapUs     = 1000u;        // ring_submit_production's VMID / admission retry: 50 .. 1000
++
++enum Kind : uint32_t { kSpin1us = 0u, kSleepUs = 1u, kEventUs = 2u };
++struct Step { uint32_t kind; uint32_t us; };
++struct Backoff { uint32_t sleeps; };   // sleeps taken so far in this wait (the doubling exponent)
++
++constexpr uint32_t backoff_us(uint32_t sleeps, uint32_t capUs) {
++    return sleeps >= 5u ? capUs : (kFirstSleepUs << sleeps) > capUs ? capUs : (kFirstSleepUs << sleeps);
++}
++// The next step of a wait that has run `elapsedNs`. Advances b.sleeps when it plans a sleep.
++inline Step next_step(uint32_t mode, Backoff &b, uint64_t elapsedNs, uint32_t capUs) {
++    if (mode == kLegacy) return elapsedNs < kLegacySpinNs ? Step{ (uint32_t)kSpin1us, 1u } : Step{ (uint32_t)kSleepUs, 1000u };
++    if (elapsedNs < kSpinNs) return Step{ (uint32_t)kSpin1us, 1u };
++    const uint32_t us = backoff_us(b.sleeps, capUs);
++    if (b.sleeps < 32u) b.sleeps++;
++    return Step{ mode == kEop ? (uint32_t)kEventUs : (uint32_t)kSleepUs, us };
++}
++
++// ---- F1: the bound-expiry log ------------------------------------------------------------------------------------------------------------------------
++// Every expiry of a 2 s bound is logged with its caller, the wait kind and the seqnos. Rate limit: at most one line per kLogGapNs and kLogMax
++// lines per boot; the lines suppressed in between are counted and printed with the next line that passes.
++enum WaitKind : uint32_t { kOwnSeq = 0u, kRingSpace = 1u, kAdmission = 2u, kUserWait = 3u, kInternal = 4u };
++inline const char *kind_name(uint32_t k) {
++    return k == kOwnSeq ? "own-seq" : k == kRingSpace ? "ring-space" : k == kAdmission ? "vmid/admission" : k == kUserWait ? "WaitSeq" : k == kInternal ? "internal" : "?";
++}
++constexpr uint64_t kLogGapNs = 100000000ull;   // 100 ms
++constexpr uint32_t kLogMax   = 256u;
++struct LogGate { uint64_t lastNs; uint32_t printed; uint32_t suppressed; };
++// true = print now (and *suppressedBefore = the lines dropped since the previous printed one).
++inline bool log_gate(LogGate &g, uint64_t nowNs, uint32_t *suppressedBefore) {
++    if (g.printed >= kLogMax || (g.printed != 0u && nowNs >= g.lastNs && nowNs - g.lastNs < kLogGapNs)) { g.suppressed++; return false; }
++    *suppressedBefore = g.suppressed; g.suppressed = 0u; g.lastNs = nowNs; g.printed++;
++    return true;
++}
++
++}  // namespace n48wait

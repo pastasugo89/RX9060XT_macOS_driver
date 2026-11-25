@@ -35,6 +35,9 @@ prefix = r'''
 #include <cstdio>
 #include <cstring>
 #include "native_g2_pure.h"
+#if __has_include("wait_pure.h")
+#include "wait_pure.h"
+#endif
 #include "native_g5_pure.h"
 #include "production_vm_lease_pure.h"
 using namespace n48native::s1c;
@@ -84,8 +87,17 @@ static void wait_step(unsigned ns) {
  assert(!registry.held && !ringLock.held && !hangLock.held);
  simNow+=ns; ++waits; if(autoRetire)retire_all();
 }
-static void IODelay(unsigned us) { wait_step(us*1000); }
-static void IOSleep(unsigned ms) { wait_step(ms*1000000); }
+[[maybe_unused]] static void IODelay(unsigned us) { wait_step(us*1000); }
+[[maybe_unused]] static void IOSleep(unsigned ms) { wait_step(ms*1000000); }
+#if __has_include("wait_pure.h")
+static uint32_t seq_int_sel() { return amdgpu::kPM4RMIntSelNone; }
+static uint32_t wait_gen() { return 0; }
+static void wait_relax(n48wait::Backoff &backoff, uint64_t elapsed, uint32_t, uint32_t capUs) {
+ const auto next=n48wait::next_step(n48wait::kSleep,backoff,elapsed,capUs);
+ wait_step(next.us*1000);
+}
+static void bound_log(const char *,uint32_t,uint64_t,uint64_t) {}
+#endif
 static void sysmem_rmb() {}
 static void sysmem_wmb() {}
 static void amdgpu_hdp_flush(DeviceContext &) {}
@@ -209,6 +221,18 @@ int main() {
  assert(submit(8,&seq)==kTimeout && doorbells==8 && stallCalls==1);
  assert(sessions[8].lease.slot==n48production::kNoHardwareSlot);
 
+#if __has_include("wait_pure.h")
+ reset();
+ context.cp.wptr=context.cp.ring_ptr_mask-4; gWc=context.cp.wptr;
+ autoRetire=true;
+ assert(submit(0,&seq)==kOk && waits && doorbells==1 && seq==1);
+ reset();
+ context.cp.wptr=context.cp.ring_ptr_mask-4; gWc=context.cp.wptr;
+ const auto fullWc=gWc;
+ assert(submit(0,&seq)==kTimeout && waits && !doorbells && stallCalls==1);
+ assert(gWc==fullWc && gEmitted==0 && sessions[0].emitted==0);
+#endif
+
  reset(); geometryOk=false;
  assert(submit(0,&seq)==kNotReady && gHang.hung && !programCalls && !doorbells);
  assert(gHardwareBindings[0].state==n48production::SlotState::Quarantined && gHardwareBindings[0].pendingRoot==4096);
@@ -229,7 +253,12 @@ int main() {
  std::puts("PASS: actual kernel binder/scheduler/ring writer/flush/park serve 64 logical records with eight VMIDs; check PM4 VMID and ownership before every doorbell, lock-free waits, stale owners, retirement, fairness, timeout, quarantine and sequence exhaustion. Simulated MMIO; live IOAccel/GPU untested.");
 }
 '''
-pieces = [prefix,
+ring_status = ''
+if 'constexpr uint32_t kRingNoSpace' in source:
+    start = source.index('constexpr uint32_t kRingNoSpace')
+    ring_status = source[start:source.index(';', start) + 1]
+
+pieces = [prefix, ring_status,
           function('static uint32_t ring_put_locked('),
           function('__attribute__((noinline)) static void g5_fill_in_locked('),
           function('static uint32_t ring_submit_production('),

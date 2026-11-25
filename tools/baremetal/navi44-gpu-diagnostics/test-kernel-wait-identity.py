@@ -22,6 +22,9 @@ prefix = r'''
 #include <cstdint>
 #include <cstdio>
 #include "native_g2_pure.h"
+#if __has_include("wait_pure.h")
+#include "wait_pure.h"
+#endif
 using namespace n48native::s1c;
 using IOReturn=uint32_t;
 constexpr IOReturn kIOReturnSuccess=kOk,kIOReturnNotReady=kNotReady,kIOReturnAborted=kAborted,kIOReturnTimeout=kTimeout;
@@ -73,8 +76,16 @@ static void step(unsigned ns) {
  if(race==SLEEP_REOPEN && !mutated)replace(true);
  if(race==SAME_OWNER_SUBMIT && !mutated) { mutated=true; session.emitted=6; emitted=11; retired=5; }
 }
-static void IODelay(unsigned us) { step(us*1000); }
-static void IOSleep(unsigned ms) { step(ms*1000000); }
+[[maybe_unused]] static void IODelay(unsigned us) { step(us*1000); }
+[[maybe_unused]] static void IOSleep(unsigned ms) { step(ms*1000000); }
+#if __has_include("wait_pure.h")
+static uint32_t wait_gen() { return 0; }
+static void wait_relax(n48wait::Backoff &backoff, uint64_t elapsed, uint32_t, uint32_t capUs) {
+ const auto next=n48wait::next_step(n48wait::kSleep,backoff,elapsed,capUs);
+ step(next.us*1000);
+}
+static void bound_log(const char *,uint32_t,uint64_t,uint64_t) {}
+#endif
 '''
 suffix = r'''
 static void reset(Race r) {
