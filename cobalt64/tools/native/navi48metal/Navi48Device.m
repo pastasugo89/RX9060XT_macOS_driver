@@ -52,6 +52,7 @@
 #include "n48_dispflip.h"   // S5.2a: the pure D-copy state machine
 #include "n48_m6x.h"        // bundle 13 (M6 Stage 1b): the monitor B's scanout decisions (instance 2: routing, enable, pool budget, keep-alive tick, re-copy)
 #include "n48_m6route.h"    // bundle 11 (M6 Stage 1a): which display an IOSurface belongs to (the kernel's IOSurface ID -> instance table; host test: test-m6route.c)
+#include "n48_copy_region.h" // shared-image overlap decision (host test: test-copy-region.c)
 #include "n48_texdesc.h"    // bundle 9 (app crash study item 2): descriptor -> Vulkan image mapping incl. cube and 2D array (host tests: test-texdesc.c, test-vkimage.c)
 #include "n48_depth.h"      // bundle 10: depth/stencil formats and pipeline state, MSAA, multisample resolve (host tests: test-depth.c, test-vkimage.c)
 #include "n48_nm272.h"       // bundle nm272 candidate (NullMoth 2.7-2.7.2 items 1, 2, 3, 8): pure decisions, host-tested (test-nm272-items.c)
@@ -6392,15 +6393,25 @@ N48_DNR(N48BlitEncoder)
     if ([a n48Aspects] != [b n48Aspects] || [a n48Samples] != [b n48Samples]) { [_cb n48Fail:@"blit copyFromTexture:toTexture: the textures differ in aspects (colour / depth / stencil) or sample count"]; return; }   // bundle 10
     if (!n48_blit_region_ok(a, so, sz, sl, ss, "blit copyFromTexture:toTexture: (source)") || !n48_blit_region_ok(b, dorg, sz, dl, ds, "blit copyFromTexture:toTexture: (destination)")) {
         [_cb n48Fail:@"blit copyFromTexture:toTexture: region outside a texture level"]; return; }
+    BOOL a3 = [a textureType] == MTLTextureType3D, b3 = [b textureType] == MTLTextureType3D;
+    BOOL sameImage = [a vkImage] == [b vkImage];
+    if (sameImage && n48cr_overlap(n48td_image_level(sl, [a n48BaseLevel]), n48td_image_layer(a3, ss, [a n48BaseLayer]), so.x, so.y, so.z,
+                                   n48td_image_level(dl, [b n48BaseLevel]), n48td_image_layer(b3, ds, [b n48BaseLayer]), dorg.x, dorg.y, dorg.z,
+                                   sz.width, sz.height, sz.depth)) {
+        [_cb n48Fail:@"blit copyFromTexture:toTexture: source and destination overlap in the same image"]; return;
+    }
     n48_ios_use(_cb, a, YES, NO); n48_ios_usek(_cb, b, YES, YES, N48DF_W_BLIT);
     VkCommandBuffer cmd = [_cb vk];
-    BOOL a3 = [a textureType] == MTLTextureType3D, b3 = [b textureType] == MTLTextureType3D;
-    n48_tex_to(cmd, a, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    n48_tex_to(cmd, b, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    // The layout tracker covers the entire root image, including every view, mip and slice.
+    // A shared image therefore needs one layout valid for both ends of the copy.
+    VkImageLayout srcLayout = sameImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    VkImageLayout dstLayout = sameImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    n48_tex_to(cmd, a, srcLayout);
+    if (!sameImage) n48_tex_to(cmd, b, dstLayout);
     VkImageCopy ic = { .srcSubresource = { [a n48Aspects], n48td_image_level(sl, [a n48BaseLevel]), n48td_image_layer(a3, ss, [a n48BaseLayer]), 1 }, .srcOffset = { (int32_t)so.x, (int32_t)so.y, a3 ? (int32_t)so.z : 0 },
         .dstSubresource = { [b n48Aspects], n48td_image_level(dl, [b n48BaseLevel]), n48td_image_layer(b3, ds, [b n48BaseLayer]), 1 }, .dstOffset = { (int32_t)dorg.x, (int32_t)dorg.y, b3 ? (int32_t)dorg.z : 0 },
         .extent = { (uint32_t)sz.width, (uint32_t)sz.height, (a3 || b3) ? (uint32_t)sz.depth : 1 } };
-    vkCmdCopyImage(cmd, [a vkImage], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, [b vkImage], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ic);
+    vkCmdCopyImage(cmd, [a vkImage], srcLayout, [b vkImage], dstLayout, 1, &ic);
     n48_full_barrier(cmd);
 }
 - (void)copyFromBuffer:(id)src sourceOffset:(NSUInteger)so toBuffer:(id)dst destinationOffset:(NSUInteger)doff size:(NSUInteger)size {
