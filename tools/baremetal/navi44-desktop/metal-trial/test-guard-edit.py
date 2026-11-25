@@ -268,6 +268,23 @@ def run_live_refusals(work, live):
           and hashlib.sha256(live['xl']).hexdigest() not in xl_text
           and hashlib.sha256(live['vk']).hexdigest() in xl_text,
           'rc=%s err=%s' % (r.returncode, r.stderr.strip()))
+    combined = make_bundle(d / 'combined', n + 2, b'main-new', b'vk-new', b'xl-new')
+    combined_profile = 'stage%d-combined-test-v1' % (n + 2)
+    guard, diff = d / 'combined.sh', d / 'combined.diff'
+    args = ('edit-guard', LIVE_GUARD, combined, guard, diff, old_profile, combined_profile, str(n), str(n + 2))
+    r = run_tool(*args, '--allow-skip')
+    check('explicit version jump still refuses an unapproved RADV change', r.returncode != 0 and not guard.exists())
+    r = run_tool(*args, '--allow-radv-change')
+    check('explicit RADV change still refuses an unapproved version jump', r.returncode != 0 and not guard.exists())
+    r = run_tool(*args, '--allow-skip', '--allow-radv-change')
+    check('combined guard accepts both explicit changes', r.returncode == 0, r.stderr)
+    if r.returncode == 0:
+        expected = with_constants(live['text'], sha_bytes(b'main-new'), sha_bytes(b'vk-new'), sha_bytes(b'xl-new'))
+        expected = expected.replace('PROFILE=' + old_profile, 'PROFILE=' + combined_profile, 1)
+        expected = expected.replace(version_line(n), version_line(n + 2), 1)
+        check('combined guard changes only the profile, version and three component hashes', guard.read_text() == expected)
+        r = run_tool('guard-check', guard, combined, str(n + 2))
+        check('combined guard pins all staged components', r.returncode == 0, r.stderr)
     bad = d / 'bad-version.sh'
     bad.write_text(live['text'].replace(version_line(n), version_line(n - 1), 1))
     refused('guard whose version line differs is refused', bad,
@@ -351,7 +368,7 @@ def run_stage_refusals(work, live):
     stage_refused('stage.sh with bundle %d (wrong N+1) is refused' % (n + 2),
                   [bundle_wrong, good_profile], "expected %d" % new)
     stage_refused('stage.sh with bundle %d (= N) is refused' % n,
-                  [bundle_old, good_profile], "expected %d" % new)
+                  [bundle_old, good_profile], "must be newer")
     stage_refused('stage.sh with a missing bundle path is refused',
                   [d / 'missing' / 'Navi48Metal.bundle', good_profile], 'no such directory')
 

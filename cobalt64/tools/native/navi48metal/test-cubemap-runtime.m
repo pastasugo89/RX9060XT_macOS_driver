@@ -86,7 +86,34 @@ int main(int argc, const char *argv[]) {
             [tex getBytes:viaRoot bytesPerRow:4 bytesPerImage:4 fromRegion:MTLRegionMake2D(0, 0, 1, 1) mipmapLevel:probes[i].rootLevel slice:probes[i].rootSlice];
             if (memcmp(viaView, viaRoot, 4) != 0 || viaView[0] != 48 + probes[i].rootSlice * 24) { fprintf(stderr, "view probe %lu reads the wrong texels\n", (unsigned long)i); return 1; }
         }
-        puts("PASS: ANGLE cubemap descriptor, reported usage, six-face GPU mipmap readback and the cube / face / array views");
+        // Exercise the WebGL framebuffer path: clear through a face view with
+        // nonzero base mip and face, then read the root and a neighboring face.
+        MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
+        pass.colorAttachments[0].texture = face;
+        pass.colorAttachments[0].loadAction = MTLLoadActionClear;
+        pass.colorAttachments[0].storeAction = MTLStoreActionStore;
+        pass.colorAttachments[0].clearColor = MTLClearColorMake(1, 0, 0, 1);
+        cb = [queue commandBuffer];
+        id<MTLRenderCommandEncoder> render = [cb renderCommandEncoderWithDescriptor:pass];
+        if (!render) { fprintf(stderr, "cube face render attachment was refused\n"); return 1; }
+        [render endEncoding];
+        [cb commit];
+        [cb waitUntilCompleted];
+        if (cb.status != MTLCommandBufferStatusCompleted) {
+            fprintf(stderr, "cube face render pass failed: %s\n", cb.error.localizedDescription.UTF8String);
+            return 1;
+        }
+        uint8_t pixel[4], adjacent[4];
+        const uint8_t red[4] = {255, 0, 0, 255};
+        const uint8_t unchanged[4] = {72, 72, 72, 72};
+        MTLRegion onePixel = MTLRegionMake2D(0, 0, 1, 1);
+        [tex getBytes:pixel bytesPerRow:4 bytesPerImage:4 fromRegion:onePixel mipmapLevel:1 slice:2];
+        [tex getBytes:adjacent bytesPerRow:4 bytesPerImage:4 fromRegion:onePixel mipmapLevel:1 slice:1];
+        if (memcmp(pixel, red, sizeof pixel) || memcmp(adjacent, unchanged, sizeof adjacent)) {
+            fprintf(stderr, "cube face attachment did not clear just its own subresource\n");
+            return 1;
+        }
+        puts("PASS: ANGLE cubemap descriptor, reported usage, six-face GPU mipmap readback, cube / face / array views, and face attachment clear");
     }
     return 0;
 }

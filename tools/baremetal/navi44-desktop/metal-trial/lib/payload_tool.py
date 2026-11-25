@@ -138,13 +138,21 @@ def cmd_compare(args):
     print('identical: %d files' % len(first))
 
 
-def cmd_manifest(args):  # OUT PAYLOAD PROFILE SOURCE LIVE_GUARD_SHA256 LIVE_VERSION LIVE_PROFILE
-    out, payload, profile, source, live_guard_sha, live_version, live_profile = args
-    live_number = version_int(live_version, 'live bundle version')
+def check_transition(old, new, flags):
+    old_number = version_int(old, 'live bundle version')
+    new_number = version_int(new, 'candidate bundle version')
+    if new_number <= old_number or (new_number != old_number + 1 and '--allow-skip' not in flags):
+        die('new version %s is not live %d + 1; an explicit newer version requires --allow-skip' % (new, old_number))
+    return old_number, new_number
+
+
+def cmd_manifest(args):  # OUT PAYLOAD PROFILE SOURCE LIVE_GUARD_SHA256 LIVE_VERSION LIVE_PROFILE [--allow-skip]
+    out, payload, profile, source, live_guard_sha, live_version, live_profile, *flags = args
+    if set(flags) - {'--allow-skip'}:
+        die('unknown manifest option')
     candidate = bundle_version(Path(payload, BUNDLE))
-    if candidate != str(live_number + 1):
-        die('payload bundle is version %r, expected %d (live %d + 1)' % (candidate, live_number + 1, live_number))
-    profile_check(profile, live_number + 1)
+    live_number, candidate_number = check_transition(live_version, candidate, flags)
+    profile_check(profile, candidate_number)
     profile_check(live_profile, live_number)
     files = tree(payload)
     files.pop(MANIFEST_NAME, None)
@@ -204,86 +212,56 @@ def cmd_check(args):  # MANIFEST PREFIX DIR   (PREFIX '' = whole payload)
 
 
 def cmd_edit_guard(args):
-    # LIVE_GUARD NEW_BUNDLE OUT_GUARD OUT_DIFF OLD_PROFILE NEW_PROFILE OLD_VERSION NEW_VERSION
-    # Edits a COPY of the live guard. Allowed changes, and only these:
-    #   1. the PROFILE= line (OLD_PROFILE -> NEW_PROFILE)
-    #   2. the bundle_version check line, including its message (OLD_VERSION -> NEW_VERSION)
-    #   3. the hash constant of Contents/MacOS/Navi48Metal (taken from NEW_BUNDLE)
-    #   4. only when NEW_BUNDLE ships a different translator: the libn48xlate.dylib constant (taken from NEW_BUNDLE)
-    # NEW_VERSION must be OLD_VERSION + 1. The libvulkan_radeon.dylib constant must already equal NEW_BUNDLE's file.
-    live, new_bundle, out_guard, out_diff, old_prof, new_prof, old_ver, new_ver = args
-    old_number = version_int(old_ver, 'live bundle version')
-    if new_ver != str(old_number + 1):
-        die('new version %s is not live %d + 1' % (new_ver, old_number))
+    # LIVE_GUARD NEW_BUNDLE OUT_GUARD OUT_DIFF OLD_PROFILE NEW_PROFILE OLD_VERSION NEW_VERSION [flags]
+    live, new_bundle, out_guard, out_diff, old_prof, new_prof, old_ver, new_ver, *flags = args
+    if set(flags) - {'--allow-skip', '--allow-radv-change'}:
+        die('unknown guard edit option')
+    old_number, new_number = check_transition(old_ver, new_ver, flags)
     profile_check(old_prof, old_number)
-    profile_check(new_prof, new_ver)
+    profile_check(new_prof, new_number)
     if bundle_version(new_bundle) != new_ver:
         die('new bundle CFBundleVersion is not ' + new_ver)
     old_lines = Path(live).read_text().splitlines(keepends=True)
     actual = tree(new_bundle)
     live_constants = guard_hashes(live)
-    xlate_changes = live_constants[XLATE_KEY] != actual.get(XLATE_KEY)
-    if xlate_changes and not actual.get(XLATE_KEY):
-        die('new bundle has no ' + XLATE_KEY)
-    for key in KEYS[1:]:
-        if key == XLATE_KEY:
-            continue
-        if live_constants[key] != actual.get(key):
-            die('bundle %s differs from the live guard constant; the guard edit only changes the main binary' % key)
-    new_main = actual[MAIN_KEY]
-    if new_main == live_constants[MAIN_KEY]:
+    if any(key not in actual for key in live_constants):
+        die('new bundle lacks a component pinned by the live guard')
+    if actual[MAIN_KEY] == live_constants[MAIN_KEY]:
         die('new main binary has the same hash as the live guard; nothing to stage')
+    changed_hashes = {key: actual[key] for key, digest in live_constants.items() if actual[key] != digest}
+    if set(changed_hashes) - {MAIN_KEY, XLATE_KEY} and '--allow-radv-change' not in flags:
+        die('bundle libvulkan_radeon.dylib differs from the live guard constant; use --allow-radv-change')
 
-    old_profile_line = 'PROFILE=' + old_prof
-    new_profile_line = 'PROFILE=' + new_prof
-    old_version_line = VERSION_LINE.replace('@V@', old_ver)
-    new_version_line = VERSION_LINE.replace('@V@', new_ver)
-    counts = {'profile': 0, 'version': 0, 'main': 0, 'xlate': 0}
-    new_lines = []
+    replacements = {
+        'PROFILE=' + old_prof: 'PROFILE=' + new_prof,
+        VERSION_LINE.replace('@V@', old_ver): VERSION_LINE.replace('@V@', new_ver),
+    }
     for line in old_lines:
-        eol = '\n' if line.endswith('\n') else ''
-        body = line[:-1] if eol else line
+        body = line.rstrip('\n')
         match = GUARD_RE.search(body)
-        if body == old_profile_line:
-            counts['profile'] += 1
-            new_lines.append(new_profile_line + eol)
-        elif body == old_version_line:
-            counts['version'] += 1
-            new_lines.append(new_version_line + eol)
-        elif match and match.group(1) == MAIN_KEY:
-            counts['main'] += 1
-            new_lines.append(body[:match.start(2)] + new_main + body[match.end(2):] + eol)
-        elif xlate_changes and match and match.group(1) == XLATE_KEY:
-            counts['xlate'] += 1
-            new_lines.append(body[:match.start(2)] + actual[XLATE_KEY] + body[match.end(2):] + eol)
+        if match and match.group(1) in changed_hashes:
+            replacements[body] = body[:match.start(2)] + changed_hashes[match.group(1)] + body[match.end(2):]
+
+    counts = dict.fromkeys(replacements, 0)
+    new_lines, removed, added = [], [], []
+    for line in old_lines:
+        body = line.rstrip('\n')
+        if body in replacements:
+            counts[body] += 1
+            new_line = replacements[body] + ('\n' if line.endswith('\n') else '')
+            removed.append(line)
+            added.append(new_line)
+            new_lines.append(new_line)
         else:
             new_lines.append(line)
-    if counts != {'profile': 1, 'version': 1, 'main': 1, 'xlate': 1 if xlate_changes else 0}:
+    if len(replacements) != 2 + len(changed_hashes) or any(count != 1 for count in counts.values()):
         die('live guard does not contain each expected line exactly once: %s' % counts)
-
-    # Structural check: the only differences are three one-line replacements, nothing else.
-    matcher = difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False)
-    changes = [op for op in matcher.get_opcodes() if op[0] != 'equal']
-    if len(changes) != (4 if xlate_changes else 3) or any(tag != 'replace' or i2 - i1 != 1 or j2 - j1 != 1
-                                for tag, i1, i2, j1, j2 in changes):
-        die('guard diff contains lines other than the three allowed ones')
-    removed = [old_lines[i1] for _, i1, _, _, _ in changes]
-    added = [new_lines[j1] for _, _, _, j1, _ in changes]
-    removed_bodies = sorted(line.rstrip('\n') for line in removed)
-    expected_bodies = sorted([old_profile_line, old_version_line,
-                              next(line for line in old_lines if GUARD_RE.search(line)
-                                   and GUARD_RE.search(line).group(1) == MAIN_KEY).rstrip('\n')]
-                             + ([next(line for line in old_lines if GUARD_RE.search(line)
-                                      and GUARD_RE.search(line).group(1) == XLATE_KEY).rstrip('\n')]
-                                if xlate_changes else []))
-    if removed_bodies != expected_bodies:
-        die('guard diff removes unexpected lines')
 
     diff_text = ''.join(difflib.unified_diff(old_lines, new_lines,
                                              fromfile='live-guard', tofile='bundle-%s-guard' % new_ver, n=3))
     Path(out_guard).write_text(''.join(new_lines))
     Path(out_diff).write_text(diff_text)
-    print('guard edited: 3 lines (profile, version, main binary hash); changed lines:')
+    print('guard edited: %d lines (profile, version, component hashes); changed lines:' % len(removed))
     for line in removed:
         print('  - ' + line.rstrip('\n'))
     for line in added:

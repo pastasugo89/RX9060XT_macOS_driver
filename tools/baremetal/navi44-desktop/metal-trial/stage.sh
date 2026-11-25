@@ -1,18 +1,14 @@
 #!/bin/bash
-# stage.sh - build the payload for the next Metal bundle (live N -> N+1) and its boot guard.
-# The guard is a copy of the LIVE guard; only three lines of the copy change: PROFILE=, the
-# bundle_version check (N -> N+1, message included) and the Contents/MacOS/Navi48Metal hash.
-# Runs WITHOUT root. Writes only under the git-ignored build dir research/builds/macos-20261031/trial-b<N+1>.
-# Installs nothing. Reads /Library only (read-only).
-# Usage: ./stage.sh BUNDLE_PATH NEW_PROFILE
-#   BUNDLE_PATH  Navi48Metal.bundle whose CFBundleVersion is N+1 (N = live bundle version). Required.
-#   NEW_PROFILE  stage<N+1>-<name>, e.g. stage32-dualsrc-v1 for bundle 32. Required.
+# Stage a Metal bundle and a copy of the live guard, with no system writes.
+# Usage: ./stage.sh BUNDLE_PATH NEW_PROFILE [--allow-skip] [--allow-radv-change]
+# The default expects the next version. A version jump or a new RADV requires
+# the corresponding explicit flag.
 set -euo pipefail
 export LC_ALL=C
 umask 022
 
 [ "$(id -u)" -ne 0 ] || { echo "STOP: stage.sh must not run as root (install-trial.sh does the root part)"; exit 1; }
-[ "$#" -eq 2 ] || { echo "STOP: usage: ./stage.sh BUNDLE_PATH NEW_PROFILE   (NEW_PROFILE is required, e.g. stage32-dualsrc-v1)" >&2; exit 1; }
+[ "$#" -ge 2 ] || { echo "STOP: usage: ./stage.sh BUNDLE_PATH NEW_PROFILE [--allow-skip] [--allow-radv-change]" >&2; exit 1; }
 
 W=$(cd "$(dirname "$0")" && pwd)
 PROJ=/Users/pastasugo89/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver
@@ -29,6 +25,16 @@ step() { echo "== $*"; }
 ptool() { "$PY" -I "$TOOL" "$@"; }
 
 SRC_ARG=$1
+shift 2
+skip=()
+radv=()
+for arg in "$@"; do
+  case "$arg" in
+    --allow-skip) skip=("$arg") ;;
+    --allow-radv-change) radv=("$arg") ;;
+    *) die "unknown argument: $arg" ;;
+  esac
+done
 [ -d "$(dirname "$SRC_ARG")" ] || die "no such directory: $(dirname "$SRC_ARG")"
 SRC=$(cd "$(dirname "$SRC_ARG")" && pwd -P)/$(basename "$SRC_ARG")
 
@@ -40,7 +46,12 @@ case "$SRC" in /Library/*) die "refusing to stage from the live GPU bundle path"
 [ -f "$LIVE_GUARD" ] && [ ! -L "$LIVE_GUARD" ] || die "live guard missing: $LIVE_GUARD"
 OLD_VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$LIVE_BUNDLE/Contents/Info.plist" 2>/dev/null || true)
 case "$OLD_VER" in ''|0|*[!0-9]*|0*) die "live bundle CFBundleVersion is '$OLD_VER', not a positive integer" ;; esac
-NEW_VER=$((OLD_VER + 1))
+NEW_VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$SRC/Contents/Info.plist" 2>/dev/null || true)
+case "$NEW_VER" in ''|0|*[!0-9]*|0*) die "candidate CFBundleVersion is '$NEW_VER', not a positive integer" ;; esac
+[ "$NEW_VER" -gt "$OLD_VER" ] || die "candidate must be newer than bundle $OLD_VER"
+if [ "$NEW_VER" -ne "$((OLD_VER + 1))" ] && [ "${#skip[@]}" -eq 0 ]; then
+  die "CFBundleVersion is '$NEW_VER', expected $((OLD_VER + 1)) (use --allow-skip for a version jump)"
+fi
 GUARD_VER=$(ptool guard-version "$LIVE_GUARD") || die "live guard does not have exactly one bundle_version check"
 [ "$GUARD_VER" = "$OLD_VER" ] || die "live guard checks bundle version $GUARD_VER, but the live bundle is $OLD_VER"
 OLD_PROFILE=$(ptool guard-profile "$LIVE_GUARD") || die "live guard does not have exactly one PROFILE= line"
@@ -53,8 +64,6 @@ for f in Contents/Info.plist Contents/MacOS/Navi48Metal Contents/Resources/libvu
   [ -f "$SRC/$f" ] || die "bundle lacks $f"
 done
 [ -d "$SRC/Contents/Resources/spvcache" ] || die "bundle lacks Resources/spvcache"
-VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$SRC/Contents/Info.plist" 2>/dev/null || true)
-[ "$VER" = "$NEW_VER" ] || die "CFBundleVersion is '$VER', expected $NEW_VER (live $OLD_VER + 1)"
 if [ -n "$(find "$SRC" -type f -mmin -2 -print -quit)" ]; then
   die "bundle files changed in the last 2 minutes (rebuild running?); retry later"
 fi
@@ -86,12 +95,12 @@ codesign --verify --deep --strict "$TMPNEW/payload/Navi48Metal.bundle" || die "c
 CV=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$TMPNEW/payload/Navi48Metal.bundle/Contents/Info.plist")
 [ "$CV" = "$NEW_VER" ] || die "copy CFBundleVersion is '$CV'"
 
-step "4 guard: copy the LIVE guard, edit only the three allowed lines in the copy"
+step "4 guard: copy the live guard and update the version and component hashes"
 cp "$LIVE_GUARD" "$TMPNEW/live-guard.sh"
 LIVE_GUARD_SHA=$(ptool hash "$TMPNEW/live-guard.sh")
 ptool edit-guard "$TMPNEW/live-guard.sh" "$TMPNEW/payload/Navi48Metal.bundle" \
   "$TMPNEW/payload/accelerated-reboot-trial.sh" "$TMPNEW/GUARD.diff" \
-  "$OLD_PROFILE" "$NEW_PROFILE" "$OLD_VER" "$NEW_VER" || die "guard edit refused (see above)"
+  "$OLD_PROFILE" "$NEW_PROFILE" "$OLD_VER" "$NEW_VER" ${skip[@]+"${skip[@]}"} ${radv[@]+"${radv[@]}"} || die "guard edit refused (see above)"
 chmod 755 "$TMPNEW/payload/accelerated-reboot-trial.sh"
 bash -n "$TMPNEW/payload/accelerated-reboot-trial.sh" || die "guard fails bash -n"
 ptool guard-check "$TMPNEW/payload/accelerated-reboot-trial.sh" "$TMPNEW/payload/Navi48Metal.bundle" "$NEW_VER"
@@ -99,7 +108,7 @@ grep -Fxq "PROFILE=$NEW_PROFILE" "$TMPNEW/payload/accelerated-reboot-trial.sh" |
 
 step "5 manifest over the whole payload"
 ptool manifest "$TMPNEW/payload/manifest.json" "$TMPNEW/payload" "$NEW_PROFILE" "$SRC" "$LIVE_GUARD_SHA" \
-  "$OLD_VER" "$OLD_PROFILE"
+  "$OLD_VER" "$OLD_PROFILE" ${skip[@]+"${skip[@]}"}
 
 step "6 publish to $OUT/payload"
 mv -f "$TMPNEW/GUARD.diff" "$OUT/GUARD.diff"
@@ -120,4 +129,4 @@ echo "  Navi48Metal main: $(ptool hash "$OUT/payload/Navi48Metal.bundle/Contents
 echo "  libvulkan_radeon: $(ptool hash "$OUT/payload/Navi48Metal.bundle/Contents/Resources/libvulkan_radeon.dylib")"
 echo "  libn48xlate:      $(ptool hash "$OUT/payload/Navi48Metal.bundle/Contents/Resources/libn48xlate.dylib")"
 echo "  guard:            $(ptool hash "$OUT/payload/accelerated-reboot-trial.sh")"
-echo "Next: cd $W && sudo ./install-trial.sh"
+echo "Next: cd $W && sudo ./install-trial.sh --version $NEW_VER"

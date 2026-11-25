@@ -1,36 +1,30 @@
-# Trial metal generico: bundle N -> N+1 (caso attuale: bundle 32)
+# Staging, installazione e rollback dei bundle Metal
 
-Stato: pacchetto generico per `stage.sh`, `install-trial.sh` e `rollback-trial.sh`. Il bundle 32 è già in staging (`research/builds/macos-20261031/trial-b32/`, creato con `stage.sh` senza root). **Non installato:** il bundle 31 resta attivo finché non esegui `install-trial.sh`. Non testato su hardware né su Metal/RADV: i test sono offline.
+`stage.sh` prepara un candidato senza privilegi di amministratore. Verifica la firma del bundle,
+confronta il bundle attivo con la guardia e crea `payload/` e `GUARD.diff` sotto
+`research/builds/macos-20261031/trial-b<VERSIONE>/`.
 
-Il pacchetto `../metal-trial-b31/` non è stato modificato e resta per il bundle 31.
+Per impostazione predefinita il candidato deve avere la versione successiva. Un salto di versione richiede
+`--allow-skip`. Un nuovo RADV richiede `--allow-radv-change`. Il profilo ha forma `stage<VERSIONE>-<nome>`.
+La guardia candidata cambia il profilo, il controllo della versione e gli hash dei componenti cambiati.
 
-## Regole
-
-- **N** è la versione del bundle live: `CFBundleVersion` di `/Library/GPUBundles/Navi48Metal.bundle` (ora 31). Il check `bundle_version` della guard live deve dichiarare la stessa versione.
-- Il bundle candidato deve avere `CFBundleVersion` **N+1** (ora 32). Qualsiasi altra versione viene rifiutata.
-- Il **profilo** è un argomento obbligatorio di `stage.sh`, nella forma `stage<N+1>-<nome>` (per il bundle 32: `stage32-dualsrc-v1`).
-- La guard nuova è una copia della guard live in cui cambiano solo tre righe: `PROFILE=`, il check `bundle_version` (incluso il messaggio) e l'hash di `Contents/MacOS/Navi48Metal`. Le costanti delle due dylib devono già coincidere con quelle del bundle candidato. Il diff è in `GUARD.diff`.
-
-## Comandi
+Per preparare il bundle combinato 41 dal bundle attivo 39, dalla radice del progetto:
 
 ```sh
-cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial
-./stage.sh ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/research/builds/macos-20261031/bundle32-src/build-32/Navi48Metal.bundle stage32-dualsrc-v1
-sudo ./install-trial.sh
-sudo reboot
+tools/baremetal/navi44-desktop/metal-trial/stage.sh \
+  research/builds/macos-20261125/bundle41-combined/Navi48Metal.bundle \
+  stage41-combined-v1 --allow-skip --allow-radv-change
 ```
 
-`stage.sh` non richiede root e scrive solo in `research/builds/macos-20261031/trial-b<N+1>/` (cartella ignorata da git): `payload/` (bundle, guard, `manifest.json`) e `GUARD.diff`. Si rifiuta se: non riceve esattamente due argomenti (manca il profilo); il bundle non ha `CFBundleVersion` N+1; il profilo non è `stage<N+1>-…`; un file del bundle è cambiato negli ultimi 2 minuti; `codesign --verify --deep --strict` fallisce; un processo che cita `build-<N+1>` è in esecuzione; la guard live non corrisponde al bundle live; il diff della guard contiene altro oltre alle tre righe.
+Dopo l'autorizzazione all'installazione, `install-trial.sh --version 41` seleziona il payload esplicito.
+Senza `--version` lo script cerca la versione successiva. Lo script richiede privilegi di amministratore,
+verifica il manifest, la firma e l'hash della guardia attiva, poi crea i backup ed esegue lo scambio atomico.
+Se la guardia cambia dopo lo staging, prepara di nuovo il payload prima dell'installazione. Per la coppia
+kernel 0.0.682 e Metal 41 segui l'ordine in [HANDOFF](../../../../docs/HANDOFF.md).
 
-`install-trial.sh` non accetta opzioni. Ricava N dal bundle live e cerca il payload in `trial-b<N+1>/`. Prima di installare controlla:
-- il payload corrisponde al manifest, che registra la versione live (N), la candidata (N+1), il profilo nuovo e quello live; il bundle è N+1 con la guard N+1 e la firma è valida;
-- il bundle live è N e la guard live corrisponde ai suoi hash;
-- la guard live ha lo stesso sha256 registrato da `stage.sh` (altrimenti rilancia `./stage.sh`);
-- il boot latch non è `pending` o `failed`.
-
-Poi fa i backup, solo come copie: il bundle N in `/Library/GPUBundles/Navi48Metal.bundle.vN-backup-<ts>`; in `/Library/Application Support/Navi44/trial-b<N+1>-backup-<ts>/` il bundle N, la guard N, boot-state e il plist. Esegue lo swap atomico del bundle e installa la guard N+1 con rename atomico dopo `bash -n` e il check degli hash. Se un passo fallisce, o se lo interrompi con Ctrl-C (anche TERM o HUP), lo script annulla solo ciò che ha cambiato in quella esecuzione e lascia i backup. Il ripristino decide dallo stato reale su disco (versione del bundle live, copie presenti), non da variabili di flusso, e stampa lo stato finale su stderr. Dopo un install riuscito il bundle 31 sostituito resta in `…/trial-b<N+1>-backup-<ts>/displaced-v31.bundle`; se l'install viene annullato, il bundle 31 torna live e il bundle 32 scartato va in `…/trial-b32-backup-<ts>/failed-b32.bundle`. Non esegue la guard e non riavvia.
-
-Per il bundle 32 i backup sono `Navi48Metal.bundle.v31-backup-<ts>` e `/Library/Application Support/Navi44/trial-b32-backup-<ts>/`.
+`rollback-trial.sh` seleziona il backup più recente per la versione attiva e ricava la versione da ripristinare
+dalla guardia del backup. Puoi scegliere un backup preciso con `--backup DIR`. Installazione e rollback
+terminano prima del riavvio.
 
 ## Cosa cambia nel bundle 32: dual-source blending
 
@@ -44,7 +38,7 @@ Fonte: `research/builds/macos-20261031/bundle32-src/RESULTS.md`. Base: il bundle
 
 **Non verificato:** non ci sono test a runtime. Il fallimento di Brave non è stato riprodotto. Le pipeline Graphite/Dawn possono fallire per altre ragioni. Le pipeline di fallback magenta con Source1* ora vengono create, con la seconda sorgente indefinita (solo `WARN`).
 
-## Dopo il riavvio
+## Dopo il riavvio del bundle 32
 
 1. Al login window non accedere per circa 5 minuti: la guard aspetta translator, registry e riavvio di WindowServer.
 2. Log della guard: `sudo cat /private/var/tmp/navi44-accelerated-trial/run.log` (cerca `REGISTRY_READY`, `WINDOWSERVER_READY`, `LOGIN_SEEN`, `GPU_BOOT_STABLE`, `STOP`, `FAILSAFE`).
@@ -63,7 +57,7 @@ sudo touch /private/tmp/n48m-magenta    # fallback magenta, dopo il prossimo avv
 sudo rm /private/tmp/n48m-magenta       # torna al placeholder invisibile
 ```
 
-## Rollback
+## Esempio di rollback del bundle 32
 
 ```sh
 cd ~/Documents/rx9060xt-import-HChjRy/rx9060xt_metal_driver/tools/baremetal/navi44-desktop/metal-trial

@@ -1,6 +1,5 @@
 #!/bin/bash
-# rollback-trial.sh - return from the live Metal bundle N+1 to bundle N and its boot guard, from the
-# newest trial-b<N+1>-backup directory (N+1 = live bundle version).
+# Restore the Metal bundle and guard from a verified backup for the live version.
 # Runs from Terminal, SSH, or a local login. Needs no GPU, does not touch WindowServer, does not reboot.
 # Usage: sudo ./rollback-trial.sh [--backup DIR] [--reset-latch]
 #   --backup DIR   trial-b<N+1>-backup directory to restore (default: newest trial-b<N+1>-backup-*)
@@ -36,10 +35,10 @@ GUARD="$APP/accelerated-reboot-trial.sh"
 STATE="$APP/boot-state.json"
 TS=$(date +%Y%m%d-%H%M%S)
 
-# LIVEVER = N+1 (the bundle this rollback leaves); OLDVER = N (the bundle it restores).
+# The restore version comes from the backup guard.
 LIVEVER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$LIVE/Contents/Info.plist" 2>/dev/null || true)
 case "$LIVEVER" in ''|0|1|*[!0-9]*|0*) echo "STOP: live bundle version '$LIVEVER' cannot be rolled back (need an integer >= 2)" >&2; exit 1 ;; esac
-OLDVER=$((LIVEVER - 1))
+OLDVER=
 RBDIR="$APPDIR/trial-b$LIVEVER-rollback-$TS"
 STAGE2="$GPUB/.Navi48Metal.rollback-staging-$TS"    # the restored v$OLDVER copy before the swap
 DISPLACED2="$RBDIR/displaced-current.bundle"        # the v$LIVEVER bundle after the swap
@@ -143,7 +142,7 @@ trap 'abort $?' ERR
 trap 'rc=$?; [ -n "$ROOTTMP" ] && [ -d "$ROOTTMP" ] && rm -rf "$ROOTTMP"; exit $rc' EXIT
 # ---- traps end ----
 
-echo "== 1 locate and verify the backup (live bundle $LIVEVER -> restore $OLDVER)"
+echo "== 1 locate and verify the backup for live bundle $LIVEVER"
 ROOTTMP=$(mktemp -d /private/var/tmp/trial-b$LIVEVER-rollback.XXXXXX)
 chmod 700 "$ROOTTMP"
 cp -p "$W/lib/payload_tool.py" "$ROOTTMP/payload_tool.py"
@@ -165,8 +164,16 @@ case "$(basename "$BACKUP")" in
   *) die "backup $(basename "$BACKUP") is not a trial-b$LIVEVER-backup-* directory (the live bundle is $LIVEVER)" ;;
 esac
 echo "  backup: $BACKUP"
+shopt -s nullglob
+guards=("$BACKUP"/accelerated-reboot-trial.v*.sh)
+shopt -u nullglob
+[ "${#guards[@]}" -eq 1 ] || die "backup must contain exactly one versioned guard"
+BKGUARD=${guards[0]}
+[ -f "$BKGUARD" ] && [ ! -L "$BKGUARD" ] || die "invalid backup guard"
+OLDVER=$("$PY" -I "$ROOTTMP/payload_tool.py" guard-version "$BKGUARD") || die "backup guard version is invalid"
+[ "$OLDVER" -lt "$LIVEVER" ] && [ "$(basename "$BKGUARD")" = "accelerated-reboot-trial.v$OLDVER.sh" ] \
+  || die "backup guard version does not match the filename or precede the live version"
 BKBUNDLE=$BACKUP/Navi48Metal.bundle.v$OLDVER
-BKGUARD=$BACKUP/accelerated-reboot-trial.v$OLDVER.sh
 [ -d "$BKBUNDLE" ] && [ -f "$BKGUARD" ] || die "backup lacks the v$OLDVER bundle or guard"
 [ "$(version_of "$BKBUNDLE")" = "$OLDVER" ] || die "backup bundle is not version $OLDVER"
 codesign --verify --deep --strict "$BKBUNDLE" >/dev/null 2>&1 || die "backup bundle signature invalid"

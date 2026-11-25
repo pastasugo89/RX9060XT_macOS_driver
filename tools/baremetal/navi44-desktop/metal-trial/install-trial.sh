@@ -1,7 +1,7 @@
 #!/bin/bash
 # install-trial.sh - install the staged Metal bundle N+1 and its boot guard; keep the bundle N backups.
 # N = live bundle version; the payload is research/builds/macos-20261031/trial-b<N+1>/payload (from ./stage.sh).
-# Run AFTER ./stage.sh:   sudo ./install-trial.sh
+# Run after staging: sudo ./install-trial.sh [--version VERSION] (default: live version + 1)
 # Changes: /Library/GPUBundles/Navi48Metal.bundle (atomic swap) and the boot guard.
 # No audio step, /private/var/tmp/n48m-spv is not moved. Nothing runs until reboot.
 # Rollback: sudo ./rollback-trial.sh
@@ -12,11 +12,18 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin
 
 [ "$(id -u)" -eq 0 ] || { echo "STOP: run with sudo: sudo $0" >&2; exit 1; }
 
-for arg in "$@"; do
-  case "$arg" in
+REQUESTED_VERSION=
+while [ $# -gt 0 ]; do
+  case "$1" in
     -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
-    *) echo "STOP: unknown argument: $arg" >&2; exit 1 ;;
+    --version)
+      [ $# -ge 2 ] || { echo "STOP: --version needs a version" >&2; exit 1; }
+      case "$2" in ''|0|*[!0-9]*|0*) echo "STOP: invalid candidate version" >&2; exit 1 ;; esac
+      REQUESTED_VERSION=$2
+      shift ;;
+    *) echo "STOP: unknown argument: $1" >&2; exit 1 ;;
   esac
+  shift
 done
 
 W=$(cd "$(dirname "$0")" && pwd)
@@ -33,10 +40,11 @@ KILL=/private/tmp/n48m-off
 HEADLESS=/private/tmp/n48m-headless-no
 TS=$(date +%Y%m%d-%H%M%S)
 
-# N = live bundle version; the staged payload must be N+1.
+# The staged payload must name this exact baseline and a later version.
 OLD_VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$LIVE/Contents/Info.plist" 2>/dev/null || true)
 case "$OLD_VER" in ''|0|*[!0-9]*|0*) echo "STOP: live bundle version '$OLD_VER' is not a positive integer" >&2; exit 1 ;; esac
-NEW_VER=$((OLD_VER + 1))
+NEW_VER=${REQUESTED_VERSION:-$((OLD_VER + 1))}
+[ "$NEW_VER" -gt "$OLD_VER" ] || { echo "STOP: candidate bundle must be newer than live $OLD_VER" >&2; exit 1; }
 PAYBASE=$PROJ/research/builds/macos-20261031/trial-b$NEW_VER
 BKDIR="$APPDIR/trial-b$NEW_VER-backup-$TS"
 BK_GPU="$GPUB/Navi48Metal.bundle.v$OLD_VER-backup-$TS"

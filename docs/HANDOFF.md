@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, late evening (before a usage-limit stop). Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after the 0.0.682 and bundle 41 candidates were staged. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -34,41 +34,43 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 - Never pipe between two `sudo -S` calls; never write the sudo password into files or commits.
 - Do not read NootedRed/NootRX source. AMD firmware and Apple binaries are never committed.
 - Number new releases after the highest seen anywhere (check `git fetch`, remote branches, PRs, live versions):
-  next kernel 0.0.682, next bundle 40/41.
+  the staged versions are kernel 0.0.682 and Metal bundle 41.
 
-## Work in flight (subagents) and where their output goes
-| Item | State | Output |
-|---|---|---|
-| Kernel 0.0.682 (agent still running; worktree has its uncommitted files amd/ih_storm_pure.h, wait_pure.h, softrec_pure.h + tests ih_storm682/wait682/softrec682): IH storm guard + EOP-wake fence waits (opt-in), soft GPU recovery (opt-in), F1 no ring-space spin under global locks + log 2 s bound expiries, F3 sleep waits + VMID backoff | running | research/builds/macos-20261125/kernel-682/ |
-| Bundle format-copy patch (sRGB/linear twins) | part of the 0.0.682 agent | research/builds/macos-20261125/bundle-formatcopy/ |
-| Bundle 40: texture views of cube/2D-array textures | DONE, committed 3648b5e, built, NOT installed | research/builds/macos-20261125/bundle40-views/ (tar sha efd12548...) |
-| RADV release build (asserts/validation off, faster dlopen) | running | research/builds/macos-20261125/radv-release/ |
-| macOS 26.7.2 upgrade evaluation | done: do NOT upgrade now (stack pinned to 25G83); port project | research/reports/macos-20261125/macos-26.7-upgrade.md |
-| AMDHV repo audit | done: hypervisor (VMX->SVM) experiment, no licence, not useful for the GPU | research/reports/macos-20261125/amdhv-audit.md |
+## Candidates prepared on 2026-11-25
 
-## Ready but not installed
-- Translator rebased on NullMoth v3.0: patches/0004, dylib `research/builds/macos-20261123/xlate-v29/libn48xlate.dylib`
-  (sha ebb746f5...), byte-identical output on the 48-text corpus.
-- RADV patch 0012 (cmd-buffer teardown crash fix): dylib `research/builds/macos-20261123/radv-crashfix/` (sha e64dad00...).
-- Bundle stability patch: `research/builds/macos-20261125/stability/0001-bundle-radv-debug-validation-off.patch`.
-- RDNA4FB 0.0.10 (refresh from OTG V_TOTAL readback): `research/builds/macos-20261123/rdna4fb-0.0.10/` (install script there).
-
-## If you take over now
-- Running subagents may have been cut off: check research/builds/macos-20261125/kernel-682/ and radv-release/ for
-  partial output; `git status` shows uncommitted 0.0.682 work in cobalt64/src/navi48-bringup (do not discard it).
-- Do not install anything without the user's go-ahead and a stable boot latch.
-- Plan agreed with the user: install ONE combined Metal bundle (41 = bundle 40 + translator v3.0 dylib + RADV 0012
-  (release build if verified) + stability patch 0001) together with kernel 0.0.682 (new behaviours opt-in by boot-arg).
-- User reports to keep in mind: login freezes ~2 s (stability report F1-F8), Discord voice crash = Krisp/MKL on Ryzen
-  (workaround: noise suppression None + no ML voice detection, or MKL_ENABLE_INSTRUCTIONS=AVX2), Music hang = Apple
-  accountsd/passd deadlock (not ours). macOS 26.7.x upgrade: NO for now (research/reports/macos-20261125/macos-26.7-upgrade.md).
+- Kernel **0.0.682**, still on the 0.0.681 source lineage. The reviewed overlay and stage script are in
+  `tools/baremetal/navi44-desktop/refresh-60/`. The signed kext, 11 passing host tests and build manifest are in
+  `research/builds/macos-20261125/kernel-682/kernel-contexts-v18-reviewed/`. The matching EFI payload is
+  `research/builds/macos-20261125/kernel-682/kernel-payload-v18/`. OpenCore validation and a round trip on a
+  copy of the EFI passed. Ring submission releases the global locks before retrying. Timed wait backoff is on
+  by default (`navi48-waitsleep=0` restores the legacy timing). The existing `navi48-interrupts=0` remains in the
+  EFI config. Guarded interrupts and EOP wake (`navi48-interrupts=2`) and soft recovery (`navi48-softrec=1`) are
+  separate opt-ins. The new kext and opt-ins still need GPU validation.
+- Metal **41**, with bundle 40 texture views, the NullMoth v3.0 translator and release RADV with 0012. It also
+  limits frequent IOSurface and successful pipeline-variant logs and disables optional validation in debug
+  RADV by default. The RADV build uses Mesa `afc608b523f0` with patches 0010 and 0012, Meson release,
+  `-Db_ndebug=true` and `-Doptimization=3`. Re-signing the release dylib reproduces the bundled RADV hash.
+  The signed bundle is in `research/builds/macos-20261125/bundle41-combined/` and the payload is in
+  `research/builds/macos-20261031/trial-b41/payload/`. The isolated runtime probe on kernel 0.0.681 passed
+  cubemap allocation, six-face mipmaps, texture-view reads and a render-and-readback on a nonzero face/mip.
+  Brave and WindowServer with bundle 41 still need testing.
+- Live remains **0.0.681 / 39**. Installation requires the user's go-ahead and a stable boot latch. The
+  bundle 41 payload was staged against the live 0.0.681/39 guard. For a combined installation, apply the
+  reviewed 0.0.682 EFI and matching guard first, then restage bundle 41 against that guard before installing
+  it with `install-trial.sh --version 41`. Reboot once after validating both. The two guard transformations
+  were checked offline and produce the same file in either order. Roll back Metal before rolling back the
+  kernel so the intermediate guard still matches the EFI.
+- Bundle 40 remains separately built and uninstalled at `research/builds/macos-20261125/bundle40-views/`.
+  RDNA4FB 0.0.10 is a separate candidate at `research/builds/macos-20261123/rdna4fb-0.0.10/`.
 
 ## Next planned steps
-1. Assemble bundle 40/41 = bundle 39 + cube views + translator v3.0 + RADV 0012 (+ release build if verified) +
-   stability items F2 (no pipeline variant builds on the render thread), F5 (lazy RADV open), F8 (log rate limits).
-2. Install kernel 0.0.682, A/B its opt-ins one boot at a time (ioreg/metrics only).
-3. Then: dynamic UCLK without underflows (OPTC-level; hypotheses in research/reports/macos-20261114/gfx-activity-investigation.md),
-   GFXOFF, VRAM memory management, VCN, multi-monitor (Vermilion has 2-display code, see vermilion-audit.md).
+
+1. After the user's approval, install both candidates with the current boot arguments. After reboot, verify
+   the latch, telemetry and WindowServer, then run Aquarium and the WebGL 2 framebuffer test in Brave.
+2. Run A/B trials for guarded interrupts and soft recovery independently, one boot at a time.
+3. Review the separate sRGB/linear copy change, reduce draw-time pipeline variants (F2), and defer RADV open
+   until it is needed (F5). Continue with dynamic UCLK without underflows, GFXOFF, VRAM management, VCN and
+   multi-monitor. The macOS 26.7.x port stays separate because the current stack is pinned to build 25G83.
 
 ## Key reports
 docs/STATUS.md; STATO.md (Italian log); research/reports/macos-20261112/*.md; research/reports/macos-20261114/

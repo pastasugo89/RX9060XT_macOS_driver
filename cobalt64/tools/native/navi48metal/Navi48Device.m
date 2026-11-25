@@ -610,6 +610,12 @@ static BOOL n48_radv_open_once(NSError **err) {
                 N48LOG("radv open: P5a /private/tmp/n48m-nosam present: RADV_PERFTEST=%s (command buffers in GTT)", v);
             }
         }
+        // Avoid debug-build validation on pipeline creation unless requested.
+        // An explicit environment value or the validation marker is honored.
+        if (access("/private/tmp/n48m-validate", F_OK) != 0) {
+            setenv("NIR_DEBUG", "novalidate", 0);
+            setenv("ACO_DEBUG", "novalidate", 0);
+        }
         VkResult r = n48_vkCreateInstance(&ici, NULL, &N48R.inst);
         if (r != VK_SUCCESS) { N48R.err = n48_err(4, [NSString stringWithFormat:@"vkCreateInstance = %d", r]); goto fail; }
 #define X(n) n = (PFN_##n)n48_gipa(N48R.inst, #n); if (!n) N48LOG("radv: %s not exposed", #n);
@@ -2979,7 +2985,7 @@ N48_DNR(N48Texture)
     // m11h6: IOSurface allocations are page-granular in the VM map, but IOSurfaceGetAllocSize reports the exact byte size (e.g. 5760, 303360, 1840000).
     // Import the whole pages that hold the surface: round up to the host-pointer alignment. The extra tail bytes are the surface's own page, never another object's.
     const size_t ialloc = (alloc + (size_t)N48R.hostAlign - 1) & ~((size_t)N48R.hostAlign - 1);
-    if (ialloc != alloc) N48LOG("newTexture(iosurface): allocSize %zu rounded up to %zu for the page-granular import", alloc, ialloc);
+    if (ialloc != alloc) N48LOGR("newTexture(iosurface): allocSize %zu rounded up to %zu for the page-granular import", alloc, ialloc);
     if (ialloc > 64u << 20) N48F1_FALL(@"allocSize %zu > 64 MiB (the N48N per-BO import limit)", ialloc);
     // Import (whole allocation). The kernel refuses BAR pages, unaligned ranges and > 256 MiB per client; that arrives as a vkAllocateMemory error.
     VkMemoryHostPointerPropertiesEXT hp = { .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT };
@@ -4524,7 +4530,7 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
     if (!v) {
         NSError *e = nil; VkPipeline p = [self n48Build:topo cull:cull front:front ds:dk error:&e];
         if (!p) N48LOG("pipeline variant (topology %d cull %d front %d) failed: %s", topo, cull, front, e.localizedDescription.UTF8String);
-        else { v = [NSValue valueWithPointer:(void *)p]; _variants[k] = v; N48LOG("pipeline variant topology %d cull %d front %d created", topo, cull, front); }
+        else { v = [NSValue valueWithPointer:(void *)p]; _variants[k] = v; N48LOGR("pipeline variant topology %d cull %d front %d created", topo, cull, front); }
     }
     [_lock unlock];
     return v ? (VkPipeline)v.pointerValue : VK_NULL_HANDLE;
