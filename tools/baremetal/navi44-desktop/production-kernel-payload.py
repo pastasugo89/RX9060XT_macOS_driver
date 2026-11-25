@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.680) without changing EFI or the live system.
+"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.681) without changing EFI or the live system.
 
 `prepare --baseline-payload <verified earlier payload>` builds the baseline EFI from that payload's recorded hashes
 instead of the mounted EFI (the EFI is not mounted and must not be touched). Such a payload is marked
@@ -144,6 +144,10 @@ BUNDLE_679 = 'Navi48Bringup-contexts-0.0.679.kext'
 CONFIG_679_SHA = '85b88aeb822e8bd8177e857cece9de30ecbc2f6337451848abc4afda6dcdfcc0'
 BASE_679_MANIFEST = ROOT/'research/builds/macos-20261123/kernel-679/kernel-contexts-v15/manifest.json'
 KERNEL_680_SHA = 'cd05267794ae104a0d9ad62975fb2b2c4798c93ba5f58efdc423b501f5bbf37b'
+BUNDLE_680 = 'Navi48Bringup-contexts-0.0.680.kext'
+CONFIG_680_SHA = '97ebc2fb35838096e117404209899aea51dfd047f7ebeaa0fe1ee15df76f096f'
+BASE_680_MANIFEST = ROOT/'research/builds/macos-20261123/kernel-680/kernel-contexts-v16/manifest.json'
+KERNEL_681_SHA = '738d4f68923d0684e3b056a4bd38baaa00c481682d60b7357c78ef998503b0b8'
 REFRESH_SOURCE = Path(__file__).resolve().parent/'refresh-60/apply_refresh_guard.py'
 SYSTEM_SOURCES = {APP+'/navi48test': ROOT/'research/builds/macos-20261101/refresh-60/navi48test/navi48test'}
 # the Metal components the live bundle-33 guard pins (stage33-memtype-v1; its Info.plist version is 33)
@@ -478,7 +482,18 @@ RELEASES['0.0.680'] = {**RELEASES['0.0.679'],
                                   'new': 'Navi48Bringup-contexts-0.0.680.kext'}],
                        'extras': {'RECOVERY/pre-contexts-680-config.plist': 'baseline'},
                        'carried': {**RELEASES['0.0.679']['carried'], 'RECOVERY/pre-contexts-679-config.plist': CONFIG_678_SHA}}
-LIVE_METAL_GUARDS = frozenset('live-%d' % version for version in range(669, 681))
+RELEASES['0.0.681'] = {**RELEASES['0.0.680'],
+                       'new': 'Navi48Bringup-contexts-0.0.681.kext',
+                       'recovery': 'RECOVERY/pre-contexts-681-config.plist',
+                       'from': BUNDLE_680, 'from_kernel_sha': KERNEL_680_SHA, 'from_config_sha': CONFIG_680_SHA,
+                       'base': 'reviewed-candidate-680', 'base_kernel_sha': KERNEL_680_SHA,
+                       'kernel_sha': KERNEL_681_SHA, 'guard': 'live-681',
+                       'strings': RELEASES['0.0.680']['strings'] + ('Navi48,Telemetry', 'THMHotspotC', 'SMULayoutVerified', 'VRAMVisibleFreeBytes'),
+                       'edits': [{'path': 'Kernel/Add/7/BundlePath', 'old': BUNDLE_680,
+                                  'new': 'Navi48Bringup-contexts-0.0.681.kext'}],
+                       'extras': {'RECOVERY/pre-contexts-681-config.plist': 'baseline'},
+                       'carried': {**RELEASES['0.0.680']['carried'], 'RECOVERY/pre-contexts-680-config.plist': CONFIG_679_SHA}}
+LIVE_METAL_GUARDS = frozenset('live-%d' % version for version in range(669, 682))
 # binary_checks 'not-run' (0.0.669): the OpenCore validator and the probe's self-test are research-tree executables, so the preparation
 # does not run them. The payload records that; the installer must validate EFI/OC/config.plist before installing.
 DEFERRED_CHECKS = {'ocvalidate': 'not run: research-tree executable; validate EFI/OC/config.plist before installation',
@@ -871,6 +886,8 @@ KERNEL_BRANCH_679 = KERNEL_BRANCH_678.replace(r'\(0\.0\.678\)', r'\(0\.0\.679\)'
 HOOK_678_TO_679_LINES = tuple((after, after.replace('0.0.678', '0.0.679').replace(r'0\.0\.678', r'0\.0\.679')) for _, after in HOOK_677_TO_678_LINES)
 KERNEL_BRANCH_680 = KERNEL_BRANCH_679.replace(r'\(0\.0\.679\)', r'\(0\.0\.680\)').replace('STOP expected kernel 679 or 665', 'STOP expected kernel 680 or 665')
 HOOK_679_TO_680_LINES = tuple((after, after.replace('0.0.679', '0.0.680').replace(r'0\.0\.679', r'0\.0\.680')) for _, after in HOOK_678_TO_679_LINES)
+KERNEL_BRANCH_681 = KERNEL_BRANCH_680.replace(r'\(0\.0\.680\)', r'\(0\.0\.681\)').replace('STOP expected kernel 680 or 665', 'STOP expected kernel 681 or 665')
+HOOK_680_TO_681_LINES = tuple((after, after.replace('0.0.680', '0.0.681').replace(r'0\.0\.680', r'0\.0\.681')) for _, after in HOOK_679_TO_680_LINES)
 
 
 def bump_guard_679(original, probe_sha):
@@ -881,6 +898,11 @@ def bump_guard_679(original, probe_sha):
 def bump_guard_680(original, probe_sha):
     """Prepare the 0.0.680 activation guard from the installed 0.0.679 guard."""
     return bump_recent_guard(original, probe_sha, 679, 680, KERNEL_BRANCH_679, KERNEL_BRANCH_680, HOOK_679_TO_680_LINES)
+
+
+def bump_guard_681(original, probe_sha):
+    """Prepare the 0.0.681 activation guard from the installed 0.0.680 guard."""
+    return bump_recent_guard(original, probe_sha, 680, 681, KERNEL_BRANCH_680, KERNEL_BRANCH_681, HOOK_680_TO_681_LINES)
 
 
 def bump_recent_guard(original, probe_sha, old_build, new_build, old_branch, new_branch, hook_lines):
@@ -992,6 +1014,9 @@ def make_guard(rel, original, probe_sha, version):
     if rel['guard'] == 'live-680':
         if version != '0.0.680': raise ValueError('The live-680 guard is only derived for 0.0.680')
         return bump_guard_680(original, probe_sha)
+    if rel['guard'] == 'live-681':
+        if version != '0.0.681': raise ValueError('The live-681 guard is only derived for 0.0.681')
+        return bump_guard_681(original, probe_sha)
     return guard_live(original, probe_sha, version) if rel['guard'] == 'live' else guard_text(original, probe_sha, version)
 
 
@@ -1164,6 +1189,12 @@ def reviewed_base(build, rel):
     if rel.get('base') is None:
         return len(build.get('baseline_sections', {})) == 7
     proof = build.get('base_verified') or {}
+    if rel['base'] == 'reviewed-candidate-680':
+        base = json.loads(BASE_680_MANIFEST.read_text())
+        return (proof.get('manifest') == str(BASE_680_MANIFEST.relative_to(ROOT)) and proof.get('binary_sha256') == rel['base_kernel_sha']
+                and proof.get('candidate_inputs_checked') == len(base.get('candidate_inputs', {}))
+                and base.get('candidate_version') == '0.0.680' and base.get('candidate_binary_sha256') == rel['base_kernel_sha']
+                and build.get('baseline_inputs') == base.get('candidate_inputs'))
     if rel['base'] == 'reviewed-candidate-679':
         base = json.loads(BASE_679_MANIFEST.read_text())
         return (proof.get('manifest') == str(BASE_679_MANIFEST.relative_to(ROOT)) and proof.get('binary_sha256') == rel['base_kernel_sha']

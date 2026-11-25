@@ -53,6 +53,9 @@ bool submit_refused();
 // 0.0.675: the thermal clamp is in force (the SMU accepted the Low power state for a TRIP).
 bool clamped();
 
+// Latest independent THM sample. False while no valid sample is available.
+bool hotspot_c(int32_t &temperature);
+
 // 0.0.675: the power state the watchdog restores when a thermal clamp is released (amdgpu::SMUPowerState: Low = the boot idle clamp, the
 // default; Auto when navi48-idle-clamp=0). Navi48Bringup::runStages sets it from ctx.idleClamp.
 void set_restore_state(uint32_t smuPowerState);
