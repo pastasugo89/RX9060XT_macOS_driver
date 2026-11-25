@@ -140,6 +140,20 @@ Basemark's native capability query in a new process now returns BC7 for the
 RX 9060 XT. The UI needs a fresh process to refresh its API list. A full benchmark
 run and desktop validation after reboot remain pending.
 
+
+## Orchestrator session, 2026-11-25 ~18:50 (Claude)
+- Synced to origin/main f12f086; the older local uncommitted state was saved as `git stash@{0}`
+  ("pre-sync local work 2026-11-25 18:50") and as research/builds/macos-20261125/pre-sync/local-uncommitted.diff.
+- PR #3 (telemetry) marked ready and merged (its commits were already in main).
+- Live: kernel 0.0.683, bundle 43.
+- Basemark crash after the 128 MiB fix (17:18, BasemarkGPU_metal-2026-11-25-171806.ips): SIGABRT in
+  -[_MTLCommandEncoder dealloc] from -[N48RenderEncoder initWithCommandBuffer:descriptor:]; last driver line
+  "render pass: no colour or depth/stencil attachments" (Navi48Device.m ~5818). Basemark uses an attachment-less
+  render pass (renderTargetWidth/Height), and our init's `return nil` after super-init aborts the app.
+  Agent running: bundle 44 = attachment-less render passes + safe nil paths -> research/builds/macos-20261125/bundle44-noattach/.
+- Agent running: kernel 0.0.684 = Linux display clock floors (DALSMC) so UCLK can switch without OPTC underflows,
+  plus boot logging of display clocks around ufmon events -> research/builds/macos-20261125/kernel-684/.
+
 ## Next planned steps
 
 1. Relaunch Basemark to refresh backend selection and retest WindowServer, Aquarium and
