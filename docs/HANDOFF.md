@@ -43,7 +43,7 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 | Bundle format-copy patch (sRGB/linear twins) | part of the 0.0.682 agent | research/builds/macos-20261125/bundle-formatcopy/ |
 | Bundle 40: texture views of cube/2D-array textures | running | research/builds/macos-20261125/bundle40-views/ |
 | RADV release build (asserts/validation off, faster dlopen) | running | research/builds/macos-20261125/radv-release/ |
-| macOS 26.7.2 upgrade evaluation | running | research/reports/macos-20261125/macos-26.7-upgrade.md |
+| macOS 26.7.2 upgrade evaluation | done: do NOT upgrade now (stack pinned to 25G83); port project | research/reports/macos-20261125/macos-26.7-upgrade.md |
 | AMDHV repo audit | done: hypervisor (VMX->SVM) experiment, no licence, not useful for the GPU | research/reports/macos-20261125/amdhv-audit.md |
 
 ## Ready but not installed
