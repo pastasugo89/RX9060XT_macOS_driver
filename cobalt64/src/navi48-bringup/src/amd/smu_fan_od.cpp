@@ -4,8 +4,7 @@
 //
 //  WHEN. Once per boot, from Navi48Bringup::runStages right after GFX clock gating: the full bring-up ladder completed, so smc_hw_setup ran
 //  EnableAllSmuFeatures and the protection gate saw THROTTLERS, FW_CTF and FAN_CONTROL running. Never from a user client, never live.
-//  WHAT. Boot-arg navi48-fan-zerorpm absent: nothing is read or written (the PMFW default, exactly 0.0.675). =0: FanZeroRpmEnable = 0 (the fans
-//  always spin). =1: FanZeroRpmEnable = 1. Any other value: nothing.
+//  WHAT. Boot-arg navi48-fan-zerorpm absent: nothing is read or written (the PMFW default, exactly 0.0.675). =0: request FanZeroRpmEnable = 0. =1: FanZeroRpmEnable = 1. Any other value: nothing.
 //  HOW. Under the shared SMU mailbox lock (SmuSeq, held for the whole sequence, so no metrics read, clamp or UCLK pin interleaves):
 //    1. TransferTableSmu2Dram(TABLE_COMBO_PPTABLE) into the driver-table slot (canary-filled first), the PPTable layout and the OD limits checked;
 //    2. TransferTableSmu2Dram(TABLE_OVERDRIVE) twice, both reads identical, the fan block plausible against the limits; logged in full;
@@ -134,7 +133,11 @@ uint32_t smu_fan_zerorpm_boot(const DeviceContext &dev, bool fullPath)
     }
     // One metrics read for the registry (the fans take seconds to react; `navi48test metrics` shows them live).
     SmuMetricsResult m{};
-    if (smu_read_metrics(dev, &m) == kIOReturnSuccess) { gFan.rpm = m.metrics.AvgFanRpm; gFan.pwm = m.metrics.AvgFanPwm; gFan.metricsOk = 1u; }
+    if (smu_read_metrics(dev, &m) == kIOReturnSuccess) {
+        gFan.rpm = m.metrics.AvgFanRpm; gFan.pwm = m.metrics.AvgFanPwm; gFan.metricsOk = 1u;
+        gFan.metricsIf = m.if_version; gFan.metricsLayoutVerified = m.layout_verified;
+        gFan.metricsPlausible = m.values_plausible;
+    }
     return verdict;
 }
 
@@ -145,14 +148,20 @@ void smu_fan_describe(char *t, size_t n)
     using namespace n48od;
     const Result &r = gFan;
     if (r.verdict == kDefault || r.verdict == kNotRun) {
-        snprintf(t, n, "zero-rpm: %s; %s (navi48-fan-zerorpm=0 keeps the fans spinning)", want_name(r.want), verdict_name(r.verdict));
+        snprintf(t, n, "zero-rpm: %s; %s; fan policy and operation not observed", want_name(r.want), verdict_name(r.verdict));
+        return;
+    }
+    if (!r.metricsOk) {
+        snprintf(t, n, "zero-rpm: %s; %s; FanZeroRpmEnable %u -> %u (0xff = not read); upload kr 0x%x arg 0x%x; fan metrics unavailable; fan operation not verified",
+                 want_name(r.want), verdict_name(r.verdict), r.before, r.after, r.kr, r.arg);
         return;
     }
     snprintf(t, n, "zero-rpm: %s; %s; FanZeroRpmEnable %u -> %u (0xff = not read), stop temp %u C, FanMode %u, target %u C; upload kr 0x%x arg 0x%x; "
-             "PPTable SkuTable 0x%x/0x%x version 0x%x, OD mask max 0x%x, zero-fan limits %u..%u, stop-temp limits %u..%u C; fan %u rpm %u%% pwm (%s)",
+             "PPTable SkuTable 0x%x/0x%x version 0x%x, OD mask max 0x%x, zero-fan limits %u..%u, stop-temp limits %u..%u C; decoded fan %u rpm %u%% pwm (IF 0x%x, layout %s, general range check %s; fan operation not verified)",
              want_name(r.want), verdict_name(r.verdict), r.before, r.after, r.stopTemp, r.fanMode, r.targetTemp, r.kr, r.arg,
              r.lim.skuStart, r.lim.skuSize, r.lim.skuVersion, r.lim.maskMax, r.lim.zeroMin, r.lim.zeroMax, r.lim.stopMin, r.lim.stopMax,
-             r.rpm, r.pwm, r.metricsOk ? "metrics at boot" : "metrics not read");
+             r.rpm, r.pwm, r.metricsIf, r.metricsLayoutVerified ? "known" : "unverified",
+             r.metricsPlausible ? "passed" : "FAILED");
 }
 
 }  // namespace amdgpu

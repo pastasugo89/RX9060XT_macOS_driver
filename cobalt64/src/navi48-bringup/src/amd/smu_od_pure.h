@@ -74,8 +74,8 @@ inline void wr32(uint8_t *b, uint32_t o, uint32_t v) { b[o] = (uint8_t)v; b[o + 
 enum Want : uint32_t { kWantDefault = 0, kWantOff = 1, kWantOn = 2, kWantInvalid = 3 };
 inline uint32_t want_of(bool present, uint32_t v) { return !present ? kWantDefault : v == 0u ? kWantOff : v == 1u ? kWantOn : kWantInvalid; }
 inline const char *want_name(uint32_t w) {
-    return w == kWantDefault ? "PMFW default (boot-arg absent)" : w == kWantOff ? "zero RPM off (navi48-fan-zerorpm=0: the fans always spin)" :
-           w == kWantOn ? "zero RPM on (navi48-fan-zerorpm=1)" : "invalid navi48-fan-zerorpm value (ignored)";
+    return w == kWantDefault ? "PMFW default (boot-arg absent)" : w == kWantOff ? "zero RPM disable requested (navi48-fan-zerorpm=0)" :
+           w == kWantOn ? "zero RPM enable requested (navi48-fan-zerorpm=1)" : "invalid navi48-fan-zerorpm value (ignored)";
 }
 
 // ---- verdicts ----
@@ -90,7 +90,7 @@ inline const char *verdict_name(uint32_t v) {
     switch (v) {
     case kNotRun: return "not run";
     case kDefault: return "unchanged (PMFW default; nothing read or written)";
-    case kApplied: return "applied and verified";
+    case kApplied: return "setting uploaded and read back (fan operation not verified)";
     case kAlready: return "already in the wanted state (nothing written)";
     case kPPTableReadFailed: return "PPTable read failed (nothing written)";
     case kPPTableLayout: return "PPTable layout is not the IF 0x2E / PPTABLE_VERSION 0x1B one (nothing written)";
@@ -194,7 +194,8 @@ struct Result {
     uint32_t before, after;              // FanZeroRpmEnable as read / as read back (0xFF = unknown)
     uint32_t stopTemp, fanMode, targetTemp;
     Limits lim;
-    uint32_t rpm, pwm, metricsOk;        // AvgFanRpm / AvgFanPwm from one metrics read after the step
+    uint32_t rpm, pwm, metricsOk;        // Raw decoded fan fields after one successful transfer; not physical validation.
+    uint32_t metricsIf, metricsLayoutVerified, metricsPlausible;
 };
 inline void init(Result &r, uint32_t want) { r = Result{}; r.want = want; r.before = 0xFFu; r.after = 0xFFu; }
 

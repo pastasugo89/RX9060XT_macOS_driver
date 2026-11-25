@@ -24,6 +24,9 @@ using namespace n48od;
 
 // ---- the offsets in smu_od_pure.h are Linux's (IF 0x2E, PPTABLE_VERSION 0x1B) ----
 static void test_layout() {
+    expect(strstr(want_name(kWantOff), "requested") != nullptr, "zero-RPM request is not a physical spin claim");
+    expect(strstr(verdict_name(kApplied), "read back") != nullptr &&
+           strstr(verdict_name(kApplied), "not verified") != nullptr, "OD readback does not claim fan operation");
     expect(sizeof(OverDriveTable_t) == kOdBytes, "sizeof OverDriveTable_t");
     expect(sizeof(OverDriveLimits_t) == kLimBytes, "sizeof OverDriveLimits_t");
     expect(offsetof(OverDriveTable_t, FeatureCtrlMask) == kOdFeatureCtrlMask, "od FeatureCtrlMask");
