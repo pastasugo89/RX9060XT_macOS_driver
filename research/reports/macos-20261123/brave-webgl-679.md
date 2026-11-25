@@ -6,6 +6,23 @@ Navi48Bringup **0.0.681**, RDNA4FB 0.0.9, accelprobe 0.0.7, `Navi48,Dpm` = PMFW 
 installed Metal bundle is **39** (installed 2026-11-23 21:32, uncommitted working-tree change). The kernel ring of
 the 0.0.679 boot (`navi48test log`) is lost, so the kernel side is argued from indirect evidence only (section 4).
 
+> **Correction, 2026-11-25 (after the merge of `4c495d0`).** Sections 1 and 3 below said that bundle 39 still fails
+> at the cube texture views. That was wrong. At 21:46:06 the **whole browser** (pid 5789, the isolated profile of
+> `brave-probe.py`) exits together with its GPU process 5795. That is the end of the probe run, not a lost context.
+> The `newTextureView: refused` lines (cube and per-face views) are therefore **not fatal**. ANGLE copes with them,
+> and Codex reports the Aquarium running on 0.0.681 + bundle 39 (10 and 1000 fish, one GPU process, no context
+> loss). The confirmed cause is the **bundle-38 cubemap descriptor refusal** (section 1, first point). Bundle 39
+> (merged in `4c495d0`, live) fixes it. The cube/2D-array view gap is still in the code (`Navi48Device.m:3329`) and
+> may be worth implementing for completeness. It is not what blocks WebGL.
+>
+> On the **admission limit** (per-UID context limit 32 -> 48 in 0.0.681): this investigation found no evidence of it
+> in the 20:37 incident. The GPU process 2674 was admitted and held `IOAccelNavi48NativeClient`, and the 21:36/21:45
+> GPU processes logged "APP probe: the kernel admitted" and "radv open: OK". The admission refusal would be a
+> separate failure mode that I did not observe (I did not see the IORegistry telemetry from that time).
+>
+> Still unexplained: why the 0.0.679/bundle-38 GPU processes logged no `Navi48Metal:` lines at all, while the
+> 21:36/21:45 ones did.
+
 ## 1. Verdict
 
 **Cause (confidence: high for the category, medium-high for the exact call):** this is case **(b)/(d)**. It is a
