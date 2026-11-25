@@ -163,9 +163,5 @@ int main(int argc, char **argv) {
               "the bundle-9 refusals of cube / 2D-array views and of level / slice ranges are gone");
         free(m);
     }
-    {   char *pl = slurp(dir, "Info.plist");
-        CHECK(pl != NULL && strstr(pl, "<key>CFBundleVersion</key>\n\t<string>40</string>") != NULL, "Info.plist: CFBundleVersion is 40");
-        free(pl);
-    }
     printf("test-b40-views: %d checks, %d failed\n", checks, fails); return fails ? 1 : 0;
 }

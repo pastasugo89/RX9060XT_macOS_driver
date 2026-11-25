@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, after boot and browser validation of kernel 0.0.682 and bundle 41. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after isolated hardware validation of the Metal 42 candidate. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -72,14 +72,35 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
   without a clamp. Fan PWM reported zero and there was no sustained RPM reading. The firmware retains its
   default fan policy. Automatic physical spin-up and speed regulation under a warmer load remain unverified.
 
+## Metal 42 candidate and fan diagnostics
+
+- Metal **42** shares cull-mode and front-face variants when RADV supports and enables extended
+  dynamic state. Draws still record the requested state. Topology and depth/stencil continue to
+  select their own variants. The fallback keeps static raster variants.
+- A texture and its views now use one layout for copies within their shared image. The driver
+  checks overlap in root-image coordinates. Independent sRGB/linear images retain the raw copy.
+- Isolated RX 9060 XT tests on kernel 0.0.682 produced identical raster readback with Metal 41 and
+  42 across cull changes, winding changes, a PSO switch and a second pass. The probe created
+  seven pipelines with 41 and two with 42. The cubemap test passed face/mip readback after a
+  shared-image copy and preserved the exact bytes in a linear-to-sRGB copy.
+- The signed 42 build is in `research/builds/macos-20261125/bundle42-raster-copy/`. Use the
+  `stage42-raster-copy-v1` profile when staging from live bundle 41. WindowServer and Brave
+  with 42 still need a boot test. Kernel 0.0.682 and Metal 41 remain active.
+- The fan diagnostic separates the policy request, readback and physical fan behavior. The
+  change built on a copy of the deployed kernel source and passed 143 host checks. It is for a
+  future kernel build. PMFW IF 0x33 RPM and physical speed regulation remain unverified.
+
 ## Next planned steps
 
-1. Validate fan spin-up and speed regulation with an independent tachometer or visual observation under a
-   monitored load. The SMU 0x33 metrics layout still needs confirmation. Establish a repeatable graphics benchmark.
-2. Run A/B trials for guarded interrupts and soft recovery independently, one boot at a time.
-3. Review the separate sRGB/linear copy change, reduce draw-time pipeline variants (F2), and defer RADV open
-   until it is needed (F5). Continue with dynamic UCLK without underflows, GFXOFF, VRAM management, VCN and
-   multi-monitor. The macOS 26.7.x port stays separate because the current stack is pinned to build 25G83.
+1. After approval, install Metal 42 and retest WindowServer, Aquarium and
+   `tools/baremetal/navi44-gpu-diagnostics/test-brave-webgl2-cubemap.py`. Compare pipeline
+   timing at login using the existing T1 logs.
+2. Validate fan spin-up and speed regulation with an independent tachometer or visual observation
+   under a monitored load. The SMU 0x33 metrics layout still needs confirmation.
+3. Run A/B trials for guarded interrupts and soft recovery independently, one boot at a time.
+4. Defer RADV open (F5) while preserving the device admission check. Continue with dynamic UCLK
+   without underflows, GFXOFF, VRAM management, VCN and multi-monitor. The macOS 26.7.x port stays
+   separate because the current stack is pinned to build 25G83.
 
 ## Key reports
 docs/STATUS.md; STATO.md (Italian log); research/reports/macos-20261112/*.md; research/reports/macos-20261114/

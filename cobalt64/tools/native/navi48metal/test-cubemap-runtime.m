@@ -113,7 +113,61 @@ int main(int argc, const char *argv[]) {
             fprintf(stderr, "cube face attachment did not clear just its own subresource\n");
             return 1;
         }
-        puts("PASS: ANGLE cubemap descriptor, reported usage, six-face GPU mipmap readback, cube / face / array views, and face attachment clear");
+        // Both views share one VkImage. Copy between different root faces
+        // and confirm the source and an unrelated subresource keep their bytes.
+        id<MTLTexture> destFace = [tex newTextureViewWithPixelFormat:MTLPixelFormatRGBA8Unorm
+            textureType:MTLTextureType2D levels:NSMakeRange(1, 1) slices:NSMakeRange(4, 1)];
+        if (!destFace) { fprintf(stderr, "destination cube view was refused\n"); return 1; }
+        cb = [queue commandBuffer];
+        blit = [cb blitCommandEncoder];
+        [blit copyFromTexture:face sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
+                   sourceSize:MTLSizeMake(1, 1, 1) toTexture:destFace destinationSlice:0
+              destinationLevel:0 destinationOrigin:MTLOriginMake(1, 1, 0)];
+        [blit endEncoding];
+        [cb commit];
+        [cb waitUntilCompleted];
+        if (cb.status != MTLCommandBufferStatusCompleted) {
+            fprintf(stderr, "shared image copy failed: %s\n", cb.error.localizedDescription.UTF8String);
+            return 1;
+        }
+        uint8_t copied[4];
+        [tex getBytes:copied bytesPerRow:4 bytesPerImage:4
+             fromRegion:MTLRegionMake2D(1, 1, 1, 1) mipmapLevel:1 slice:4];
+        [tex getBytes:pixel bytesPerRow:4 bytesPerImage:4 fromRegion:onePixel mipmapLevel:1 slice:2];
+        [tex getBytes:adjacent bytesPerRow:4 bytesPerImage:4 fromRegion:onePixel mipmapLevel:1 slice:1];
+        if (memcmp(copied, red, sizeof copied) || memcmp(pixel, red, sizeof pixel) ||
+            memcmp(adjacent, unchanged, sizeof adjacent)) {
+            fprintf(stderr, "shared image copy addressed the wrong subresource\n");
+            return 1;
+        }
+        MTLTextureDescriptor *linearDesc = [MTLTextureDescriptor
+            texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:1 height:1 mipmapped:NO];
+        linearDesc.storageMode = MTLStorageModeManaged;
+        MTLTextureDescriptor *srgbDesc = [linearDesc copy];
+        srgbDesc.pixelFormat = MTLPixelFormatRGBA8Unorm_sRGB;
+        id<MTLTexture> linear = [dev newTextureWithDescriptor:linearDesc];
+        id<MTLTexture> srgb = [dev newTextureWithDescriptor:srgbDesc];
+        if (!linear || !srgb) { fprintf(stderr, "sRGB/linear textures were refused\n"); return 1; }
+        const uint8_t raw[4] = {23, 71, 142, 255};
+        [linear replaceRegion:onePixel mipmapLevel:0 withBytes:raw bytesPerRow:4];
+        cb = [queue commandBuffer];
+        blit = [cb blitCommandEncoder];
+        [blit copyFromTexture:linear sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
+                   sourceSize:MTLSizeMake(1, 1, 1) toTexture:srgb destinationSlice:0
+              destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+        [blit endEncoding];
+        [cb commit];
+        [cb waitUntilCompleted];
+        if (cb.status != MTLCommandBufferStatusCompleted) {
+            fprintf(stderr, "sRGB/linear copy failed: %s\n", cb.error.localizedDescription.UTF8String);
+            return 1;
+        }
+        [srgb getBytes:copied bytesPerRow:4 fromRegion:onePixel mipmapLevel:0];
+        if (memcmp(copied, raw, sizeof copied)) {
+            fprintf(stderr, "sRGB/linear copy changed the stored bytes\n");
+            return 1;
+        }
+        puts("PASS: ANGLE cubemap descriptor, reported usage, six-face GPU mipmap readback, cube / face / array views, face attachment clear, and texture copy readback");
     }
     return 0;
 }
