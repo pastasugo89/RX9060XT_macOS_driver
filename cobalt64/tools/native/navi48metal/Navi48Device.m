@@ -342,6 +342,8 @@ N48_VK_FUNCS(X)
 #undef X
 static PFN_vkCreateInstance n48_vkCreateInstance;
 static PFN_vkGetInstanceProcAddr n48_gipa;
+static PFN_vkCmdSetCullModeEXT n48_vkCmdSetCullMode;
+static PFN_vkCmdSetFrontFaceEXT n48_vkCmdSetFrontFace;
 static PFN_vkGetMemoryHostPointerPropertiesEXT n48_vkGetMHPP;   // 11h.6: VK_EXT_external_memory_host
 
 static struct {
@@ -353,6 +355,7 @@ static struct {
     BOOL dbClamp;   // bundle 10: depthBiasClamp enabled on the device (a non-zero clamp in setDepthBias is passed on only then)
     BOOL dualSrc;   // bundle 32: dualSrcBlend enabled on the device (and maxFragmentDualSrcAttachments >= 1): Source1* blend factors are mapped only then
     BOOL hostExt; uint64_t hostAlign; uint64_t impTotal;   // 11h.6: external_memory_host enabled, minImportedHostPointerAlignment, bytes currently imported
+    BOOL dynamicRaster;   // extended dynamic cull mode and front face enabled and entry points resolved
     BOOL budgetExt;   // bundle 33: VK_EXT_memory_budget advertised by RADV and enabled on the device (the T1 vidmem line reads it)
 } N48R;
 // bundle 33: RADV's memory types (propertyFlags per type, copied once at device creation: n48_memtype.h decides on them) and the count of GPU-only
@@ -663,6 +666,7 @@ static BOOL n48_radv_open_once(NSError **err) {
                        (fp0.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0, (fp0.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) ? "" : ": depth textures / pipelines of this format are refused"); }
             N48LOG("radv: framebuffer sample counts color 0x%x depth 0x%x stencil 0x%x; depthBiasClamp %d", pp.limits.framebufferColorSampleCounts, pp.limits.framebufferDepthSampleCounts, pp.limits.framebufferStencilSampleCounts, pf.depthBiasClamp);
         }
+        BOOL hasDynamicRaster = NO;
         // 11e-2: measure what RADV offers for framebuffer fetch (logged once per process; the design choice is recorded in NATIVE-S4-M11.md).
         {
             uint32_t ne = 0; vkEnumerateDeviceExtensionProperties(N48R.pd, NULL, &ne, NULL);
@@ -673,6 +677,7 @@ static BOOL n48_radv_open_once(NSError **err) {
             for (NSUInteger o = 0; o < all.length; o += 600) N48LOG("radv: ext[%lu]: %s", (unsigned long)o, [all substringWithRange:NSMakeRange(o, MIN((NSUInteger)600, all.length - o))].UTF8String);
             BOOL hasRO = NO, hasLR = NO, hasFL = NO, hasDR = NO;
             for (uint32_t i = 0; i < ne; i++) {
+                if (!strcmp(ex[i].extensionName, VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME)) hasDynamicRaster = YES;
                 if (!strcmp(ex[i].extensionName, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME)) N48R.hostExt = YES;
                 if (!strcmp(ex[i].extensionName, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) N48R.budgetExt = YES;   // bundle 33
                 hasRO |= !strcmp(ex[i].extensionName, "VK_EXT_rasterization_order_attachment_access") || !strcmp(ex[i].extensionName, "VK_ARM_rasterization_order_attachment_access");
@@ -688,13 +693,26 @@ static BOOL n48_radv_open_once(NSError **err) {
             N48LOG("radv: framebuffer-fetch support: rasterization_order_attachment_access ext %d (color feature %d, depth %d, stencil %d); dynamic_rendering_local_read ext %d (feature %d); attachment_feedback_loop_layout ext %d; dynamic_rendering ext %d; classic render-pass input attachments: core 1.0",
                    hasRO, fro.rasterizationOrderColorAttachmentAccess, fro.rasterizationOrderDepthAttachmentAccess, fro.rasterizationOrderStencilAttachmentAccess, hasLR, flr.dynamicRenderingLocalRead, hasFL, hasDR);
         }
-        const char *devExts[2] = { NULL, NULL }; uint32_t nDevExts = 0;   // bundle 33: VK_EXT_memory_budget joins the external-memory-host extension when RADV has it
+        VkPhysicalDeviceExtendedDynamicStateFeaturesEXT eds = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT };
+        if (hasDynamicRaster && vkGetPhysicalDeviceFeatures2 && vkGetDeviceProcAddr) {
+            VkPhysicalDeviceFeatures2 f2 = { .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .pNext = &eds };
+            vkGetPhysicalDeviceFeatures2(N48R.pd, &f2);
+        }
+        BOOL enableDynamicRaster = hasDynamicRaster && eds.extendedDynamicState;
+        const char *devExts[3] = { NULL, NULL, NULL }; uint32_t nDevExts = 0;   // bundle 33: VK_EXT_memory_budget joins the external-memory-host extension when RADV has it
         if (N48R.hostExt) devExts[nDevExts++] = VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME;
         if (N48R.budgetExt) devExts[nDevExts++] = VK_EXT_MEMORY_BUDGET_EXTENSION_NAME;
-        VkDeviceCreateInfo dci = { .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, .queueCreateInfoCount = 1, .pQueueCreateInfos = &dq, .pEnabledFeatures = &ef,
+        if (enableDynamicRaster) devExts[nDevExts++] = VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME;
+        VkDeviceCreateInfo dci = { .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, .pNext = enableDynamicRaster ? &eds : NULL, .queueCreateInfoCount = 1, .pQueueCreateInfos = &dq, .pEnabledFeatures = &ef,
                                    .enabledExtensionCount = nDevExts, .ppEnabledExtensionNames = devExts };
         r = vkCreateDevice(N48R.pd, &dci, NULL, &N48R.dev);
         if (r != VK_SUCCESS) { N48R.err = n48_err(7, [NSString stringWithFormat:@"vkCreateDevice = %d", r]); goto fail; }
+        if (enableDynamicRaster) {
+            n48_vkCmdSetCullMode = (PFN_vkCmdSetCullModeEXT)vkGetDeviceProcAddr(N48R.dev, "vkCmdSetCullModeEXT");
+            n48_vkCmdSetFrontFace = (PFN_vkCmdSetFrontFaceEXT)vkGetDeviceProcAddr(N48R.dev, "vkCmdSetFrontFaceEXT");
+            N48R.dynamicRaster = n48_vkCmdSetCullMode && n48_vkCmdSetFrontFace;
+        }
+        N48LOG("radv: dynamic cull/front %s", N48R.dynamicRaster ? "on" : "off");
         vkGetDeviceQueue(N48R.dev, qfi, 0, &N48R.q);
         N48R.hostAlign = 4096;
         if (N48R.hostExt && vkGetDeviceProcAddr && vkGetPhysicalDeviceProperties2) {
@@ -4512,9 +4530,11 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
         .front = { (VkStencilOp)dv.front.failOp, (VkStencilOp)dv.front.passOp, (VkStencilOp)dv.front.depthFailOp, (VkCompareOp)dv.front.compareOp, 0, 0, 0 },
         .back = { (VkStencilOp)dv.back.failOp, (VkStencilOp)dv.back.passOp, (VkStencilOp)dv.back.depthFailOp, (VkCompareOp)dv.back.compareOp, 0, 0, 0 } };
     VkPipelineColorBlendStateCreateInfo cb = { .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, .attachmentCount = _na, .pAttachments = _cba };
-    VkDynamicState dyn[9]; for (unsigned i = 0; i < _pc.ndyn && i < 8; i++) dyn[i] = (VkDynamicState)_pc.dyn[i];   // bundle 10: viewport, scissor, blend constants (+ stencil masks / reference and depth bias for a depth/stencil pipeline)
+    VkDynamicState dyn[11]; for (unsigned i = 0; i < _pc.ndyn && i < 8; i++) dyn[i] = (VkDynamicState)_pc.dyn[i];   // bundle 10: viewport, scissor, blend constants (+ stencil masks / reference and depth bias for a depth/stencil pipeline)
     if (dbt) dyn[_pc.ndyn] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;   // bundle nm272 candidate: the range is set per draw, after the config's states
-    VkPipelineDynamicStateCreateInfo ds = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = _pc.ndyn + (dbt ? 1u : 0u), .pDynamicStates = dyn };
+    unsigned ndyn = _pc.ndyn + (dbt ? 1u : 0u);
+    if (N48R.dynamicRaster) { dyn[ndyn++] = VK_DYNAMIC_STATE_CULL_MODE_EXT; dyn[ndyn++] = VK_DYNAMIC_STATE_FRONT_FACE_EXT; }
+    VkPipelineDynamicStateCreateInfo ds = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, .dynamicStateCount = ndyn, .pDynamicStates = dyn };
     VkGraphicsPipelineCreateInfo gpc = { .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, .stageCount = n48_pl_stage_count(_fs != VK_NULL_HANDLE), .pStages = st, .pVertexInputState = &vi,
         .pInputAssemblyState = &ia, .pViewportState = &vps, .pRasterizationState = &rs, .pMultisampleState = &ms, .pDepthStencilState = _pc.hasDS ? &dss : NULL, .pColorBlendState = &cb,
         .pDynamicState = &ds, .layout = _pl, .renderPass = _rp };
@@ -4524,6 +4544,8 @@ static VkShaderModule n48_spv_module(const void *code, size_t bytes, const char 
 }
 - (VkPipeline)pipelineForTopology:(VkPrimitiveTopology)topo cull:(VkCullModeFlags)cull front:(VkFrontFace)front { return [self pipelineForTopology:topo cull:cull front:front ds:[self n48DSKey:NULL]]; }
 - (VkPipeline)pipelineForTopology:(VkPrimitiveTopology)topo cull:(VkCullModeFlags)cull front:(VkFrontFace)front ds:(uint32_t)dk {
+    // Share only raster variants; the topology and complete depth/stencil key still select the pipeline.
+    if (N48R.dynamicRaster) { cull = VK_CULL_MODE_NONE; front = VK_FRONT_FACE_CLOCKWISE; }
     NSNumber *k = @((uint64_t)topo | ((uint64_t)cull << 8) | ((uint64_t)front << 16) | ((uint64_t)dk << 24));
     [_lock lock];
     NSValue *v = _variants[k];
@@ -6079,6 +6101,7 @@ N48_ENCODER_USE(nil)
         if (!n48dc_enc_pipe_same(&_dc, (uint64_t)(uintptr_t)vkp)) vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkp);
     } else
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkp);
+    if (N48R.dynamicRaster) { n48_vkCmdSetCullMode(cmd, cull); n48_vkCmdSetFrontFace(cmd, front); }
     VkViewport vp = { (float)_vp.originX, (float)(_vp.originY + _vp.height), (float)_vp.width, -(float)_vp.height, (float)_vp.znear, (float)_vp.zfar };
     VkRect2D sc = { { (int32_t)_sr.x, (int32_t)_sr.y }, { (uint32_t)_sr.width, (uint32_t)_sr.height } };
     vkCmdSetViewport(cmd, 0, 1, &vp); vkCmdSetScissor(cmd, 0, 1, &sc); vkCmdSetBlendConstants(cmd, _blend);
