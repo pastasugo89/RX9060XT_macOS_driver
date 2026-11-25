@@ -39,7 +39,7 @@ struct ScatteredMem {
     uint32_t  npages { 0 };         // size / 4096
     bool valid() const { return md != nullptr && cpu != nullptr && pages != nullptr && npages != 0u && size == (uint64_t)npages * 4096ull; }
 };
-// `size`: a whole number of pages, 1..64 MiB. Returns kIOReturnSuccess (m.valid()) or an error; on error nothing is held. MAY BLOCK: never call it
+// `size`: a whole number of pages, up to kGttMaxBo. Returns kIOReturnSuccess (m.valid()) or an error; on error nothing is held. MAY BLOCK: never call it
 // while a lock is held (IOBufferMemoryDescriptor's documented rule).
 kern_return_t sysmem_alloc_scattered(ScatteredMem &m, uint64_t size);
 void          sysmem_free_scattered(ScatteredMem &m);   // complete() + release() of the descriptor, then the page list; a no-op on an empty record

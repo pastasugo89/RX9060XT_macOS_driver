@@ -17,8 +17,8 @@
 namespace n48native {
 namespace s1c {
 
-constexpr uint64_t kGttMaxPages = kGttMaxBo / kPage;   // 16384 pages: the page list of the largest GTT BO (128 KiB)
-static_assert(kGttMaxPages == 16384u, "64 MiB / 4 KiB");
+constexpr uint64_t kGttMaxPages = kGttMaxBo / kPage;   // 32768 pages: the page list of the largest GTT BO (256 KiB)
+static_assert(kGttMaxPages == 32768u, "128 MiB / 4 KiB");
 
 // The size rule of a GTT BO: non-zero, a whole number of pages, at most kGttMaxBo (the page list is sized for that).
 constexpr bool gtt_size_ok(uint64_t size) { return size != 0ull && (size & (kPage - 1ull)) == 0ull && size <= kGttMaxBo; }

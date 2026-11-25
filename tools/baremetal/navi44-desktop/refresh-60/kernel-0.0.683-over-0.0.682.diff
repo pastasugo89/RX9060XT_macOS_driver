@@ -1,0 +1,35 @@
+--- a/src/amd/native_s1c_pure.h
++++ b/src/amd/native_s1c_pure.h
+@@ -31,7 +31,7 @@
+ constexpr uint64_t kMaxAlign   = 2ull << 20;
+ constexpr uint64_t kMaxBoBytes = 1ull << 40;        // overflow guard only; real limits are the pools
+ constexpr uint64_t kGttCap     = 512ull << 20;      // per client
+-constexpr uint64_t kGttMaxBo   = 64ull << 20;
++constexpr uint64_t kGttMaxBo   = 128ull << 20;
+ constexpr uint64_t kPtCap      = 32ull << 20;       // page-table bytes per client
+ constexpr uint32_t kMaxMaps    = 4096u;
+ constexpr uint64_t kVaFirst    = 0x10000ull;
+--- a/src/amd/native_gtt_pure.h
++++ b/src/amd/native_gtt_pure.h
+@@ -17,8 +17,8 @@
+ namespace n48native {
+ namespace s1c {
+ 
+-constexpr uint64_t kGttMaxPages = kGttMaxBo / kPage;   // 16384 pages: the page list of the largest GTT BO (128 KiB)
+-static_assert(kGttMaxPages == 16384u, "64 MiB / 4 KiB");
++constexpr uint64_t kGttMaxPages = kGttMaxBo / kPage;   // 32768 pages: the page list of the largest GTT BO (256 KiB)
++static_assert(kGttMaxPages == 32768u, "128 MiB / 4 KiB");
+ 
+ // The size rule of a GTT BO: non-zero, a whole number of pages, at most kGttMaxBo (the page list is sized for that).
+ constexpr bool gtt_size_ok(uint64_t size) { return size != 0ull && (size & (kPage - 1ull)) == 0ull && size <= kGttMaxBo; }
+--- a/src/amd/amdgpu_sysmem.h
++++ b/src/amd/amdgpu_sysmem.h
+@@ -39,7 +39,7 @@
+     uint32_t  npages { 0 };         // size / 4096
+     bool valid() const { return md != nullptr && cpu != nullptr && pages != nullptr && npages != 0u && size == (uint64_t)npages * 4096ull; }
+ };
+-// `size`: a whole number of pages, 1..64 MiB. Returns kIOReturnSuccess (m.valid()) or an error; on error nothing is held. MAY BLOCK: never call it
++// `size`: a whole number of pages, up to kGttMaxBo. Returns kIOReturnSuccess (m.valid()) or an error; on error nothing is held. MAY BLOCK: never call it
+ // while a lock is held (IOBufferMemoryDescriptor's documented rule).
+ kern_return_t sysmem_alloc_scattered(ScatteredMem &m, uint64_t size);
+ void          sysmem_free_scattered(ScatteredMem &m);   // complete() + release() of the descriptor, then the page list; a no-op on an empty record

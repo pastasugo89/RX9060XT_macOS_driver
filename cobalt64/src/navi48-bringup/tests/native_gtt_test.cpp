@@ -4,10 +4,10 @@
 //   (from the cobalt64 directory, as tools/hosttests/run-cobalt64-tests.py runs it. The argument is the navi48-bringup directory the source pins are
 //   read from: the repo's, or a candidate tree's; it must contain src/amd/native_s1c.cpp and src/amd/amdgpu_sysmem.cpp.)
 // Covers:
-//   T1  gtt_size_ok / gtt_admit: malformed sizes (BadArg); the 64 MiB per-BO maximum and the 512 MiB client cap (NoMemory); no wrap; the admission
+//   T1  gtt_size_ok / gtt_admit: malformed sizes (BadArg); the per-BO maximum and the 512 MiB client cap (NoMemory); no wrap; the admission
 //       of a request after a free;
-//   T2  gtt_collect over a fake descriptor: a fully scattered 64 MiB BO (16384 one-page runs), scattered runs of mixed lengths, every refusal;
-//   T3  gtt_map into a real 4-level tree (a fake memory): a scattered 64 MiB BO mapped in pieces at BO offsets: every page resolves to ITS physical
+//   T2  gtt_collect over a fake descriptor: a fully scattered maximum-size BO, scattered runs of mixed lengths, every refusal;
+//   T3  gtt_map into a real 4-level tree (a fake memory): a scattered maximum-size BO mapped in pieces at BO offsets: every page resolves to ITS physical
 //       page with exactly SYSTEM|SNOOPED|R|W; out-of-range or malformed ranges are refused without touching the tree; a failed map leaves no leaf;
 //   T4  gtt_fence_pte_pa: each page's own address; out of range = 0; a fence PTE built from it is the page's address, not base + page * 4 KiB;
 //   T5  the lifecycle over the pure functions: admit -> collect -> map -> fence -> unmap -> free, with the failed-flush rule (memory_may_free_after_flush);
@@ -65,15 +65,16 @@ constexpr uint64_t MiB = 1ull << 20;
 // ---- T1 ----------------------------------------------------------------------------------------------------------------------------------------
 static void t1_admission() {
     expect(gtt_size_ok(kPage) && gtt_size_ok(kGttMaxBo) && !gtt_size_ok(0) && !gtt_size_ok(kGttMaxBo + kPage) && !gtt_size_ok(0x1800),
-           "T1: a GTT size is a page multiple, non-zero, at most 64 MiB");
+           "T1: a GTT size is a page multiple, non-zero, within the per-BO limit");
     expect_u("T1: size 0 is BadArg", gtt_admit(0, 0), kBadArg);
     expect_u("T1: an unaligned size is BadArg", gtt_admit(0x1800, 0), kBadArg);
-    expect_u("T1: 64 MiB on an empty client: admitted", gtt_admit(kGttMaxBo, 0), kOk);
-    expect_u("T1: 64 MiB + 4 KiB: NoMemory (per-BO maximum)", gtt_admit(kGttMaxBo + kPage, 0), kNoMemory);
-    expect_u("T1: the cap: 448 MiB held + 64 MiB = 512 MiB: admitted", gtt_admit(kGttMaxBo, 448 * MiB), kOk);
-    expect_u("T1: the cap: 449 MiB held + 64 MiB: NoMemory", gtt_admit(kGttMaxBo, 449 * MiB), kNoMemory);
+    expect_u("T1: maximum-size BO on an empty client: admitted", gtt_admit(kGttMaxBo, 0), kOk);
+    expect_u("T1: maximum-size BO + 4 KiB: NoMemory (per-BO maximum)", gtt_admit(kGttMaxBo + kPage, 0), kNoMemory);
+    const uint64_t held = kGttCap - kGttMaxBo;
+    expect_u("T1: a maximum-size BO brings usage to 512 MiB: admitted", gtt_admit(kGttMaxBo, held), kOk);
+    expect_u("T1: a maximum-size BO would exceed the cap by one page: NoMemory", gtt_admit(kGttMaxBo, held + kPage), kNoMemory);
     expect_u("T1: the running total near 2^64 does not wrap the cap open", gtt_admit(kPage, ~0ull - 100), kNoMemory);
-    expect_u("T1: a free restores the room (512 MiB held after one 64 MiB free: admitted)", gtt_admit(kGttMaxBo, 448 * MiB), kOk);
+    expect_u("T1: freeing a maximum-size BO restores room for another", gtt_admit(kGttMaxBo, held), kOk);
     expect_u("T1: a request the cap refuses is refused whatever its size is", gtt_admit(kPage, kGttCap), kNoMemory);
 }
 
@@ -91,12 +92,12 @@ struct FakeSeg {   // (physical base, length) runs laid end to end
 };
 static void t2_collect() {
     static uint64_t out[kGttMaxPages];
-    {   // the whole 64 MiB, every page in its own run and in a scattered order
-        FakeSeg s; for (uint64_t i = 0; i < kGttMaxPages; i++) s.runs.push_back({ 0x100000000ull + ((i * 7919ull) % 20011ull) * 0x3000ull, kPage });
+    {   // the maximum-size BO, every page in its own run and in a scattered order
+        FakeSeg s; for (uint64_t i = 0; i < kGttMaxPages; i++) s.runs.push_back({ 0x100000000ull + ((i * 7919ull) % 40009ull) * 0x3000ull, kPage });
         std::memset(out, 0, sizeof out);
-        expect_u("T2: a fully scattered 64 MiB BO collects", gtt_collect(s, kGttMaxBo, out, kGttMaxPages), kOk);
+        expect_u("T2: a fully scattered maximum-size BO collects", gtt_collect(s, kGttMaxBo, out, kGttMaxPages), kOk);
         bool same = true;
-        for (uint64_t i = 0; i < kGttMaxPages; i++) same = same && out[i] == 0x100000000ull + ((i * 7919ull) % 20011ull) * 0x3000ull;
+        for (uint64_t i = 0; i < kGttMaxPages; i++) same = same && out[i] == 0x100000000ull + ((i * 7919ull) % 40009ull) * 0x3000ull;
         expect(same, "T2: every scattered page is its own physical page, in BO order");
     }
     {   // runs of mixed length: 3, 1, 5 pages
@@ -111,7 +112,7 @@ static void t2_collect() {
     { FakeSeg s; s.runs = { { 0x0001000000000000ull, 4 * kPage } }; expect_u("T2: an address above the PTE field", gtt_collect(s, 2 * kPage, out, kGttMaxPages), kBadArg); }
     { FakeSeg s; s.runs = { { 0x10000000, 4 * kPage } };       expect_u("T2: a size that is not a page multiple", gtt_collect(s, 0x1800, out, kGttMaxPages), kBadArg); }
     { FakeSeg s; s.runs = { { 0x10000000, 4 * kPage } };       expect_u("T2: size 0", gtt_collect(s, 0, out, kGttMaxPages), kBadArg); }
-    { FakeSeg s; s.runs = { { 0x10000000, 4 * kPage } };       expect_u("T2: 64 MiB + 4 KiB refused", gtt_collect(s, kGttMaxBo + kPage, out, kGttMaxPages), kBadArg); }
+    { FakeSeg s; s.runs = { { 0x10000000, 4 * kPage } };       expect_u("T2: maximum-size BO + 4 KiB refused", gtt_collect(s, kGttMaxBo + kPage, out, kGttMaxPages), kBadArg); }
     { FakeSeg s; s.runs = { { 0x10000000, 4 * kPage } };       expect_u("T2: a page list too small for the size", gtt_collect(s, 4 * kPage, out, 3), kBadArg); }
 }
 
@@ -123,7 +124,7 @@ struct FakeMem {   // page-table memory addressed by pa; pagesLeft limits the ta
     void wr(uint64_t pa, uint32_t idx, uint64_t v) { auto &tb = t[pa]; tb[idx] = v; writes++; }
     uint64_t alloc_page() { if (pagesLeft == 0) return 0; pagesLeft--; const uint64_t pa = next; next += 0x1000; t[pa] = {}; return pa; }
 };
-static uint64_t scattered_pa(uint64_t i) { return 0x200000000ull + ((i * 7919ull) % 20011ull) * 0x1000ull; }   // distinct for i < 20011
+static uint64_t scattered_pa(uint64_t i) { return 0x200000000ull + ((i * 7919ull) % 40009ull) * 0x1000ull; }   // distinct for i < 40009
 static void t3_map() {
     const uint64_t leafGtt = leaf_flags(N48N_VM_PAGE_READABLE | N48N_VM_PAGE_WRITEABLE, false, true);
     expect_u("T3: the GTT leaf is exactly SYSTEM|SNOOPED|R|W|VALID", leafGtt, kPteValid | kPteSystem | kPteSnooped | kPteRead | kPteWrite);
@@ -131,14 +132,14 @@ static void t3_map() {
     for (uint64_t i = 0; i < kGttMaxPages; i++) pages[i] = scattered_pa(i);
     {   // the whole BO at once at a base in the low half, then pieces at odd BO offsets
         FakeMem m; const uint64_t root = m.alloc_page();
-        expect_u("T3: a 64 MiB scattered BO maps", gtt_map(root, 0x200000ull, kGttMaxBo, 0, kGttMaxBo, pages, kGttMaxPages, leafGtt, m), kOk);
+        expect_u("T3: a maximum-size scattered BO maps", gtt_map(root, 0x200000ull, kGttMaxBo, 0, kGttMaxBo, pages, kGttMaxPages, leafGtt, m), kOk);
         bool ok = true, flags = true;
         for (uint64_t i = 0; i < kGttMaxPages; i++) {
             uint64_t leaf = 0; const uint64_t got = pt_walk(root, 0x200000ull + i * kPage, m, &leaf);
             if (got != pages[i]) ok = false;
             if ((leaf & ~kPtePaMask & ~kPteIsPte) != leafGtt) flags = false;
         }
-        expect(ok, "T3: every page of the 64 MiB mapping resolves to its OWN physical page");
+        expect(ok, "T3: every page of the maximum-size mapping resolves to its OWN physical page");
         expect(flags, "T3: every leaf carries exactly SYSTEM|SNOOPED|R|W|VALID");
         pt_unmap(root, 0x200000ull, kGttMaxPages, m);
         bool gone = true; for (uint64_t i = 0; i < kGttMaxPages; i++) if (pt_walk(root, 0x200000ull + i * kPage, m, nullptr) != 0) gone = false;

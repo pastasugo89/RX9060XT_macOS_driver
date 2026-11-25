@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, after installing Metal 43 and verifying Basemark capability detection. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after staging the 0.0.683 fix for Basemark startup. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -34,7 +34,28 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
 - Never pipe between two `sudo -S` calls; never write the sudo password into files or commits.
 - Do not read NootedRed/NootRX source. AMD firmware and Apple binaries are never committed.
 - Number new releases after the highest seen anywhere (check `git fetch`, remote branches, PRs, live versions):
-  the staged versions are kernel 0.0.682 and Metal bundle 41.
+  the staged versions are kernel 0.0.683 and Metal bundle 43.
+
+## Basemark startup and kernel 0.0.683
+
+Basemark detects Metal 43 and BC7, then crashes during GPU resource-manager
+initialization. It requests a 134,217,728-byte shared Metal buffer. The installed
+0.0.682 kernel permits 64 MiB per GTT allocation. The driver reports
+`VK_ERROR_OUT_OF_DEVICE_MEMORY` and the benchmark crashes in `bzero`. An
+independent Metal allocation reproduced the failure on the RX 9060 XT.
+
+The 0.0.683 candidate raises the per-allocation GTT limit to 128 MiB. The
+512 MiB per-session budget and the host-import limits are unchanged. The
+regression test exercises the maximum-size buffer with 32,768 scattered pages
+and checks that an additional page exceeds the limit. The signed candidate and
+the verified EFI payload are under `research/builds/macos-20261125/kernel-683/`.
+All 12 host test programs passed. OpenCore validation and a simulated EFI
+install and restore passed. The payload retains the Metal 43 pins and replaces
+only the kernel entry in the OpenCore configuration.
+
+The new kernel is staged. After installation and reboot, confirm that 0.0.683
+loaded and repeat the 128 MiB shared-buffer allocation before testing Basemark.
+Benchmark execution and thermal behavior under benchmark load remain unverified.
 
 ## Candidates prepared on 2026-11-25
 

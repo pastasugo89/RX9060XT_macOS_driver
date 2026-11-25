@@ -150,7 +150,8 @@ class CandidateBoundary(unittest.TestCase):
         self.assertEqual(build.release_build('0.0.680'), 680)
         self.assertEqual(build.release_build('0.0.681'), 681)
         self.assertEqual(build.release_build('0.0.682'), 682)   # guarded interrupts, soft recovery, wait fixes: the 0.0.681 tree plus the reviewed 0.0.682 patch
-        for version in ('0.0.665', '0.0.683', '0.0.667.1', '0.1.668'):
+        self.assertEqual(build.release_build('0.0.683'), 683)
+        for version in ('0.0.665', '0.0.684', '0.0.667.1', '0.1.668'):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 build.release_build(version)
 
