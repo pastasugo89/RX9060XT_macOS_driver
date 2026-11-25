@@ -1,0 +1,947 @@
+--- a/src/amd/clkfloor.cpp
++++ b/src/amd/clkfloor.cpp
+@@ -0,0 +1,387 @@
++//
++//  clkfloor.cpp - build 0.0.684: the display clock floors (DALSMC, as Linux's dcn401 clk_mgr) and the boot clock trace. See clkfloor.h;
++//  every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp, which also pins this file's shape).
++//
++//  What this file WRITES: the three DAL mailbox dwords, through smu_dal_send with the floor allowlist only (n48dalfloor::allow decides every message)
++//  (fsend below is the single entry). Everything else is read-only: the DFS / PLL readback of DISPCLK / DPPCLK (CLK0 registers), and the PMFW
++//  metrics table (smu_read_metrics, under the shared mailbox lock, as the user client's `metrics` does).
++//
++#include <string.h>
++#include <IOKit/IOLib.h>
++#include <kern/clock.h>
++#include <pexpert/pexpert.h>
++
++#include "clkfloor.h"
++#include "clkfloor_pure.h"
++#include "smu_dal.h"
++#include "smu_dal_pure.h"
++#include "amdgpu_smu.h"
++#include "amdgpu_log.h"
++
++#define FLOOR_LOG(fmt, ...) AMDGPU_LOG("dalfloor", fmt, ##__VA_ARGS__)
++#define TRACE_LOG(fmt, ...) AMDGPU_LOG("clktrace", fmt, ##__VA_ARGS__)
++
++namespace amdgpu {
++
++using namespace n48dalfloor;
++
++namespace {
++struct StepRes { uint32_t msg, param, rc, resp, arg, us, refuse, statusUs, status; bool statusDone; };
++struct FloorState {
++    bool ran;
++    uint32_t verdict, parts, bootArg;
++    bool bootArgPresent;
++    uint32_t smuVer, ifVer, hdrVer;
++    Levels dcf, uclk;
++    bool dcfOk, uclkOk;
++    n48dal::Decoded before, after, fixed;
++    Plan plan;
++    StepRes steps[kMaxSteps];
++    uint32_t nSteps, nOk;
++    uint32_t corrective;          // 0 none; 1 a display clock fell and was raised back; 2 the raise did not verify
++    uint64_t atMs, tookMs;
++    uint32_t dcfFloorMhz;
++    uint32_t hActive, vActive, hTotal, vTotal;
++};
++FloorState gF;
++
++uint64_t now_ms() {
++    uint64_t t = 0, ns = 0;
++    clock_get_uptime(&t);
++    absolutetime_to_nanoseconds(t, &ns);
++    return ns / 1000000ull;
++}
++uint64_t now_us() {
++    uint64_t t = 0, ns = 0;
++    clock_get_uptime(&t);
++    absolutetime_to_nanoseconds(t, &ns);
++    return ns / 1000ull;
++}
++uint32_t us32(uint64_t v) { return v > 0xFFFFFFFFull ? 0xFFFFFFFFu : (uint32_t)v; }
++
++// The DISPCLK / DPPCLK readback (read-only): CLK0 PLL_REQ, the two DFS DIDs, DENTIST. Unreadable (outside the mapping) = all-ones = not ok.
++n48dal::Decoded read_clocks(const DeviceContext &dev) {
++    return n48dal::decode_clocks(RREG32(dev, n48dal::kRegPllReq), RREG32(dev, n48dal::kRegDfs0), RREG32(dev, n48dal::kRegDfs1), RREG32(dev, n48dal::kRegDentist));
++}
++bool clocks_usable(const n48dal::Decoded &d) { return d.ok && d.dentAgree && d.chgDone; }
++
++Limits limits() { return Limits{ gF.dcfOk ? levels_min(gF.dcf) : 0u, gF.dcfOk ? levels_max(gF.dcf) : 0u, gF.uclkOk ? levels_min(gF.uclk) : 0u }; }
++
++// The floor allowlist as the shared sender's floorAllow hook (it runs first in smu_dal_send, before the lock and any register access).
++uint32_t floor_allow(uint32_t msg, uint32_t param) {
++    const uint32_t why = allow(gF.parts, msg, param, limits());
++    if (why != kAllow) FLOOR_LOG("REFUSED msg=0x%02x param=0x%08x: %s (nothing sent)", msg, param, refuse_name(why));
++    return why == kAllow ? 0u : 0x100u | why;
++}
++// THE ONLY SENDER OF THIS FILE: the shared DAL sender (BAR5 bounds, the shared lock, RESP != 0 before, <= 2 s wait) with the floor allowlist.
++kern_return_t fsend(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m) {
++    return smu_dal_send(dev, msg, param, m, floor_allow);
++}
++// A reply that says the mailbox itself is unhealthy (no answer, RESP 0 before the send, no device, no lock): stop everything after it.
++bool mailbox_lost(const DalMsg &m) {
++    return m.rc == (uint32_t)kIOReturnTimeout || m.rc == (uint32_t)kIOReturnNotReady || m.rc == (uint32_t)kIOReturnNoDevice || m.rc == (uint32_t)kIOReturnNoResources;
++}
++
++// ReturnHardMinStatus until bit (1 << clk), every 1 ms, <= 1 s (dcn401_smu_wait_hard_min_status). Returns true when done; *lost on a mailbox failure.
++bool wait_hard_min(const DeviceContext &dev, uint32_t clk, StepRes &r, bool *lost) {
++    const uint64_t t0 = now_us();
++    for (;;) {
++        DalMsg m;
++        const kern_return_t kr = fsend(dev, kMsgReturnHardMinStatus, 0u, &m);
++        if (kr == kIOReturnSuccess) { r.status = m.arg; if ((m.arg & (1u << clk)) != 0u) { r.statusUs = us32(now_us() - t0); return true; } }
++        else if (mailbox_lost(m) || m.refuse != 0u) { *lost = mailbox_lost(m); r.statusUs = us32(now_us() - t0); return false; }
++        if (now_us() - t0 >= 1000000ull) { r.statusUs = us32(now_us() - t0); return false; }
++        IOSleep(1);
++    }
++}
++
++// GetDpmFreqByIndex(clk, 0xFF), then each level (dcn401_init_single_clock).
++bool query_levels(const DeviceContext &dev, uint32_t clk, Levels &l, bool *lost) {
++    l = Levels{};
++    DalMsg m;
++    if (fsend(dev, kMsgGetDpmFreqByIndex, (clk << 16) | kIndexAll, &m) != kIOReturnSuccess) { *lost = mailbox_lost(m); return false; }
++    const uint32_t n = level_count(m.arg);
++    if (n == 0u || n > kMaxLevels) { FLOOR_LOG("clk %u: level-count reply 0x%08x (%u levels) is unusable", clk, m.arg, n); return false; }
++    for (uint32_t i = 0; i < n; i++) {
++        if (fsend(dev, kMsgGetDpmFreqByIndex, (clk << 16) | i, &m) != kIOReturnSuccess) { *lost = mailbox_lost(m); return false; }
++        l.mhz[i] = level_mhz(m.arg);
++    }
++    l.n = n;
++    FLOOR_LOG("clk %u: %u levels (%s): %u %u %u %u %u %u %u %u MHz", clk, n, (m.arg & 0x80000000u) ? "fine-grained" : "discrete",
++              l.mhz[0], l.mhz[1], l.mhz[2], l.mhz[3], l.mhz[4], l.mhz[5], l.mhz[6], l.mhz[7]);
++    return true;
++}
++
++// One planned step: send, record, and for a hard minimum wait for its status bit. Returns false when the mailbox is lost.
++bool run_step(const DeviceContext &dev, const Step &s, StepRes &r) {
++    DalMsg m;
++    const kern_return_t kr = fsend(dev, s.msg, s.param, &m);
++    r = StepRes{ s.msg, s.param, m.rc, m.resp, m.arg, m.us, m.refuse, 0u, 0u, false };
++    if (kr != kIOReturnSuccess) return !mailbox_lost(m);
++    if (s.hardMin) {
++        bool lost = false;
++        r.statusDone = wait_hard_min(dev, s.clk, r, &lost);
++        if (lost) return false;
++        if (!r.statusDone) FLOOR_LOG("hard minimum clk %u = %u MHz: ReturnHardMinStatus did not report it done in %u us (status 0x%x)", s.clk, s.param & 0xFFFFu, r.statusUs, r.status);
++    }
++    return true;
++}
++bool step_ok(const StepRes &r) { return r.rc == (uint32_t)kIOReturnSuccess && r.refuse == 0u && (r.msg != kMsgSetHardMinByFreq || r.statusDone); }
++const char *msg_name(uint32_t msg) {
++    return msg == kMsgNumOfDisplays ? "NumOfDisplays" : msg == kMsgSetHardMinByFreq ? "SetHardMinByFreq" : msg == kMsgSetMinDeepSleepDcfclk ? "SetMinDeepSleepDcfclk" :
++           msg == kMsgSetUclkPstateAllow ? "SetUclkPstateAllow" : "?";
++}
++}  // namespace
++
++uint32_t dal_floor_run(const DeviceContext &dev, uint32_t hActive, uint32_t vActive, uint32_t hTotal, uint32_t vTotal, uint32_t *dcfFloorMhz) {
++    if (dcfFloorMhz != nullptr) *dcfFloorMhz = 0u;
++    if (gF.ran) { if (dcfFloorMhz != nullptr) *dcfFloorMhz = gF.dcfFloorMhz; return gF.verdict; }
++    gF = FloorState{};
++    gF.ran = true;
++    gF.atMs = now_ms();
++    uint32_t v = 0;
++    gF.bootArgPresent = PE_parse_boot_argn("navi48-dalfloor", &v, sizeof(v));
++    gF.bootArg = v;
++    gF.parts = parts_of(gF.bootArgPresent, v);
++    if (gF.parts == 0u) {
++        gF.verdict = kVOff;
++        FLOOR_LOG("display clock floors OFF (navi48-dalfloor=0): nothing sent");
++        return gF.verdict;
++    }
++    gF.hActive = hActive; gF.vActive = vActive; gF.hTotal = hTotal; gF.vTotal = vTotal;
++    if (!mode_matches(kMode1440p120, hActive, vActive, hTotal, vTotal)) {
++        gF.verdict = kVMode;
++        FLOOR_LOG("display clock floors: OTG0 timing %ux%u H_TOTAL %u V_TOTAL %u is not the mode the floors are computed for: nothing sent", hActive, vActive, hTotal, vTotal);
++        return gF.verdict;
++    }
++    if (smu_uclk_pin_result().verdict == n48uclk::kNotRun) {
++        gF.verdict = kVNoSmu;
++        FLOOR_LOG("display clock floors: the SMU features were not enabled by this boot: nothing sent");
++        return gF.verdict;
++    }
++    if (!dal_owner_claim_floor()) {
++        gF.verdict = kVBusy;
++        FLOOR_LOG("display clock floors: the DAL mailbox is owned by a DAL step or a clock hold: nothing sent");
++        return gF.verdict;
++    }
++    FLOOR_LOG("display clock floors: parts 0x%02x (navi48-dalfloor %s%u), as Linux dcn401_update_clocks for one 2560x1440@120 plane", gF.parts,
++              gF.bootArgPresent ? "=" : "absent, default 0x0f; ", gF.bootArgPresent ? v : 0u);
++    gF.before = read_clocks(dev);
++    bool lost = false;
++    DalMsg m;
++    // dcn401_init_clocks: the SMU is present when GetSmuVersion answers; the two version checks are logged (Linux goes on either way) but the
++    // header version must be DALSMC_VERSION here, or the message ids below may not mean what dalsmc.h says.
++    if (fsend(dev, kMsgGetSmuVersion, 0u, &m) != kIOReturnSuccess) { gF.verdict = kVMailbox; goto out; }
++    gF.smuVer = m.arg;
++    if (fsend(dev, kMsgGetDriverIfVersion, 0u, &m) != kIOReturnSuccess && mailbox_lost(m)) { gF.verdict = kVMailbox; goto out; }
++    gF.ifVer = m.arg;
++    if (fsend(dev, kMsgGetMsgHeaderVersion, 0u, &m) != kIOReturnSuccess) { gF.verdict = mailbox_lost(m) ? kVMailbox : kVHeader; goto out; }
++    gF.hdrVer = m.arg;
++    if (gF.hdrVer != kDalsmcVersion) { gF.verdict = kVHeader; goto out; }
++    if (gF.parts & kPartDcfclk) { gF.dcfOk = query_levels(dev, kClkDcfclk, gF.dcf, &lost); if (lost) { gF.verdict = kVMailbox; goto out; } }
++    if (gF.parts & kPartUclk) { gF.uclkOk = query_levels(dev, kClkUclk, gF.uclk, &lost); if (lost) { gF.verdict = kVMailbox; goto out; } }
++    {
++        PlanIn in{};
++        in.parts = gF.parts;
++        in.dcf = gF.dcfOk ? gF.dcf : Levels{};
++        in.uclk = gF.uclkOk ? gF.uclk : Levels{};
++        in.curDispKhz = clocks_usable(gF.before) ? gF.before.dispKhz : 0u;
++        in.curDppKhz = clocks_usable(gF.before) ? gF.before.dppKhz : 0u;
++        in.smuVer = gF.smuVer;
++        in.mode = kMode1440p120;
++        // The DFS VCO: the PLL readback when it is the bounding box's 4500 MHz within 1 %, else the bounding box value.
++        in.vcoKhz = (gF.before.ok && gF.before.vcoKhz >= 4455000u && gF.before.vcoKhz <= 4545000u) ? gF.before.vcoKhz : kDfsVcoKhz;
++        gF.plan = make_plan(in);
++        if (!plan_allowed(gF.plan, gF.parts, limits())) { gF.verdict = kVRefused; goto out; }
++        FLOOR_LOG("plan: %u messages; DML for 497.75 MHz ODM 2:1: DISPCLK %u kHz, DPPCLK %u kHz, DCFCLK need %u kHz, deep sleep %u kHz; requests: DCFCLK %u, deep sleep %u, "
++                  "UCLK %u, DISPCLK %u, DPPCLK %u MHz (running %u / %u kHz); parts not planned 0x%02x",
++                  gF.plan.n, gF.plan.dmlDispKhz, gF.plan.dmlDppKhz, gF.plan.dcfNeedKhz, gF.plan.deepSleepKhz, gF.plan.dcfMhz, gF.plan.deepSleepMhz,
++                  gF.plan.uclkMhz, gF.plan.dispMhz, gF.plan.dppMhz, in.curDispKhz, in.curDppKhz, gF.plan.skipped);
++        for (uint32_t i = 0; i < gF.plan.n; i++) {
++            const bool alive = run_step(dev, gF.plan.s[i], gF.steps[i]);
++            gF.nSteps = i + 1u;
++            if (step_ok(gF.steps[i])) gF.nOk++;
++            if (gF.plan.s[i].clk == kClkDcfclk && step_ok(gF.steps[i])) gF.dcfFloorMhz = gF.plan.dcfMhz;
++            if (!alive) { gF.verdict = kVMailbox; goto out; }
++        }
++        gF.verdict = (gF.nOk == gF.plan.n && gF.plan.skipped == 0u) ? kVSent : kVPartial;
++        // The display clocks must still read at least their start (a floor equal to the running clock keeps it). If one fell, raise it back:
++        // ceil(start MHz) is the smallest request whose DFS clock is at or above the start.
++        if ((gF.parts & kPartDispDpp) && gF.plan.dispMhz != 0u) {
++            IOSleep(20);
++            gF.after = read_clocks(dev);
++            if (!clocks_kept(gF.before.dispKhz, gF.before.dppKhz, gF.after.ok ? gF.after.dispKhz : 0u, gF.after.ok ? gF.after.dppKhz : 0u)) {
++                FLOOR_LOG("DISPCLK/DPPCLK read %u / %u kHz after the floors, below the start %u / %u kHz: raising back", gF.after.dispKhz, gF.after.dppKhz,
++                          gF.before.dispKhz, gF.before.dppKhz);
++                const Step fix[2] = { { kMsgSetHardMinByFreq, param_hardmin(kClkDispclk, ceil_div(gF.before.dispKhz, 1000u)), kClkDispclk, true },
++                                      { kMsgSetHardMinByFreq, param_hardmin(kClkDppclk, ceil_div(gF.before.dppKhz, 1000u)), kClkDppclk, true } };
++                StepRes fr{};
++                for (uint32_t k = 0; k < 2u; k++) (void)run_step(dev, fix[k], fr);
++                IOSleep(20);
++                gF.fixed = read_clocks(dev);
++                gF.corrective = clocks_kept(gF.before.dispKhz, gF.before.dppKhz, gF.fixed.ok ? gF.fixed.dispKhz : 0u, gF.fixed.ok ? gF.fixed.dppKhz : 0u) ? 1u : 2u;
++                gF.verdict = kVDropped;
++            }
++        }
++    }
++out:
++    dal_owner_release_floor();
++    gF.tookMs = now_ms() - gF.atMs;
++    if (dcfFloorMhz != nullptr) *dcfFloorMhz = gF.dcfFloorMhz;
++    FLOOR_LOG("display clock floors: %s; DALSMC smu 0x%08x if 0x%x header %u; %u of %u messages OK; DISPCLK/DPPCLK %u / %u kHz before, %u / %u after%s; %llu ms",
++              verdict_name(gF.verdict), gF.smuVer, gF.ifVer, gF.hdrVer, gF.nOk, gF.plan.n, gF.before.dispKhz, gF.before.dppKhz, gF.after.dispKhz, gF.after.dppKhz,
++              gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, the raise did NOT verify)" : "", (unsigned long long)gF.tookMs);
++    return gF.verdict;
++}
++
++void dal_floor_describe(char *t, size_t n) {
++    if (t == nullptr || n == 0u) return;
++    if (!gF.ran) { snprintf(t, n, "not run yet (sent once, after the display arbitration)"); return; }
++    size_t o = (size_t)snprintf(t, n, "%s; parts 0x%02x (navi48-dalfloor %s); DALSMC smu 0x%08x if 0x%x header %u; DCFCLK levels %u (%u..%u MHz); "
++                               "OTG0 %ux%u total %ux%u; DML: DISPCLK %u kHz, DPPCLK %u kHz, DCFCLK need %u kHz, deep sleep %u kHz; steps:",
++                               verdict_name(gF.verdict), gF.parts, gF.bootArgPresent ? "set" : "absent", gF.smuVer, gF.ifVer, gF.hdrVer, gF.dcf.n,
++                               levels_min(gF.dcf), levels_max(gF.dcf), gF.hActive, gF.vActive, gF.hTotal, gF.vTotal, gF.plan.dmlDispKhz, gF.plan.dmlDppKhz, gF.plan.dcfNeedKhz, gF.plan.deepSleepKhz);
++    for (uint32_t i = 0; i < gF.nSteps && o < n; i++) {
++        const StepRes &r = gF.steps[i];
++        o += (size_t)snprintf(t + o, n - o, " %s(%#x)=%s%s", msg_name(r.msg), r.param, r.refuse ? "refused" : n48dal::resp_name(r.resp),
++                              r.msg == kMsgSetHardMinByFreq ? (r.statusDone ? "+done" : "+not-done") : "");
++    }
++    if (o < n) snprintf(t + o, n - o, "; DISPCLK/DPPCLK kHz before %u/%u after %u/%u%s; at uptime %llu ms, %llu ms",
++                        gF.before.dispKhz, gF.before.dppKhz, gF.after.dispKhz, gF.after.dppKhz,
++                        gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, raise NOT verified)" : "",
++                        (unsigned long long)gF.atMs, (unsigned long long)gF.tookMs);
++}
++
++// =========================================================================================================================================
++// The clock trace.
++// =========================================================================================================================================
++namespace {
++Trace gT;
++bool gTOn, gTFloored, gTEnded;
++uint32_t gTSeconds;
++uint64_t gTStartMs, gTEndMs, gTNextMs, gTPubMs;
++uint32_t gTLines, gTBurstLogs;
++constexpr uint32_t kMaxLines = 400u, kMaxBurstLogs = 24u;
++
++bool take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) {
++    s = Sample{};
++    s.ms = ms; s.pinned = pinned;
++    SmuMetricsResult r{};
++    kern_return_t kr;
++    {
++        SmuSeq seq;   // the whole table transfer under the shared mailbox lock (as Navi48UserClient::doMetrics)
++        kr = seq.held ? smu_read_metrics(dev, &r) : kIOReturnNoResources;
++    }
++    if (kr != kIOReturnSuccess) return false;
++    const SmuMetrics &m = r.metrics;
++    s.mhz[kTUclk] = m.CurrClock[SMUClk::UCLK];
++    s.mhz[kTFclk] = m.CurrClock[SMUClk::FCLK];
++    s.mhz[kTDcf] = m.CurrClock[SMUClk::DCFCLK];
++    s.mhz[kTDisp] = m.CurrClock[SMUClk::DISPCLK];
++    s.mhz[kTDpp] = m.CurrClock[SMUClk::DPPCLK];
++    s.mhz[kTSoc] = m.CurrClock[SMUClk::SOCCLK];
++    for (uint32_t i = 0; i < kTClks; i++) if (s.mhz[i] > 10000u) return false;   // a layout shift, not a clock
++    const n48dal::Decoded d = read_clocks(dev);
++    s.dfsDispKhz = d.ok ? d.dispKhz : 0u;
++    s.dfsDppKhz = d.ok ? d.dppKhz : 0u;
++    s.ok = true;
++    return true;
++}
++void log_sample(const char *why, const Sample &s, uint64_t evMs) {
++    TRACE_LOG("%s t=%llu ms (%lld ms from the burst): UCLK %u FCLK %u DCFCLK %u DISPCLK %u DPPCLK %u SOCCLK %u MHz; DFS DISPCLK %u DPPCLK %u kHz%s", why,
++              (unsigned long long)s.ms, evMs ? (long long)s.ms - (long long)evMs : 0ll, s.mhz[kTUclk], s.mhz[kTFclk], s.mhz[kTDcf], s.mhz[kTDisp],
++              s.mhz[kTDpp], s.mhz[kTSoc], s.dfsDispKhz, s.dfsDppKhz, s.pinned ? " (UCLK pinned)" : "");
++}
++}  // namespace
++
++void clktrace_start(uint64_t nowMs) {
++    uint32_t v = 0;
++    const bool p = PE_parse_boot_argn("navi48-clklog", &v, sizeof(v));
++    gTSeconds = trace_seconds(p, v);
++    trace_init(gT, 0u);
++    gTOn = gTSeconds != 0u;
++    gTFloored = false; gTEnded = false;
++    gTStartMs = nowMs; gTEndMs = ~0ull; gTNextMs = nowMs; gTPubMs = 0u; gTLines = 0u; gTBurstLogs = 0u;
++    TRACE_LOG("boot clock trace %s", gTOn ? "ON: PMFW CurrClock UCLK/FCLK/DCFCLK/DISPCLK/DPPCLK/SOCCLK + DFS readback every 500 ms, around ufmon events (navi48-clklog=0 turns it off)"
++                                          : "OFF (navi48-clklog=0)");
++}
++void clktrace_floor(uint32_t dcfFloorMhz, uint64_t nowMs) {
++    gT.dcfFloorMhz = dcfFloorMhz;
++    gTFloored = true;
++    gTEndMs = nowMs + (uint64_t)gTSeconds * 1000ull;
++    if (gTOn) TRACE_LOG("the floors ran at %llu ms: tracing %u s more (DCFCLK floor %u MHz)", (unsigned long long)nowMs, gTSeconds, dcfFloorMhz);
++}
++bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents, bool pinned) {
++    if (!gTOn) return false;
++    bool changed = false;
++    if (newEvents > 0u && (!gTEnded || gT.pending)) trace_event(gT, nowMs, newEvents, pinned);
++    const bool live = nowMs < gTEndMs || gT.pending;
++    if (live && nowMs >= gTNextMs) {
++        gTNextMs = nowMs + kSamplePeriodMs;
++        Sample s;
++        const Sample *prev = trace_at(gT, 0);
++        const Sample p = prev != nullptr ? *prev : Sample{};
++        const bool had = prev != nullptr;
++        if (take_sample(dev, nowMs, pinned, s)) {
++            trace_add(gT, s);
++            bool moved = false;
++            for (uint32_t i = 0; i < kTClks - 1u; i++) if (had && p.mhz[i] != s.mhz[i]) moved = true;   // SOCCLK moves are not logged one by one
++            if (had && (p.dfsDispKhz != s.dfsDispKhz || p.dfsDppKhz != s.dfsDppKhz)) moved = true;
++            if (gTLines < kMaxLines && (!had || moved || (gT.samples % 20u) == 0u)) { log_sample(!had ? "first" : moved ? "change" : "every 10 s", s, 0u); gTLines++; }
++        } else trace_add(gT, s);   // counts the failure
++        Burst b{};
++        if (trace_settle(gT, nowMs, &b)) {
++            changed = true;
++            if (gTBurstLogs < kMaxBurstLogs) {
++                gTBurstLogs++;
++                TRACE_LOG("underflow burst #%llu at %llu ms (%u events%s): moved:%s%s%s%s%s%s%s; %u samples in [-%llu, +%llu] ms; UCLK %u..%u FCLK %u..%u DCFCLK %u..%u (floor %u) "
++                          "DISPCLK %u..%u DPPCLK %u..%u MHz -> %s",
++                          (unsigned long long)gT.bursts, (unsigned long long)b.atMs, b.events, (b.flags & kBPinned) ? ", UCLK pinned" : "",
++                          (b.flags & kBUclk) ? " UCLK" : "", (b.flags & kBFclk) ? " FCLK" : "", (b.flags & kBDcf) ? " DCFCLK" : "",
++                          (b.flags & kBDisp) ? " DISPCLK" : "", (b.flags & kBDpp) ? " DPPCLK" : "", (b.flags & kBDcfBelowFloor) ? " DCFCLK-under-floor" : "",
++                          (b.flags & (kBUclk | kBFclk | kBDcf | kBDisp | kBDpp | kBDcfBelowFloor)) ? "" : " nothing",
++                          b.nSamples, (unsigned long long)kPreMs, (unsigned long long)kPostMs, b.lo[kTUclk], b.hi[kTUclk], b.lo[kTFclk], b.hi[kTFclk],
++                          b.lo[kTDcf], b.hi[kTDcf], gT.dcfFloorMhz, b.lo[kTDisp], b.hi[kTDisp], b.lo[kTDpp], b.hi[kTDpp], trace_lean(gT));
++                for (uint32_t k = b.nSamples < 8u ? b.nSamples : 8u; k > 0u; k--) {
++                    // the window's samples, oldest first
++                    uint32_t seen = 0u;
++                    for (uint32_t j = 0; j < gT.count; j++) {
++                        const Sample *q = trace_at(gT, j);
++                        if (q == nullptr || q->ms + kPreMs < b.atMs || q->ms > b.atMs + kPostMs) continue;
++                        if (++seen == k) { log_sample("  burst", *q, b.atMs); break; }
++                    }
++                }
++            }
++        }
++    }
++    if (!gTEnded && gTFloored && nowMs >= gTEndMs && !gT.pending) {
++        gTEnded = true;
++        changed = true;
++        TRACE_LOG("trace ended: %llu samples (%llu failed), %llu bursts (%llu events): UCLK %llu FCLK %llu (FCLK alone %llu) DCFCLK %llu DISPCLK/DPPCLK %llu nothing %llu; %s",
++                  (unsigned long long)gT.samples, (unsigned long long)gT.failures, (unsigned long long)gT.bursts, (unsigned long long)gT.events,
++                  (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk, (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf,
++                  (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone, trace_lean(gT));
++    }
++    if (nowMs - gTPubMs >= 5000u) { gTPubMs = nowMs; changed = true; }
++    return changed;
++}
++
++void clktrace_describe(char *t, size_t n) {
++    if (t == nullptr || n == 0u) return;
++    snprintf(t, n, "%s (every %llu ms, %u s after the floors; %llu samples, %llu failed); bursts %llu (events %llu): UCLK moved %llu, FCLK moved %llu "
++             "(without UCLK %llu), DCFCLK moved or under floor %llu, DISPCLK/DPPCLK moved %llu, nothing moved %llu, UCLK pinned %llu, under 3 samples %llu; "
++             "lean: %s; MHz ranges UCLK %u..%u FCLK %u..%u DCFCLK %u..%u (floor %u, samples under it %llu) DISPCLK %u..%u DPPCLK %u..%u SOCCLK %u..%u; "
++             "moves UCLK %llu FCLK %llu DCFCLK %llu DISPCLK %llu DPPCLK %llu; with UCLK pinned: FCLK moves %llu, UCLK moves %llu; last burst at %llu ms flags %#x",
++             !gTOn ? "off (navi48-clklog=0)" : gTEnded ? "ended" : gTFloored ? "tracing" : "tracing (floors not run yet)",
++             (unsigned long long)kSamplePeriodMs, gTSeconds, (unsigned long long)gT.samples, (unsigned long long)gT.failures,
++             (unsigned long long)gT.bursts, (unsigned long long)gT.events, (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk,
++             (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf, (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone,
++             (unsigned long long)gT.bPinned, (unsigned long long)gT.bFew, trace_lean(gT),
++             gT.lo[kTUclk], gT.hi[kTUclk], gT.lo[kTFclk], gT.hi[kTFclk], gT.lo[kTDcf], gT.hi[kTDcf], gT.dcfFloorMhz, (unsigned long long)gT.dcfBelowFloor,
++             gT.lo[kTDisp], gT.hi[kTDisp], gT.lo[kTDpp], gT.hi[kTDpp], gT.lo[kTSoc], gT.hi[kTSoc],
++             (unsigned long long)gT.moves[kTUclk], (unsigned long long)gT.moves[kTFclk], (unsigned long long)gT.moves[kTDcf],
++             (unsigned long long)gT.moves[kTDisp], (unsigned long long)gT.moves[kTDpp],
++             (unsigned long long)gT.fclkMovesPinned, (unsigned long long)gT.uclkMovesPinned, (unsigned long long)gT.last.atMs, gT.last.flags);
++}
++
++}  // namespace amdgpu
+--- a/src/amd/clkfloor.h
++++ b/src/amd/clkfloor.h
+@@ -0,0 +1,34 @@
++//
++//  clkfloor.h - build 0.0.684: the display clock floors Linux's dcn401 clk_mgr sends through the DAL mailbox (NumOfDisplays, the DCFCLK hard
++//  minimum and deep-sleep floor, the DISPCLK/DPPCLK hard minimums), sent ONCE at boot by the display monitor thread after the display arbitration
++//  and before the UCLK fallback arms; and the boot clock trace (PMFW metrics CurrClock[] and the DFS readback around ufmon underflow events).
++//  Every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp).
++//  Boot-args: navi48-dalfloor (absent = NumOfDisplays + DCFCLK + deep sleep + DISPCLK/DPPCLK; 0 = nothing sent; see parts_of), navi48-clklog
++//  (absent = 600 s of trace after the floors; 0 = off; N = N seconds).
++//  Callers: navi48_dcn.cpp arb_monitor_loop only (a kernel thread, no lock held). Never the interrupt handler, never under a display lock.
++//
++#pragma once
++#include <stddef.h>
++#include <stdint.h>
++#include "amdgpu_regs.h"
++
++namespace amdgpu {
++
++// The floors: once per boot. Sleeps on the PMFW (each message <= 2 s, each hard-minimum status poll <= 1 s). Returns the verdict
++// (n48dalfloor::Verdict) and the DCFCLK floor it set (MHz, 0 = none) for the trace.
++// hActive / vActive / hTotal / vTotal: OTG0's lit timing (0 = unreadable); nothing is sent unless it is the mode the values are for.
++uint32_t dal_floor_run(const DeviceContext &dev, uint32_t hActive, uint32_t vActive, uint32_t hTotal, uint32_t vTotal, uint32_t *dcfFloorMhz);
++// Navi48,DalFloor: what the floors found, planned and got.
++void dal_floor_describe(char *t, size_t n);
++
++// The clock trace. clktrace_poll runs every monitor poll (50 ms) while the display is on; it samples every 500 ms until the trace window
++// ends, opens a burst on newEvents > 0 and logs a classified burst once its post window is sampled. Returns true when the registry text changed.
++// clktrace_start: at the monitor's start (samples from then on, before the floors too). clktrace_floor: after the floors (the DCFCLK floor the
++// samples are checked against; the trace window of navi48-clklog seconds starts then).
++void clktrace_start(uint64_t nowMs);
++void clktrace_floor(uint32_t dcfFloorMhz, uint64_t nowMs);
++bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents, bool pinned);
++// Navi48,DisplayClocks.
++void clktrace_describe(char *t, size_t n);
++
++}  // namespace amdgpu
+--- a/src/amd/clkfloor_pure.h
++++ b/src/amd/clkfloor_pure.h
+@@ -0,0 +1,390 @@
++//
++//  clkfloor_pure.h - build 0.0.684: the PURE half of the display clock floors and of the boot clock trace. No kernel header, so
++//  tests/dalfloor684_test.cpp compiles it on the host and drives the exact decisions clkfloor.cpp makes.
++//
++//  Why (research/reports/macos-20261114/gfx-activity-investigation.md, Part C, H1..H4): since 0.0.673 the DET (20 segments) and the Linux
++//  watermarks are programmed and HUBP never underflows, but every boot still sees OPTC-only underflows about a minute after login until the AUTO
++//  fallback pins UCLK at its maximum. Linux sends the PMFW, through the DAL mailbox (DALSMC, amd/display/dc/clk_mgr/dcn401/dalsmc.h), the display's
++//  clock requirements on every bandwidth update; we never did: no NumOfDisplays, no DCFCLK hard minimum, no DCFCLK deep-sleep floor, no
++//  DISPCLK/DPPCLK hard minimum. Without them the PMFW believes no display is lit and nothing bounds DCFCLK deep sleep around a UCLK switch (H1).
++//
++//  What Linux sends for this machine's only mode (one 2560x1440@120 ARGB8888 plane, pixel clock 497.75 MHz, H_TOTAL 2720, V_TOTAL 1525,
++//  ODM 2:1 because dcn401_resource.c sets enable_single_display_2to1_odm_policy and minimize_dispclk_using_odm), worked out by hand from
++//  linux-v7.3 (research/ext/amdgpu-port-study, MIT):
++//    dcn401_build_update_bandwidth_clocks_sequence (dcn401_clk_mgr.c:769-1072), the prepare (raise) pass of dcn401_update_clocks (:1282):
++//      1. NumOfDisplays(1)                                         (:810-822; every non-lowering update with a display)
++//      2. SetHardMinByFreq(DCFCLK, ceil(dcfclk_khz))               (:854-865)  dcfclk_khz = DML active DCFCLK rounded up to the PMFW's DCFCLK
++//         levels (dml2_dpmm_dcn4.c calculate_system_active_minimums + map_soc_min_clocks_to_dpm_fine_grained): this mode needs about 39 MHz of
++//         return bandwidth (dcfclk_need_khz below), so it is the lowest DCFCLK level (147 MHz in the Linux oracle's pp_dpm_dcefclk);
++//      3. SetMinDeepSleepDcfclk(ceil(dcfclk_deep_sleep_khz))       (:868-875)  dml2_core_dcn4_calcs.c CalculateDCFCLKDeepSleepTdlut:
++//         max(8, 1.15 * ReadBW / 64, max(1.15 * SwathWidth * Bpp / 64 / LineDeliveryTime, PixelClock / 16)) = 33.671 MHz -> 34 MHz;
++//      4. SetHardMinByFreq(UCLK, ceil(dramclk_khz))                (:1012-1019, PMFW 0x664700 is below dcn401_is_ppclk_idle_dpm_enabled's
++//         0x681800, so the plain UCLK hard minimum is used): the lowest UCLK level for this mode (96 MHz). OPT-IN here (kPartUclk).
++//         SetUclkPstateAllow(1) (:908-922) is sent by Linux only on a transition from "unsupported"; dcn401_init_clocks starts at "supported",
++//         so Linux does not send it on this mode at boot. OPT-IN here (kPartPstateAllow).
++//    dcn401_build_update_display_clocks_sequence (:1085-1249): DISPCLK then DPPCLK hard minimums (dcn401_set_hard_min_by_freq_optimized, MHz
++//      floor first). DML: DISPCLK = 497.75 / 2 * 1.0038 (dcn_downspread_percent 0.38) * 1.01 (dispclk_ramp_margin_percent 1) = 252.32 MHz,
++//      rounded on the 4500 MHz DFS VCO to 253.521 MHz; DPPCLK = 497.75 / 2 * 1.0038 = 249.82 MHz -> 250.000 MHz (dml2_dpmm_dcn4.c
++//      map_mode_to_soc_dpm + add_margin_and_round_to_dfs_grainularity). Linux would LOWER both from the GOP's 272.727 MHz in the optimize (lower)
++//      pass, which also reprograms the DPP DTOs. We never lower a display clock under a lit pipe whose DTOs we did not program: the floor is
++//      max(the DML value, the clock read back now), so the request equals the running clock (a floor that keeps it, as Linux's floor would).
++//  Each hard minimum is followed by ReturnHardMinStatus polled until bit (1 << ppclk) (dcn401_smu_wait_hard_min_status, <= 1 s).
++//
++//  The clock trace (boot-time logging, read-only): PMFW metrics CurrClock[] (UCLK, FCLK, DCFCLK, DISPCLK, DPPCLK, SOCCLK) and the DISPCLK/DPPCLK
++//  DFS readback, sampled every kSamplePeriodMs, kept in a ring; each burst of ufmon underflow events is classified by which clocks moved
++//  within [-kPreMs, +kPostMs] of the first event (H1: DCFCLK / DISPCLK / DPPCLK; H2: FCLK; H3: UCLK; none: no clock moved).
++//
++//  Everything here is arithmetic and decisions; nothing touches a register. Integer arithmetic only (kernel code: no floating point).
++//
++#pragma once
++#include <stdint.h>
++
++namespace n48dalfloor {
++
++// ---- DALSMC messages (dalsmc.h) and PPCLK_e (dcn401_smu14_driver_if.h) -------------------------------------------------------------------
++constexpr uint32_t kMsgGetSmuVersion = 0x2u, kMsgGetDriverIfVersion = 0x3u, kMsgGetMsgHeaderVersion = 0x4u;
++constexpr uint32_t kMsgSetHardMinByFreq = 0x9u, kMsgGetDpmFreqByIndex = 0xBu, kMsgSetMinDeepSleepDcfclk = 0xDu, kMsgNumOfDisplays = 0xEu;
++constexpr uint32_t kMsgReturnHardMinStatus = 0x15u, kMsgSetUclkPstateAllow = 0x1Au;
++constexpr uint32_t kDalsmcVersion = 0x1u;                       // DALSMC_VERSION
++constexpr uint32_t kClkUclk = 2u, kClkFclk = 3u, kClkDispclk = 6u, kClkDppclk = 7u, kClkDcfclk = 9u;
++constexpr uint32_t kIndexAll = 0xFFu;
++constexpr uint32_t kMaxLevels = 16u;
++constexpr uint32_t kIdleDpmSmuVer = 0x681800u;                  // dcn401_is_ppclk_idle_dpm_enabled, GC 12.0.0: at or above it Linux uses ActiveUclkFclk instead
++
++// ---- the parts (boot-arg navi48-dalfloor) ------------------------------------------------------------------------------------------------
++enum Part : uint32_t {
++    kPartDisplays = 0x01u,      // NumOfDisplays(1)
++    kPartDcfclk = 0x02u,        // SetHardMinByFreq(DCFCLK, the DML level)
++    kPartDeepSleep = 0x04u,     // SetMinDeepSleepDcfclk(the DML value)
++    kPartDispDpp = 0x08u,       // SetHardMinByFreq(DISPCLK / DPPCLK, max(DML, the running clock))
++    kPartUclk = 0x10u,          // SetHardMinByFreq(UCLK, the lowest level) - opt-in
++    kPartPstateAllow = 0x20u,   // SetUclkPstateAllow(1) - opt-in (Linux does not send it at boot on this mode)
++};
++constexpr uint32_t kPartsAll = 0x3Fu;
++constexpr uint32_t kDefaultParts = kPartDisplays | kPartDcfclk | kPartDeepSleep | kPartDispDpp;
++// navi48-dalfloor: absent = the default (0x0F); 0 = OFF (nothing is sent); 1 = the default; 2 = the default + the UCLK hard minimum (0x1F);
++// 3 = everything (0x3F); 0x100 | mask = exactly `mask` (bits above, 0x100 alone = nothing). Any other value: the default.
++constexpr uint32_t parts_of(bool present, uint32_t v) {
++    return !present ? kDefaultParts : v == 0u ? 0u : v == 1u ? kDefaultParts : v == 2u ? (kDefaultParts | kPartUclk) : v == 3u ? kPartsAll
++         : (v & ~0xFFu) == 0x100u ? (v & kPartsAll) : kDefaultParts;
++}
++
++// ---- the mode and the DML values (integer forms of the double expressions; the host test checks them against the doubles) ----------------
++struct Mode { uint32_t pclkKhz, hActive, hTotal, vActive, vTotal, bpp, odm; };
++constexpr Mode kMode1440p120 { 497750u, 2560u, 2720u, 1440u, 1525u, 4u, 2u };   // the GOP's (and Linux's) timing on this LG, ODM 2:1
++// The lit timing must be this mode (read from OTG0 at the call): the values above are computed for it. V_TOTAL 3050 is the 60 Hz switch
++// (navi48_refresh_pure.h: V_TOTAL only, same pixel clock and line time, so the same DCN clock needs).
++constexpr bool mode_matches(const Mode &m, uint32_t hActive, uint32_t vActive, uint32_t hTotal, uint32_t vTotal) {
++    return hActive == m.hActive && vActive == m.vActive && hTotal == m.hTotal && (vTotal == m.vTotal || vTotal == 2u * m.vTotal);
++}
++constexpr uint32_t kDfsVcoKhz = 4500000u;   // dcn4_soc_bb.h dispclk_dppclk_vco_speed_mhz (the PLL_REQ readback agrees: 272.727 = 4 * 4500 / 66)
++
++constexpr uint32_t ceil_div(uint64_t a, uint64_t b) { return (uint32_t)((a + b - 1u) / b); }
++constexpr uint32_t max2(uint32_t a, uint32_t b) { return a > b ? a : b; }
++// DCFClkDeepSleep in kHz, truncated as dml2_core_dcn4.c does ((unsigned int)(MHz * 1000)).
++//   global  = 1.15 * ReadBandwidth / ReturnBusWidth(64), ReadBandwidth = hActive * Bpp / (hTotal / pclk)
++//   surface = max(1.15 * SwathWidth * Bpp / 64 / LineDeliveryTime, pclk / 16); SwathWidth = hActive / odm, LineDeliveryTime = SwathWidth * odm / pclk
++constexpr uint32_t deep_sleep_global_khz(const Mode &m) { return (uint32_t)((115ull * m.hActive * m.bpp * m.pclkKhz) / (6400ull * m.hTotal)); }
++constexpr uint32_t deep_sleep_surface_khz(const Mode &m) { return max2((uint32_t)((115ull * m.bpp * m.pclkKhz) / (6400ull * (m.odm ? m.odm : 1u))), m.pclkKhz / 16u); }
++constexpr uint32_t deep_sleep_khz(const Mode &m) { return max2(8000u, max2(deep_sleep_global_khz(m), deep_sleep_surface_khz(m))); }
++constexpr uint32_t deep_sleep_mhz(const Mode &m) { return ceil_div(deep_sleep_khz(m), 1000u); }   // khz_to_mhz_ceil
++// The DCFCLK the mode's return bandwidth needs (kHz): the larger of DML's urgent (derate 100 %) and average (derate 75 %) terms, without the
++// urgent burst factor; the lowest DCFCLK level (147 MHz) is about 3.8 times this, so the factor cannot change the level picked.
++constexpr uint32_t dcfclk_need_khz(const Mode &m) { return ceil_div((uint64_t)m.hActive * m.bpp * m.pclkKhz * 4u, 3ull * 64u * m.hTotal); }
++// add_margin_and_round_to_dfs_grainularity: divider = floor(4 * vco / clk); rounded = vco * 4 / divider. clk is a rational num / den here.
++constexpr uint32_t dfs_round_khz(uint64_t num, uint64_t den, uint32_t vcoKhz) {
++    // divider = floor(4 * vco / (num / den)) = floor(4 * vco * den / num)
++    return (num == 0u) ? 0u : (uint32_t)((4ull * vcoKhz) / ((4ull * vcoKhz * den) / num ? (4ull * vcoKhz * den) / num : 1u));
++}
++// DML DISPCLK: pclk / odm * (1 + 0.38 %) * (1 + 1 %), DFS-rounded. num / den = pclk * 10038 * 101 / (odm * 10^6).
++constexpr uint32_t dml_dispclk_khz(const Mode &m, uint32_t vcoKhz) { return dfs_round_khz((uint64_t)m.pclkKhz * 10038u * 101u, (uint64_t)(m.odm ? m.odm : 1u) * 1000000u, vcoKhz); }
++// DML DPP reference clock: (unsigned long)(pclk / odm * 1.0038), DFS-rounded; the plane's DPPCLK is dppref / 255 * ceil(need * 255 / dppref).
++constexpr uint32_t dml_dppref_khz(const Mode &m, uint32_t vcoKhz) {
++    return dfs_round_khz((uint64_t)((uint64_t)m.pclkKhz * 10038u / (10000ull * (m.odm ? m.odm : 1u))), 1u, vcoKhz);
++}
++constexpr uint32_t dml_dppclk_khz(const Mode &m, uint32_t vcoKhz) {
++    return dml_dppref_khz(m, vcoKhz) == 0u ? 0u :
++        (uint32_t)(((uint64_t)dml_dppref_khz(m, vcoKhz) * ceil_div((uint64_t)m.pclkKhz * 10038u * 255u, 10000ull * (m.odm ? m.odm : 1u) * dml_dppref_khz(m, vcoKhz))) / 255u);
++}
++
++// ---- the floor of DISPCLK / DPPCLK: never below the running clock, never below the DML value ------------------------------------------------
++constexpr uint32_t kDispMinMhz = 200u, kDispMaxMhz = 600u;   // the allowlist's bounds for a DISPCLK / DPPCLK hard minimum
++// curKhz: the DFS readback (0 = unreadable). The PMFW sets a DFS divider whose clock is the smallest at or above the request (the 0.0.606
++// restore: 272 MHz read back as 272.727, DID 0x41), so floor(running MHz) keeps the running clock; a DML value above the running clock
++// is a raise, as Linux would make it (ceil, dcn401_set_hard_min_by_freq_optimized's second try). 0 = no floor can be derived.
++constexpr uint32_t disp_floor_mhz(uint32_t dmlKhz, uint32_t curKhz) {
++    return curKhz == 0u ? 0u : curKhz >= dmlKhz ? curKhz / 1000u : ceil_div(dmlKhz, 1000u);
++}
++
++// ---- the level tables (GetDpmFreqByIndex, read exactly as dcn401_init_single_clock) --------------------------------------------------------
++constexpr uint32_t level_count(uint32_t r) { return (r & 0x80000000u) != 0u ? 2u : (r & 0xFFu); }
++constexpr uint32_t level_mhz(uint32_t r) { return r & 0xFFFFu; }
++struct Levels { uint32_t n; uint32_t mhz[kMaxLevels]; };
++// round_up_to_next_dpm (dml2_dpmm_dcn4.c): more than 2 values = the first level at or above the need; 2 values (fine-grained) = the need itself
++// if the top level reaches it. 0 = no level fits (or no table).
++constexpr uint32_t level_for(const Levels &l, uint32_t needKhz) {
++    if (l.n == 0u || l.n > kMaxLevels) return 0u;
++    if (l.n > 2u) {
++        for (uint32_t i = 0; i < l.n; i++) if ((uint64_t)l.mhz[i] * 1000u >= needKhz) return l.mhz[i];
++        return 0u;
++    }
++    return (uint64_t)l.mhz[l.n - 1u] * 1000u >= needKhz ? max2(ceil_div(needKhz, 1000u), l.mhz[0]) : 0u;
++}
++constexpr uint32_t levels_min(const Levels &l) {
++    uint32_t m = 0u;
++    for (uint32_t i = 0; i < l.n && i < kMaxLevels; i++) if (l.mhz[i] != 0u && (m == 0u || l.mhz[i] < m)) m = l.mhz[i];
++    return m;
++}
++constexpr uint32_t levels_max(const Levels &l) {
++    uint32_t m = 0u;
++    for (uint32_t i = 0; i < l.n && i < kMaxLevels; i++) if (l.mhz[i] > m) m = l.mhz[i];
++    return m;
++}
++
++// ---- the allowlist of this path: nothing else may be sent through it ---------------------------------------------------------------------
++enum Refuse : uint32_t { kAllow = 0, kRefOff = 1, kRefMsg = 2, kRefParam = 3, kRefClk = 4, kRefRange = 5, kRefNoTable = 6, kRefPart = 7 };
++constexpr const char *refuse_name(uint32_t r) {
++    return r == kAllow ? "allowed" : r == kRefOff ? "off" : r == kRefMsg ? "message not on the floor allowlist" : r == kRefParam ? "parameter" :
++           r == kRefClk ? "clock" : r == kRefRange ? "out of range" : r == kRefNoTable ? "no level table" : r == kRefPart ? "part not enabled" : "?";
++}
++struct Limits { uint32_t dcfMinMhz, dcfMaxMhz, uclkMinMhz; };
++constexpr uint32_t kDeepSleepMinMhz = 8u, kDeepSleepMaxMhz = 100u, kDcfclkCapMhz = 600u;
++constexpr uint32_t allow(uint32_t parts, uint32_t msg, uint32_t param, const Limits &l) {
++    if ((parts & kPartsAll) == 0u) return kRefOff;
++    switch (msg) {
++    case kMsgGetSmuVersion: case kMsgGetDriverIfVersion: case kMsgGetMsgHeaderVersion: case kMsgReturnHardMinStatus:
++        return param == 0u ? kAllow : kRefParam;
++    case kMsgGetDpmFreqByIndex: {
++        const uint32_t clk = (param >> 16) & 0xFFu, idx = param & 0xFFFFu;
++        if ((param >> 24) != 0u) return kRefParam;
++        if (clk != kClkDcfclk && clk != kClkUclk) return kRefClk;
++        return (idx < kMaxLevels || idx == kIndexAll) ? kAllow : kRefParam;
++    }
++    case kMsgNumOfDisplays:
++        if ((parts & kPartDisplays) == 0u) return kRefPart;
++        return param == 1u ? kAllow : kRefParam;
++    case kMsgSetMinDeepSleepDcfclk:
++        if ((parts & kPartDeepSleep) == 0u) return kRefPart;
++        return (param >= kDeepSleepMinMhz && param <= kDeepSleepMaxMhz) ? kAllow : kRefRange;
++    case kMsgSetUclkPstateAllow:
++        if ((parts & kPartPstateAllow) == 0u) return kRefPart;
++        return param == 1u ? kAllow : kRefParam;      // never 0: this path never forbids a switch
++    case kMsgSetHardMinByFreq: {
++        const uint32_t clk = param >> 16, mhz = param & 0xFFFFu;
++        if (clk == kClkDcfclk) {
++            if ((parts & kPartDcfclk) == 0u) return kRefPart;
++            if (l.dcfMinMhz == 0u || l.dcfMaxMhz == 0u) return kRefNoTable;
++            return (mhz >= l.dcfMinMhz && mhz <= l.dcfMaxMhz && mhz <= kDcfclkCapMhz) ? kAllow : kRefRange;
++        }
++        if (clk == kClkUclk) {
++            if ((parts & kPartUclk) == 0u) return kRefPart;
++            if (l.uclkMinMhz == 0u) return kRefNoTable;
++            return mhz == l.uclkMinMhz ? kAllow : kRefRange;   // the lowest level only: never a pin from this path
++        }
++        if (clk == kClkDispclk || clk == kClkDppclk) {
++            if ((parts & kPartDispDpp) == 0u) return kRefPart;
++            return (mhz >= kDispMinMhz && mhz <= kDispMaxMhz) ? kAllow : kRefRange;
++        }
++        return kRefClk;
++    }
++    default: return kRefMsg;   // SetHardMax, transfer tables, DRAM addresses, FCLK, CAB, DRR, idle/active UCLK-FCLK, PstateAllow(0), ...
++    }
++}
++constexpr uint32_t param_hardmin(uint32_t clk, uint32_t mhz) { return (clk << 16) | (mhz & 0xFFFFu); }
++
++// ---- the plan: what will be sent, in Linux's order ---------------------------------------------------------------------------------------
++struct Step { uint32_t msg, param, clk; bool hardMin; };
++constexpr uint32_t kMaxSteps = 8u;
++struct Plan {
++    uint32_t n;
++    Step s[kMaxSteps];
++    uint32_t dcfMhz, deepSleepMhz, uclkMhz, dispMhz, dppMhz;           // 0 = not planned
++    uint32_t dmlDispKhz, dmlDppKhz, dcfNeedKhz, deepSleepKhz;          // what DML says (for the log)
++    uint32_t skipped;                                                  // parts asked for that could not be planned
++};
++struct PlanIn {
++    uint32_t parts;
++    Levels dcf, uclk;
++    uint32_t curDispKhz, curDppKhz;       // the DFS readback (0 = unreadable)
++    uint32_t smuVer;                       // DALSMC GetSmuVersion
++    Mode mode;
++    uint32_t vcoKhz;
++};
++constexpr void plan_push(Plan &p, uint32_t msg, uint32_t param, uint32_t clk, bool hm) {
++    if (p.n < kMaxSteps) { p.s[p.n] = Step{ msg, param, clk, hm }; p.n++; }
++}
++constexpr Plan make_plan(const PlanIn &in) {
++    Plan p{};
++    p.dmlDispKhz = dml_dispclk_khz(in.mode, in.vcoKhz);
++    p.dmlDppKhz = dml_dppclk_khz(in.mode, in.vcoKhz);
++    p.dcfNeedKhz = dcfclk_need_khz(in.mode);
++    p.deepSleepKhz = deep_sleep_khz(in.mode);
++    const uint32_t parts = in.parts & kPartsAll;
++    if (parts & kPartDisplays) plan_push(p, kMsgNumOfDisplays, 1u, 0u, false);
++    if (parts & kPartDcfclk) {
++        const uint32_t dcf = level_for(in.dcf, p.dcfNeedKhz);
++        if (dcf != 0u) { p.dcfMhz = dcf; plan_push(p, kMsgSetHardMinByFreq, param_hardmin(kClkDcfclk, dcf), kClkDcfclk, true); }
++        else p.skipped |= kPartDcfclk;
++    }
++    if (parts & kPartDeepSleep) {
++        const uint32_t ds = deep_sleep_mhz(in.mode);
++        if (ds >= kDeepSleepMinMhz && ds <= kDeepSleepMaxMhz) { p.deepSleepMhz = ds; plan_push(p, kMsgSetMinDeepSleepDcfclk, ds, 0u, false); }
++        else p.skipped |= kPartDeepSleep;
++    }
++    if (parts & kPartPstateAllow) plan_push(p, kMsgSetUclkPstateAllow, 1u, 0u, false);
++    if (parts & kPartUclk) {
++        const uint32_t u = levels_min(in.uclk);
++        if (u != 0u && in.smuVer < kIdleDpmSmuVer) { p.uclkMhz = u; plan_push(p, kMsgSetHardMinByFreq, param_hardmin(kClkUclk, u), kClkUclk, true); }
++        else p.skipped |= kPartUclk;
++    }
++    if (parts & kPartDispDpp) {
++        const uint32_t d = disp_floor_mhz(p.dmlDispKhz, in.curDispKhz), q = disp_floor_mhz(p.dmlDppKhz, in.curDppKhz);
++        if (d >= kDispMinMhz && d <= kDispMaxMhz && q >= kDispMinMhz && q <= kDispMaxMhz) {
++            p.dispMhz = d; p.dppMhz = q;
++            plan_push(p, kMsgSetHardMinByFreq, param_hardmin(kClkDispclk, d), kClkDispclk, true);   // dcn401_build_update_display_clocks_sequence: DISPCLK first
++            plan_push(p, kMsgSetHardMinByFreq, param_hardmin(kClkDppclk, q), kClkDppclk, true);
++        } else p.skipped |= kPartDispDpp;
++    }
++    return p;
++}
++// Every planned step passes the allowlist (the kernel checks again before each send).
++constexpr bool plan_allowed(const Plan &p, uint32_t parts, const Limits &l) {
++    for (uint32_t i = 0; i < p.n; i++) if (allow(parts, p.s[i].msg, p.s[i].param, l) != kAllow) return false;
++    return true;
++}
++
++// ---- the verdict of the run ------------------------------------------------------------------------------------------------------------
++enum Verdict : uint32_t {
++    kVNotRun = 0, kVOff = 1, kVSent = 2, kVPartial = 3, kVMailbox = 4, kVHeader = 5, kVNoSmu = 6, kVClocks = 7, kVBusy = 8, kVRefused = 9, kVDropped = 10,
++    kVMode = 11
++};
++constexpr const char *verdict_name(uint32_t v) {
++    return v == kVNotRun ? "not run" : v == kVOff ? "off (navi48-dalfloor=0)" : v == kVSent ? "sent, every message OK" :
++           v == kVPartial ? "sent, some messages not OK (see the steps)" : v == kVMailbox ? "DAL mailbox not ready or timed out: stopped" :
++           v == kVHeader ? "DALSMC header version is not 1: nothing sent" : v == kVNoSmu ? "SMU features not enabled by this boot: nothing sent" :
++           v == kVClocks ? "DISPCLK/DPPCLK readback unusable: display clock floors skipped" : v == kVBusy ? "the DAL mailbox is owned by a DAL step or a clock hold: nothing sent" :
++           v == kVRefused ? "a planned message failed the allowlist: nothing sent" : v == kVDropped ? "a display clock read below its start after the floors: raised back" :
++           v == kVMode ? "the lit timing is not 2560x1440 H_TOTAL 2720 V_TOTAL 1525/3050: nothing sent" : "?";
++}
++// After the DISPCLK / DPPCLK floors: kept (both at or above the start), or one fell (the corrective raise asks ceil(start MHz)).
++constexpr bool clocks_kept(uint32_t startDisp, uint32_t startDpp, uint32_t nowDisp, uint32_t nowDpp) {
++    return nowDisp != 0u && nowDpp != 0u && nowDisp >= startDisp && nowDpp >= startDpp;
++}
++
++// =========================================================================================================================================
++// The clock trace (boot-time, read-only): samples, the ring, the burst classification around ufmon events.
++// =========================================================================================================================================
++enum TClk : uint32_t { kTUclk = 0, kTFclk = 1, kTDcf = 2, kTDisp = 3, kTDpp = 4, kTSoc = 5, kTClks = 6 };
++constexpr const char *tclk_name(uint32_t i) {
++    return i == kTUclk ? "UCLK" : i == kTFclk ? "FCLK" : i == kTDcf ? "DCFCLK" : i == kTDisp ? "DISPCLK" : i == kTDpp ? "DPPCLK" : i == kTSoc ? "SOCCLK" : "?";
++}
++struct Sample { uint64_t ms; uint32_t mhz[kTClks]; uint32_t dfsDispKhz, dfsDppKhz; bool ok; bool pinned; };
++constexpr uint32_t kRing = 32u;
++constexpr uint64_t kSamplePeriodMs = 500u, kPreMs = 1500u, kPostMs = 1000u;
++constexpr uint32_t kDefaultTraceS = 600u, kMaxTraceS = 3600u;
++// navi48-clklog: absent = kDefaultTraceS seconds after the floors; 0 = off; N = N seconds (capped at kMaxTraceS).
++constexpr uint32_t trace_seconds(bool present, uint32_t v) { return !present ? kDefaultTraceS : v > kMaxTraceS ? kMaxTraceS : v; }
++// Burst flags (which clock moved in the window, by the metrics; the DFS readback counts for DISPCLK / DPPCLK too).
++enum BFlag : uint32_t {
++    kBUclk = 1u << kTUclk, kBFclk = 1u << kTFclk, kBDcf = 1u << kTDcf, kBDisp = 1u << kTDisp, kBDpp = 1u << kTDpp, kBSoc = 1u << kTSoc,
++    kBDcfBelowFloor = 0x40u, kBFewSamples = 0x80u, kBPinned = 0x100u
++};
++struct Burst { uint64_t atMs; uint32_t events; uint32_t flags; uint32_t nSamples; uint32_t lo[kTClks], hi[kTClks]; };
++struct Trace {
++    Sample ring[kRing];
++    uint32_t head, count;                   // head = the next slot
++    uint64_t samples, failures;
++    uint32_t lo[kTClks], hi[kTClks];        // over the whole trace (0 = none yet)
++    uint64_t moves[kTClks];                 // sample-to-sample changes
++    uint64_t fclkMovesPinned, uclkMovesPinned, dcfBelowFloor;
++    uint32_t dcfFloorMhz;                   // what the floors asked (0 = none)
++    bool pending; Burst cur;                // the burst being collected
++    Burst last;                             // the last classified burst
++    uint64_t bursts, events, bUclk, bFclk, bFclkOnly, bDcf, bDispDpp, bNone, bPinned, bFew;
++};
++inline void trace_init(Trace &t, uint32_t dcfFloorMhz) { t = Trace{}; t.dcfFloorMhz = dcfFloorMhz; }
++inline const Sample *trace_at(const Trace &t, uint32_t back) {   // back 0 = newest
++    if (back >= t.count) return nullptr;
++    return &t.ring[(t.head + kRing - 1u - back) % kRing];
++}
++// Add one sample: the extremes, the moves (against the previous good sample).
++inline void trace_add(Trace &t, const Sample &s) {
++    if (!s.ok) { t.failures++; return; }
++    const Sample *prev = trace_at(t, 0);
++    t.ring[t.head] = s; t.head = (t.head + 1u) % kRing; if (t.count < kRing) t.count++;
++    t.samples++;
++    for (uint32_t i = 0; i < kTClks; i++) {
++        if (s.mhz[i] != 0u && (t.lo[i] == 0u || s.mhz[i] < t.lo[i])) t.lo[i] = s.mhz[i];
++        if (s.mhz[i] > t.hi[i]) t.hi[i] = s.mhz[i];
++        if (prev != nullptr && prev->mhz[i] != s.mhz[i]) {
++            t.moves[i]++;
++            if (s.pinned && i == kTFclk) t.fclkMovesPinned++;
++            if (s.pinned && i == kTUclk) t.uclkMovesPinned++;
++        }
++    }
++    if (t.dcfFloorMhz != 0u && s.mhz[kTDcf] != 0u && s.mhz[kTDcf] < t.dcfFloorMhz) t.dcfBelowFloor++;
++}
++// n underflow events counted at nowMs: open a burst, or extend the open one.
++inline void trace_event(Trace &t, uint64_t nowMs, uint64_t n, bool pinned) {
++    if (n == 0u) return;
++    t.events += n;
++    if (!t.pending) { t.pending = true; t.cur = Burst{}; t.cur.atMs = nowMs; }
++    t.cur.events += (uint32_t)(n > 1000u ? 1000u : n);
++    if (pinned) t.cur.flags |= kBPinned;
++}
++// The classification of the open burst over the ring samples in [atMs - kPreMs, atMs + kPostMs].
++inline Burst trace_classify(const Trace &t, const Burst &b) {
++    Burst r = b;
++    for (uint32_t i = 0; i < kTClks; i++) { r.lo[i] = 0u; r.hi[i] = 0u; }
++    uint32_t dLo = 0u, dHi = 0u, pLo = 0u, pHi = 0u;
++    r.nSamples = 0u;
++    for (uint32_t k = 0; k < t.count; k++) {
++        const Sample *s = trace_at(t, k);
++        if (s == nullptr || s->ms + kPreMs < b.atMs || s->ms > b.atMs + kPostMs) continue;
++        r.nSamples++;
++        for (uint32_t i = 0; i < kTClks; i++) {
++            if (r.lo[i] == 0u || s->mhz[i] < r.lo[i]) r.lo[i] = s->mhz[i];
++            if (s->mhz[i] > r.hi[i]) r.hi[i] = s->mhz[i];
++        }
++        if (dLo == 0u || s->dfsDispKhz < dLo) dLo = s->dfsDispKhz;
++        if (s->dfsDispKhz > dHi) dHi = s->dfsDispKhz;
++        if (pLo == 0u || s->dfsDppKhz < pLo) pLo = s->dfsDppKhz;
++        if (s->dfsDppKhz > pHi) pHi = s->dfsDppKhz;
++        if (t.dcfFloorMhz != 0u && s->mhz[kTDcf] != 0u && s->mhz[kTDcf] < t.dcfFloorMhz) r.flags |= kBDcfBelowFloor;
++    }
++    for (uint32_t i = 0; i < kTClks; i++) if (r.lo[i] != r.hi[i]) r.flags |= 1u << i;
++    if (dLo != dHi) r.flags |= kBDisp;
++    if (pLo != pHi) r.flags |= kBDpp;
++    if (r.nSamples < 3u) r.flags |= kBFewSamples;
++    return r;
++}
++// Called after each sample: when the open burst's post window has a sample, classify it and count it. Returns true (and *out) when it did.
++inline bool trace_settle(Trace &t, uint64_t nowMs, Burst *out) {
++    if (!t.pending || nowMs < t.cur.atMs + kPostMs) return false;
++    const Burst r = trace_classify(t, t.cur);
++    t.pending = false;
++    t.last = r;
++    t.bursts++;
++    const bool h1 = (r.flags & (kBDcf | kBDcfBelowFloor)) != 0u, h1d = (r.flags & (kBDisp | kBDpp)) != 0u;
++    const bool h2 = (r.flags & kBFclk) != 0u, h3 = (r.flags & kBUclk) != 0u;
++    if (h3) t.bUclk++;
++    if (h2) t.bFclk++;
++    if (h2 && !h3) t.bFclkOnly++;
++    if (h1) t.bDcf++;
++    if (h1d) t.bDispDpp++;
++    if (!h1 && !h1d && !h2 && !h3) t.bNone++;
++    if (r.flags & kBPinned) t.bPinned++;
++    if (r.flags & kBFewSamples) t.bFew++;
++    if (out != nullptr) *out = r;
++    return true;
++}
++// The words for the registry: what the bursts so far point at.
++inline const char *trace_lean(const Trace &t) {
++    if (t.bursts == 0u) return "no underflow burst traced";
++    if (t.bDcf + t.bDispDpp > 0u && t.bDcf + t.bDispDpp >= t.bUclk && t.bDcf + t.bDispDpp >= t.bFclk) return "H1 (a display clock moved or DCFCLK under its floor)";
++    if (t.bFclkOnly > 0u && t.bFclkOnly >= t.bUclk) return "H2 (FCLK moved without UCLK)";
++    if (t.bUclk > 0u) return "H3 (UCLK switched in the window)";
++    return "none of the sampled clocks moved (H4, or a switch shorter than the sampling)";
++}
++
++}  // namespace n48dalfloor
+--- a/src/amd/smu_dal.cpp
++++ b/src/amd/smu_dal.cpp
+@@ -75,12 +75,14 @@
+     }
+ }
+ 
+-kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m) {
++kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m, DalAllowFn floorAllow) {
+     DalMsg local;
+     DalMsg *o = m != nullptr ? m : &local;
+     memset(o, 0, sizeof(*o));
+     // 1. The allowlist, before anything else. Level 0 (no boot-arg, or not a native boot with S1b POSITIVE PASS) refuses everything.
+-    const uint32_t why = allow_check(dal_gated_level(), msg, param, gDal.max[0], gDal.max[1]);
++    //    0.0.684: the display clock floors (clkfloor.cpp, its only caller with floorAllow) pass THEIR allowlist (n48dalfloor::allow) instead of the
++    //    experiment's; every other caller passes none and gets the experiment's, exactly as before.
++    const uint32_t why = floorAllow != nullptr ? floorAllow(msg, param) : allow_check(dal_gated_level(), msg, param, gDal.max[0], gDal.max[1]);
+     if (why != kAllow) {
+         o->refuse = why; o->rc = (uint32_t)kIOReturnNotPermitted;
+         DAL_LOG("send REFUSED msg=0x%02x param=0x%08x reason=%u (nothing sent)", msg, param, why);
+@@ -388,6 +390,9 @@
+ }
+ 
+ bool dal_busy() { return __atomic_load_n(&gDalOwner, __ATOMIC_SEQ_CST) == kOwnerDal; }
++// 0.0.684: the display clock floors take the mailbox owner word for their one boot-time run (owner 3), so a DAL step or a clock hold cannot interleave.
++bool dal_owner_claim_floor() { return owner_cas(kOwnerIdle, kOwnerFloor); }
++void dal_owner_release_floor() { (void)owner_cas(kOwnerFloor, kOwnerIdle); }
+ 
+ IOReturn dal_run_step(DeviceContext &dev, uint32_t step, n48n_dal_result *out) {
+     if (out == nullptr || step < kE1b || step > kStepLast) return kIOReturnBadArgument;
+--- a/src/amd/smu_dal.h
++++ b/src/amd/smu_dal.h
+@@ -27,7 +27,13 @@
+ 
+ // The only DAL sender. Checks the allowlist first (pure, smu_dal_pure.h), refuses when RESP == 0 before sending, takes the shared mailbox
+ // lock (smu_lock_enter), waits at most 500 ms for the reply with IOSleep, and logs one line. Returns kIOReturnSuccess only for RESP == 1.
+-kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m);
++// 0.0.684: floorAllow = the display clock floors' allowlist (clkfloor.cpp, n48dalfloor::allow; non-zero = refused, nothing sent), used INSTEAD
++// of the experiment's allowlist and its native-boot gate. Only clkfloor.cpp passes it; everyone else omits it.
++typedef uint32_t (*DalAllowFn)(uint32_t msg, uint32_t param);
++kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m, DalAllowFn floorAllow = nullptr);
++// 0.0.684: the mailbox owner word for the display clock floors (owner 3; false = a DAL step or a clock hold owns it).
++bool dal_owner_claim_floor();
++void dal_owner_release_floor();
+ 
+ // True while a DAL STEP runs (owner 1; the mode trial refuses to start then; 0.0.605). 0.0.607: a clock hold (owner 2) does NOT count - it belongs to the mode trial that holds it.
+ bool dal_busy();
+--- a/src/amd/smu_dal_pure.h
++++ b/src/amd/smu_dal_pure.h
+@@ -242,7 +242,7 @@
+ // Everything below is decisions and the raise / release orchestration over a small interface (HoldIo), so tests/native_s2_dal_test.cpp and native_s2d_test.cpp drive the exact code the kext
+ // runs; smu_dal.cpp supplies the hardware (the mailbox sender, the DFS readback).
+ // =====================================================================================================================================================
+-enum Owner : uint32_t { kOwnerIdle = 0, kOwnerDal = 1, kOwnerHold = 2 };
++enum Owner : uint32_t { kOwnerIdle = 0, kOwnerDal = 1, kOwnerHold = 2, kOwnerFloor = 3 };   // 0.0.684: 3 = the display clock floors (clkfloor.cpp), once at boot
+ enum HoldSt : uint32_t { kHsIdle = 0, kHsRaising = 1, kHsHeld = 2, kHsReleasing = 3, kHsReleased = 4, kHsStuck = 5, kHsInvalid = 0xFFu };
+ enum HoldEv : uint32_t {
+     kEvRaise = 1,        // IDLE / RELEASED -> RAISING (the claim)
+--- a/src/dcn/navi48_dcn.cpp
++++ b/src/dcn/navi48_dcn.cpp
+@@ -35,6 +35,8 @@
+ #include "navi48_ufmon_pure.h"      // build 0.0.672 (black band): the scanout underflow monitor (host-tested)
+ #include "navi48_disparb_pure.h"    // build 0.0.673: the display arbitration Linux programs for one plane (DET, watermarks; host-tested)
+ #include "amd/amdgpu_smu.h"           // build 0.0.673: smu_uclk_display_pin / smu_uclk_pin_result (the UCLK fallback)
++#include "amd/clkfloor.h"         // build 0.0.684: the display clock floors (DALSMC, as Linux dcn401 clk_mgr) and the boot clock trace
++#include "amd/clkfloor_pure.h"    // build 0.0.684: n48dalfloor::verdict_name
+ #include "navi48_modetrial_pure.h"   // build 0.0.605 (native S2d): the timed mode trial - decisions AND sequences, host-tested through a Hw interface
+ #include "Navi48DisplayOps.h"          // build 0.0.652 (M5): the monitor B's mode constants (fbEdid reads blocks 0 and 1 over DDC line 3)
+ 
+@@ -2486,6 +2488,20 @@
+ 	gDcn.owner->setProperty("Navi48,DisplayArb", t);
+ }
+ 
++// 0.0.684: Navi48,DalFloor (the display clock floors) and Navi48,DisplayClocks (the boot clock trace around underflow events). Monitor thread only.
++static void floor_publish() {
++	if (gDcn.owner == nullptr) return;
++	static char t[1280];   // the floors' worst case is about 1000 bytes
++	amdgpu::dal_floor_describe(t, sizeof(t));
++	gDcn.owner->setProperty("Navi48,DalFloor", t);
++}
++static void clk_publish() {
++	if (gDcn.owner == nullptr) return;
++	static char t[1280];   // the trace's worst case is about 1100 bytes
++	amdgpu::clktrace_describe(t, sizeof(t));
++	gDcn.owner->setProperty("Navi48,DisplayClocks", t);
++}
++
+ // The fallback's stage 1 (0.0.674; 0.0.673 ran it only with the pin): the stutter allow of step 1 is taken back (the GOP's SELF_REFRESH_FORCE bits), with NO
+ // UCLK pin. Once per boot; under gMtLock like step 1. True when the stutter is in the GOP's state now, or there was nothing to restore (the arbitration did
+ // not allow stutter, or the GOP did not forbid it).
+@@ -2551,13 +2567,28 @@
+ 	bool wasOn = false;
+ 	uint64_t lastEvents = 0;
+ 	uclk_publish();
++	amdgpu::clktrace_start(t0);   // 0.0.684: the boot clock trace samples from now on (navi48-clklog=0: off)
+ 	while (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) == 0u) {
+ 		IOSleep(50);
+ 		if (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) != 0u) break;
+ 		if (!gDcn.armed || gDcn.dev == nullptr) continue;
+ 		const bool on = arb_display_on(nullptr);
+ 		const uint64_t ms = now_ms();
+-		if (!gArbDone && on && ms - t0 >= 2000u && arb_apply_once()) { gArbDone = true; gFb.armed = true; uclk_publish(); }
++		if (!gArbDone && on && ms - t0 >= 2000u && arb_apply_once()) {
++			gArbDone = true;
++			// 0.0.684: the display clock floors Linux's dcn401_update_clocks sends (NumOfDisplays, DCFCLK hard minimum and deep-sleep floor, DISPCLK/DPPCLK
++			// hard minimums; amd/clkfloor_pure.h), once, after the arbitration and BEFORE the UCLK fallback arms. No lock held (it waits on the PMFW).
++			// navi48-dalfloor=0: nothing sent.
++			uint32_t dcfFloor = 0u;
++			struct dcn41_otg_timing ftm {};
++			struct dcn41_timing_decoded ftd {};
++			if (dcn41_otg_read_timing(&gDcn.d, 0u, &ftm) == DCN41_OK) dcn41_otg_timing_decode(&ftm, &ftd);   // read-only: the lit timing the floors must match
++			const uint32_t fv = amdgpu::dal_floor_run(*gDcn.dev, ftd.h_active, ftd.v_active, ftd.h_total, ftd.v_total, &dcfFloor);
++			amdgpu::clktrace_floor(dcfFloor, now_ms());
++			N48LOG("disparb: display clock floors: %s (DCFCLK floor %u MHz); the UCLK fallback arms now", n48dalfloor::verdict_name(fv), dcfFloor);
++			floor_publish();
++			gFb.armed = true; uclk_publish(); clk_publish();
++		}
+ 		// A new baseline for ufmon after a display-off period, a 60 Hz switch or a new scanout acquisition (what is sticky then predates the watch).
+ 		const uint32_t sg = scanGeneration(), mg = __atomic_load_n(&gArbModeGen, __ATOMIC_ACQUIRE);
+ 		if ((on && !wasOn) || sg != lastScanGen || mg != lastModeGen) { monGen++; lastScanGen = sg; lastModeGen = mg; }
+@@ -2565,6 +2596,7 @@
+ 		if (on) ufmon_poll(monGen);
+ 		const uint64_t ev = gUf.events, fresh = ev - lastEvents;
+ 		lastEvents = ev;
++		if (on && amdgpu::clktrace_poll(*gDcn.dev, now_ms(), fresh, gFb.pinned)) clk_publish();   // 0.0.684: read-only (metrics + DFS readback)
+ 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
+ 		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
+ 		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);

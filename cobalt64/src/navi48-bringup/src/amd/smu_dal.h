@@ -27,7 +27,13 @@ uint32_t dal_gated_level();
 
 // The only DAL sender. Checks the allowlist first (pure, smu_dal_pure.h), refuses when RESP == 0 before sending, takes the shared mailbox
 // lock (smu_lock_enter), waits at most 500 ms for the reply with IOSleep, and logs one line. Returns kIOReturnSuccess only for RESP == 1.
-kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m);
+// 0.0.684: floorAllow = the display clock floors' allowlist (clkfloor.cpp, n48dalfloor::allow; non-zero = refused, nothing sent), used INSTEAD
+// of the experiment's allowlist and its native-boot gate. Only clkfloor.cpp passes it; everyone else omits it.
+typedef uint32_t (*DalAllowFn)(uint32_t msg, uint32_t param);
+kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m, DalAllowFn floorAllow = nullptr);
+// 0.0.684: the mailbox owner word for the display clock floors (owner 3; false = a DAL step or a clock hold owns it).
+bool dal_owner_claim_floor();
+void dal_owner_release_floor();
 
 // True while a DAL STEP runs (owner 1; the mode trial refuses to start then; 0.0.605). 0.0.607: a clock hold (owner 2) does NOT count - it belongs to the mode trial that holds it.
 bool dal_busy();

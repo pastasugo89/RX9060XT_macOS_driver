@@ -75,12 +75,14 @@ static kern_return_t resp_to_rc(uint32_t resp) {
     }
 }
 
-kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m) {
+kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t param, DalMsg *m, DalAllowFn floorAllow) {
     DalMsg local;
     DalMsg *o = m != nullptr ? m : &local;
     memset(o, 0, sizeof(*o));
     // 1. The allowlist, before anything else. Level 0 (no boot-arg, or not a native boot with S1b POSITIVE PASS) refuses everything.
-    const uint32_t why = allow_check(dal_gated_level(), msg, param, gDal.max[0], gDal.max[1]);
+    //    0.0.684: the display clock floors (clkfloor.cpp, its only caller with floorAllow) pass THEIR allowlist (n48dalfloor::allow) instead of the
+    //    experiment's; every other caller passes none and gets the experiment's, exactly as before.
+    const uint32_t why = floorAllow != nullptr ? floorAllow(msg, param) : allow_check(dal_gated_level(), msg, param, gDal.max[0], gDal.max[1]);
     if (why != kAllow) {
         o->refuse = why; o->rc = (uint32_t)kIOReturnNotPermitted;
         DAL_LOG("send REFUSED msg=0x%02x param=0x%08x reason=%u (nothing sent)", msg, param, why);
@@ -388,6 +390,9 @@ static void step_raise(uint32_t step, const Decoded &b0) {
 }
 
 bool dal_busy() { return __atomic_load_n(&gDalOwner, __ATOMIC_SEQ_CST) == kOwnerDal; }
+// 0.0.684: the display clock floors take the mailbox owner word for their one boot-time run (owner 3), so a DAL step or a clock hold cannot interleave.
+bool dal_owner_claim_floor() { return owner_cas(kOwnerIdle, kOwnerFloor); }
+void dal_owner_release_floor() { (void)owner_cas(kOwnerFloor, kOwnerIdle); }
 
 IOReturn dal_run_step(DeviceContext &dev, uint32_t step, n48n_dal_result *out) {
     if (out == nullptr || step < kE1b || step > kStepLast) return kIOReturnBadArgument;

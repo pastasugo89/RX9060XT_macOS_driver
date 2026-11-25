@@ -35,6 +35,8 @@
 #include "navi48_ufmon_pure.h"      // build 0.0.672 (black band): the scanout underflow monitor (host-tested)
 #include "navi48_disparb_pure.h"    // build 0.0.673: the display arbitration Linux programs for one plane (DET, watermarks; host-tested)
 #include "amd/amdgpu_smu.h"           // build 0.0.673: smu_uclk_display_pin / smu_uclk_pin_result (the UCLK fallback)
+#include "amd/clkfloor.h"         // build 0.0.684: the display clock floors (DALSMC, as Linux dcn401 clk_mgr) and the boot clock trace
+#include "amd/clkfloor_pure.h"    // build 0.0.684: n48dalfloor::verdict_name
 #include "navi48_modetrial_pure.h"   // build 0.0.605 (native S2d): the timed mode trial - decisions AND sequences, host-tested through a Hw interface
 #include "Navi48DisplayOps.h"          // build 0.0.652 (M5): the monitor B's mode constants (fbEdid reads blocks 0 and 1 over DDC line 3)
 
@@ -2486,6 +2488,20 @@ static void arb_publish() {
 	gDcn.owner->setProperty("Navi48,DisplayArb", t);
 }
 
+// 0.0.684: Navi48,DalFloor (the display clock floors) and Navi48,DisplayClocks (the boot clock trace around underflow events). Monitor thread only.
+static void floor_publish() {
+	if (gDcn.owner == nullptr) return;
+	static char t[1280];   // the floors' worst case is about 1000 bytes
+	amdgpu::dal_floor_describe(t, sizeof(t));
+	gDcn.owner->setProperty("Navi48,DalFloor", t);
+}
+static void clk_publish() {
+	if (gDcn.owner == nullptr) return;
+	static char t[1280];   // the trace's worst case is about 1100 bytes
+	amdgpu::clktrace_describe(t, sizeof(t));
+	gDcn.owner->setProperty("Navi48,DisplayClocks", t);
+}
+
 // The fallback's stage 1 (0.0.674; 0.0.673 ran it only with the pin): the stutter allow of step 1 is taken back (the GOP's SELF_REFRESH_FORCE bits), with NO
 // UCLK pin. Once per boot; under gMtLock like step 1. True when the stutter is in the GOP's state now, or there was nothing to restore (the arbitration did
 // not allow stutter, or the GOP did not forbid it).
@@ -2551,13 +2567,28 @@ static void arb_monitor_loop() {
 	bool wasOn = false;
 	uint64_t lastEvents = 0;
 	uclk_publish();
+	amdgpu::clktrace_start(t0);   // 0.0.684: the boot clock trace samples from now on (navi48-clklog=0: off)
 	while (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) == 0u) {
 		IOSleep(50);
 		if (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) != 0u) break;
 		if (!gDcn.armed || gDcn.dev == nullptr) continue;
 		const bool on = arb_display_on(nullptr);
 		const uint64_t ms = now_ms();
-		if (!gArbDone && on && ms - t0 >= 2000u && arb_apply_once()) { gArbDone = true; gFb.armed = true; uclk_publish(); }
+		if (!gArbDone && on && ms - t0 >= 2000u && arb_apply_once()) {
+			gArbDone = true;
+			// 0.0.684: the display clock floors Linux's dcn401_update_clocks sends (NumOfDisplays, DCFCLK hard minimum and deep-sleep floor, DISPCLK/DPPCLK
+			// hard minimums; amd/clkfloor_pure.h), once, after the arbitration and BEFORE the UCLK fallback arms. No lock held (it waits on the PMFW).
+			// navi48-dalfloor=0: nothing sent.
+			uint32_t dcfFloor = 0u;
+			struct dcn41_otg_timing ftm {};
+			struct dcn41_timing_decoded ftd {};
+			if (dcn41_otg_read_timing(&gDcn.d, 0u, &ftm) == DCN41_OK) dcn41_otg_timing_decode(&ftm, &ftd);   // read-only: the lit timing the floors must match
+			const uint32_t fv = amdgpu::dal_floor_run(*gDcn.dev, ftd.h_active, ftd.v_active, ftd.h_total, ftd.v_total, &dcfFloor);
+			amdgpu::clktrace_floor(dcfFloor, now_ms());
+			N48LOG("disparb: display clock floors: %s (DCFCLK floor %u MHz); the UCLK fallback arms now", n48dalfloor::verdict_name(fv), dcfFloor);
+			floor_publish();
+			gFb.armed = true; uclk_publish(); clk_publish();
+		}
 		// A new baseline for ufmon after a display-off period, a 60 Hz switch or a new scanout acquisition (what is sticky then predates the watch).
 		const uint32_t sg = scanGeneration(), mg = __atomic_load_n(&gArbModeGen, __ATOMIC_ACQUIRE);
 		if ((on && !wasOn) || sg != lastScanGen || mg != lastModeGen) { monGen++; lastScanGen = sg; lastModeGen = mg; }
@@ -2565,6 +2596,7 @@ static void arb_monitor_loop() {
 		if (on) ufmon_poll(monGen);
 		const uint64_t ev = gUf.events, fresh = ev - lastEvents;
 		lastEvents = ev;
+		if (on && amdgpu::clktrace_poll(*gDcn.dev, now_ms(), fresh, gFb.pinned)) clk_publish();   // 0.0.684: read-only (metrics + DFS readback)
 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
 		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
 		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);

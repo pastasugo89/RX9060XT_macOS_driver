@@ -242,7 +242,7 @@ constexpr bool e1b_enables(uint32_t levels6, uint32_t max6, uint32_t max7) { ret
 // Everything below is decisions and the raise / release orchestration over a small interface (HoldIo), so tests/native_s2_dal_test.cpp and native_s2d_test.cpp drive the exact code the kext
 // runs; smu_dal.cpp supplies the hardware (the mailbox sender, the DFS readback).
 // =====================================================================================================================================================
-enum Owner : uint32_t { kOwnerIdle = 0, kOwnerDal = 1, kOwnerHold = 2 };
+enum Owner : uint32_t { kOwnerIdle = 0, kOwnerDal = 1, kOwnerHold = 2, kOwnerFloor = 3 };   // 0.0.684: 3 = the display clock floors (clkfloor.cpp), once at boot
 enum HoldSt : uint32_t { kHsIdle = 0, kHsRaising = 1, kHsHeld = 2, kHsReleasing = 3, kHsReleased = 4, kHsStuck = 5, kHsInvalid = 0xFFu };
 enum HoldEv : uint32_t {
     kEvRaise = 1,        // IDLE / RELEASED -> RAISING (the claim)
