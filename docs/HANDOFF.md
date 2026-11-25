@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, after isolated hardware validation of the Metal 43 candidate. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after installing Metal 43 and verifying Basemark capability detection. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -13,7 +13,7 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
   GFX clock gating (0.0.675), thermal clamp at 100 C (0.0.675), fan zero-RPM opt-in `navi48-fan-zerorpm=0` (0.0.676),
   CP busy marks (0.0.677), compute preamble (0.0.678), **GFXCLK DPM via boot gate** (0.0.678) which works since the
   Linux GFX doorbell index (0.0.679), telemetry `Navi48,Telemetry` (0.0.681). Interrupts still off (`navi48-interrupts=0`).
-- Metal bundle **41** (ANGLE cubemap usage, views, updated translator and release RADV). RDNA4FB 0.0.9. 60 Hz disabled (flag removed 2026-11-12).
+- Metal bundle **43** is installed. Fresh Basemark processes load it. The desktop started this boot on bundle 41. RDNA4FB 0.0.9. 60 Hz disabled (flag removed 2026-11-12).
 - Boot guard: `/Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.sh` + latch
   `boot-state.json` (pending -> stable after desktop 120 s). A pending/failed latch blocks acceleration next boot
   (archive it to unblock, see STATO.md history).
@@ -85,7 +85,7 @@ only the owner account pushes directly; others via PR with 1 approval). Licence:
   shared-image copy and preserved the exact bytes in a linear-to-sRGB copy.
 - The signed 42 build is in `research/builds/macos-20261125/bundle42-raster-copy/`. Use the
   `stage42-raster-copy-v1` profile when staging from live bundle 41. WindowServer and Brave
-  with 42 still need a boot test. Kernel 0.0.682 and Metal 41 remain active.
+  with 42 still need a boot test. Kernel 0.0.682 and Metal 41 were the active baseline for those tests.
 - The fan diagnostic separates the policy request, readback and physical fan behavior. The
   change built on a copy of the deployed kernel source and passed 143 host checks. It is for a
   future kernel build. PMFW IF 0x33 RPM and physical speed regulation remain unverified.
@@ -108,12 +108,14 @@ rows, zeroed allocations, 1×1 mip readback, private upload and fragment decodin
 The cubemap and raster tests passed too. The signed candidate is at
 `research/builds/macos-20261125/bundle43-bc-textures/`. Use the
 `stage43-bc-textures-v1` profile and `--allow-skip` when staging from live 41.
-Basemark detection and benchmark startup through the installed bundle are
-separate verification steps.
+Metal 43 is installed with the 41 backup and a guard for kernel 0.0.682.
+Basemark's native capability query in a new process now returns BC7 for the
+RX 9060 XT. The UI needs a fresh process to refresh its API list. A full benchmark
+run and desktop validation after reboot remain pending.
 
 ## Next planned steps
 
-1. After approval, install Metal 43, verify Basemark detection and retest WindowServer, Aquarium and
+1. Relaunch Basemark to refresh backend selection and retest WindowServer, Aquarium and
    `tools/baremetal/navi44-gpu-diagnostics/test-brave-webgl2-cubemap.py`. Compare pipeline
    timing at login using the existing T1 logs.
 2. Validate fan spin-up and speed regulation with an independent tachometer or visual observation
