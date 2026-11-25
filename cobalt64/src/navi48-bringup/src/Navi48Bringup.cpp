@@ -7456,6 +7456,7 @@ IOService *Navi48Bringup::probe(IOService *provider, SInt32 *score) {
 bool Navi48Bringup::start(IOService *provider) {
 	if (!super::start(provider)) return false;
 	if (!gVramMmLock) gVramMmLock = IOLockAlloc();   // never freed: a verb may hold it at stop
+	amdgpu::smu_set_vram_reader(navi48_vram_read_mm);   // 0.0.685: smu_read_metrics copies the table under gVramMmLock (never a bare MM window)
 	if (!gScanoutLock) gScanoutLock = IOLockAlloc(); // 0.0.272: never freed, same reason
 	if (!gFmLock) gFmLock = IOLockAlloc();           // build 0.0.518 (switch 74, flip mode): never freed, same reason
 	if (!gSfLock) gSfLock = IOLockAlloc();           // build 0.0.542 (`scanout full`'s published capture): never freed, same reason

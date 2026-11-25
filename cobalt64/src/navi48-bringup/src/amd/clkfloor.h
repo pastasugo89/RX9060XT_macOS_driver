@@ -3,8 +3,9 @@
 //  minimum and deep-sleep floor, the DISPCLK/DPPCLK hard minimums), sent ONCE at boot by the display monitor thread after the display arbitration
 //  and before the UCLK fallback arms; and the boot clock trace (PMFW metrics CurrClock[] and the DFS readback around ufmon underflow events).
 //  Every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp).
-//  Boot-args: navi48-dalfloor (absent = NumOfDisplays + DCFCLK + deep sleep + DISPCLK/DPPCLK; 0 = nothing sent; see parts_of), navi48-clklog
-//  (absent = 600 s of trace after the floors; 0 = off; N = N seconds).
+//  Boot-args: navi48-dalfloor (0.0.685: absent = OFF, nothing sent; 1 = the 0.0.684 set NumOfDisplays + DCFCLK + deep sleep + DISPCLK/DPPCLK, sent only
+//  when the SMU is healthy, the PPSMC readiness probe answers and DISPCLK/DPPCLK read the 272.7 MHz the floors assume; see parts_of), navi48-clklog
+//  (absent = 600 s of trace after the floors; 0 = off; N = N seconds; 0.0.685: self-limited, see smu_health_pure.h).
 //  Callers: navi48_dcn.cpp arb_monitor_loop only (a kernel thread, no lock held). Never the interrupt handler, never under a display lock.
 //
 #pragma once

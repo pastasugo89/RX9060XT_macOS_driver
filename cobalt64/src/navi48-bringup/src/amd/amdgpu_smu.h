@@ -71,6 +71,33 @@ struct SmuSeq {
     SmuSeq(const SmuSeq &) = delete;
     SmuSeq &operator=(const SmuSeq &) = delete;
 };
+// 0.0.685: the same lock, but never waited for: false when another thread holds it (a message in flight there, possibly up to its 2 s
+// timeout). For OPTIONAL callers (the clock trace) that must never queue behind a timeout. Recursive for the owner like smu_lock_enter.
+bool smu_lock_try_enter();
+struct SmuTrySeq {
+    bool held;
+    SmuTrySeq() : held(smu_lock_try_enter()) {}
+    ~SmuTrySeq() { if (held) smu_lock_exit(); }
+    SmuTrySeq(const SmuTrySeq &) = delete;
+    SmuTrySeq &operator=(const SmuTrySeq &) = delete;
+};
+
+// 0.0.685: the SMU mailbox health latch (decisions in smu_health_pure.h). Until smu_health_arm() (the display monitor thread's start) the
+// PPSMC path behaves exactly as before 0.0.685. Armed: a PPSMC timeout latches DEGRADED and from then on every PPSMC and DAL message is refused
+// at once (kIOReturnNotReady, no register touched) instead of waiting 2 s on a PMFW that does not answer; a DAL timeout turns the DAL mailbox
+// off for the boot and probes the PPSMC mailbox once (smu_health_probe). The PMFW keeps the clocks it last set.
+void smu_health_arm();
+bool smu_optional_ok();                                   // healthy (or unarmed): optional SMU traffic may run
+bool smu_dal_allowed();                                   // the DAL sender may send (not off, not degraded)
+void smu_health_dal_timeout();                            // the DAL sender saw RESP stay 0 for 2 s
+kern_return_t smu_health_probe(const DeviceContext &dev); // PPSMC GetSmuVersion: the only message sent while SUSPECT / DEGRADED
+void smu_health_poll(const DeviceContext &dev, uint64_t nowMs);   // display monitor: the passive recovery (reads RESP; probes rarely)
+uint32_t smu_health_generation();                         // changes whenever the latch changes (for the registry)
+void smu_health_describe(char *t, size_t n);              // Navi48,SmuHealth
+// 0.0.685: the locked VRAM reader (Navi48Bringup.cpp navi48_vram_read_mm, under gVramMmLock) that smu_read_metrics copies the metrics table
+// through, so the MM_INDEX / MM_DATA window is never driven by two threads at once. Registered once by Navi48Bringup at start.
+typedef bool (*SmuVramReader)(uint64_t vramOffset, uint32_t *dst, uint32_t dwords);
+void smu_set_vram_reader(SmuVramReader fn);
 
 //
 // smu_test_message — port of the basic ping. PPSMC::TestMessage with

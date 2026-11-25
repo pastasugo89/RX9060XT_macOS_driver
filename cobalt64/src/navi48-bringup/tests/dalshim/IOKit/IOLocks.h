@@ -7,3 +7,4 @@ static inline IOLock *IOLockAlloc(void) { if (gDalShimLockAllocFail) return null
 static inline void IOLockFree(IOLock *l) { pthread_mutex_destroy(&l->m); delete l; }
 static inline void IOLockLock(IOLock *l) { pthread_mutex_lock(&l->m); gDalShimLockCount++; }
 static inline void IOLockUnlock(IOLock *l) { pthread_mutex_unlock(&l->m); }
+static inline bool IOLockTryLock(IOLock *l) { if (pthread_mutex_trylock(&l->m) != 0) return false; gDalShimLockCount++; return true; }   // 0.0.685 (smu_lock_try_enter)

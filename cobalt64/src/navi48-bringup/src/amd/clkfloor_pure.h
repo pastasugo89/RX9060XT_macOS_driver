@@ -62,12 +62,19 @@ enum Part : uint32_t {
 };
 constexpr uint32_t kPartsAll = 0x3Fu;
 constexpr uint32_t kDefaultParts = kPartDisplays | kPartDcfclk | kPartDeepSleep | kPartDispDpp;
-// navi48-dalfloor: absent = the default (0x0F); 0 = OFF (nothing is sent); 1 = the default; 2 = the default + the UCLK hard minimum (0x1F);
-// 3 = everything (0x3F); 0x100 | mask = exactly `mask` (bits above, 0x100 alone = nothing). Any other value: the default.
+// navi48-dalfloor: absent = OFF (0.0.685: nothing is sent; 0.0.684's default 0x0F wedged the PMFW on the live boot of 2026-11-25, see
+// smu_health_pure.h); 0 = OFF; 1 = the 0.0.684 set (0x0F); 2 = that + the UCLK hard minimum (0x1F); 3 = everything (0x3F); 0x100 | mask = exactly
+// `mask` (bits above, 0x100 alone = nothing). Any other value: OFF. Opting in still sends nothing unless every precondition of dal_floor_run holds.
 constexpr uint32_t parts_of(bool present, uint32_t v) {
-    return !present ? kDefaultParts : v == 0u ? 0u : v == 1u ? kDefaultParts : v == 2u ? (kDefaultParts | kPartUclk) : v == 3u ? kPartsAll
-         : (v & ~0xFFu) == 0x100u ? (v & kPartsAll) : kDefaultParts;
+    return !present ? 0u : v == 0u ? 0u : v == 1u ? kDefaultParts : v == 2u ? (kDefaultParts | kPartUclk) : v == 3u ? kPartsAll
+         : (v & ~0xFFu) == 0x100u ? (v & kPartsAll) : 0u;
 }
+// 0.0.685: the floors were computed for the GOP's DISPCLK / DPPCLK of 272.727 MHz (4 x 4500 / 66; the 0.0.606 readback). The live 0.0.684 boot read
+// 562.5 / 562.5 MHz (the PMFW's own DISPCLK / DPPCLK DPM choice once our EnableAllSmuFeatures runs; the metrics CurrClock agree). A floor computed
+// for one state must not be sent in another: nothing is sent unless both read back within 1 % of the assumption.
+constexpr uint32_t kAssumedDispKhz = 272727u;
+constexpr bool near_assumed(uint32_t khz) { return khz != 0u && (uint64_t)khz * 100u >= (uint64_t)kAssumedDispKhz * 99u && (uint64_t)khz * 100u <= (uint64_t)kAssumedDispKhz * 101u; }
+constexpr bool clocks_match_assumption(uint32_t dispKhz, uint32_t dppKhz) { return near_assumed(dispKhz) && near_assumed(dppKhz); }
 
 // ---- the mode and the DML values (integer forms of the double expressions; the host test checks them against the doubles) ----------------
 struct Mode { uint32_t pclkKhz, hActive, hTotal, vActive, vTotal, bpp, odm; };
@@ -256,15 +263,18 @@ constexpr bool plan_allowed(const Plan &p, uint32_t parts, const Limits &l) {
 // ---- the verdict of the run ------------------------------------------------------------------------------------------------------------
 enum Verdict : uint32_t {
     kVNotRun = 0, kVOff = 1, kVSent = 2, kVPartial = 3, kVMailbox = 4, kVHeader = 5, kVNoSmu = 6, kVClocks = 7, kVBusy = 8, kVRefused = 9, kVDropped = 10,
-    kVMode = 11
+    kVMode = 11, kVAssume = 12, kVUnhealthy = 13, kVPostFail = 14
 };
 constexpr const char *verdict_name(uint32_t v) {
-    return v == kVNotRun ? "not run" : v == kVOff ? "off (navi48-dalfloor=0)" : v == kVSent ? "sent, every message OK" :
+    return v == kVNotRun ? "not run" : v == kVOff ? "off (0.0.685 default; navi48-dalfloor=1 opts in)" : v == kVSent ? "sent, every message OK" :
            v == kVPartial ? "sent, some messages not OK (see the steps)" : v == kVMailbox ? "DAL mailbox not ready or timed out: stopped" :
            v == kVHeader ? "DALSMC header version is not 1: nothing sent" : v == kVNoSmu ? "SMU features not enabled by this boot: nothing sent" :
            v == kVClocks ? "DISPCLK/DPPCLK readback unusable: display clock floors skipped" : v == kVBusy ? "the DAL mailbox is owned by a DAL step or a clock hold: nothing sent" :
            v == kVRefused ? "a planned message failed the allowlist: nothing sent" : v == kVDropped ? "a display clock read below its start after the floors: raised back" :
-           v == kVMode ? "the lit timing is not 2560x1440 H_TOTAL 2720 V_TOTAL 1525/3050: nothing sent" : "?";
+           v == kVMode ? "the lit timing is not 2560x1440 H_TOTAL 2720 V_TOTAL 1525/3050: nothing sent" :
+           v == kVAssume ? "the live DISPCLK/DPPCLK are not the 272.7 MHz the floors were computed for: nothing sent" :
+           v == kVUnhealthy ? "the SMU is not healthy or the PPSMC readiness probe failed: nothing sent" :
+           v == kVPostFail ? "sent, but the PMFW stopped answering afterwards: SMU DEGRADED, all SMU traffic stopped" : "?";
 }
 // After the DISPCLK / DPPCLK floors: kept (both at or above the start), or one fell (the corrective raise asks ceil(start MHz)).
 constexpr bool clocks_kept(uint32_t startDisp, uint32_t startDpp, uint32_t nowDisp, uint32_t nowDpp) {

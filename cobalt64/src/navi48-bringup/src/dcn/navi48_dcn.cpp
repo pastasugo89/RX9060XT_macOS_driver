@@ -2497,9 +2497,16 @@ static void floor_publish() {
 }
 static void clk_publish() {
 	if (gDcn.owner == nullptr) return;
-	static char t[1280];   // the trace's worst case is about 1100 bytes
+	static char t[1536];   // the trace's worst case is about 1300 bytes (0.0.685: + the self-limit's counters)
 	amdgpu::clktrace_describe(t, sizeof(t));
 	gDcn.owner->setProperty("Navi48,DisplayClocks", t);
+}
+// 0.0.685: Navi48,SmuHealth (the SMU mailbox health latch, amd/smu_health_pure.h). Monitor thread only.
+static void health_publish() {
+	if (gDcn.owner == nullptr) return;
+	static char t[512];
+	amdgpu::smu_health_describe(t, sizeof(t));
+	gDcn.owner->setProperty("Navi48,SmuHealth", t);
 }
 
 // The fallback's stage 1 (0.0.674; 0.0.673 ran it only with the pin): the stutter allow of step 1 is taken back (the GOP's SELF_REFRESH_FORCE bits), with NO
@@ -2567,6 +2574,12 @@ static void arb_monitor_loop() {
 	bool wasOn = false;
 	uint64_t lastEvents = 0;
 	uclk_publish();
+	// 0.0.685: from here on a PPSMC timeout latches the SMU DEGRADED (no further SMU message; smu_health_pure.h). The boot bring-up before this point
+	// ran unarmed, exactly as before.
+	amdgpu::smu_health_arm();
+	uint32_t healthGen = amdgpu::smu_health_generation();
+	bool fbSkipLogged = false;
+	health_publish();
 	amdgpu::clktrace_start(t0);   // 0.0.684: the boot clock trace samples from now on (navi48-clklog=0: off)
 	while (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) == 0u) {
 		IOSleep(50);
@@ -2597,6 +2610,8 @@ static void arb_monitor_loop() {
 		const uint64_t ev = gUf.events, fresh = ev - lastEvents;
 		lastEvents = ev;
 		if (on && amdgpu::clktrace_poll(*gDcn.dev, now_ms(), fresh, gFb.pinned)) clk_publish();   // 0.0.684: read-only (metrics + DFS readback)
+		amdgpu::smu_health_poll(*gDcn.dev, now_ms());   // 0.0.685: DEGRADED only: reads the PPSMC response every 10 s; probes once it answered
+		if (amdgpu::smu_health_generation() != healthGen) { healthGen = amdgpu::smu_health_generation(); health_publish(); }
 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
 		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
 		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);
@@ -2607,6 +2622,9 @@ static void arb_monitor_loop() {
 			N48LOG("ufmon: UCLK fallback stage 1 (stutter off, no pin; %s) -> %s; underflow events so far %llu", n48uclk::why_name(gFb.why),
 			       ok ? "done" : "FAILED (retry in 10 s)", (unsigned long long)ev);
 			uclk_publish();
+		} else if (act != n48uclk::fb::kNone && !amdgpu::smu_optional_ok()) {
+			// 0.0.685: the SMU is DEGRADED: no pin / release message (it would only be refused); logged once, the request stays pending.
+			if (!fbSkipLogged) { fbSkipLogged = true; N48LOG("ufmon: UCLK fallback %s NOT sent: the SMU is DEGRADED (no SMU message is sent; see Navi48,SmuHealth)", act == n48uclk::fb::kPin ? "pin" : "release"); }
 		} else if (act != n48uclk::fb::kNone) {
 			const bool pin = act == n48uclk::fb::kPin;
 			const kern_return_t kr = amdgpu::smu_uclk_display_pin(*gDcn.dev, pin, gFb.why);   // no lock held

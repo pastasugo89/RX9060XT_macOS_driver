@@ -1,6 +1,9 @@
 //
 //  clkfloor.cpp - build 0.0.684: the display clock floors (DALSMC, as Linux's dcn401 clk_mgr) and the boot clock trace. See clkfloor.h;
-//  every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp, which also pins this file's shape).
+//  every decision is in clkfloor_pure.h (host-tested by tests/dalfloor685_test.cpp, which also pins this file's shape).
+//  0.0.685 (after 0.0.684 wedged the PMFW on the live boot): the floors are OFF by default; opted in, they need a healthy SMU, the live DISPCLK/DPPCLK
+//  the floors were computed for and a PPSMC readiness probe, run under the shared mailbox lock, stop at the first unanswered message and probe the PPSMC
+//  mailbox afterwards. The trace never waits for the lock, backs off after failures and stops for the boot (smu_health_pure.h).
 //
 //  What this file WRITES: the three DAL mailbox dwords, through smu_dal_send with the floor allowlist only (n48dalfloor::allow decides every message)
 //  (fsend below is the single entry). Everything else is read-only: the DFS / PLL readback of DISPCLK / DPPCLK (CLK0 registers), and the PMFW
@@ -17,6 +20,7 @@
 #include "smu_dal_pure.h"
 #include "amdgpu_smu.h"
 #include "amdgpu_log.h"
+#include "smu_health_pure.h"   // 0.0.685: the clock trace's self-limit
 
 #define FLOOR_LOG(fmt, ...) AMDGPU_LOG("dalfloor", fmt, ##__VA_ARGS__)
 #define TRACE_LOG(fmt, ...) AMDGPU_LOG("clktrace", fmt, ##__VA_ARGS__)
@@ -145,7 +149,7 @@ uint32_t dal_floor_run(const DeviceContext &dev, uint32_t hActive, uint32_t vAct
     gF.parts = parts_of(gF.bootArgPresent, v);
     if (gF.parts == 0u) {
         gF.verdict = kVOff;
-        FLOOR_LOG("display clock floors OFF (navi48-dalfloor=0): nothing sent");
+        FLOOR_LOG("display clock floors OFF (0.0.685 default; navi48-dalfloor=1 opts in): nothing sent");
         return gF.verdict;
     }
     gF.hActive = hActive; gF.vActive = vActive; gF.hTotal = hTotal; gF.vTotal = vTotal;
@@ -159,16 +163,41 @@ uint32_t dal_floor_run(const DeviceContext &dev, uint32_t hActive, uint32_t vAct
         FLOOR_LOG("display clock floors: the SMU features were not enabled by this boot: nothing sent");
         return gF.verdict;
     }
+    // 0.0.685: the clock state the floors were computed for (DISPCLK / DPPCLK 272.727 MHz). 0.0.684's live boot read 562.5 / 562.5: nothing is sent then.
+    gF.before = read_clocks(dev);
+    if (!clocks_usable(gF.before) || !clocks_match_assumption(gF.before.dispKhz, gF.before.dppKhz)) {
+        gF.verdict = kVAssume;
+        FLOOR_LOG("display clock floors: DISPCLK/DPPCLK read %u / %u kHz (%s), not the %u kHz the floors were computed for: nothing sent",
+                  gF.before.dispKhz, gF.before.dppKhz, clocks_usable(gF.before) ? "usable" : "UNUSABLE readback", kAssumedDispKhz);
+        return gF.verdict;
+    }
+    // 0.0.685: the SMU must be healthy and the DAL mailbox allowed (no earlier timeout this boot).
+    if (!smu_optional_ok() || !smu_dal_allowed()) {
+        gF.verdict = kVUnhealthy;
+        FLOOR_LOG("display clock floors: the SMU health latch does not allow it (optional traffic %s, DAL %s): nothing sent",
+                  smu_optional_ok() ? "ok" : "stopped", smu_dal_allowed() ? "allowed" : "off");
+        return gF.verdict;
+    }
     if (!dal_owner_claim_floor()) {
         gF.verdict = kVBusy;
         FLOOR_LOG("display clock floors: the DAL mailbox is owned by a DAL step or a clock hold: nothing sent");
         return gF.verdict;
     }
-    FLOOR_LOG("display clock floors: parts 0x%02x (navi48-dalfloor %s%u), as Linux dcn401_update_clocks for one 2560x1440@120 plane", gF.parts,
-              gF.bootArgPresent ? "=" : "absent, default 0x0f; ", gF.bootArgPresent ? v : 0u);
-    gF.before = read_clocks(dev);
+    FLOOR_LOG("display clock floors: parts 0x%02x (navi48-dalfloor=%u), as Linux dcn401_update_clocks for one 2560x1440@120 plane", gF.parts, v);
     bool lost = false;
     DalMsg m;
+    {
+    // 0.0.685: the WHOLE sequence under the shared mailbox lock (recursive: each message takes it again), so no PPSMC message (metrics, the UCLK
+    // fallback, a user client) runs between two DAL messages; the sequence stops at its first unanswered message (smu_dal_send then turns the DAL
+    // mailbox off and probes the PPSMC mailbox once), so the lock is never held past one 2 s timeout plus that probe.
+    SmuSeq seq;
+    if (!seq.held) { gF.verdict = kVBusy; goto out; }
+    // 0.0.685: the readiness probe: the PPSMC mailbox must answer GetSmuVersion before the first DAL message.
+    if (smu_health_probe(dev) != kIOReturnSuccess) {
+        gF.verdict = kVUnhealthy;
+        FLOOR_LOG("display clock floors: the PPSMC readiness probe failed: nothing sent on the DAL mailbox");
+        goto out;
+    }
     // dcn401_init_clocks: the SMU is present when GetSmuVersion answers; the two version checks are logged (Linux goes on either way) but the
     // header version must be DALSMC_VERSION here, or the message ids below may not mean what dalsmc.h says.
     if (fsend(dev, kMsgGetSmuVersion, 0u, &m) != kIOReturnSuccess) { gF.verdict = kVMailbox; goto out; }
@@ -224,13 +253,20 @@ uint32_t dal_floor_run(const DeviceContext &dev, uint32_t hActive, uint32_t vAct
             }
         }
     }
+    // 0.0.685: the post-check: the PMFW must still answer the PPSMC mailbox after the floors (0.0.684's live boot: it did not).
+    if (smu_health_probe(dev) != kIOReturnSuccess) {
+        gF.verdict = kVPostFail;
+        FLOOR_LOG("*** display clock floors: the PMFW stopped answering after the floors: SMU DEGRADED, all SMU traffic stopped ***");
+    }
+    }
 out:
     dal_owner_release_floor();
     gF.tookMs = now_ms() - gF.atMs;
     if (dcfFloorMhz != nullptr) *dcfFloorMhz = gF.dcfFloorMhz;
-    FLOOR_LOG("display clock floors: %s; DALSMC smu 0x%08x if 0x%x header %u; %u of %u messages OK; DISPCLK/DPPCLK %u / %u kHz before, %u / %u after%s; %llu ms",
+    FLOOR_LOG("display clock floors: %s; DALSMC smu 0x%08x if 0x%x header %u; %u of %u messages OK; DISPCLK/DPPCLK %u / %u kHz before, %u / %u after%s; %llu ms; SMU %s",
               verdict_name(gF.verdict), gF.smuVer, gF.ifVer, gF.hdrVer, gF.nOk, gF.plan.n, gF.before.dispKhz, gF.before.dppKhz, gF.after.dispKhz, gF.after.dppKhz,
-              gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, the raise did NOT verify)" : "", (unsigned long long)gF.tookMs);
+              gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, the raise did NOT verify)" : "", (unsigned long long)gF.tookMs,
+              smu_optional_ok() ? "healthy" : "DEGRADED (no SMU message is sent any more)");
     return gF.verdict;
 }
 
@@ -262,17 +298,28 @@ uint32_t gTSeconds;
 uint64_t gTStartMs, gTEndMs, gTNextMs, gTPubMs;
 uint32_t gTLines, gTBurstLogs;
 constexpr uint32_t kMaxLines = 400u, kMaxBurstLogs = 24u;
+// 0.0.685: the self-limit (smu_health_pure.h): consecutive failures, the busy skips, the stop and its reason.
+uint32_t gTConsec, gTMaxConsec;
+uint64_t gTSkippedBusy;
+uint32_t gTStop;   // 0 running; 1 consecutive failures; 2 the SMU health latch stopped optional traffic
+uint64_t gTStopMs;
+uint32_t gTLastKr;
+enum SampleRes : uint32_t { kSOk = 0, kSFailed = 1, kSBusy = 2, kSRefused = 3 };
 
-bool take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) {
+uint32_t take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) {
     s = Sample{};
     s.ms = ms; s.pinned = pinned;
     SmuMetricsResult r{};
     kern_return_t kr;
     {
-        SmuSeq seq;   // the whole table transfer under the shared mailbox lock (as Navi48UserClient::doMetrics)
-        kr = seq.held ? smu_read_metrics(dev, &r) : kIOReturnNoResources;
+        // 0.0.685: never queue behind another SMU user (a message in flight there may wait its full 2 s): skip this sample instead.
+        SmuTrySeq seq;   // the whole table transfer under the shared mailbox lock (as Navi48UserClient::doMetrics), or nothing
+        if (!seq.held) return kSBusy;
+        if (!smu_optional_ok()) return kSRefused;
+        kr = smu_read_metrics(dev, &r);
     }
-    if (kr != kIOReturnSuccess) return false;
+    gTLastKr = (uint32_t)kr;
+    if (kr != kIOReturnSuccess) return smu_optional_ok() ? kSFailed : kSRefused;
     const SmuMetrics &m = r.metrics;
     s.mhz[kTUclk] = m.CurrClock[SMUClk::UCLK];
     s.mhz[kTFclk] = m.CurrClock[SMUClk::FCLK];
@@ -280,12 +327,12 @@ bool take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) 
     s.mhz[kTDisp] = m.CurrClock[SMUClk::DISPCLK];
     s.mhz[kTDpp] = m.CurrClock[SMUClk::DPPCLK];
     s.mhz[kTSoc] = m.CurrClock[SMUClk::SOCCLK];
-    for (uint32_t i = 0; i < kTClks; i++) if (s.mhz[i] > 10000u) return false;   // a layout shift, not a clock
+    for (uint32_t i = 0; i < kTClks; i++) if (s.mhz[i] > 10000u) return kSFailed;   // a layout shift, not a clock
     const n48dal::Decoded d = read_clocks(dev);
     s.dfsDispKhz = d.ok ? d.dispKhz : 0u;
     s.dfsDppKhz = d.ok ? d.dppKhz : 0u;
     s.ok = true;
-    return true;
+    return kSOk;
 }
 void log_sample(const char *why, const Sample &s, uint64_t evMs) {
     TRACE_LOG("%s t=%llu ms (%lld ms from the burst): UCLK %u FCLK %u DCFCLK %u DISPCLK %u DPPCLK %u SOCCLK %u MHz; DFS DISPCLK %u DPPCLK %u kHz%s", why,
@@ -302,6 +349,7 @@ void clktrace_start(uint64_t nowMs) {
     gTOn = gTSeconds != 0u;
     gTFloored = false; gTEnded = false;
     gTStartMs = nowMs; gTEndMs = ~0ull; gTNextMs = nowMs; gTPubMs = 0u; gTLines = 0u; gTBurstLogs = 0u;
+    gTConsec = 0u; gTMaxConsec = 0u; gTSkippedBusy = 0u; gTStop = 0u; gTStopMs = 0u; gTLastKr = 0u;
     TRACE_LOG("boot clock trace %s", gTOn ? "ON: PMFW CurrClock UCLK/FCLK/DCFCLK/DISPCLK/DPPCLK/SOCCLK + DFS readback every 500 ms, around ufmon events (navi48-clklog=0 turns it off)"
                                           : "OFF (navi48-clklog=0)");
 }
@@ -312,8 +360,15 @@ void clktrace_floor(uint32_t dcfFloorMhz, uint64_t nowMs) {
     if (gTOn) TRACE_LOG("the floors ran at %llu ms: tracing %u s more (DCFCLK floor %u MHz)", (unsigned long long)nowMs, gTSeconds, dcfFloorMhz);
 }
 bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents, bool pinned) {
-    if (!gTOn) return false;
+    if (!gTOn || gTStop != 0u) return false;
     bool changed = false;
+    // 0.0.685: the SMU health latch stopped optional traffic: the trace stops for the boot (no message is sent from here on).
+    if (!smu_optional_ok()) {
+        gTStop = 2u; gTStopMs = nowMs;
+        TRACE_LOG("trace STOPPED at %llu ms: the SMU is DEGRADED (no SMU message is sent); %llu samples, %llu failed", (unsigned long long)nowMs,
+                  (unsigned long long)gT.samples, (unsigned long long)gT.failures);
+        return true;
+    }
     if (newEvents > 0u && (!gTEnded || gT.pending)) trace_event(gT, nowMs, newEvents, pinned);
     const bool live = nowMs < gTEndMs || gT.pending;
     if (live && nowMs >= gTNextMs) {
@@ -322,13 +377,32 @@ bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents,
         const Sample *prev = trace_at(gT, 0);
         const Sample p = prev != nullptr ? *prev : Sample{};
         const bool had = prev != nullptr;
-        if (take_sample(dev, nowMs, pinned, s)) {
+        const uint32_t sr = take_sample(dev, nowMs, pinned, s);
+        if (sr == kSBusy) {
+            gTSkippedBusy++;   // another SMU user holds the lock: no sample, no failure, try again next period
+        } else if (sr == kSRefused) {
+            gTStop = 2u; gTStopMs = nowMs;
+            TRACE_LOG("trace STOPPED at %llu ms: the SMU is DEGRADED (no SMU message is sent)", (unsigned long long)nowMs);
+            return true;
+        } else if (sr == kSOk) {
+            gTConsec = 0u;
             trace_add(gT, s);
             bool moved = false;
             for (uint32_t i = 0; i < kTClks - 1u; i++) if (had && p.mhz[i] != s.mhz[i]) moved = true;   // SOCCLK moves are not logged one by one
             if (had && (p.dfsDispKhz != s.dfsDispKhz || p.dfsDppKhz != s.dfsDppKhz)) moved = true;
             if (gTLines < kMaxLines && (!had || moved || (gT.samples % 20u) == 0u)) { log_sample(!had ? "first" : moved ? "change" : "every 10 s", s, 0u); gTLines++; }
-        } else trace_add(gT, s);   // counts the failure
+        } else {
+            trace_add(gT, s);   // counts the failure
+            gTConsec++;
+            if (gTConsec > gTMaxConsec) gTMaxConsec = gTConsec;
+            gTNextMs = nowMs + n48smuh::trace_period_ms(gTConsec);   // back off: 0.5 s, then 5, 10, 20, 40, 60 s
+            if (n48smuh::trace_should_stop(gTConsec)) {
+                gTStop = 1u; gTStopMs = nowMs;
+                TRACE_LOG("trace STOPPED at %llu ms: %u consecutive metrics failures (last kr 0x%x); %llu samples, %llu failed", (unsigned long long)nowMs,
+                          gTConsec, gTLastKr, (unsigned long long)gT.samples, (unsigned long long)gT.failures);
+                return true;
+            }
+        }
         Burst b{};
         if (trace_settle(gT, nowMs, &b)) {
             changed = true;
@@ -362,17 +436,18 @@ bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents,
                   (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk, (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf,
                   (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone, trace_lean(gT));
     }
-    if (nowMs - gTPubMs >= 5000u) { gTPubMs = nowMs; changed = true; }
+    if (!gTEnded && nowMs - gTPubMs >= 5000u) { gTPubMs = nowMs; changed = true; }   // the registry every 5 s while tracing; nothing after the end
     return changed;
 }
 
 void clktrace_describe(char *t, size_t n) {
     if (t == nullptr || n == 0u) return;
-    snprintf(t, n, "%s (every %llu ms, %u s after the floors; %llu samples, %llu failed); bursts %llu (events %llu): UCLK moved %llu, FCLK moved %llu "
+    const int w = snprintf(t, n, "%s (every %llu ms, %u s after the floors; %llu samples, %llu failed); bursts %llu (events %llu): UCLK moved %llu, FCLK moved %llu "
              "(without UCLK %llu), DCFCLK moved or under floor %llu, DISPCLK/DPPCLK moved %llu, nothing moved %llu, UCLK pinned %llu, under 3 samples %llu; "
              "lean: %s; MHz ranges UCLK %u..%u FCLK %u..%u DCFCLK %u..%u (floor %u, samples under it %llu) DISPCLK %u..%u DPPCLK %u..%u SOCCLK %u..%u; "
              "moves UCLK %llu FCLK %llu DCFCLK %llu DISPCLK %llu DPPCLK %llu; with UCLK pinned: FCLK moves %llu, UCLK moves %llu; last burst at %llu ms flags %#x",
-             !gTOn ? "off (navi48-clklog=0)" : gTEnded ? "ended" : gTFloored ? "tracing" : "tracing (floors not run yet)",
+             !gTOn ? "off (navi48-clklog=0)" : gTStop == 1u ? "STOPPED (consecutive metrics failures)" : gTStop == 2u ? "STOPPED (SMU degraded)" :
+             gTEnded ? "ended" : gTFloored ? "tracing" : "tracing (floors not run yet)",
              (unsigned long long)kSamplePeriodMs, gTSeconds, (unsigned long long)gT.samples, (unsigned long long)gT.failures,
              (unsigned long long)gT.bursts, (unsigned long long)gT.events, (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk,
              (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf, (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone,
@@ -382,6 +457,11 @@ void clktrace_describe(char *t, size_t n) {
              (unsigned long long)gT.moves[kTUclk], (unsigned long long)gT.moves[kTFclk], (unsigned long long)gT.moves[kTDcf],
              (unsigned long long)gT.moves[kTDisp], (unsigned long long)gT.moves[kTDpp],
              (unsigned long long)gT.fclkMovesPinned, (unsigned long long)gT.uclkMovesPinned, (unsigned long long)gT.last.atMs, gT.last.flags);
+    // 0.0.685: the self-limit's counters.
+    if (w > 0 && (size_t)w < n)
+        snprintf(t + w, n - (size_t)w, "; failures: consecutive %u (max %u; backoff after %u, stop after %u), busy skips %llu, last kr %#x%s",
+                 gTConsec, gTMaxConsec, n48smuh::kTraceBackoffAfter, n48smuh::kTraceStopAfter, (unsigned long long)gTSkippedBusy, gTLastKr,
+                 gTStop != 0u ? (gTStop == 1u ? "; stopped by consecutive failures" : "; stopped: SMU degraded") : "");
 }
 
 }  // namespace amdgpu

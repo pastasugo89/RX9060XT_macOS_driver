@@ -101,6 +101,13 @@ kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t para
         DAL_LOG("send REFUSED msg=0x%02x: the shared mailbox lock is unavailable", msg);
         return (kern_return_t)o->rc;
     }
+    // 3b. 0.0.685: the health latch (smu_health_pure.h): after any DAL timeout the DAL mailbox is off for the boot, and nothing goes out while the
+    //     PPSMC side is suspect or degraded. Nothing sent, no register touched.
+    if (!smu_dal_allowed()) {
+        o->refuse = kRefRespZero; o->rc = (uint32_t)kIOReturnNotReady;
+        DAL_LOG("send REFUSED msg=0x%02x param=0x%08x: the SMU health latch has the DAL mailbox off (a DAL timeout this boot, or the PMFW stopped answering)", msg, param);
+        return (kern_return_t)o->rc;
+    }
     // 4. RESP must be non-zero BEFORE the send (Linux polls for it; a zero here means a message is in flight or the mailbox is unhealthy).
     const uint32_t pre = RREG32(dev, kRegResp);
     o->preResp = pre;
@@ -126,6 +133,15 @@ kern_return_t smu_dal_send(const DeviceContext &dev, uint32_t msg, uint32_t para
     o->arg = RREG32(dev, kRegArg);
     o->rc = (uint32_t)resp_to_rc(resp);
     DAL_LOG("msg=0x%02x param=0x%08x preresp=0x%x resp=0x%x (%s) arg=0x%08x us=%u", msg, param, pre, resp, resp_name(resp), o->arg, o->us);
+    if (resp == 0u) {
+        // 0.0.685: the PMFW did not answer (0.0.684's live boot: ReturnHardMinStatus after the DCFCLK hard minimum, then neither mailbox answered).
+        // The DAL mailbox goes off for the boot and the PPSMC mailbox is probed ONCE (GetSmuVersion, still under the shared lock): if it does not
+        // answer either, the latch is DEGRADED and no SMU message is sent any more.
+        smu_health_dal_timeout();
+        const kern_return_t pk = smu_health_probe(dev);
+        DAL_LOG("*** DAL TIMEOUT msg=0x%02x param=0x%08x: DAL mailbox OFF for this boot; PPSMC probe kr=0x%x -> %s ***", msg, param, (unsigned)pk,
+                pk == kIOReturnSuccess ? "the PPSMC mailbox still answers" : "the PMFW does not answer: SMU DEGRADED, all SMU traffic stopped");
+    }
     return (kern_return_t)o->rc;
 }
 

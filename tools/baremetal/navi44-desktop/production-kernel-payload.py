@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.684) without changing EFI or the live system.
+"""Prepare/check the logical-context kernel trial (0.0.666 to 0.0.685) without changing EFI or the live system.
 
 `prepare --baseline-payload <verified earlier payload>` builds the baseline EFI from that payload's recorded hashes
 instead of the mounted EFI (the EFI is not mounted and must not be touched). Such a payload is marked
@@ -160,6 +160,10 @@ BUNDLE_683 = 'Navi48Bringup-contexts-0.0.683.kext'
 CONFIG_683_SHA = '8528fac4f6590ebad5813a2bd90ebad5e682a706484ecd12a6248f671ee1a6ce'
 BASE_683_MANIFEST = ROOT/'research/builds/macos-20261125/kernel-683/kernel-contexts-v19/manifest.json'
 KERNEL_684_SHA = '4c9458efe846b05a8b9c98140616ef22b6c1e6fcbb83fac2f734895915f013c8'
+BUNDLE_684 = 'Navi48Bringup-contexts-0.0.684.kext'
+CONFIG_684_SHA = 'ced6ac3c051abef825553fcd8af72952fed30357f83b0577a743401e1effb7fc'
+BASE_684_MANIFEST = ROOT/'research/builds/macos-20261125/kernel-684/kernel-contexts-v20/manifest.json'
+KERNEL_685_SHA = '39be574eada9fdfd9af89c6923c305097a116aa674ae7009af473375604234b6'
 REFRESH_SOURCE = Path(__file__).resolve().parent/'refresh-60/apply_refresh_guard.py'
 SYSTEM_SOURCES = {APP+'/navi48test': ROOT/'research/builds/macos-20261101/refresh-60/navi48test/navi48test'}
 # the Metal components the live bundle-33 guard pins (stage33-memtype-v1; its Info.plist version is 33)
@@ -541,7 +545,19 @@ RELEASES['0.0.684'] = {**RELEASES['0.0.683'],
                                   'new': 'Navi48Bringup-contexts-0.0.684.kext'}],
                        'extras': {'RECOVERY/pre-contexts-684-config.plist': 'baseline'},
                        'carried': {**RELEASES['0.0.683']['carried'], 'RECOVERY/pre-contexts-683-config.plist': CONFIG_682_SHA}}
-LIVE_METAL_GUARDS = frozenset('live-%d' % version for version in range(669, 685))
+RELEASES['0.0.685'] = {**RELEASES['0.0.684'],
+                       'new': 'Navi48Bringup-contexts-0.0.685.kext',
+                       'recovery': 'RECOVERY/pre-contexts-685-config.plist',
+                       'from': BUNDLE_684, 'from_kernel_sha': KERNEL_684_SHA, 'from_config_sha': CONFIG_684_SHA,
+                       'base': 'reviewed-candidate-684', 'base_kernel_sha': KERNEL_684_SHA,
+                       'kernel_sha': KERNEL_685_SHA, 'guard': 'live-685',
+                       'host_tests': RELEASES['0.0.684']['host_tests'][:-1] + ['dalfloor685_test.cpp'],
+                       'strings': RELEASES['0.0.684']['strings'] + ('Navi48,SmuHealth', 'SMU-HEALTH: *** DEGRADED'),
+                       'edits': [{'path': 'Kernel/Add/7/BundlePath', 'old': BUNDLE_684,
+                                  'new': 'Navi48Bringup-contexts-0.0.685.kext'}],
+                       'extras': {'RECOVERY/pre-contexts-685-config.plist': 'baseline'},
+                       'carried': {**RELEASES['0.0.684']['carried'], 'RECOVERY/pre-contexts-684-config.plist': CONFIG_683_SHA}}
+LIVE_METAL_GUARDS = frozenset('live-%d' % version for version in range(669, 686))
 # binary_checks 'not-run' (0.0.669): the OpenCore validator and the probe's self-test are research-tree executables, so the preparation
 # does not run them. The payload records that; the installer must validate EFI/OC/config.plist before installing.
 DEFERRED_CHECKS = {'ocvalidate': 'not run: research-tree executable; validate EFI/OC/config.plist before installation',
@@ -942,6 +958,8 @@ KERNEL_BRANCH_683 = KERNEL_BRANCH_682.replace(r'\(0\.0\.682\)', r'\(0\.0\.683\)'
 HOOK_682_TO_683_LINES = tuple((after, after.replace('0.0.682', '0.0.683').replace(r'0\.0\.682', r'0\.0\.683')) for _, after in HOOK_681_TO_682_LINES)
 KERNEL_BRANCH_684 = KERNEL_BRANCH_683.replace(r'\(0\.0\.683\)', r'\(0\.0\.684\)').replace('STOP expected kernel 683 or 665', 'STOP expected kernel 684 or 665')
 HOOK_683_TO_684_LINES = tuple((after, after.replace('0.0.683', '0.0.684').replace(r'0\.0\.683', r'0\.0\.684')) for _, after in HOOK_682_TO_683_LINES)
+KERNEL_BRANCH_685 = KERNEL_BRANCH_684.replace(r'\(0\.0\.684\)', r'\(0\.0\.685\)').replace('STOP expected kernel 684 or 665', 'STOP expected kernel 685 or 665')
+HOOK_684_TO_685_LINES = tuple((after, after.replace('0.0.684', '0.0.685').replace(r'0\.0\.684', r'0\.0\.685')) for _, after in HOOK_683_TO_684_LINES)
 
 
 def bump_guard_679(original, probe_sha):
@@ -969,6 +987,10 @@ def bump_guard_683(original, probe_sha):
 
 def bump_guard_684(original, probe_sha):
     return bump_recent_guard(original, probe_sha, 683, 684, KERNEL_BRANCH_683, KERNEL_BRANCH_684, HOOK_683_TO_684_LINES)
+
+
+def bump_guard_685(original, probe_sha):
+    return bump_recent_guard(original, probe_sha, 684, 685, KERNEL_BRANCH_684, KERNEL_BRANCH_685, HOOK_684_TO_685_LINES)
 
 
 def bump_recent_guard(original, probe_sha, old_build, new_build, old_branch, new_branch, hook_lines):
@@ -1092,6 +1114,9 @@ def make_guard(rel, original, probe_sha, version):
     if rel['guard'] == 'live-684':
         if version != '0.0.684': raise ValueError('The live-684 guard is only derived for 0.0.684')
         return bump_guard_684(original, probe_sha)
+    if rel['guard'] == 'live-685':
+        if version != '0.0.685': raise ValueError('The live-685 guard is only derived for 0.0.685')
+        return bump_guard_685(original, probe_sha)
     return guard_live(original, probe_sha, version) if rel['guard'] == 'live' else guard_text(original, probe_sha, version)
 
 
@@ -1267,7 +1292,8 @@ def reviewed_base(build, rel):
     recent_bases = {'reviewed-candidate-680': (BASE_680_MANIFEST, '0.0.680'),
                     'reviewed-candidate-681': (BASE_681_MANIFEST, '0.0.681'),
                     'reviewed-candidate-682': (BASE_682_MANIFEST, '0.0.682'),
-                    'reviewed-candidate-683': (BASE_683_MANIFEST, '0.0.683')}
+                    'reviewed-candidate-683': (BASE_683_MANIFEST, '0.0.683'),
+                    'reviewed-candidate-684': (BASE_684_MANIFEST, '0.0.684')}
     if rel['base'] in recent_bases:
         path, version = recent_bases[rel['base']]
         base = json.loads(path.read_text())

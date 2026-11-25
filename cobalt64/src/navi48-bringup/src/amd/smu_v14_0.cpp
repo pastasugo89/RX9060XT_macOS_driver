@@ -82,6 +82,10 @@
 
 #include <kern/thread.h>          // current_thread(): the owner of the shared mailbox lock (0.0.604)
 #include <libkern/OSAtomic.h>
+#include <kern/clock.h>           // 0.0.685: the health latch's timestamps
+#include <IOKit/IOLib.h>
+#include <string.h>
+#include "smu_health_pure.h"      // 0.0.685: the SMU mailbox health latch
 
 namespace amdgpu {
 
@@ -119,6 +123,155 @@ void smu_lock_exit()
         __atomic_store_n(&gSmuOwner, (thread_t)nullptr, __ATOMIC_RELEASE);
         IOLockUnlock(gSmuLock);
     }
+}
+
+// 0.0.685: the non-waiting form for optional callers (SmuTrySeq).
+bool smu_lock_try_enter()
+{
+    if (gSmuLock == nullptr) {
+        IOLock *l = IOLockAlloc();
+        if (l != nullptr && !OSCompareAndSwapPtr(nullptr, l, (void *volatile *)&gSmuLock)) IOLockFree(l);
+    }
+    IOLock *l = gSmuLock;
+    if (l == nullptr) return false;
+    const thread_t me = current_thread();
+    if (__atomic_load_n(&gSmuOwner, __ATOMIC_ACQUIRE) == me) { gSmuDepth++; return true; }
+    if (!IOLockTryLock(l)) return false;
+    __atomic_store_n(&gSmuOwner, me, __ATOMIC_RELEASE);
+    gSmuDepth = 1;
+    return true;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+//  0.0.685: the SMU mailbox health latch (smu_health_pure.h). gHealth changes only under the shared mailbox lock (or, when IOLockAlloc
+//  failed, unlocked as the PPSMC path itself is); gHealthState / gHealthGen mirror it for lock-free readers.
+// ---------------------------------------------------------------------------------------------------------------------
+static n48smuh::Health gHealth = n48smuh::initial();
+static volatile uint32_t gHealthState = n48smuh::kUnarmed;
+static volatile uint32_t gHealthGen = 0u;
+static uint64_t gHealthPollMs = 0u;
+static SmuVramReader gVramReader = nullptr;
+
+static uint64_t health_now_ms()
+{
+    uint64_t t = 0, ns = 0;
+    clock_get_uptime(&t);
+    absolutetime_to_nanoseconds(t, &ns);
+    return ns / 1000000ull;
+}
+
+static void health_apply(uint32_t ev)
+{
+    const n48smuh::Health before = gHealth;
+    gHealth = n48smuh::on_event(gHealth, ev, health_now_ms());
+    __atomic_store_n(&gHealthState, gHealth.state, __ATOMIC_RELEASE);
+    __atomic_fetch_add(&gHealthGen, 1u, __ATOMIC_ACQ_REL);
+    if (gHealth.state != before.state) {
+        if (gHealth.state == n48smuh::kDegraded)
+            SMU_LOG("SMU-HEALTH: *** DEGRADED: %s. The PMFW does not answer: from now on NO SMU message is sent (clock trace, UCLK fallback, "
+                    "metrics, power states, DAL all stop; the clocks stay as the PMFW last set them). PPSMC timeouts %u, DAL timeouts %u ***",
+                    n48smuh::reason_name(gHealth.reason), gHealth.mainTimeouts, gHealth.dalTimeouts);
+        else
+            SMU_LOG("SMU-HEALTH: %s -> %s (%s)", n48smuh::state_name(before.state), n48smuh::state_name(gHealth.state), n48smuh::reason_name(gHealth.reason));
+    }
+}
+
+// The PPSMC response register (C2PMSG_90), read only. ~0u when the mailbox is unreachable.
+static uint32_t health_read_resp(const DeviceContext &dev)
+{
+    if (!dev.ip.isResolved(IPBlock::MP1, /*baseIdx=*/1)) return ~0u;
+    const uint32_t reg = SOC15_REG_OFFSET_BIDX(dev, IPBlock::MP1, 1, MP1Regs::C2PMSG_90);
+    if (!dev.rmmio || ((size_t)reg * 4 + 4) > dev.rmmioSize) return ~0u;
+    return RREG32(dev, reg);
+}
+
+// The gate of every PPSMC send (wrapper and probe). Caller holds the shared lock. kGo or a refusal (nothing written).
+static uint32_t health_gate(const DeviceContext &dev, bool probe)
+{
+    uint32_t g = n48smuh::main_gate(gHealth, probe, ~0u);
+    if (g == n48smuh::kNeedResp) g = n48smuh::main_gate(gHealth, probe, health_read_resp(dev));
+    if (g == n48smuh::kNeedResp) g = n48smuh::kRefusePending;   // unreadable: treat as unanswered
+    if (g == n48smuh::kGo) return g;
+    gHealth.refused++;
+    __atomic_fetch_add(&gHealthGen, 1u, __ATOMIC_ACQ_REL);
+    if (g == n48smuh::kRefusePending) health_apply(n48smuh::kEvPendingSeen);
+    return g;
+}
+
+static void health_after(kern_return_t r)
+{
+    if (r == kIOReturnTimeout) {
+        const bool armed = gHealth.state != n48smuh::kUnarmed;
+        health_apply(n48smuh::kEvMainTimeout);
+        if (armed) SMU_LOG("SMU-HEALTH: a PPSMC message was not answered in 2 s (timeouts so far %u)", gHealth.mainTimeouts);
+    } else if (gHealth.mainPending) {
+        health_apply(n48smuh::kEvMainOk);
+    }
+}
+
+void smu_health_arm()
+{
+    SmuSeq seq;
+    health_apply(n48smuh::kEvArm);
+    SMU_LOG("SMU-HEALTH: armed (%s): a PPSMC timeout from now on stops all SMU traffic instead of repeating 2 s waits", n48smuh::state_name(gHealth.state));
+}
+bool smu_optional_ok()
+{
+    const uint32_t s = __atomic_load_n(&gHealthState, __ATOMIC_ACQUIRE);
+    return s == n48smuh::kUnarmed || s == n48smuh::kHealthy;
+}
+bool smu_dal_allowed() { return n48smuh::dal_ok(gHealth); }
+uint32_t smu_health_generation() { return __atomic_load_n(&gHealthGen, __ATOMIC_ACQUIRE); }
+void smu_health_dal_timeout()
+{
+    SmuSeq seq;
+    health_apply(n48smuh::kEvDalTimeout);
+    SMU_LOG("SMU-HEALTH: a DAL message was not answered in 2 s: the DAL mailbox is OFF for this boot (DAL timeouts %u)", gHealth.dalTimeouts);
+}
+void smu_set_vram_reader(SmuVramReader fn) { gVramReader = fn; }
+
+// forward: the untouched PPSMC body below
+static __attribute__((noinline)) kern_return_t smu_send_msg_with_param_body(const DeviceContext &dev, uint32_t msgId, uint32_t param, uint32_t *outReturn);
+
+kern_return_t smu_health_probe(const DeviceContext &dev)
+{
+    SmuSeq seq;
+    if (health_gate(dev, true) != n48smuh::kGo) {
+        health_apply(n48smuh::kEvProbeFail);
+        SMU_LOG("SMU-HEALTH: probe NOT sent: the previous PPSMC message is still unanswered (RESP 0)");
+        return kIOReturnNotReady;
+    }
+    uint32_t ver = 0;
+    const kern_return_t r = smu_send_msg_with_param_body(dev, PPSMC::GetSmuVersion, 0, &ver);
+    if (r == kIOReturnTimeout) health_apply(n48smuh::kEvMainTimeout);
+    health_apply(r == kIOReturnSuccess ? n48smuh::kEvProbeOk : n48smuh::kEvProbeFail);
+    SMU_LOG("SMU-HEALTH: probe GetSmuVersion -> kr 0x%x (pmfw 0x%08x): %s", (unsigned)r, ver, n48smuh::state_name(gHealth.state));
+    return r;
+}
+
+void smu_health_poll(const DeviceContext &dev, uint64_t nowMs)
+{
+    if (__atomic_load_n(&gHealthState, __ATOMIC_ACQUIRE) != n48smuh::kDegraded) return;
+    if (gHealthPollMs != 0u && nowMs - gHealthPollMs < n48smuh::kRecoverPollMs) return;
+    gHealthPollMs = nowMs;
+    SmuTrySeq seq;   // never wait here: a holder is about to be refused anyway
+    if (!seq.held) return;
+    const uint32_t resp = health_read_resp(dev);   // read only
+    if (!n48smuh::recover_probe(gHealth, resp)) return;
+    gHealth.probes++;
+    SMU_LOG("SMU-HEALTH: the PMFW answered the pending PPSMC message (RESP 0x%x): recovery probe %u of %u", resp, gHealth.probes, n48smuh::kMaxProbes);
+    (void)smu_health_probe(dev);
+}
+
+void smu_health_describe(char *t, size_t n)
+{
+    if (t == nullptr || n == 0u) return;
+    const n48smuh::Health h = gHealth;
+    snprintf(t, n, "%s; last reason: %s; PPSMC timeouts %u, DAL timeouts %u, refused (not sent) %u, unanswered-previous seen %u; "
+             "probes OK %u, recovery probes %u of %u, recoveries %u; PPSMC pending %s, DAL %s; since uptime %llu ms",
+             n48smuh::state_name(h.state), n48smuh::reason_name(h.reason), h.mainTimeouts, h.dalTimeouts, h.refused, h.pendingSeen,
+             h.probesOk, h.probes, n48smuh::kMaxProbes, h.recoveries, h.mainPending ? "yes" : "no", h.dalOff ? "OFF for the boot" : "allowed",
+             (unsigned long long)h.sinceMs);
 }
 
 // Message-id -> name, for the log. Diagnostic only; no MMIO.
@@ -296,7 +449,15 @@ smu_send_msg_with_param(const DeviceContext &dev,
                         uint32_t *outReturn)
 {
     SmuSeq seq;   // the shared mailbox lock (held = false only when IOLockAlloc failed: then the message goes out unlocked, as before 0.0.604)
-    return smu_send_msg_with_param_body(dev, msgId, param, outReturn);
+    // 0.0.685: the health latch (smu_health_pure.h). Armed and DEGRADED: refused at once, nothing written. Our previous message unanswered
+    // (RESP still 0): refused, never written over (Linux smu_msg_v1_send_msg's pre-poll). Unarmed (the boot bring-up): the pre-0.0.685 path.
+    if (health_gate(dev, false) != n48smuh::kGo) {
+        if (outReturn != nullptr) *outReturn = 0;
+        return kIOReturnNotReady;
+    }
+    const kern_return_t r = smu_send_msg_with_param_body(dev, msgId, param, outReturn);
+    health_after(r);
+    return r;
 }
 
 kern_return_t
@@ -813,6 +974,7 @@ smu_uclk_display_pin(const DeviceContext &dev, bool pin, uint32_t why)
 {
     using namespace n48uclk;
     if (__atomic_load_n(&gUclkCapable, __ATOMIC_ACQUIRE) == 0u || gUclkPin.mode == kModeOff) return kIOReturnNotPermitted;
+    if (!smu_optional_ok()) return kIOReturnNotReady;   // 0.0.685: the SMU is DEGRADED: nothing is sent (the latch logs why)
     Result r = gUclkPin;
     r.why = why;
     const kern_return_t k = uclk_soft_min(dev, pin, r);
@@ -1015,10 +1177,20 @@ smu_read_metrics(const DeviceContext &dev, SmuMetricsResult *out)
 
     // The SMU DMAs into VRAM; read it back through the GPU's own view so we
     // are not trusting a stale CPU mapping of the aperture.
+    // 0.0.685: through the registered locked reader (navi48_vram_read_mm, under gVramMmLock, <= 64 dwords per call), so the MM_INDEX /
+    // MM_DATA window is never driven by two threads at once; the unlocked window only when no reader is registered (host tests, early boot).
     const uint64_t off = dev.vramBase + kSMUDriverTableVRAMOffset;
     auto *dst = reinterpret_cast<uint32_t *>(&out->metrics);
-    for (uint32_t i = 0; i < sizeof(SmuMetrics) / 4; i++)
-        dst[i] = RVRAM32_via_mm(dev, off + i * 4);
+    constexpr uint32_t kMetricsDwords = sizeof(SmuMetrics) / 4;
+    bool copied = false;
+    if (gVramReader != nullptr) {
+        copied = true;
+        for (uint32_t i = 0; i < kMetricsDwords && copied; i += 64u)
+            copied = gVramReader(off + (uint64_t)i * 4u, dst + i, (kMetricsDwords - i) < 64u ? (kMetricsDwords - i) : 64u);
+    }
+    if (!copied)
+        for (uint32_t i = 0; i < kMetricsDwords; i++)
+            dst[i] = RVRAM32_via_mm(dev, off + i * 4);
 
     // Plausibility: a Navi 48 at idle or load should sit inside these ranges.
     // This is the only defence when the layout is unverified — it catches a

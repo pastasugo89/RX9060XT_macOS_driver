@@ -245,6 +245,18 @@ FLOOR_FILES = ('src/amd/clkfloor.cpp', 'src/amd/clkfloor.h', 'src/amd/clkfloor_p
                'src/amd/smu_dal_pure.h', 'src/dcn/navi48_dcn.cpp')
 FLOOR_HOST_TEST = 'dalfloor684_test.cpp'
 FLOOR_REQUIRED_STRINGS = (b'Navi48,DalFloor', b'Navi48,DisplayClocks', b'navi48-dalfloor', b'navi48-clklog', b'display clock floors: %s; DALSMC smu')
+# 0.0.685: the SMU mailbox health latch (a PPSMC timeout stops all SMU traffic; a DAL timeout turns the DAL mailbox off and probes the PPSMC one),
+# the display clock floors OFF by default and guarded, the self-limiting clock trace and the locked metrics copy, on the 0.0.684 candidate tree.
+SMUH_VERSION = '0.0.685'
+SMUH_BASE = ROOT / 'research/builds/macos-20261125/kernel-684/kernel-contexts-v20'
+INSTALLED_684 = {'bundle_path': 'Navi48Bringup-contexts-0.0.684.kext',
+                 'kernel_sha256': '4c9458efe846b05a8b9c98140616ef22b6c1e6fcbb83fac2f734895915f013c8',
+                 'config_sha256': 'ced6ac3c051abef825553fcd8af72952fed30357f83b0577a743401e1effb7fc', 'version': '0.0.684'}
+SMUH_PATCH_SHA = '3abdc05c8ebee54beb4ba4775e4802968e12baa8b6dae1a7a6f26382d17080e0'
+SMUH_FILES = ('src/Navi48Bringup.cpp', 'src/amd/amdgpu_smu.h', 'src/amd/clkfloor.cpp', 'src/amd/clkfloor.h', 'src/amd/clkfloor_pure.h', 'src/amd/smu_dal.cpp',
+              'src/amd/smu_health_pure.h', 'src/amd/smu_v14_0.cpp', 'src/dcn/navi48_dcn.cpp')
+SMUH_HOST_TEST = 'dalfloor685_test.cpp'
+SMUH_REQUIRED_STRINGS = (b'Navi48,SmuHealth', b'SMU-HEALTH: *** DEGRADED', b'*** DAL TIMEOUT', b'trace STOPPED at %llu ms', b'navi48-dalfloor=1 opts in')
 LINUX_AMD = ROOT / 'research/ext/amdgpu-port-study/linux-v7.3/drivers/gpu/drm/amd'
 GFX12_614 = ROOT / 'research/ext/amdgpu-port-study/drm-kmod/drivers/gpu/drm/amd/amdgpu/gfx_v12_0.c'
 TREE_NAMES = ('src', 'firmware', 'shaders', 'tools')
@@ -309,8 +321,8 @@ def replace_exact(path, old, new, count):
 
 
 def release_build(version):
-    """The build number that goes with a candidate version (0.0.666 to 0.0.684)."""
-    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9]|68[0-4])', version):
+    """The build number that goes with a candidate version (0.0.666 to 0.0.685)."""
+    if not re.fullmatch(r'0\.0\.(66[6-9]|67[0-9]|68[0-5])', version):
         raise ValueError('Unsupported candidate version: ' + version)
     return int(version.rsplit('.', 1)[1])
 
@@ -328,7 +340,7 @@ def recorded_active_baseline(path):
 def recorded_active_release(path, version):
     """The kernel a candidate replaces. 0.0.666/0.0.667: the 665 baseline (a manifest's active_baseline). 0.0.668: the
     installed 0.0.667 candidate, taken from payload v3's manifest, whose candidate EFI must hold exactly the reviewed hashes."""
-    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION, ADMISSION_VERSION, TELEMETRY_VERSION, RESILIENCE_VERSION, GTT_VERSION, FLOOR_VERSION):
+    if version not in ('0.0.668', *REFRESH_VERSIONS, FIX_VERSION, BLACKBAND_VERSION, DISPARB_VERSION, FALLBACK_VERSION, GATING_VERSION, FAN_VERSION, DOORBELL_VERSION, DPM_VERSION, GFXDB_VERSION, ADMISSION_VERSION, TELEMETRY_VERSION, RESILIENCE_VERSION, GTT_VERSION, FLOOR_VERSION, SMUH_VERSION):
         return recorded_active_baseline(path)
     # 0.0.671 replaces the kernel the EFI holds now (0.0.669, payload v5): 0.0.670 was never installed. 0.0.672 replaces 0.0.671 (payload v7).
     installed, before = {'0.0.668': (INSTALLED_667, '0.0.667'), '0.0.669': (INSTALLED_668, '0.0.668'),
@@ -339,7 +351,7 @@ def recorded_active_release(path, version):
                          DPM_VERSION: (INSTALLED_677, '0.0.677'), GFXDB_VERSION: (INSTALLED_678, '0.0.678'),
                          ADMISSION_VERSION: (INSTALLED_679, '0.0.679'), TELEMETRY_VERSION: (INSTALLED_680, '0.0.680'),
                          RESILIENCE_VERSION: (INSTALLED_681, '0.0.681'), GTT_VERSION: (INSTALLED_682, '0.0.682'),
-                         FLOOR_VERSION: (INSTALLED_683, '0.0.683')}[version]
+                         FLOOR_VERSION: (INSTALLED_683, '0.0.683'), SMUH_VERSION: (INSTALLED_684, '0.0.684')}[version]
     manifest = json.loads(path.read_text())
     efi = manifest.get('candidate_efi_files', {})
     kernel = 'OC/Kexts/%s/Contents/MacOS/Navi48Bringup' % installed['bundle_path']
@@ -725,9 +737,9 @@ def run_host_tests(candidate, out, tests):
         exe = out / ('host-' + name.replace('.cpp', ''))
         subprocess.run(['clang++', '-std=c++17', '-Wall', '-Wextra', '-Werror', '-I', str(candidate / 'src'), str(tests_dir / name), '-o', str(exe)], check=True)
         args = [str(exe), str(candidate)]
-        if (name in RESILIENCE_HOST_TESTS or name == FLOOR_HOST_TEST) and LINUX_AMD.is_dir():
+        if (name in RESILIENCE_HOST_TESTS or name in (FLOOR_HOST_TEST, SMUH_HOST_TEST)) and LINUX_AMD.is_dir():
             args.append(str(LINUX_AMD))
-            if name != FLOOR_HOST_TEST and GFX12_614.is_file():
+            if name not in (FLOOR_HOST_TEST, SMUH_HOST_TEST) and GFX12_614.is_file():
                 args.append(str(GFX12_614))
         with (out / (name + '.log')).open('w') as log:
             subprocess.run(args, stdout=log, stderr=subprocess.STDOUT, check=True)
@@ -816,7 +828,7 @@ def test_path(name):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
-        epilog='0.0.680 requires the v15 baseline manifest. 0.0.681 requires the v16 baseline manifest and the reviewed telemetry --patch. 0.0.682 requires the v17 baseline manifest and the reviewed 0.0.682 --patch. 0.0.683 requires the v18 baseline manifest and the reviewed GTT --patch. 0.0.684 requires the v19 baseline manifest and the reviewed display clock floor --patch.')
+        epilog='0.0.680 requires the v15 baseline manifest. 0.0.681 requires the v16 baseline manifest and the reviewed telemetry --patch. 0.0.682 requires the v17 baseline manifest and the reviewed 0.0.682 --patch. 0.0.683 requires the v18 baseline manifest and the reviewed GTT --patch. 0.0.684 requires the v19 baseline manifest and the reviewed display clock floor --patch. 0.0.685 requires the v20 (b45) baseline manifest and the reviewed SMU health --patch.')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--version', default=RELEASE, help='candidate CFBundleVersion: 0.0.666 (default), 0.0.667, 0.0.668, 0.0.669 (refresh-60: needs --active-baseline-manifest, payload v4), 0.0.670 (refresh-60b: needs --active-baseline-manifest, payload v5), 0.0.671 (refresh-60b + the GTT fix: needs --active-baseline-manifest, payload v5, and --worktree-overlay) 0.0.672 (black band on the 0.0.671 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.673 (display arbitration on the 0.0.672 tree: needs --active-baseline-manifest (payload v7) and --patch) or 0.0.674 (two-stage fallback on the 0.0.673 tree: needs --active-baseline-manifest (payload v9) and --patch) or 0.0.675 (GFX clock gating + thermal policy on the 0.0.674 tree: needs --active-baseline-manifest (payload v10) and --patch) or 0.0.676 (zero-RPM fan option, navi48-gfxmax, UCLK pin kept on the 0.0.675 tree: needs --active-baseline-manifest (payload v11) and --patch) or 0.0.677 (GFX doorbell in Linux units on the 0.0.676 tree: needs --active-baseline-manifest (payload v12) and --patch) or 0.0.678 (ComputeDispatch fix + DPM gate on the 0.0.677 tree: needs --active-baseline-manifest (payload v13) and --patch) or 0.0.679 (Linux GFX doorbell by default on the 0.0.678 tree: needs --active-baseline-manifest (payload v14) and --patch)')
     parser.add_argument('--patch', type=Path,
@@ -854,7 +866,8 @@ def main():
     resilience = version == RESILIENCE_VERSION   # 0.0.682: built on the 0.0.681 candidate tree plus the reviewed 0.0.682 patch
     gtt = version == GTT_VERSION
     floor = version == FLOOR_VERSION   # 0.0.684: the 0.0.683 candidate tree plus the reviewed display clock floor patch
-    patched = blackband or disparb or fallback or gating or fan or doorbell or dpm or gfxdb or telemetry or resilience or gtt or floor
+    smuh = version == SMUH_VERSION     # 0.0.685: the 0.0.684 candidate tree plus the reviewed SMU health patch
+    patched = blackband or disparb or fallback or gating or fan or doorbell or dpm or gfxdb or telemetry or resilience or gtt or floor or smuh
     tests = TESTS + (REFRESH_TESTS if refresh or fix or patched or admission else ())
     if (version == '0.0.668' or refresh or fix or patched or admission) and not args.active_baseline_manifest:
         raise ValueError(version + ' requires --active-baseline-manifest for the installed kernel')
@@ -872,7 +885,7 @@ def main():
             raise ValueError(version + ' is built from its reviewed patch: pass --patch')
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         overlay = {'source': 'patch', 'patch': str(args.patch), 'patch_sha256': sha(args.patch),
-                   'patch_files': list(FLOOR_FILES if floor else GTT_FILES if gtt else RESILIENCE_FILES if resilience else TELEMETRY_FILES if telemetry else GFXDB_FILES if gfxdb else DPM_FILES if dpm else DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
+                   'patch_files': list(SMUH_FILES if smuh else FLOOR_FILES if floor else GTT_FILES if gtt else RESILIENCE_FILES if resilience else TELEMETRY_FILES if telemetry else GFXDB_FILES if gfxdb else DPM_FILES if dpm else DOORBELL_FILES if doorbell else FAN_FILES if fan else GATING_FILES if gating else FALLBACK_FILES if fallback else DISPARB_FILES if disparb else BLACKBAND_FILES),
                    'head_at_build': revision}
     else:
         revision, overlay = overlay_provenance(args.worktree_overlay, (ADMISSION_HEADER,) if admission else
@@ -909,10 +922,12 @@ def main():
 
     save()
     baseline = out / 'baseline-source'
-    copy_source(FLOOR_BASE / 'candidate-source' if floor else GTT_BASE / 'candidate-source' if gtt else RESILIENCE_BASE / 'candidate-source' if resilience else TELEMETRY_BASE / 'candidate-source' if telemetry else ADMISSION_BASE / 'candidate-source' if admission else GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
+    copy_source(SMUH_BASE / 'candidate-source' if smuh else FLOOR_BASE / 'candidate-source' if floor else GTT_BASE / 'candidate-source' if gtt else RESILIENCE_BASE / 'candidate-source' if resilience else TELEMETRY_BASE / 'candidate-source' if telemetry else ADMISSION_BASE / 'candidate-source' if admission else GFXDB_BASE / 'candidate-source' if gfxdb else DPM_BASE / 'candidate-source' if dpm else DOORBELL_BASE / 'candidate-source' if doorbell else FAN_BASE / 'candidate-source' if fan else GATING_BASE / 'candidate-source' if gating else FALLBACK_BASE / 'candidate-source' if fallback else DISPARB_BASE / 'candidate-source' if disparb else BLACKBAND_BASE / 'candidate-source' if blackband else FIX_BASE / 'candidate-source' if fix else
                 REFRESH_BASE / 'candidate-source' if refresh else BASE, baseline)
     manifest['baseline_inputs'] = tree_files(baseline)
-    if floor:
+    if smuh:
+        manifest['base_verified'] = candidate_base_verified(baseline, SMUH_BASE, INSTALLED_684['kernel_sha256'], INSTALLED_684['version'])
+    elif floor:
         manifest['base_verified'] = candidate_base_verified(baseline, FLOOR_BASE, INSTALLED_683['kernel_sha256'], INSTALLED_683['version'])
     elif gtt:
         manifest['base_verified'] = candidate_base_verified(baseline, GTT_BASE, INSTALLED_682['kernel_sha256'], INSTALLED_682['version'])
@@ -963,7 +978,9 @@ def main():
                                          for k, v in sections.items()}
     candidate = out / 'candidate-source'
     copy_source(baseline, candidate)
-    if floor:
+    if smuh:
+        manifest['changed_source_files'] = reviewed_overlay(candidate, args.patch, '0.0.684', version, SMUH_PATCH_SHA, SMUH_FILES)
+    elif floor:
         manifest['changed_source_files'] = reviewed_overlay(candidate, args.patch, '0.0.683', version, FLOOR_PATCH_SHA, FLOOR_FILES)
     elif gtt:
         manifest['changed_source_files'] = reviewed_overlay(candidate, args.patch, '0.0.682', version, GTT_PATCH_SHA, GTT_FILES)
@@ -1031,15 +1048,16 @@ def main():
     if info['CFBundleVersion'] != version:
         raise ValueError('Candidate package version mismatch')
     binary = (bundle / 'Contents/MacOS/Navi48Bringup').read_bytes()
-    recent = gfxdb or admission or telemetry or resilience or gtt or floor
+    recent = gfxdb or admission or telemetry or resilience or gtt or floor or smuh
     required = (REQUIRED_STRINGS + (REFRESH_REQUIRED_STRINGS if refresh or fix or patched or admission else ())
                 + (FIX_REQUIRED_STRINGS if fix or patched or admission else ()) + (BLACKBAND_REQUIRED_STRINGS if patched or admission else ())
                 + (DISPARB_REQUIRED_STRINGS if disparb or fallback or gating or fan or doorbell or dpm or recent else ())
                 + (FALLBACK_REQUIRED_STRINGS if fallback or gating or fan or doorbell or dpm or recent else ())
                 + (GATING_REQUIRED_STRINGS if gating or fan or doorbell or dpm or recent else ()) + (FAN_REQUIRED_STRINGS if fan or doorbell or dpm or recent else ())
                 + (DOORBELL_REQUIRED_STRINGS if doorbell or dpm or recent else ()) + (DPM_REQUIRED_STRINGS if dpm or recent else ())
-                + (GFXDB_REQUIRED_STRINGS if recent else ()) + (TELEMETRY_REQUIRED_STRINGS if telemetry or resilience or gtt or floor else ())
-                + (RESILIENCE_REQUIRED_STRINGS if resilience or gtt or floor else ()) + (FLOOR_REQUIRED_STRINGS if floor else ()))
+                + (GFXDB_REQUIRED_STRINGS if recent else ()) + (TELEMETRY_REQUIRED_STRINGS if telemetry or resilience or gtt or floor or smuh else ())
+                + (RESILIENCE_REQUIRED_STRINGS if resilience or gtt or floor or smuh else ()) + (FLOOR_REQUIRED_STRINGS if floor or smuh else ())
+                + (SMUH_REQUIRED_STRINGS if smuh else ()))
     if any(text not in binary for text in required):
         raise ValueError('Candidate binary lacks the required strings')
     manifest['required_strings'] = [text.decode() for text in required]
@@ -1051,8 +1069,8 @@ def main():
         with (out / (test + '.log')).open('w') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
         manifest['cpu_tests'].append(test)
-    if resilience or gtt or floor:
-        host_tests = RESILIENCE_HOST_TESTS + ((GTT_HOST_TEST,) if gtt or floor else ()) + ((FLOOR_HOST_TEST,) if floor else ())
+    if resilience or gtt or floor or smuh:
+        host_tests = RESILIENCE_HOST_TESTS + ((GTT_HOST_TEST,) if gtt or floor or smuh else ()) + ((FLOOR_HOST_TEST,) if floor else ()) + ((SMUH_HOST_TEST,) if smuh else ())
         manifest['host_tests'] = run_host_tests(candidate, out, host_tests)
         save()
     if tree_files(candidate) != manifest['candidate_inputs']:

@@ -1,0 +1,797 @@
+--- a/src/Navi48Bringup.cpp
++++ b/src/Navi48Bringup.cpp
+@@ -7516,6 +7516,7 @@
+ bool Navi48Bringup::start(IOService *provider) {
+ 	if (!super::start(provider)) return false;
+ 	if (!gVramMmLock) gVramMmLock = IOLockAlloc();   // never freed: a verb may hold it at stop
++	amdgpu::smu_set_vram_reader(navi48_vram_read_mm);   // 0.0.685: smu_read_metrics copies the table under gVramMmLock (never a bare MM window)
+ 	if (!gScanoutLock) gScanoutLock = IOLockAlloc(); // 0.0.272: never freed, same reason
+ 	if (!gFmLock) gFmLock = IOLockAlloc();           // build 0.0.518 (switch 74, flip mode): never freed, same reason
+ 	if (!gSfLock) gSfLock = IOLockAlloc();           // build 0.0.542 (`scanout full`'s published capture): never freed, same reason
+--- a/src/amd/amdgpu_smu.h
++++ b/src/amd/amdgpu_smu.h
+@@ -71,7 +71,34 @@
+     SmuSeq(const SmuSeq &) = delete;
+     SmuSeq &operator=(const SmuSeq &) = delete;
+ };
++// 0.0.685: the same lock, but never waited for: false when another thread holds it (a message in flight there, possibly up to its 2 s
++// timeout). For OPTIONAL callers (the clock trace) that must never queue behind a timeout. Recursive for the owner like smu_lock_enter.
++bool smu_lock_try_enter();
++struct SmuTrySeq {
++    bool held;
++    SmuTrySeq() : held(smu_lock_try_enter()) {}
++    ~SmuTrySeq() { if (held) smu_lock_exit(); }
++    SmuTrySeq(const SmuTrySeq &) = delete;
++    SmuTrySeq &operator=(const SmuTrySeq &) = delete;
++};
+ 
++// 0.0.685: the SMU mailbox health latch (decisions in smu_health_pure.h). Until smu_health_arm() (the display monitor thread's start) the
++// PPSMC path behaves exactly as before 0.0.685. Armed: a PPSMC timeout latches DEGRADED and from then on every PPSMC and DAL message is refused
++// at once (kIOReturnNotReady, no register touched) instead of waiting 2 s on a PMFW that does not answer; a DAL timeout turns the DAL mailbox
++// off for the boot and probes the PPSMC mailbox once (smu_health_probe). The PMFW keeps the clocks it last set.
++void smu_health_arm();
++bool smu_optional_ok();                                   // healthy (or unarmed): optional SMU traffic may run
++bool smu_dal_allowed();                                   // the DAL sender may send (not off, not degraded)
++void smu_health_dal_timeout();                            // the DAL sender saw RESP stay 0 for 2 s
++kern_return_t smu_health_probe(const DeviceContext &dev); // PPSMC GetSmuVersion: the only message sent while SUSPECT / DEGRADED
++void smu_health_poll(const DeviceContext &dev, uint64_t nowMs);   // display monitor: the passive recovery (reads RESP; probes rarely)
++uint32_t smu_health_generation();                         // changes whenever the latch changes (for the registry)
++void smu_health_describe(char *t, size_t n);              // Navi48,SmuHealth
++// 0.0.685: the locked VRAM reader (Navi48Bringup.cpp navi48_vram_read_mm, under gVramMmLock) that smu_read_metrics copies the metrics table
++// through, so the MM_INDEX / MM_DATA window is never driven by two threads at once. Registered once by Navi48Bringup at start.
++typedef bool (*SmuVramReader)(uint64_t vramOffset, uint32_t *dst, uint32_t dwords);
++void smu_set_vram_reader(SmuVramReader fn);
++
+ //
+ // smu_test_message — port of the basic ping. PPSMC::TestMessage with
+ // param=0xABCD0001; SMU echoes back param+1. Used to verify the
+--- a/src/amd/clkfloor.cpp
++++ b/src/amd/clkfloor.cpp
+@@ -1,6 +1,9 @@
+ //
+ //  clkfloor.cpp - build 0.0.684: the display clock floors (DALSMC, as Linux's dcn401 clk_mgr) and the boot clock trace. See clkfloor.h;
+-//  every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp, which also pins this file's shape).
++//  every decision is in clkfloor_pure.h (host-tested by tests/dalfloor685_test.cpp, which also pins this file's shape).
++//  0.0.685 (after 0.0.684 wedged the PMFW on the live boot): the floors are OFF by default; opted in, they need a healthy SMU, the live DISPCLK/DPPCLK
++//  the floors were computed for and a PPSMC readiness probe, run under the shared mailbox lock, stop at the first unanswered message and probe the PPSMC
++//  mailbox afterwards. The trace never waits for the lock, backs off after failures and stops for the boot (smu_health_pure.h).
+ //
+ //  What this file WRITES: the three DAL mailbox dwords, through smu_dal_send with the floor allowlist only (n48dalfloor::allow decides every message)
+ //  (fsend below is the single entry). Everything else is read-only: the DFS / PLL readback of DISPCLK / DPPCLK (CLK0 registers), and the PMFW
+@@ -17,6 +20,7 @@
+ #include "smu_dal_pure.h"
+ #include "amdgpu_smu.h"
+ #include "amdgpu_log.h"
++#include "smu_health_pure.h"   // 0.0.685: the clock trace's self-limit
+ 
+ #define FLOOR_LOG(fmt, ...) AMDGPU_LOG("dalfloor", fmt, ##__VA_ARGS__)
+ #define TRACE_LOG(fmt, ...) AMDGPU_LOG("clktrace", fmt, ##__VA_ARGS__)
+@@ -145,7 +149,7 @@
+     gF.parts = parts_of(gF.bootArgPresent, v);
+     if (gF.parts == 0u) {
+         gF.verdict = kVOff;
+-        FLOOR_LOG("display clock floors OFF (navi48-dalfloor=0): nothing sent");
++        FLOOR_LOG("display clock floors OFF (0.0.685 default; navi48-dalfloor=1 opts in): nothing sent");
+         return gF.verdict;
+     }
+     gF.hActive = hActive; gF.vActive = vActive; gF.hTotal = hTotal; gF.vTotal = vTotal;
+@@ -159,16 +163,41 @@
+         FLOOR_LOG("display clock floors: the SMU features were not enabled by this boot: nothing sent");
+         return gF.verdict;
+     }
++    // 0.0.685: the clock state the floors were computed for (DISPCLK / DPPCLK 272.727 MHz). 0.0.684's live boot read 562.5 / 562.5: nothing is sent then.
++    gF.before = read_clocks(dev);
++    if (!clocks_usable(gF.before) || !clocks_match_assumption(gF.before.dispKhz, gF.before.dppKhz)) {
++        gF.verdict = kVAssume;
++        FLOOR_LOG("display clock floors: DISPCLK/DPPCLK read %u / %u kHz (%s), not the %u kHz the floors were computed for: nothing sent",
++                  gF.before.dispKhz, gF.before.dppKhz, clocks_usable(gF.before) ? "usable" : "UNUSABLE readback", kAssumedDispKhz);
++        return gF.verdict;
++    }
++    // 0.0.685: the SMU must be healthy and the DAL mailbox allowed (no earlier timeout this boot).
++    if (!smu_optional_ok() || !smu_dal_allowed()) {
++        gF.verdict = kVUnhealthy;
++        FLOOR_LOG("display clock floors: the SMU health latch does not allow it (optional traffic %s, DAL %s): nothing sent",
++                  smu_optional_ok() ? "ok" : "stopped", smu_dal_allowed() ? "allowed" : "off");
++        return gF.verdict;
++    }
+     if (!dal_owner_claim_floor()) {
+         gF.verdict = kVBusy;
+         FLOOR_LOG("display clock floors: the DAL mailbox is owned by a DAL step or a clock hold: nothing sent");
+         return gF.verdict;
+     }
+-    FLOOR_LOG("display clock floors: parts 0x%02x (navi48-dalfloor %s%u), as Linux dcn401_update_clocks for one 2560x1440@120 plane", gF.parts,
+-              gF.bootArgPresent ? "=" : "absent, default 0x0f; ", gF.bootArgPresent ? v : 0u);
+-    gF.before = read_clocks(dev);
++    FLOOR_LOG("display clock floors: parts 0x%02x (navi48-dalfloor=%u), as Linux dcn401_update_clocks for one 2560x1440@120 plane", gF.parts, v);
+     bool lost = false;
+     DalMsg m;
++    {
++    // 0.0.685: the WHOLE sequence under the shared mailbox lock (recursive: each message takes it again), so no PPSMC message (metrics, the UCLK
++    // fallback, a user client) runs between two DAL messages; the sequence stops at its first unanswered message (smu_dal_send then turns the DAL
++    // mailbox off and probes the PPSMC mailbox once), so the lock is never held past one 2 s timeout plus that probe.
++    SmuSeq seq;
++    if (!seq.held) { gF.verdict = kVBusy; goto out; }
++    // 0.0.685: the readiness probe: the PPSMC mailbox must answer GetSmuVersion before the first DAL message.
++    if (smu_health_probe(dev) != kIOReturnSuccess) {
++        gF.verdict = kVUnhealthy;
++        FLOOR_LOG("display clock floors: the PPSMC readiness probe failed: nothing sent on the DAL mailbox");
++        goto out;
++    }
+     // dcn401_init_clocks: the SMU is present when GetSmuVersion answers; the two version checks are logged (Linux goes on either way) but the
+     // header version must be DALSMC_VERSION here, or the message ids below may not mean what dalsmc.h says.
+     if (fsend(dev, kMsgGetSmuVersion, 0u, &m) != kIOReturnSuccess) { gF.verdict = kVMailbox; goto out; }
+@@ -224,13 +253,20 @@
+             }
+         }
+     }
++    // 0.0.685: the post-check: the PMFW must still answer the PPSMC mailbox after the floors (0.0.684's live boot: it did not).
++    if (smu_health_probe(dev) != kIOReturnSuccess) {
++        gF.verdict = kVPostFail;
++        FLOOR_LOG("*** display clock floors: the PMFW stopped answering after the floors: SMU DEGRADED, all SMU traffic stopped ***");
++    }
++    }
+ out:
+     dal_owner_release_floor();
+     gF.tookMs = now_ms() - gF.atMs;
+     if (dcfFloorMhz != nullptr) *dcfFloorMhz = gF.dcfFloorMhz;
+-    FLOOR_LOG("display clock floors: %s; DALSMC smu 0x%08x if 0x%x header %u; %u of %u messages OK; DISPCLK/DPPCLK %u / %u kHz before, %u / %u after%s; %llu ms",
++    FLOOR_LOG("display clock floors: %s; DALSMC smu 0x%08x if 0x%x header %u; %u of %u messages OK; DISPCLK/DPPCLK %u / %u kHz before, %u / %u after%s; %llu ms; SMU %s",
+               verdict_name(gF.verdict), gF.smuVer, gF.ifVer, gF.hdrVer, gF.nOk, gF.plan.n, gF.before.dispKhz, gF.before.dppKhz, gF.after.dispKhz, gF.after.dppKhz,
+-              gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, the raise did NOT verify)" : "", (unsigned long long)gF.tookMs);
++              gF.corrective == 1u ? " (fell, raised back)" : gF.corrective == 2u ? " (fell, the raise did NOT verify)" : "", (unsigned long long)gF.tookMs,
++              smu_optional_ok() ? "healthy" : "DEGRADED (no SMU message is sent any more)");
+     return gF.verdict;
+ }
+ 
+@@ -262,17 +298,28 @@
+ uint64_t gTStartMs, gTEndMs, gTNextMs, gTPubMs;
+ uint32_t gTLines, gTBurstLogs;
+ constexpr uint32_t kMaxLines = 400u, kMaxBurstLogs = 24u;
++// 0.0.685: the self-limit (smu_health_pure.h): consecutive failures, the busy skips, the stop and its reason.
++uint32_t gTConsec, gTMaxConsec;
++uint64_t gTSkippedBusy;
++uint32_t gTStop;   // 0 running; 1 consecutive failures; 2 the SMU health latch stopped optional traffic
++uint64_t gTStopMs;
++uint32_t gTLastKr;
++enum SampleRes : uint32_t { kSOk = 0, kSFailed = 1, kSBusy = 2, kSRefused = 3 };
+ 
+-bool take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) {
++uint32_t take_sample(const DeviceContext &dev, uint64_t ms, bool pinned, Sample &s) {
+     s = Sample{};
+     s.ms = ms; s.pinned = pinned;
+     SmuMetricsResult r{};
+     kern_return_t kr;
+     {
+-        SmuSeq seq;   // the whole table transfer under the shared mailbox lock (as Navi48UserClient::doMetrics)
+-        kr = seq.held ? smu_read_metrics(dev, &r) : kIOReturnNoResources;
++        // 0.0.685: never queue behind another SMU user (a message in flight there may wait its full 2 s): skip this sample instead.
++        SmuTrySeq seq;   // the whole table transfer under the shared mailbox lock (as Navi48UserClient::doMetrics), or nothing
++        if (!seq.held) return kSBusy;
++        if (!smu_optional_ok()) return kSRefused;
++        kr = smu_read_metrics(dev, &r);
+     }
+-    if (kr != kIOReturnSuccess) return false;
++    gTLastKr = (uint32_t)kr;
++    if (kr != kIOReturnSuccess) return smu_optional_ok() ? kSFailed : kSRefused;
+     const SmuMetrics &m = r.metrics;
+     s.mhz[kTUclk] = m.CurrClock[SMUClk::UCLK];
+     s.mhz[kTFclk] = m.CurrClock[SMUClk::FCLK];
+@@ -280,12 +327,12 @@
+     s.mhz[kTDisp] = m.CurrClock[SMUClk::DISPCLK];
+     s.mhz[kTDpp] = m.CurrClock[SMUClk::DPPCLK];
+     s.mhz[kTSoc] = m.CurrClock[SMUClk::SOCCLK];
+-    for (uint32_t i = 0; i < kTClks; i++) if (s.mhz[i] > 10000u) return false;   // a layout shift, not a clock
++    for (uint32_t i = 0; i < kTClks; i++) if (s.mhz[i] > 10000u) return kSFailed;   // a layout shift, not a clock
+     const n48dal::Decoded d = read_clocks(dev);
+     s.dfsDispKhz = d.ok ? d.dispKhz : 0u;
+     s.dfsDppKhz = d.ok ? d.dppKhz : 0u;
+     s.ok = true;
+-    return true;
++    return kSOk;
+ }
+ void log_sample(const char *why, const Sample &s, uint64_t evMs) {
+     TRACE_LOG("%s t=%llu ms (%lld ms from the burst): UCLK %u FCLK %u DCFCLK %u DISPCLK %u DPPCLK %u SOCCLK %u MHz; DFS DISPCLK %u DPPCLK %u kHz%s", why,
+@@ -302,6 +349,7 @@
+     gTOn = gTSeconds != 0u;
+     gTFloored = false; gTEnded = false;
+     gTStartMs = nowMs; gTEndMs = ~0ull; gTNextMs = nowMs; gTPubMs = 0u; gTLines = 0u; gTBurstLogs = 0u;
++    gTConsec = 0u; gTMaxConsec = 0u; gTSkippedBusy = 0u; gTStop = 0u; gTStopMs = 0u; gTLastKr = 0u;
+     TRACE_LOG("boot clock trace %s", gTOn ? "ON: PMFW CurrClock UCLK/FCLK/DCFCLK/DISPCLK/DPPCLK/SOCCLK + DFS readback every 500 ms, around ufmon events (navi48-clklog=0 turns it off)"
+                                           : "OFF (navi48-clklog=0)");
+ }
+@@ -312,8 +360,15 @@
+     if (gTOn) TRACE_LOG("the floors ran at %llu ms: tracing %u s more (DCFCLK floor %u MHz)", (unsigned long long)nowMs, gTSeconds, dcfFloorMhz);
+ }
+ bool clktrace_poll(const DeviceContext &dev, uint64_t nowMs, uint64_t newEvents, bool pinned) {
+-    if (!gTOn) return false;
++    if (!gTOn || gTStop != 0u) return false;
+     bool changed = false;
++    // 0.0.685: the SMU health latch stopped optional traffic: the trace stops for the boot (no message is sent from here on).
++    if (!smu_optional_ok()) {
++        gTStop = 2u; gTStopMs = nowMs;
++        TRACE_LOG("trace STOPPED at %llu ms: the SMU is DEGRADED (no SMU message is sent); %llu samples, %llu failed", (unsigned long long)nowMs,
++                  (unsigned long long)gT.samples, (unsigned long long)gT.failures);
++        return true;
++    }
+     if (newEvents > 0u && (!gTEnded || gT.pending)) trace_event(gT, nowMs, newEvents, pinned);
+     const bool live = nowMs < gTEndMs || gT.pending;
+     if (live && nowMs >= gTNextMs) {
+@@ -322,13 +377,32 @@
+         const Sample *prev = trace_at(gT, 0);
+         const Sample p = prev != nullptr ? *prev : Sample{};
+         const bool had = prev != nullptr;
+-        if (take_sample(dev, nowMs, pinned, s)) {
++        const uint32_t sr = take_sample(dev, nowMs, pinned, s);
++        if (sr == kSBusy) {
++            gTSkippedBusy++;   // another SMU user holds the lock: no sample, no failure, try again next period
++        } else if (sr == kSRefused) {
++            gTStop = 2u; gTStopMs = nowMs;
++            TRACE_LOG("trace STOPPED at %llu ms: the SMU is DEGRADED (no SMU message is sent)", (unsigned long long)nowMs);
++            return true;
++        } else if (sr == kSOk) {
++            gTConsec = 0u;
+             trace_add(gT, s);
+             bool moved = false;
+             for (uint32_t i = 0; i < kTClks - 1u; i++) if (had && p.mhz[i] != s.mhz[i]) moved = true;   // SOCCLK moves are not logged one by one
+             if (had && (p.dfsDispKhz != s.dfsDispKhz || p.dfsDppKhz != s.dfsDppKhz)) moved = true;
+             if (gTLines < kMaxLines && (!had || moved || (gT.samples % 20u) == 0u)) { log_sample(!had ? "first" : moved ? "change" : "every 10 s", s, 0u); gTLines++; }
+-        } else trace_add(gT, s);   // counts the failure
++        } else {
++            trace_add(gT, s);   // counts the failure
++            gTConsec++;
++            if (gTConsec > gTMaxConsec) gTMaxConsec = gTConsec;
++            gTNextMs = nowMs + n48smuh::trace_period_ms(gTConsec);   // back off: 0.5 s, then 5, 10, 20, 40, 60 s
++            if (n48smuh::trace_should_stop(gTConsec)) {
++                gTStop = 1u; gTStopMs = nowMs;
++                TRACE_LOG("trace STOPPED at %llu ms: %u consecutive metrics failures (last kr 0x%x); %llu samples, %llu failed", (unsigned long long)nowMs,
++                          gTConsec, gTLastKr, (unsigned long long)gT.samples, (unsigned long long)gT.failures);
++                return true;
++            }
++        }
+         Burst b{};
+         if (trace_settle(gT, nowMs, &b)) {
+             changed = true;
+@@ -362,17 +436,18 @@
+                   (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk, (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf,
+                   (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone, trace_lean(gT));
+     }
+-    if (nowMs - gTPubMs >= 5000u) { gTPubMs = nowMs; changed = true; }
++    if (!gTEnded && nowMs - gTPubMs >= 5000u) { gTPubMs = nowMs; changed = true; }   // the registry every 5 s while tracing; nothing after the end
+     return changed;
+ }
+ 
+ void clktrace_describe(char *t, size_t n) {
+     if (t == nullptr || n == 0u) return;
+-    snprintf(t, n, "%s (every %llu ms, %u s after the floors; %llu samples, %llu failed); bursts %llu (events %llu): UCLK moved %llu, FCLK moved %llu "
++    const int w = snprintf(t, n, "%s (every %llu ms, %u s after the floors; %llu samples, %llu failed); bursts %llu (events %llu): UCLK moved %llu, FCLK moved %llu "
+              "(without UCLK %llu), DCFCLK moved or under floor %llu, DISPCLK/DPPCLK moved %llu, nothing moved %llu, UCLK pinned %llu, under 3 samples %llu; "
+              "lean: %s; MHz ranges UCLK %u..%u FCLK %u..%u DCFCLK %u..%u (floor %u, samples under it %llu) DISPCLK %u..%u DPPCLK %u..%u SOCCLK %u..%u; "
+              "moves UCLK %llu FCLK %llu DCFCLK %llu DISPCLK %llu DPPCLK %llu; with UCLK pinned: FCLK moves %llu, UCLK moves %llu; last burst at %llu ms flags %#x",
+-             !gTOn ? "off (navi48-clklog=0)" : gTEnded ? "ended" : gTFloored ? "tracing" : "tracing (floors not run yet)",
++             !gTOn ? "off (navi48-clklog=0)" : gTStop == 1u ? "STOPPED (consecutive metrics failures)" : gTStop == 2u ? "STOPPED (SMU degraded)" :
++             gTEnded ? "ended" : gTFloored ? "tracing" : "tracing (floors not run yet)",
+              (unsigned long long)kSamplePeriodMs, gTSeconds, (unsigned long long)gT.samples, (unsigned long long)gT.failures,
+              (unsigned long long)gT.bursts, (unsigned long long)gT.events, (unsigned long long)gT.bUclk, (unsigned long long)gT.bFclk,
+              (unsigned long long)gT.bFclkOnly, (unsigned long long)gT.bDcf, (unsigned long long)gT.bDispDpp, (unsigned long long)gT.bNone,
+@@ -382,6 +457,11 @@
+              (unsigned long long)gT.moves[kTUclk], (unsigned long long)gT.moves[kTFclk], (unsigned long long)gT.moves[kTDcf],
+              (unsigned long long)gT.moves[kTDisp], (unsigned long long)gT.moves[kTDpp],
+              (unsigned long long)gT.fclkMovesPinned, (unsigned long long)gT.uclkMovesPinned, (unsigned long long)gT.last.atMs, gT.last.flags);
++    // 0.0.685: the self-limit's counters.
++    if (w > 0 && (size_t)w < n)
++        snprintf(t + w, n - (size_t)w, "; failures: consecutive %u (max %u; backoff after %u, stop after %u), busy skips %llu, last kr %#x%s",
++                 gTConsec, gTMaxConsec, n48smuh::kTraceBackoffAfter, n48smuh::kTraceStopAfter, (unsigned long long)gTSkippedBusy, gTLastKr,
++                 gTStop != 0u ? (gTStop == 1u ? "; stopped by consecutive failures" : "; stopped: SMU degraded") : "");
+ }
+ 
+ }  // namespace amdgpu
+--- a/src/amd/clkfloor.h
++++ b/src/amd/clkfloor.h
+@@ -3,8 +3,9 @@
+ //  minimum and deep-sleep floor, the DISPCLK/DPPCLK hard minimums), sent ONCE at boot by the display monitor thread after the display arbitration
+ //  and before the UCLK fallback arms; and the boot clock trace (PMFW metrics CurrClock[] and the DFS readback around ufmon underflow events).
+ //  Every decision is in clkfloor_pure.h (host-tested by tests/dalfloor684_test.cpp).
+-//  Boot-args: navi48-dalfloor (absent = NumOfDisplays + DCFCLK + deep sleep + DISPCLK/DPPCLK; 0 = nothing sent; see parts_of), navi48-clklog
+-//  (absent = 600 s of trace after the floors; 0 = off; N = N seconds).
++//  Boot-args: navi48-dalfloor (0.0.685: absent = OFF, nothing sent; 1 = the 0.0.684 set NumOfDisplays + DCFCLK + deep sleep + DISPCLK/DPPCLK, sent only
++//  when the SMU is healthy, the PPSMC readiness probe answers and DISPCLK/DPPCLK read the 272.7 MHz the floors assume; see parts_of), navi48-clklog
++//  (absent = 600 s of trace after the floors; 0 = off; N = N seconds; 0.0.685: self-limited, see smu_health_pure.h).
+ //  Callers: navi48_dcn.cpp arb_monitor_loop only (a kernel thread, no lock held). Never the interrupt handler, never under a display lock.
+ //
+ #pragma once
+--- a/src/amd/clkfloor_pure.h
++++ b/src/amd/clkfloor_pure.h
+@@ -62,12 +62,19 @@
+ };
+ constexpr uint32_t kPartsAll = 0x3Fu;
+ constexpr uint32_t kDefaultParts = kPartDisplays | kPartDcfclk | kPartDeepSleep | kPartDispDpp;
+-// navi48-dalfloor: absent = the default (0x0F); 0 = OFF (nothing is sent); 1 = the default; 2 = the default + the UCLK hard minimum (0x1F);
+-// 3 = everything (0x3F); 0x100 | mask = exactly `mask` (bits above, 0x100 alone = nothing). Any other value: the default.
++// navi48-dalfloor: absent = OFF (0.0.685: nothing is sent; 0.0.684's default 0x0F wedged the PMFW on the live boot of 2026-11-25, see
++// smu_health_pure.h); 0 = OFF; 1 = the 0.0.684 set (0x0F); 2 = that + the UCLK hard minimum (0x1F); 3 = everything (0x3F); 0x100 | mask = exactly
++// `mask` (bits above, 0x100 alone = nothing). Any other value: OFF. Opting in still sends nothing unless every precondition of dal_floor_run holds.
+ constexpr uint32_t parts_of(bool present, uint32_t v) {
+-    return !present ? kDefaultParts : v == 0u ? 0u : v == 1u ? kDefaultParts : v == 2u ? (kDefaultParts | kPartUclk) : v == 3u ? kPartsAll
+-         : (v & ~0xFFu) == 0x100u ? (v & kPartsAll) : kDefaultParts;
++    return !present ? 0u : v == 0u ? 0u : v == 1u ? kDefaultParts : v == 2u ? (kDefaultParts | kPartUclk) : v == 3u ? kPartsAll
++         : (v & ~0xFFu) == 0x100u ? (v & kPartsAll) : 0u;
+ }
++// 0.0.685: the floors were computed for the GOP's DISPCLK / DPPCLK of 272.727 MHz (4 x 4500 / 66; the 0.0.606 readback). The live 0.0.684 boot read
++// 562.5 / 562.5 MHz (the PMFW's own DISPCLK / DPPCLK DPM choice once our EnableAllSmuFeatures runs; the metrics CurrClock agree). A floor computed
++// for one state must not be sent in another: nothing is sent unless both read back within 1 % of the assumption.
++constexpr uint32_t kAssumedDispKhz = 272727u;
++constexpr bool near_assumed(uint32_t khz) { return khz != 0u && (uint64_t)khz * 100u >= (uint64_t)kAssumedDispKhz * 99u && (uint64_t)khz * 100u <= (uint64_t)kAssumedDispKhz * 101u; }
++constexpr bool clocks_match_assumption(uint32_t dispKhz, uint32_t dppKhz) { return near_assumed(dispKhz) && near_assumed(dppKhz); }
+ 
+ // ---- the mode and the DML values (integer forms of the double expressions; the host test checks them against the doubles) ----------------
+ struct Mode { uint32_t pclkKhz, hActive, hTotal, vActive, vTotal, bpp, odm; };
+@@ -256,15 +263,18 @@
+ // ---- the verdict of the run ------------------------------------------------------------------------------------------------------------
+ enum Verdict : uint32_t {
+     kVNotRun = 0, kVOff = 1, kVSent = 2, kVPartial = 3, kVMailbox = 4, kVHeader = 5, kVNoSmu = 6, kVClocks = 7, kVBusy = 8, kVRefused = 9, kVDropped = 10,
+-    kVMode = 11
++    kVMode = 11, kVAssume = 12, kVUnhealthy = 13, kVPostFail = 14
+ };
+ constexpr const char *verdict_name(uint32_t v) {
+-    return v == kVNotRun ? "not run" : v == kVOff ? "off (navi48-dalfloor=0)" : v == kVSent ? "sent, every message OK" :
++    return v == kVNotRun ? "not run" : v == kVOff ? "off (0.0.685 default; navi48-dalfloor=1 opts in)" : v == kVSent ? "sent, every message OK" :
+            v == kVPartial ? "sent, some messages not OK (see the steps)" : v == kVMailbox ? "DAL mailbox not ready or timed out: stopped" :
+            v == kVHeader ? "DALSMC header version is not 1: nothing sent" : v == kVNoSmu ? "SMU features not enabled by this boot: nothing sent" :
+            v == kVClocks ? "DISPCLK/DPPCLK readback unusable: display clock floors skipped" : v == kVBusy ? "the DAL mailbox is owned by a DAL step or a clock hold: nothing sent" :
+            v == kVRefused ? "a planned message failed the allowlist: nothing sent" : v == kVDropped ? "a display clock read below its start after the floors: raised back" :
+-           v == kVMode ? "the lit timing is not 2560x1440 H_TOTAL 2720 V_TOTAL 1525/3050: nothing sent" : "?";
++           v == kVMode ? "the lit timing is not 2560x1440 H_TOTAL 2720 V_TOTAL 1525/3050: nothing sent" :
++           v == kVAssume ? "the live DISPCLK/DPPCLK are not the 272.7 MHz the floors were computed for: nothing sent" :
++           v == kVUnhealthy ? "the SMU is not healthy or the PPSMC readiness probe failed: nothing sent" :
++           v == kVPostFail ? "sent, but the PMFW stopped answering afterwards: SMU DEGRADED, all SMU traffic stopped" : "?";
+ }
+ // After the DISPCLK / DPPCLK floors: kept (both at or above the start), or one fell (the corrective raise asks ceil(start MHz)).
+ constexpr bool clocks_kept(uint32_t startDisp, uint32_t startDpp, uint32_t nowDisp, uint32_t nowDpp) {
+--- a/src/amd/smu_dal.cpp
++++ b/src/amd/smu_dal.cpp
+@@ -101,6 +101,13 @@
+         DAL_LOG("send REFUSED msg=0x%02x: the shared mailbox lock is unavailable", msg);
+         return (kern_return_t)o->rc;
+     }
++    // 3b. 0.0.685: the health latch (smu_health_pure.h): after any DAL timeout the DAL mailbox is off for the boot, and nothing goes out while the
++    //     PPSMC side is suspect or degraded. Nothing sent, no register touched.
++    if (!smu_dal_allowed()) {
++        o->refuse = kRefRespZero; o->rc = (uint32_t)kIOReturnNotReady;
++        DAL_LOG("send REFUSED msg=0x%02x param=0x%08x: the SMU health latch has the DAL mailbox off (a DAL timeout this boot, or the PMFW stopped answering)", msg, param);
++        return (kern_return_t)o->rc;
++    }
+     // 4. RESP must be non-zero BEFORE the send (Linux polls for it; a zero here means a message is in flight or the mailbox is unhealthy).
+     const uint32_t pre = RREG32(dev, kRegResp);
+     o->preResp = pre;
+@@ -126,6 +133,15 @@
+     o->arg = RREG32(dev, kRegArg);
+     o->rc = (uint32_t)resp_to_rc(resp);
+     DAL_LOG("msg=0x%02x param=0x%08x preresp=0x%x resp=0x%x (%s) arg=0x%08x us=%u", msg, param, pre, resp, resp_name(resp), o->arg, o->us);
++    if (resp == 0u) {
++        // 0.0.685: the PMFW did not answer (0.0.684's live boot: ReturnHardMinStatus after the DCFCLK hard minimum, then neither mailbox answered).
++        // The DAL mailbox goes off for the boot and the PPSMC mailbox is probed ONCE (GetSmuVersion, still under the shared lock): if it does not
++        // answer either, the latch is DEGRADED and no SMU message is sent any more.
++        smu_health_dal_timeout();
++        const kern_return_t pk = smu_health_probe(dev);
++        DAL_LOG("*** DAL TIMEOUT msg=0x%02x param=0x%08x: DAL mailbox OFF for this boot; PPSMC probe kr=0x%x -> %s ***", msg, param, (unsigned)pk,
++                pk == kIOReturnSuccess ? "the PPSMC mailbox still answers" : "the PMFW does not answer: SMU DEGRADED, all SMU traffic stopped");
++    }
+     return (kern_return_t)o->rc;
+ }
+ 
+--- a/src/amd/smu_health_pure.h
++++ b/src/amd/smu_health_pure.h
+@@ -0,0 +1,141 @@
++//
++//  smu_health_pure.h - build 0.0.685: the PURE half of the SMU mailbox health latch. No kernel header, so tests/smuhealth685_test.cpp compiles
++//  it on the host and drives the exact decisions smu_v14_0.cpp (the PPSMC wrapper), smu_dal.cpp (the DAL sender) and clkfloor.cpp make.
++//
++//  Why (0.0.684, live boot 2026-11-25 19:37): the display clock floors sent NumOfDisplays(1) (OK), then SetHardMinByFreq(DCFCLK, 147 MHz) (OK),
++//  then the first ReturnHardMinStatus was never answered (2 s) and from then on the PMFW answered neither mailbox: every PPSMC message
++//  (GetDriverIfVersion of each metrics read) timed out after 2 s. The 0.0.684 clock trace kept sending one every 500 ms (188 timeouts), each one
++//  holding the shared mailbox lock and the display monitor thread for 2 s, and each one rewriting the mailbox while the PMFW had not answered the
++//  previous message. Linux (swsmu smu_cmn.c, smu_msg_v1_send_msg) does neither: it pre-polls the response of the previous message and sends
++//  nothing while it is 0, and after a fatal reply it latches SMU_FW_HANG and refuses every later message.
++//
++//  The latch, as a state machine:
++//    kUnarmed   the boot SMU bring-up (smu_hw_init, DPM, fan) runs exactly as before 0.0.685; timeouts are only counted. smu_health_arm() (the
++//               display monitor thread's start) moves to kHealthy.
++//    kHealthy   everything may be sent. A PPSMC timeout -> kDegraded. A DAL timeout -> kSuspect (and the DAL mailbox is off for the boot).
++//    kSuspect   only the health probe (GetSmuVersion on the PPSMC mailbox) may be sent: OK -> kHealthy (DAL stays off), no answer -> kDegraded.
++//    kDegraded  NOTHING is sent (every PPSMC / DAL message is refused at once, no register touched), so no caller waits 2 s on a dead PMFW. The
++//               PMFW keeps the clocks it last set (DPM as last set). The only way back: the display monitor reads (never writes) the PPSMC
++//               response register every kRecoverPollMs; once the PMFW has answered the pending message (RESP != 0) it sends ONE GetSmuVersion,
++//               at most kMaxProbes times per boot. OK -> kHealthy (optional traffic resumes; the DAL mailbox and the clock trace stay off).
++//  "Optional" traffic (the clock trace, the UCLK fallback pin, user-client metrics/power states, telemetry) asks optional_ok() first and stops.
++//
++#pragma once
++#include <stdint.h>
++
++namespace n48smuh {
++
++enum State : uint32_t { kUnarmed = 0, kHealthy = 1, kSuspect = 2, kDegraded = 3 };
++enum Reason : uint32_t { kRNone = 0, kRMainTimeout = 1, kRDalTimeout = 2, kRProbeFailed = 3, kRPending = 4, kRDalProbeOk = 5, kRRecovered = 6 };
++enum Event : uint32_t {
++    kEvArm = 0,            // the display monitor started: from now on a timeout latches
++    kEvMainOk = 1,         // a PPSMC message was answered (any reply: the PMFW is alive)
++    kEvMainTimeout = 2,    // a PPSMC message was not answered within 2 s
++    kEvDalTimeout = 3,     // a DAL message was not answered within 2 s
++    kEvProbeOk = 4,        // the health probe (PPSMC GetSmuVersion) was answered OK
++    kEvProbeFail = 5,      // the health probe was not sent (RESP still 0) or not answered
++    kEvPendingSeen = 6,    // a PPSMC send found the previous message still unanswered (RESP 0): nothing was written
++};
++constexpr uint32_t kMaxProbes = 3u;
++constexpr uint64_t kRecoverPollMs = 10000u;
++
++struct Health {
++    uint32_t state;        // State
++    uint32_t reason;       // Reason of the last transition
++    bool mainPending;      // our last PPSMC message was never answered (its RESP may still be 0)
++    bool dalPending;       // our last DAL message was never answered
++    bool dalOff;           // the DAL mailbox is off for the rest of the boot (after any DAL timeout)
++    uint32_t mainTimeouts, dalTimeouts, refused, pendingSeen, probes, probesOk, recoveries, transitions;
++    uint64_t sinceMs;      // uptime of the last state change
++};
++
++constexpr Health initial() { return Health{ kUnarmed, kRNone, false, false, false, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u }; }
++
++constexpr Health go(Health h, uint32_t st, uint32_t why, uint64_t nowMs) {
++    if (h.state != st) { h.state = st; h.sinceMs = nowMs; h.transitions++; }
++    h.reason = why;
++    return h;
++}
++
++constexpr Health on_event(Health h, uint32_t ev, uint64_t nowMs) {
++    switch (ev) {
++    case kEvArm:
++        return h.state == kUnarmed ? go(h, kHealthy, kRNone, nowMs) : h;
++    case kEvMainOk:
++        h.mainPending = false;
++        return h;
++    case kEvMainTimeout:
++        h.mainTimeouts++;
++        h.mainPending = true;
++        return h.state == kUnarmed ? h : go(h, kDegraded, kRMainTimeout, nowMs);
++    case kEvDalTimeout:
++        h.dalTimeouts++;
++        h.dalPending = true;
++        h.dalOff = true;
++        return h.state == kHealthy ? go(h, kSuspect, kRDalTimeout, nowMs) : h;
++    case kEvProbeOk:
++        h.probesOk++;
++        h.mainPending = false;
++        if (h.state == kSuspect) return go(h, kHealthy, kRDalProbeOk, nowMs);
++        if (h.state == kDegraded) { h.recoveries++; return go(h, kHealthy, kRRecovered, nowMs); }
++        return h;
++    case kEvProbeFail:
++        return h.state == kUnarmed ? h : go(h, kDegraded, kRProbeFailed, nowMs);
++    case kEvPendingSeen:
++        h.pendingSeen++;
++        return h.state == kUnarmed ? h : go(h, kDegraded, kRPending, nowMs);
++    default:
++        return h;
++    }
++}
++
++// The PPSMC wrapper's gate, before it touches a register. respNow = the PPSMC response register as read now (read only when it matters:
++// the caller passes ~0u when it did not read it). Unarmed: always kGo (the pre-0.0.685 path).
++enum Gate : uint32_t { kGo = 0, kRefuseLatched = 1, kRefusePending = 2, kNeedResp = 3 };
++constexpr uint32_t main_gate(const Health &h, bool probe, uint32_t respNow) {
++    if (h.state == kUnarmed) return kGo;
++    if (h.state == kDegraded || h.state == kSuspect) {
++        if (!probe) return kRefuseLatched;
++    }
++    if (h.mainPending) {
++        if (respNow == ~0u) return kNeedResp;      // read RESP first
++        if (respNow == 0u) return kRefusePending;  // the PMFW has not answered the previous message: never write over it (Linux's pre-poll)
++    }
++    return kGo;
++}
++// The DAL sender's gate (before its allowlist): off after any DAL timeout, and while the PPSMC side is not healthy. Unarmed: as before.
++constexpr bool dal_ok(const Health &h) {
++    if (h.dalOff || h.dalPending) return false;
++    return h.state == kUnarmed || h.state == kHealthy;
++}
++// Optional SMU traffic (the clock trace, the UCLK fallback, user-client metrics and power states, telemetry): only while healthy (or unarmed).
++constexpr bool optional_ok(const Health &h) { return h.state == kUnarmed || h.state == kHealthy; }
++// The display monitor's recovery: in kDegraded, every kRecoverPollMs, read RESP; probe only when the pending message has been answered.
++constexpr bool recover_probe(const Health &h, uint32_t respNow) {
++    return h.state == kDegraded && h.probes < kMaxProbes && respNow != 0u && respNow != ~0u;
++}
++
++constexpr const char *state_name(uint32_t s) {
++    return s == kUnarmed ? "unarmed (boot bring-up)" : s == kHealthy ? "healthy" : s == kSuspect ? "suspect (DAL timeout, probing the PPSMC mailbox)" :
++           s == kDegraded ? "DEGRADED (PMFW not answering: no SMU message is sent)" : "?";
++}
++constexpr const char *reason_name(uint32_t r) {
++    return r == kRNone ? "none" : r == kRMainTimeout ? "a PPSMC message timed out" : r == kRDalTimeout ? "a DAL message timed out" :
++           r == kRProbeFailed ? "the PPSMC health probe was not answered" : r == kRPending ? "the previous PPSMC message is still unanswered" :
++           r == kRDalProbeOk ? "DAL timeout, but the PPSMC mailbox answers (DAL off for the boot)" : r == kRRecovered ? "the PMFW answered again" : "?";
++}
++
++// ---- the clock trace's self-limit (clkfloor.cpp take_sample) --------------------------------------------------------------------------------
++// After kTraceBackoffAfter consecutive failed samples the period grows (5 s, 10 s, 20 s, 40 s, 60 s); after kTraceStopAfter consecutive
++// failures the trace stops for the boot. A good sample resets the run. A refused sample (SMU degraded) stops it at once.
++constexpr uint32_t kTraceBackoffAfter = 2u, kTraceStopAfter = 5u;
++constexpr uint64_t kTraceBaseMs = 500u, kTraceBackoffMs = 5000u, kTraceMaxBackoffMs = 60000u;
++constexpr uint64_t trace_period_ms(uint32_t consecutiveFailures) {
++    if (consecutiveFailures < kTraceBackoffAfter) return kTraceBaseMs;
++    uint64_t p = kTraceBackoffMs;
++    for (uint32_t i = kTraceBackoffAfter; i < consecutiveFailures && p < kTraceMaxBackoffMs; i++) p *= 2u;
++    return p > kTraceMaxBackoffMs ? kTraceMaxBackoffMs : p;
++}
++constexpr bool trace_should_stop(uint32_t consecutiveFailures) { return consecutiveFailures >= kTraceStopAfter; }
++
++}  // namespace n48smuh
+--- a/src/amd/smu_v14_0.cpp
++++ b/src/amd/smu_v14_0.cpp
+@@ -82,6 +82,10 @@
+ 
+ #include <kern/thread.h>          // current_thread(): the owner of the shared mailbox lock (0.0.604)
+ #include <libkern/OSAtomic.h>
++#include <kern/clock.h>           // 0.0.685: the health latch's timestamps
++#include <IOKit/IOLib.h>
++#include <string.h>
++#include "smu_health_pure.h"      // 0.0.685: the SMU mailbox health latch
+ 
+ namespace amdgpu {
+ 
+@@ -118,9 +122,158 @@
+     if (--gSmuDepth == 0) {
+         __atomic_store_n(&gSmuOwner, (thread_t)nullptr, __ATOMIC_RELEASE);
+         IOLockUnlock(gSmuLock);
++    }
++}
++
++// 0.0.685: the non-waiting form for optional callers (SmuTrySeq).
++bool smu_lock_try_enter()
++{
++    if (gSmuLock == nullptr) {
++        IOLock *l = IOLockAlloc();
++        if (l != nullptr && !OSCompareAndSwapPtr(nullptr, l, (void *volatile *)&gSmuLock)) IOLockFree(l);
++    }
++    IOLock *l = gSmuLock;
++    if (l == nullptr) return false;
++    const thread_t me = current_thread();
++    if (__atomic_load_n(&gSmuOwner, __ATOMIC_ACQUIRE) == me) { gSmuDepth++; return true; }
++    if (!IOLockTryLock(l)) return false;
++    __atomic_store_n(&gSmuOwner, me, __ATOMIC_RELEASE);
++    gSmuDepth = 1;
++    return true;
++}
++
++// ---------------------------------------------------------------------------------------------------------------------
++//  0.0.685: the SMU mailbox health latch (smu_health_pure.h). gHealth changes only under the shared mailbox lock (or, when IOLockAlloc
++//  failed, unlocked as the PPSMC path itself is); gHealthState / gHealthGen mirror it for lock-free readers.
++// ---------------------------------------------------------------------------------------------------------------------
++static n48smuh::Health gHealth = n48smuh::initial();
++static volatile uint32_t gHealthState = n48smuh::kUnarmed;
++static volatile uint32_t gHealthGen = 0u;
++static uint64_t gHealthPollMs = 0u;
++static SmuVramReader gVramReader = nullptr;
++
++static uint64_t health_now_ms()
++{
++    uint64_t t = 0, ns = 0;
++    clock_get_uptime(&t);
++    absolutetime_to_nanoseconds(t, &ns);
++    return ns / 1000000ull;
++}
++
++static void health_apply(uint32_t ev)
++{
++    const n48smuh::Health before = gHealth;
++    gHealth = n48smuh::on_event(gHealth, ev, health_now_ms());
++    __atomic_store_n(&gHealthState, gHealth.state, __ATOMIC_RELEASE);
++    __atomic_fetch_add(&gHealthGen, 1u, __ATOMIC_ACQ_REL);
++    if (gHealth.state != before.state) {
++        if (gHealth.state == n48smuh::kDegraded)
++            SMU_LOG("SMU-HEALTH: *** DEGRADED: %s. The PMFW does not answer: from now on NO SMU message is sent (clock trace, UCLK fallback, "
++                    "metrics, power states, DAL all stop; the clocks stay as the PMFW last set them). PPSMC timeouts %u, DAL timeouts %u ***",
++                    n48smuh::reason_name(gHealth.reason), gHealth.mainTimeouts, gHealth.dalTimeouts);
++        else
++            SMU_LOG("SMU-HEALTH: %s -> %s (%s)", n48smuh::state_name(before.state), n48smuh::state_name(gHealth.state), n48smuh::reason_name(gHealth.reason));
++    }
++}
++
++// The PPSMC response register (C2PMSG_90), read only. ~0u when the mailbox is unreachable.
++static uint32_t health_read_resp(const DeviceContext &dev)
++{
++    if (!dev.ip.isResolved(IPBlock::MP1, /*baseIdx=*/1)) return ~0u;
++    const uint32_t reg = SOC15_REG_OFFSET_BIDX(dev, IPBlock::MP1, 1, MP1Regs::C2PMSG_90);
++    if (!dev.rmmio || ((size_t)reg * 4 + 4) > dev.rmmioSize) return ~0u;
++    return RREG32(dev, reg);
++}
++
++// The gate of every PPSMC send (wrapper and probe). Caller holds the shared lock. kGo or a refusal (nothing written).
++static uint32_t health_gate(const DeviceContext &dev, bool probe)
++{
++    uint32_t g = n48smuh::main_gate(gHealth, probe, ~0u);
++    if (g == n48smuh::kNeedResp) g = n48smuh::main_gate(gHealth, probe, health_read_resp(dev));
++    if (g == n48smuh::kNeedResp) g = n48smuh::kRefusePending;   // unreadable: treat as unanswered
++    if (g == n48smuh::kGo) return g;
++    gHealth.refused++;
++    __atomic_fetch_add(&gHealthGen, 1u, __ATOMIC_ACQ_REL);
++    if (g == n48smuh::kRefusePending) health_apply(n48smuh::kEvPendingSeen);
++    return g;
++}
++
++static void health_after(kern_return_t r)
++{
++    if (r == kIOReturnTimeout) {
++        const bool armed = gHealth.state != n48smuh::kUnarmed;
++        health_apply(n48smuh::kEvMainTimeout);
++        if (armed) SMU_LOG("SMU-HEALTH: a PPSMC message was not answered in 2 s (timeouts so far %u)", gHealth.mainTimeouts);
++    } else if (gHealth.mainPending) {
++        health_apply(n48smuh::kEvMainOk);
++    }
++}
++
++void smu_health_arm()
++{
++    SmuSeq seq;
++    health_apply(n48smuh::kEvArm);
++    SMU_LOG("SMU-HEALTH: armed (%s): a PPSMC timeout from now on stops all SMU traffic instead of repeating 2 s waits", n48smuh::state_name(gHealth.state));
++}
++bool smu_optional_ok()
++{
++    const uint32_t s = __atomic_load_n(&gHealthState, __ATOMIC_ACQUIRE);
++    return s == n48smuh::kUnarmed || s == n48smuh::kHealthy;
++}
++bool smu_dal_allowed() { return n48smuh::dal_ok(gHealth); }
++uint32_t smu_health_generation() { return __atomic_load_n(&gHealthGen, __ATOMIC_ACQUIRE); }
++void smu_health_dal_timeout()
++{
++    SmuSeq seq;
++    health_apply(n48smuh::kEvDalTimeout);
++    SMU_LOG("SMU-HEALTH: a DAL message was not answered in 2 s: the DAL mailbox is OFF for this boot (DAL timeouts %u)", gHealth.dalTimeouts);
++}
++void smu_set_vram_reader(SmuVramReader fn) { gVramReader = fn; }
++
++// forward: the untouched PPSMC body below
++static __attribute__((noinline)) kern_return_t smu_send_msg_with_param_body(const DeviceContext &dev, uint32_t msgId, uint32_t param, uint32_t *outReturn);
++
++kern_return_t smu_health_probe(const DeviceContext &dev)
++{
++    SmuSeq seq;
++    if (health_gate(dev, true) != n48smuh::kGo) {
++        health_apply(n48smuh::kEvProbeFail);
++        SMU_LOG("SMU-HEALTH: probe NOT sent: the previous PPSMC message is still unanswered (RESP 0)");
++        return kIOReturnNotReady;
+     }
++    uint32_t ver = 0;
++    const kern_return_t r = smu_send_msg_with_param_body(dev, PPSMC::GetSmuVersion, 0, &ver);
++    if (r == kIOReturnTimeout) health_apply(n48smuh::kEvMainTimeout);
++    health_apply(r == kIOReturnSuccess ? n48smuh::kEvProbeOk : n48smuh::kEvProbeFail);
++    SMU_LOG("SMU-HEALTH: probe GetSmuVersion -> kr 0x%x (pmfw 0x%08x): %s", (unsigned)r, ver, n48smuh::state_name(gHealth.state));
++    return r;
++}
++
++void smu_health_poll(const DeviceContext &dev, uint64_t nowMs)
++{
++    if (__atomic_load_n(&gHealthState, __ATOMIC_ACQUIRE) != n48smuh::kDegraded) return;
++    if (gHealthPollMs != 0u && nowMs - gHealthPollMs < n48smuh::kRecoverPollMs) return;
++    gHealthPollMs = nowMs;
++    SmuTrySeq seq;   // never wait here: a holder is about to be refused anyway
++    if (!seq.held) return;
++    const uint32_t resp = health_read_resp(dev);   // read only
++    if (!n48smuh::recover_probe(gHealth, resp)) return;
++    gHealth.probes++;
++    SMU_LOG("SMU-HEALTH: the PMFW answered the pending PPSMC message (RESP 0x%x): recovery probe %u of %u", resp, gHealth.probes, n48smuh::kMaxProbes);
++    (void)smu_health_probe(dev);
+ }
+ 
++void smu_health_describe(char *t, size_t n)
++{
++    if (t == nullptr || n == 0u) return;
++    const n48smuh::Health h = gHealth;
++    snprintf(t, n, "%s; last reason: %s; PPSMC timeouts %u, DAL timeouts %u, refused (not sent) %u, unanswered-previous seen %u; "
++             "probes OK %u, recovery probes %u of %u, recoveries %u; PPSMC pending %s, DAL %s; since uptime %llu ms",
++             n48smuh::state_name(h.state), n48smuh::reason_name(h.reason), h.mainTimeouts, h.dalTimeouts, h.refused, h.pendingSeen,
++             h.probesOk, h.probes, n48smuh::kMaxProbes, h.recoveries, h.mainPending ? "yes" : "no", h.dalOff ? "OFF for the boot" : "allowed",
++             (unsigned long long)h.sinceMs);
++}
++
+ // Message-id -> name, for the log. Diagnostic only; no MMIO.
+ static const char *smu_msg_name(uint32_t msgId)
+ {
+@@ -296,7 +449,15 @@
+                         uint32_t *outReturn)
+ {
+     SmuSeq seq;   // the shared mailbox lock (held = false only when IOLockAlloc failed: then the message goes out unlocked, as before 0.0.604)
+-    return smu_send_msg_with_param_body(dev, msgId, param, outReturn);
++    // 0.0.685: the health latch (smu_health_pure.h). Armed and DEGRADED: refused at once, nothing written. Our previous message unanswered
++    // (RESP still 0): refused, never written over (Linux smu_msg_v1_send_msg's pre-poll). Unarmed (the boot bring-up): the pre-0.0.685 path.
++    if (health_gate(dev, false) != n48smuh::kGo) {
++        if (outReturn != nullptr) *outReturn = 0;
++        return kIOReturnNotReady;
++    }
++    const kern_return_t r = smu_send_msg_with_param_body(dev, msgId, param, outReturn);
++    health_after(r);
++    return r;
+ }
+ 
+ kern_return_t
+@@ -813,6 +974,7 @@
+ {
+     using namespace n48uclk;
+     if (__atomic_load_n(&gUclkCapable, __ATOMIC_ACQUIRE) == 0u || gUclkPin.mode == kModeOff) return kIOReturnNotPermitted;
++    if (!smu_optional_ok()) return kIOReturnNotReady;   // 0.0.685: the SMU is DEGRADED: nothing is sent (the latch logs why)
+     Result r = gUclkPin;
+     r.why = why;
+     const kern_return_t k = uclk_soft_min(dev, pin, r);
+@@ -1015,10 +1177,20 @@
+ 
+     // The SMU DMAs into VRAM; read it back through the GPU's own view so we
+     // are not trusting a stale CPU mapping of the aperture.
++    // 0.0.685: through the registered locked reader (navi48_vram_read_mm, under gVramMmLock, <= 64 dwords per call), so the MM_INDEX /
++    // MM_DATA window is never driven by two threads at once; the unlocked window only when no reader is registered (host tests, early boot).
+     const uint64_t off = dev.vramBase + kSMUDriverTableVRAMOffset;
+     auto *dst = reinterpret_cast<uint32_t *>(&out->metrics);
+-    for (uint32_t i = 0; i < sizeof(SmuMetrics) / 4; i++)
+-        dst[i] = RVRAM32_via_mm(dev, off + i * 4);
++    constexpr uint32_t kMetricsDwords = sizeof(SmuMetrics) / 4;
++    bool copied = false;
++    if (gVramReader != nullptr) {
++        copied = true;
++        for (uint32_t i = 0; i < kMetricsDwords && copied; i += 64u)
++            copied = gVramReader(off + (uint64_t)i * 4u, dst + i, (kMetricsDwords - i) < 64u ? (kMetricsDwords - i) : 64u);
++    }
++    if (!copied)
++        for (uint32_t i = 0; i < kMetricsDwords; i++)
++            dst[i] = RVRAM32_via_mm(dev, off + i * 4);
+ 
+     // Plausibility: a Navi 48 at idle or load should sit inside these ranges.
+     // This is the only defence when the layout is unverified — it catches a
+--- a/src/dcn/navi48_dcn.cpp
++++ b/src/dcn/navi48_dcn.cpp
+@@ -2497,9 +2497,16 @@
+ }
+ static void clk_publish() {
+ 	if (gDcn.owner == nullptr) return;
+-	static char t[1280];   // the trace's worst case is about 1100 bytes
++	static char t[1536];   // the trace's worst case is about 1300 bytes (0.0.685: + the self-limit's counters)
+ 	amdgpu::clktrace_describe(t, sizeof(t));
+ 	gDcn.owner->setProperty("Navi48,DisplayClocks", t);
++}
++// 0.0.685: Navi48,SmuHealth (the SMU mailbox health latch, amd/smu_health_pure.h). Monitor thread only.
++static void health_publish() {
++	if (gDcn.owner == nullptr) return;
++	static char t[512];
++	amdgpu::smu_health_describe(t, sizeof(t));
++	gDcn.owner->setProperty("Navi48,SmuHealth", t);
+ }
+ 
+ // The fallback's stage 1 (0.0.674; 0.0.673 ran it only with the pin): the stutter allow of step 1 is taken back (the GOP's SELF_REFRESH_FORCE bits), with NO
+@@ -2567,6 +2574,12 @@
+ 	bool wasOn = false;
+ 	uint64_t lastEvents = 0;
+ 	uclk_publish();
++	// 0.0.685: from here on a PPSMC timeout latches the SMU DEGRADED (no further SMU message; smu_health_pure.h). The boot bring-up before this point
++	// ran unarmed, exactly as before.
++	amdgpu::smu_health_arm();
++	uint32_t healthGen = amdgpu::smu_health_generation();
++	bool fbSkipLogged = false;
++	health_publish();
+ 	amdgpu::clktrace_start(t0);   // 0.0.684: the boot clock trace samples from now on (navi48-clklog=0: off)
+ 	while (__atomic_load_n(&gArbStop, __ATOMIC_ACQUIRE) == 0u) {
+ 		IOSleep(50);
+@@ -2597,6 +2610,8 @@
+ 		const uint64_t ev = gUf.events, fresh = ev - lastEvents;
+ 		lastEvents = ev;
+ 		if (on && amdgpu::clktrace_poll(*gDcn.dev, now_ms(), fresh, gFb.pinned)) clk_publish();   // 0.0.684: read-only (metrics + DFS readback)
++		amdgpu::smu_health_poll(*gDcn.dev, now_ms());   // 0.0.685: DEGRADED only: reads the PPSMC response every 10 s; probes once it answered
++		if (amdgpu::smu_health_generation() != healthGen) { healthGen = amdgpu::smu_health_generation(); health_publish(); }
+ 		const n48uclk::Result up = amdgpu::smu_uclk_pin_result();
+ 		const uint32_t mode = up.verdict == n48uclk::kNotRun ? (uint32_t)n48uclk::kModeOff : up.mode;   // SMU features not ours this boot: no fallback
+ 		const uint32_t act = n48uclk::fb::step(gFb, mode, ms, fresh, on);
+@@ -2607,6 +2622,9 @@
+ 			N48LOG("ufmon: UCLK fallback stage 1 (stutter off, no pin; %s) -> %s; underflow events so far %llu", n48uclk::why_name(gFb.why),
+ 			       ok ? "done" : "FAILED (retry in 10 s)", (unsigned long long)ev);
+ 			uclk_publish();
++		} else if (act != n48uclk::fb::kNone && !amdgpu::smu_optional_ok()) {
++			// 0.0.685: the SMU is DEGRADED: no pin / release message (it would only be refused); logged once, the request stays pending.
++			if (!fbSkipLogged) { fbSkipLogged = true; N48LOG("ufmon: UCLK fallback %s NOT sent: the SMU is DEGRADED (no SMU message is sent; see Navi48,SmuHealth)", act == n48uclk::fb::kPin ? "pin" : "release"); }
+ 		} else if (act != n48uclk::fb::kNone) {
+ 			const bool pin = act == n48uclk::fb::kPin;
+ 			const kern_return_t kr = amdgpu::smu_uclk_display_pin(*gDcn.dev, pin, gFb.why);   // no lock held
