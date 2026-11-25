@@ -160,6 +160,14 @@ run and desktop validation after reboot remain pending.
 - Kernel 0.0.684 committed (696f530), payload research/builds/macos-20261125/kernel-684/kernel-payload-v20, NOT installed
   (install needs the user's explicit go-ahead; live guard f88cb144 -> 9ffec241, 5 lines; script
   research/builds/macos-20261125/install684.sh to be generated like install678.sh).
+- 19:3x Basemark completes on bundle 45/46: scores 21602 / 21532 (Medium 1080p); bundle 46 run has zero refusals
+  and zero unbound-texture warnings (shadows OK). GPU under the run: activity <=73 %, GFXCLK 0.8-1.8 GHz, 31-45 W, 46 C,
+  fans 0 -> the driver (submission path), not the GPU, limits the score.
+- 0.0.684 BOOT PROBLEM (live now): after 1 of 5 DAL floor messages the DAL mailbox timed out and the main SMU mailbox
+  stopped answering (metrics -> 0xe00002d6 timeout); desktop slow. DISPCLK/DPPCLK read 562.5 MHz (not 272.7).
+  The user refused a rollback: agent running = 0.0.685 repair (safe DAL protocol, post-check, SMU-degraded mode,
+  self-limiting clktrace) -> research/builds/macos-20261125/kernel-685/. A prepared (unused) rollback script:
+  research/builds/macos-20261125/rollback-684-to-683.sh.
 
 ## Next planned steps
 
