@@ -1,0 +1,316 @@
+diff -ruN a/Info.plist b/Info.plist
+--- a/Info.plist	2026-11-23 20:42:19
++++ b/Info.plist	2026-11-23 20:42:19
+@@ -15,9 +15,9 @@
+ 	<key>CFBundlePackageType</key>
+ 	<string>KEXT</string>
+ 	<key>CFBundleShortVersionString</key>
+-	<string>0.0.9</string>
++	<string>0.0.10</string>
+ 	<key>CFBundleVersion</key>
+-	<string>0.0.9</string>
++	<string>0.0.10</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>OSBundleRequired</key>
+diff -ruN a/Makefile b/Makefile
+--- a/Makefile	2026-11-23 20:42:19
++++ b/Makefile	2026-11-23 20:42:19
+@@ -9,7 +9,7 @@
+ 
+ PRODUCT      := RDNA4FB
+ BUNDLE_ID    := com.hackintosh.RDNA4FB
+-VERSION      := 0.0.9
++VERSION      := 0.0.10
+ 
+ ARCH         := x86_64
+ DEPLOY       := 11.0
+diff -ruN a/src/framebuffer.cpp b/src/framebuffer.cpp
+--- a/src/framebuffer.cpp	2026-11-23 20:42:19
++++ b/src/framebuffer.cpp	2026-11-23 20:42:19
+@@ -2283,23 +2283,29 @@
+ 	return kIOReturnSuccess;
+ }
+ 
+-// Active refresh of the one exposed mode (refresh_pure.h). Navi 44 (0x7590) declares 120 Hz: the GOP leaves the scanout at
+-// 2560x1440 @ 120 Hz (the SINK-A CTA timing of research/display/gop_vm_readout_plan.md section 9). The kernel side sets
+-// Navi48,RefreshHz to 60 for the 60 Hz scanout and back to 120 on restore; the property is read on every call. Navi 48
+-// keeps 60 Hz. The first call and each change log one line; on Navi 44 a change re-publishes IOFBTimingRange.
++// Active refresh of the one exposed mode (refresh_pure.h, 0.0.10). Two sources, read on every call: the Navi48,RefreshHz
++// property the kernel side writes on the IOPCIDevice, and the OTG0 V_TOTAL register read through BAR5 (the scanout itself;
++// Navi 44 only). Navi 44 (0x7590) declares 60 Hz only when the known sources say 60 Hz, and 120 Hz when they disagree or
++// neither is known (the 0.0.8 value, as at boot). Navi 48 keeps 60 Hz. The first call and each change log one line; on
++// Navi 44 a change re-publishes IOFBTimingRange.
+ uint32_t RDNA4FB::activeRefreshHz() {
+ 	const uint32_t devid = pciDevice ? (pciDevice->configRead32(kIOPCIConfigVendorID) >> 16) : 0;
+ 	OSNumber *prop = pciDevice ? OSDynamicCast(OSNumber, pciDevice->getProperty("Navi48,RefreshHz")) : nullptr;
+ 	const bool present = prop != nullptr;
+ 	const uint64_t value = present ? prop->unsigned64BitValue() : 0;
+-	const uint32_t hz = rdna4fb_refresh::active_hz(present, value, devid);
++	// OTG0_OTG_V_TOTAL (total - 1). An unmapped or unreadable register gives all-ones, which names no timing.
++	const uint32_t vtot = (devid == rdna4fb_refresh::kNavi44DeviceId)
++	                    ? regRead32(rdna4fb_refresh::kOtg0VTotalByteOffset) : 0xFFFFFFFFu;
++	const uint32_t readbackHz = rdna4fb_refresh::hz_from_vtotal_reg(vtot);
++	const uint32_t hz = rdna4fb_refresh::combine_hz(readbackHz, present, value, devid);
+ 	if (hz != activeHz) {
+ 		const bool first = (activeHz == 0);
+ 		activeHz = hz;
+ 		if (present)
+-			FBLOG("refresh: active %u Hz (Navi48,RefreshHz=%llu)", hz, (unsigned long long)value);
++			FBLOG("refresh: active %u Hz (OTG0 V_TOTAL 0x%x = %u Hz; Navi48,RefreshHz=%llu)", hz, vtot, readbackHz,
++			      (unsigned long long)value);
+ 		else
+-			FBLOG("refresh: active %u Hz (Navi48,RefreshHz absent)", hz);
++			FBLOG("refresh: active %u Hz (OTG0 V_TOTAL 0x%x = %u Hz; Navi48,RefreshHz absent)", hz, vtot, readbackHz);
+ 		if (!first && devid == rdna4fb_refresh::kNavi44DeviceId)
+ 			publishTimingRange(hz);
+ 	}
+diff -ruN a/src/kmod_info.c b/src/kmod_info.c
+--- a/src/kmod_info.c	2026-11-23 20:42:19
++++ b/src/kmod_info.c	2026-11-23 20:42:19
+@@ -33,7 +33,7 @@
+ 	return KERN_SUCCESS;
+ }
+ 
+-KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.9", _start, _stop)
++KMOD_EXPLICIT_DECL(com.hackintosh.RDNA4FB, "0.0.10", _start, _stop)
+ 
+ __private_extern__ kmod_start_func_t *_realmain = rdna4_kmod_start;
+ __private_extern__ kmod_stop_func_t  *_antimain = rdna4_kmod_stop;
+diff -ruN a/src/refresh_pure.h b/src/refresh_pure.h
+--- a/src/refresh_pure.h	2026-11-23 20:42:19
++++ b/src/refresh_pure.h	2026-11-23 20:42:19
+@@ -5,15 +5,22 @@
+ //  Pure helpers for the refresh of the one exposed mode: 60 Hz or 120 Hz on Navi 44 (0x7590).
+ //  No kernel headers: tests/test_refresh_pure.cpp compiles this file on the host.
+ //
+-//  The refresh is the IORegistry property "Navi48,RefreshHz" on the PCI nub, an OSNumber written by
+-//  the kernel side: 60 for the 60 Hz scanout, 120 on restore. Absent, or any other value, gives the
+-//  0.0.8 default. Only Navi 44 honours the property: its 2560x1440 timing path is the only one that
+-//  depends on the refresh.
++//  Two sources say which scanout is running, and the framebuffer combines them (0.0.10, combine_hz):
++//    - the IORegistry property "Navi48,RefreshHz" on the PCI nub, an OSNumber written by the kernel side: 60 for
++//      the 60 Hz scanout, 120 on restore. Absent (at boot, and after a revert) or any other value: unknown.
++//    - the OTG0_OTG_V_TOTAL register, read through BAR5: total - 1, so 3049 for the 60 Hz timing and 1524 for the
++//      120 Hz timing. This is the scanout itself. The kernel side does not publish it; the framebuffer reads it.
++//  Navi 44 reports 60 Hz only when the known sources say 60 Hz. It reports 120 Hz when they disagree, and when
++//  neither is known (the 0.0.8 value). Navi 48 and the other devices keep their 0.0.8 value (60 Hz).
+ //
+-//  Scanout timing (Navi 44): the pixel clock (497.75 MHz) and the horizontal timing (2560 + 160) are
+-//  the same at both refreshes. Only the vertical blanking differs: 85 lines at 120 Hz (V total 1525,
+-//  119.998 Hz) and 1610 lines at 60 Hz (V total 3050, 59.999 Hz). The sync position (3 + 10) is the same.
++//  Scanout timing (Navi 44): the pixel clock (497.75 MHz) and the horizontal timing (2560 + 160) are the same at
++//  both refreshes. Only the vertical blanking differs: 85 lines at 120 Hz (V total 1525, 119.998 Hz) and 1610 lines
++//  at 60 Hz (V total 3050, 59.999 Hz). The sync position (3 + 10) is the same.
+ //
++//  The refresh of a timing is derived from the timing, not looked up: refresh_from_timing is pixel clock /
++//  (H total * V total), rounded. The OTG readback therefore decodes to a refresh by arithmetic on the timing it
++//  names (the derivation idea noted for RX4Darwin's modes.cpp; that file was not re-read for this version).
++//
+ 
+ #pragma once
+ 
+@@ -26,20 +33,19 @@
+ constexpr uint32_t kRefreshLowHz   = 60u;       // the value that selects the 60 Hz timing on Navi 44
+ constexpr uint32_t kRefreshHighHz  = 120u;      // the 0.0.8 Navi 44 default
+ 
++// OTG0_OTG_V_TOTAL as a BAR5 byte offset: absolute dword 0x4FEF (base index 2, dword 0x1b2f). The kernel side's refresh
++// verb reads the same register (kRegVTotal); research/reports/02-linux-display-dcn401.md lists it at byte 0x013FBC.
++constexpr uint32_t kOtg0VTotalByteOffset = 0x13FBCu;
++
++// Navi 44 pixel clock and horizontal total (2560 + 160 lines), the same at both refreshes.
++constexpr uint32_t kPixelClockHz = 497750000u;   // 497.75 MHz at both refreshes
++constexpr uint32_t kHTotalLines  = 2720u;
++
+ // The 0.0.8 default for a PCI device id: 120 Hz on Navi 44, 60 Hz otherwise.
+ constexpr uint32_t default_hz(uint32_t deviceId) {
+     return deviceId == kNavi44DeviceId ? kRefreshHighHz : kRefreshLowHz;
+ }
+ 
+-// Active refresh in Hz. present: the property exists and is an OSNumber. value: its unsigned 64-bit
+-// value. On Navi 44 exactly 60 gives 60 and exactly 120 gives 120; everything else gives the default.
+-// A 64-bit value that only truncates to 60 or 120 (such as 2^32 + 60) is junk.
+-constexpr uint32_t active_hz(bool present, uint64_t value, uint32_t deviceId) {
+-    return (present && deviceId == kNavi44DeviceId && value == kRefreshLowHz)  ? kRefreshLowHz
+-         : (present && deviceId == kNavi44DeviceId && value == kRefreshHighHz) ? kRefreshHighHz
+-         : default_hz(deviceId);
+-}
+-
+ // VBL emulation period in microseconds, with the 0.0.8 rounding (rdna4_vbl_period_from_fixed).
+ // 60 Hz: 16667 us. 120 Hz: 8333 us.
+ inline unsigned int vbl_period_us(uint32_t hz) {
+@@ -59,6 +65,29 @@
+     return kVActiveLines + v_blanking_for_hz(hz);
+ }
+ 
++// The OTG0_OTG_V_TOTAL register value of a refresh: total - 1 (1524 at 120 Hz, 3049 at 60 Hz).
++constexpr uint32_t v_total_reg_for_hz(uint32_t hz) {
++    return v_total_for_hz(hz) - 1u;
++}
++
++// The refresh of a timing from the timing itself: pixel clock / (H total * V total), rounded to the nearest Hz.
++// 0 for a degenerate timing. Navi 44: 497750000 / (2720 * 1525) = 119.998 Hz (120), and
++// 497750000 / (2720 * 3050) = 59.999 Hz (60).
++constexpr uint32_t refresh_from_timing(uint32_t pixelClockHz, uint32_t hTotal, uint32_t vTotal) {
++    return (hTotal == 0u || vTotal == 0u) ? 0u
++         : static_cast<uint32_t>((static_cast<uint64_t>(pixelClockHz) +
++                                  (static_cast<uint64_t>(hTotal) * vTotal) / 2u) /
++                                 (static_cast<uint64_t>(hTotal) * vTotal));
++}
++
++// The refresh an OTG0_OTG_V_TOTAL register value (total - 1) shows: refresh_from_timing of the Navi 44 timing it names,
++// 60 or 120 Hz, and 0 for any other value. An all-ones read (unmapped aperture) wraps to total 0, which names no timing.
++constexpr uint32_t hz_from_vtotal_reg(uint32_t reg) {
++    return (reg + 1u == v_total_for_hz(kRefreshLowHz) || reg + 1u == v_total_for_hz(kRefreshHighHz))
++         ? refresh_from_timing(kPixelClockHz, kHTotalLines, reg + 1u)
++         : 0u;
++}
++
+ // Scanout timing of the custom Navi 44 mode (the detailed timing, the GOP check and the timing range).
+ struct ScanoutTiming {
+     uint32_t pixelClockHz;
+@@ -66,8 +95,6 @@
+     uint32_t vActive, vBlanking, vSyncOffset, vSyncPulse;
+ };
+ 
+-constexpr uint32_t kPixelClockHz = 497750000u;   // 497.75 MHz at both refreshes
+-
+ constexpr ScanoutTiming scanout_timing_for_hz(uint32_t hz) {
+     return ScanoutTiming{kPixelClockHz, 2560u, 160u, 48u, 32u,
+                          kVActiveLines, v_blanking_for_hz(hz), kVSyncOffset, kVSyncPulse};
+@@ -88,6 +115,41 @@
+ 
+ constexpr RangeValues range_for_hz(uint32_t hz) {
+     return RangeValues{hz - 1u, hz + 1u, v_total_for_hz(hz), v_blanking_for_hz(hz), v_blanking_for_hz(hz)};
++}
++
++// The Navi48,RefreshHz property as a refresh: 60 or 120 on Navi 44, 0 (unknown) when absent, any other value, or on
++// another device. A 64-bit value that only truncates to 60 or 120 (such as 2^32 + 60) is junk.
++constexpr uint32_t property_hz(bool present, uint64_t value, uint32_t deviceId) {
++    return (!present || deviceId != kNavi44DeviceId) ? 0u
++         : value == kRefreshLowHz  ? kRefreshLowHz
++         : value == kRefreshHighHz ? kRefreshHighHz
++         : 0u;
++}
++
++// The active refresh from the two sources. hwHz: hz_from_vtotal_reg of the OTG0 readback (0 = unknown; a value that is
++// not 60 or 120 is unknown). present and value: the Navi48,RefreshHz property. Navi 44 only: other devices keep default_hz.
++//   both known and equal       -> that value
++//   both known and different   -> 120 Hz (inconsistent: the 0.0.8 value)
++//   only the readback known    -> the readback (the scanout itself)
++//   only the property known    -> the property (the 0.0.9 rule, readback unavailable)
++//   neither known              -> 120 Hz (missing: the 0.0.8 value)
++constexpr uint32_t combine_hz(uint32_t hwHz, bool present, uint64_t value, uint32_t deviceId) {
++    if (deviceId != kNavi44DeviceId)
++        return default_hz(deviceId);
++    const uint32_t hw = (hwHz == kRefreshLowHz || hwHz == kRefreshHighHz) ? hwHz : 0u;
++    const uint32_t prop = property_hz(present, value, deviceId);
++    if (hw != 0u && prop != 0u)
++        return hw == prop ? hw : kRefreshHighHz;
++    if (hw != 0u)
++        return hw;
++    if (prop != 0u)
++        return prop;
++    return kRefreshHighHz;
++}
++
++// Active refresh from the property alone (the 0.0.9 rule: the readback is treated as unknown).
++constexpr uint32_t active_hz(bool present, uint64_t value, uint32_t deviceId) {
++    return combine_hz(0u, present, value, deviceId);
+ }
+ 
+ }  // namespace rdna4fb_refresh
+diff -ruN a/tests/test_refresh_pure.cpp b/tests/test_refresh_pure.cpp
+--- a/tests/test_refresh_pure.cpp	2026-11-23 20:42:19
++++ b/tests/test_refresh_pure.cpp	2026-11-23 20:42:19
+@@ -169,6 +169,79 @@
+     CHECK_EQ(junk.maxVerticalTotal, 1525);
+ }
+ 
++// The OTG0 readback. The register holds total - 1: 1524 is the 120 Hz timing, 3049 the 60 Hz timing.
++static void test_readback() {
++    CHECK_EQ(R::kOtg0VTotalByteOffset, 0x4FEFu * 4u);   // absolute dword 0x4FEF, the kernel side's kRegVTotal
++    CHECK_EQ(R::v_total_reg_for_hz(120), 0x5F4);
++    CHECK_EQ(R::v_total_reg_for_hz(60), 0xBE9);
++    CHECK_EQ(R::hz_from_vtotal_reg(0x5F4u), 120);
++    CHECK_EQ(R::hz_from_vtotal_reg(0xBE9u), 60);
++    // Anything else names no timing: the neighbours of both, the totals themselves, zero, and the all-ones read.
++    const uint32_t other[] = {0u, 1u, 1523u, 0x5F3u, 0x5F5u, 1525u, 3048u, 0xBE8u, 0xBEAu, 3050u,
++                              0x7FFFu, 0x80000000u, 0x800005F4u, 0xFFFFFFFFu};
++    for (uint32_t r : other)
++        CHECK_EQ(R::hz_from_vtotal_reg(r), 0);
++}
++
++// refresh_from_timing: pixel clock / (H total * V total), rounded. The two Navi 44 timings give 120 and 60.
++static void test_refresh_from_timing() {
++    CHECK_EQ(R::refresh_from_timing(497750000u, 2720u, 1525u), 120);
++    CHECK_EQ(R::refresh_from_timing(497750000u, 2720u, 3050u), 60);
++    CHECK_EQ(R::refresh_from_timing(0u, 2720u, 1525u), 0);
++    CHECK_EQ(R::refresh_from_timing(497750000u, 0u, 1525u), 0);
++    const uint32_t rates[] = {60u, 120u};
++    for (uint32_t hz : rates) {
++        const R::ScanoutTiming t = R::scanout_timing_for_hz(hz);
++        CHECK_EQ(R::refresh_from_timing(t.pixelClockHz, t.hActive + t.hBlanking, t.vActive + t.vBlanking), hz);
++    }
++}
++
++// combine_hz: the OTG readback (0 = unknown) and the Navi48,RefreshHz property. Navi 44 reports 60 Hz only when the
++// known sources say so.
++static void test_combine() {
++    const uint32_t n44 = 0x7590u, n48 = 0x7550u;
++    // Neither known: the 0.0.8 value (boot, and after a revert).
++    CHECK_EQ(R::combine_hz(0u, false, 0, n44), 120);
++    // Only the readback known: the scanout itself, with or without the property.
++    CHECK_EQ(R::combine_hz(120u, false, 0, n44), 120);
++    CHECK_EQ(R::combine_hz(60u, false, 0, n44), 60);
++    // Only the property known: the 0.0.9 rule (readback unavailable).
++    CHECK_EQ(R::combine_hz(0u, true, 60, n44), 60);
++    CHECK_EQ(R::combine_hz(0u, true, 120, n44), 120);
++    // Both known and equal.
++    CHECK_EQ(R::combine_hz(60u, true, 60, n44), 60);
++    CHECK_EQ(R::combine_hz(120u, true, 120, n44), 120);
++    // Both known and different: 120 Hz, in either direction.
++    CHECK_EQ(R::combine_hz(120u, true, 60, n44), 120);
++    CHECK_EQ(R::combine_hz(60u, true, 120, n44), 120);
++    // A junk property is absent; a readback that is not 60 or 120 is unknown.
++    CHECK_EQ(R::combine_hz(0u, true, 7, n44), 120);
++    CHECK_EQ(R::combine_hz(60u, true, (1ull << 32) | 60ull, n44), 60);
++    CHECK_EQ(R::combine_hz(0u, true, (1ull << 32) | 60ull, n44), 120);
++    CHECK_EQ(R::combine_hz(90u, false, 0, n44), 120);
++    CHECK_EQ(R::combine_hz(90u, true, 60, n44), 60);
++    // Navi 48 keeps 60 Hz whatever either source says.
++    CHECK_EQ(R::combine_hz(120u, false, 0, n48), 60);
++    CHECK_EQ(R::combine_hz(60u, true, 120, n48), 60);
++    CHECK_EQ(R::combine_hz(0u, false, 0, n48), 60);
++    // active_hz is the combination without a readback.
++    CHECK_EQ(R::active_hz(false, 0, n44), R::combine_hz(0u, false, 0, n44));
++    CHECK_EQ(R::active_hz(true, 60, n44), R::combine_hz(0u, true, 60, n44));
++}
++
++// A 60 Hz trial on Navi 44 as the two sources show it. The scanout switches before the property is published; the
++// restore moves the scanout back before the property follows.
++static void test_transitions() {
++    const uint32_t n44 = 0x7590u;
++    const uint32_t hw120 = R::hz_from_vtotal_reg(0x5F4u);   // 1524: the 120 Hz scanout
++    const uint32_t hw60 = R::hz_from_vtotal_reg(0xBE9u);    // 3049: the 60 Hz scanout
++    CHECK_EQ(R::combine_hz(hw120, false, 0, n44), 120);     // boot: 120 Hz scanout, no property
++    CHECK_EQ(R::combine_hz(hw60, false, 0, n44), 60);       // switched, property not yet published
++    CHECK_EQ(R::combine_hz(hw60, true, 60, n44), 60);       // property published
++    CHECK_EQ(R::combine_hz(hw120, true, 60, n44), 120);     // restore: scanout back, property still 60
++    CHECK_EQ(R::combine_hz(hw120, true, 120, n44), 120);    // restored
++}
++
+ int main() {
+     test_property_selection();
+     test_navi48_ignores_property();
+@@ -176,6 +249,10 @@
+     test_vertical_totals();
+     test_scanout_timing();
+     test_range();
++    test_readback();
++    test_refresh_from_timing();
++    test_combine();
++    test_transitions();
+ 
+     std::printf("Navi 44, property absent: %u Hz, VBL %u us, V total %u, range %u..%u Hz\n",
+                 R::active_hz(false, 0, 0x7590), R::vbl_period_us(R::active_hz(false, 0, 0x7590)),
