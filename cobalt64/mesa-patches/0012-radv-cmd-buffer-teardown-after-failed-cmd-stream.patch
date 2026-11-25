@@ -1,0 +1,39 @@
+diff --git a/src/amd/vulkan/radv_cmd_buffer.c b/src/amd/vulkan/radv_cmd_buffer.c
+index 1ae3241c7fb..31fe03a29da 100644
+--- a/src/amd/vulkan/radv_cmd_buffer.c
++++ b/src/amd/vulkan/radv_cmd_buffer.c
+@@ -1399,6 +1399,7 @@ radv_create_cmd_buffer(struct vk_command_pool *pool, VkCommandBufferLevel level,
+    if (cmd_buffer->qf != RADV_QUEUE_SPARSE) {
+       const enum amd_ip_type ip = radv_queue_family_to_ring(pdev, cmd_buffer->qf);
+       list_inithead(&cmd_buffer->upload.list);
++      list_inithead(&cmd_buffer->msrtss_transients);
+ 
+       radv_cmd_buffer_init_shader_part_cache(device, cmd_buffer);
+       result =
+@@ -1412,8 +1413,11 @@ radv_create_cmd_buffer(struct vk_command_pool *pool, VkCommandBufferLevel level,
+          vk_object_base_init(&device->vk, &cmd_buffer->descriptors[i].push_set.set.base, VK_OBJECT_TYPE_DESCRIPTOR_SET);
+ 
+       cmd_buffer->accel_struct_buffers = _mesa_pointer_set_create(NULL);
++      if (!cmd_buffer->accel_struct_buffers) {
++         radv_destroy_cmd_buffer(&cmd_buffer->vk);
++         return vk_error(device, VK_ERROR_OUT_OF_HOST_MEMORY);
++      }
+       cmd_buffer->ray_history = UTIL_DYNARRAY_INIT;
+-      list_inithead(&cmd_buffer->msrtss_transients);
+    }
+ 
+    if (device->utrace.context) {
+diff --git a/src/amd/vulkan/tools/radv_rra.c b/src/amd/vulkan/tools/radv_rra.c
+index ed064b46570..39625d8e348 100644
+--- a/src/amd/vulkan/tools/radv_rra.c
++++ b/src/amd/vulkan/tools/radv_rra.c
+@@ -530,6 +530,9 @@ radv_rra_accel_struct_buffer_unref(struct radv_device *device, struct radv_rra_a
+ void
+ radv_rra_accel_struct_buffers_unref(struct radv_device *device, struct set *buffers)
+ {
++   if (!buffers)
++      return;
++
+    set_foreach_remove (buffers, entry)
+       radv_rra_accel_struct_buffer_unref(device, (void *)entry->key);
+ }
