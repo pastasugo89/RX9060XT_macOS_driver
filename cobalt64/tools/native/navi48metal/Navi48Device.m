@@ -53,6 +53,7 @@
 #include "n48_m6x.h"        // bundle 13 (M6 Stage 1b): the monitor B's scanout decisions (instance 2: routing, enable, pool budget, keep-alive tick, re-copy)
 #include "n48_m6route.h"    // bundle 11 (M6 Stage 1a): which display an IOSurface belongs to (the kernel's IOSurface ID -> instance table; host test: test-m6route.c)
 #include "n48_copy_region.h" // shared-image overlap decision (host test: test-copy-region.c)
+#include "n48_noattach.h"    // bundle 44: a render pass without attachments takes its size, layers and sample count from the descriptor (host test: test-noattach.c)
 #include "n48_texdesc.h"    // bundle 9 (app crash study item 2): descriptor -> Vulkan image mapping incl. cube and 2D array (host tests: test-texdesc.c, test-vkimage.c)
 #include "n48_depth.h"      // bundle 10: depth/stencil formats and pipeline state, MSAA, multisample resolve (host tests: test-depth.c, test-vkimage.c)
 #include "n48_nm272.h"       // bundle nm272 candidate (NullMoth 2.7-2.7.2 items 1, 2, 3, 8): pure decisions, host-tested (test-nm272-items.c)
@@ -5728,6 +5729,10 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
 - (instancetype)initWithCommandBuffer:(id)cb descriptor:(MTLRenderPassDescriptor *)d;
 @end
 
+// bundle 44: a refused pass returns nil AFTER the base encoder was initialised. Metal's -[_MTLCommandEncoder dealloc] reports an encoder that was never ended,
+// and the release at `return nil` runs that dealloc inside the failing init (Basemark abort, 2026-11-25 17:18). Nothing is recorded for this encoder, so only the
+// base endEncoding runs here: no render pass, resolve or barrier is recorded.
+#define N48_INIT_REFUSE() do { [super endEncoding]; return nil; } while (0)
 @implementation N48RenderEncoder
 - (instancetype)initWithCommandBuffer:(id)cb descriptor:(MTLRenderPassDescriptor *)d {
     self = [super initWithCommandBuffer:cb];
@@ -5739,13 +5744,13 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
         MTLRenderPassColorAttachmentDescriptor *ca = d.colorAttachments[i];
         N48Texture *t = (N48Texture *)ca.texture;
         if (!t) continue;
-        if (![t isKindOfClass:[N48Texture class]]) { N48LOG("render pass: attachment %lu is not an N48Texture", (unsigned long)i); return nil; }
+        if (![t isKindOfClass:[N48Texture class]]) { N48LOG("render pass: attachment %lu is not an N48Texture", (unsigned long)i); N48_INIT_REFUSE(); }
         NSUInteger tsm = [t n48Samples];   // bundle 10: every attachment of a pass has the same sample count
-        if (_encSamples && tsm != _encSamples) { N48LOG("render pass: attachment %lu has %lu samples, the others %u; refused", (unsigned long)i, (unsigned long)tsm, _encSamples); return nil; }
+        if (_encSamples && tsm != _encSamples) { N48LOG("render pass: attachment %lu has %lu samples, the others %u; refused", (unsigned long)i, (unsigned long)tsm, _encSamples); N48_INIT_REFUSE(); }
         _encSamples = (unsigned)tsm;
         // m11h9: a mip level of a 2D texture can be the attachment (the compositor renders into the base level of mipmapped textures and generates the rest)
         NSUInteger lvl = ca.level;
-        if (lvl >= [t mipmapLevelCount] || ca.slice >= [t n48ViewLayers] || ca.depthPlane != 0) { N48LOG("render pass: attachment %lu level %lu slice %lu depthPlane %lu outside the texture (%lu level(s)); refused", (unsigned long)i, (unsigned long)lvl, (unsigned long)ca.slice, (unsigned long)ca.depthPlane, (unsigned long)[t mipmapLevelCount]); return nil; }
+        if (lvl >= [t mipmapLevelCount] || ca.slice >= [t n48ViewLayers] || ca.depthPlane != 0) { N48LOG("render pass: attachment %lu level %lu slice %lu depthPlane %lu outside the texture (%lu level(s)); refused", (unsigned long)i, (unsigned long)lvl, (unsigned long)ca.slice, (unsigned long)ca.depthPlane, (unsigned long)[t mipmapLevelCount]); N48_INIT_REFUSE(); }
         if (na == 0) { _w = (uint32_t)MAX((NSUInteger)1, t.width >> lvl); _h = (uint32_t)MAX((NSUInteger)1, t.height >> lvl); }
         n48_ios_use(_cb, t, ca.loadAction != MTLLoadActionClear, YES);   // 11h.6: IOSurface contents are never discarded (only Clear skips the upload)
         [_cb n48DispNote:t bits:(N48DF_W_PASS | (ca.loadAction == MTLLoadActionClear ? N48DF_W_CLEAR : 0)) pso:nil];   // native #12 P1
@@ -5773,34 +5778,34 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
         [_cb n48Retain:t];
         // bundle 10: store action / multisample resolve.  The attachment itself is always stored; a resolve texture receives vkCmdResolveImage at endEncoding (a pass may be split, so never inside it).
         _slvl[na] = (uint32_t)lvl; _sslice[na] = (uint32_t)ca.slice; _sact[na] = (NSUInteger)ca.storeAction; _rtex[na] = ca.resolveTexture; _rlvl[na] = (uint32_t)ca.resolveLevel; _rslice[na] = (uint32_t)ca.resolveSlice;
-        { n48sa_t sat; if (!n48sa_map((unsigned long)ca.storeAction, ca.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: attachment %lu: %s; refused", (unsigned long)i, sat.why); return nil; }
-          if (sat.resolve && ![self n48CheckResolve:na]) return nil; }
+        { n48sa_t sat; if (!n48sa_map((unsigned long)ca.storeAction, ca.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: attachment %lu: %s; refused", (unsigned long)i, sat.why); N48_INIT_REFUSE(); }
+          if (sat.resolve && ![self n48CheckResolve:na]) N48_INIT_REFUSE(); }
         na++;
     }
     if (d.depthAttachment.texture || d.stencilAttachment.texture) {   // bundle 10: the depth / stencil attachment (one Vulkan attachment: one texture, depth and/or stencil aspect)
         id dtI = d.depthAttachment.texture, stI = d.stencilAttachment.texture;
         MTLRenderPassDepthAttachmentDescriptor *da = d.depthAttachment; MTLRenderPassStencilAttachmentDescriptor *sa = d.stencilAttachment;
-        if (dtI && stI && dtI != stI) { N48LOG("render pass: separate depth and stencil textures are not supported (use one Depth32Float_Stencil8 texture); refused"); return nil; }
+        if (dtI && stI && dtI != stI) { N48LOG("render pass: separate depth and stencil textures are not supported (use one Depth32Float_Stencil8 texture); refused"); N48_INIT_REFUSE(); }
         id ti = dtI ? dtI : stI;
-        if (![ti isKindOfClass:[N48Texture class]]) { N48LOG("render pass: the depth/stencil attachment is not an N48Texture"); return nil; }
+        if (![ti isKindOfClass:[N48Texture class]]) { N48LOG("render pass: the depth/stencil attachment is not an N48Texture"); N48_INIT_REFUSE(); }
         N48Texture *dt = ti; unsigned asp = [dt n48Aspects];
-        if (![dt n48IsDS]) { N48LOG("render pass: the depth/stencil attachment texture has a colour pixel format; refused"); return nil; }
-        if ((dtI && !(asp & N48DP_ASP_DEPTH)) || (stI && !(asp & N48DP_ASP_STENCIL))) { N48LOG("render pass: the %s attachment texture (pixel format %lu) has no %s aspect; refused", dtI ? "depth" : "stencil", (unsigned long)dt.pixelFormat, dtI ? "depth" : "stencil"); return nil; }
-        if ([dt n48IsView] && asp != n48dp_view_aspect(asp)) { N48LOG("render pass: a view of a combined depth/stencil texture cannot be an attachment; refused"); return nil; }
-        if (dtI && stI && (da.level != sa.level || da.slice != sa.slice)) { N48LOG("render pass: the depth and stencil attachments name different levels / slices; refused"); return nil; }
+        if (![dt n48IsDS]) { N48LOG("render pass: the depth/stencil attachment texture has a colour pixel format; refused"); N48_INIT_REFUSE(); }
+        if ((dtI && !(asp & N48DP_ASP_DEPTH)) || (stI && !(asp & N48DP_ASP_STENCIL))) { N48LOG("render pass: the %s attachment texture (pixel format %lu) has no %s aspect; refused", dtI ? "depth" : "stencil", (unsigned long)dt.pixelFormat, dtI ? "depth" : "stencil"); N48_INIT_REFUSE(); }
+        if ([dt n48IsView] && asp != n48dp_view_aspect(asp)) { N48LOG("render pass: a view of a combined depth/stencil texture cannot be an attachment; refused"); N48_INIT_REFUSE(); }
+        if (dtI && stI && (da.level != sa.level || da.slice != sa.slice)) { N48LOG("render pass: the depth and stencil attachments name different levels / slices; refused"); N48_INIT_REFUSE(); }
         NSUInteger lvl = dtI ? da.level : sa.level, slc = dtI ? da.slice : sa.slice, dpl = dtI ? da.depthPlane : sa.depthPlane;
-        if (lvl >= [dt mipmapLevelCount] || slc >= [dt n48ViewLayers] || dpl != 0) { N48LOG("render pass: the depth/stencil attachment level %lu slice %lu depthPlane %lu is outside the texture; refused", (unsigned long)lvl, (unsigned long)slc, (unsigned long)dpl); return nil; }
+        if (lvl >= [dt mipmapLevelCount] || slc >= [dt n48ViewLayers] || dpl != 0) { N48LOG("render pass: the depth/stencil attachment level %lu slice %lu depthPlane %lu is outside the texture; refused", (unsigned long)lvl, (unsigned long)slc, (unsigned long)dpl); N48_INIT_REFUSE(); }
         NSUInteger tsm = [dt n48Samples];
-        if (_encSamples && tsm != _encSamples) { N48LOG("render pass: the depth/stencil attachment has %lu samples, the colour attachments %u; refused", (unsigned long)tsm, _encSamples); return nil; }
+        if (_encSamples && tsm != _encSamples) { N48LOG("render pass: the depth/stencil attachment has %lu samples, the colour attachments %u; refused", (unsigned long)tsm, _encSamples); N48_INIT_REFUSE(); }
         _encSamples = (unsigned)tsm;
         uint32_t dw = (uint32_t)MAX((NSUInteger)1, dt.width >> lvl), dh = (uint32_t)MAX((NSUInteger)1, dt.height >> lvl);
         if (na == 0) { _w = dw; _h = dh; }
-        else if (dw < _w || dh < _h) { N48LOG("render pass: the depth/stencil attachment (%ux%u) is smaller than the colour attachments (%ux%u); refused", dw, dh, _w, _h); return nil; }
+        else if (dw < _w || dh < _h) { N48LOG("render pass: the depth/stencil attachment (%ux%u) is smaller than the colour attachments (%ux%u); refused", dw, dh, _w, _h); N48_INIT_REFUSE(); }
         { n48sa_t sat; const char *rw = NULL;
-          if (dtI && !n48sa_map((unsigned long)da.storeAction, da.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: depth attachment: %s; refused", sat.why); return nil; }
-          if (dtI && sat.resolve) { (void)n48sa_target_ok(dw, dh, [dt vkFormat], asp, dw, dh, [dt vkFormat], 1, &rw); N48LOG("render pass: depth attachment resolve: %s; refused", rw); return nil; }
-          if (stI && !n48sa_map((unsigned long)sa.storeAction, sa.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: stencil attachment: %s; refused", sat.why); return nil; }
-          if (stI && sat.resolve) { (void)n48sa_target_ok(dw, dh, [dt vkFormat], asp, dw, dh, [dt vkFormat], 1, &rw); N48LOG("render pass: stencil attachment resolve: %s; refused", rw); return nil; } }
+          if (dtI && !n48sa_map((unsigned long)da.storeAction, da.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: depth attachment: %s; refused", sat.why); N48_INIT_REFUSE(); }
+          if (dtI && sat.resolve) { (void)n48sa_target_ok(dw, dh, [dt vkFormat], asp, dw, dh, [dt vkFormat], 1, &rw); N48LOG("render pass: depth attachment resolve: %s; refused", rw); N48_INIT_REFUSE(); }
+          if (stI && !n48sa_map((unsigned long)sa.storeAction, sa.resolveTexture != nil, tsm > 1, &sat)) { N48LOG("render pass: stencil attachment: %s; refused", sat.why); N48_INIT_REFUSE(); }
+          if (stI && sat.resolve) { (void)n48sa_target_ok(dw, dh, [dt vkFormat], asp, dw, dh, [dt vkFormat], 1, &rw); N48LOG("render pass: stencil attachment resolve: %s; refused", rw); N48_INIT_REFUSE(); } }
         n48rp_ds_t ops; n48rp_ds(asp, dtI != nil, (unsigned)da.loadAction, stI != nil, (unsigned)sa.loadAction, [dt layout] == VK_IMAGE_LAYOUT_UNDEFINED, &ops);
         BOOL wholeImg = [dt n48Levels] > 1 || [dt n48Layers] > 1;
         if (wholeImg) n48_tex_to([_cb vk], dt, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -5815,13 +5820,20 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
                 (unsigned long)lvl, (unsigned long)slc, (unsigned long)tsm, ops.depthLoad, ops.depthStore, ops.stencilLoad, ops.stencilStore);
     }
     if (!_encSamples) _encSamples = 1;
-    if (!na && !_nd) { N48LOG("render pass: no colour or depth/stencil attachments"); return nil; }
+    uint32_t layers = 1;
+    if (!na && !_nd) {   // bundle 44: a pass without attachments (Metal renderTargetWidth/Height/ArrayLength, defaultRasterSampleCount): size, layers and samples come from the descriptor
+        n48na_t nr = n48na_decide((uint64_t)d.renderTargetWidth, (uint64_t)d.renderTargetHeight, (uint64_t)d.renderTargetArrayLength, (uint64_t)d.defaultRasterSampleCount,
+                                  N48R.lim.framebufferNoAttachmentsSampleCounts & n48_ms_mask(), N48R.lim.maxFramebufferWidth, N48R.lim.maxFramebufferHeight, N48R.lim.maxFramebufferLayers);
+        if (!nr.ok) { N48LOG("render pass without attachments: %s; refused", nr.why); N48_INIT_REFUSE(); }
+        _w = nr.w; _h = nr.h; layers = nr.layers; _encSamples = nr.samples;
+        N48LOGR("render pass without attachments: %u x %u, %u layer(s), %u sample(s)", _w, _h, layers, _encSamples);
+    }
     _na = na;
     for (uint32_t i = 0; i < na + _nd; i++) _curLay[i] = _ads[i].initialLayout;
-    _rp1 = n48_mk_rp_c(_ads, na, _nd, NO, &_rp1c); if (!_rp1) return nil;
-    VkFramebufferCreateInfo fbc = { .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, .renderPass = _rp1, .attachmentCount = na + _nd, .pAttachments = views, .width = _w, .height = _h, .layers = 1 };
+    _rp1 = n48_mk_rp_c(_ads, na, _nd, NO, &_rp1c); if (!_rp1) N48_INIT_REFUSE();
+    VkFramebufferCreateInfo fbc = { .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, .renderPass = _rp1, .attachmentCount = na + _nd, .pAttachments = views, .width = _w, .height = _h, .layers = layers };
     VkResult r = vkCreateFramebuffer(N48R.dev, &fbc, NULL, &_fb);
-    if (r != VK_SUCCESS) { N48LOG("render pass: vkCreateFramebuffer = %d", r); if (!_rp1c) vkDestroyRenderPass(N48R.dev, _rp1, NULL); return nil; }
+    if (r != VK_SUCCESS) { N48LOG("render pass: vkCreateFramebuffer = %d", r); if (!_rp1c) vkDestroyRenderPass(N48R.dev, _rp1, NULL); N48_INIT_REFUSE(); }
     [_cb keepRenderPass:_rp1c ? VK_NULL_HANDLE : _rp1 framebuffer:_fb];
     // Metal's default viewport = the attachment, y down; translated shaders do not flip clip Y (F6): the viewport is emitted with a negative height.
     _vp = (MTLViewport){ 0, 0, _w, _h, 0, 1 }; _sr = (MTLScissorRect){ 0, 0, _w, _h };
