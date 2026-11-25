@@ -2601,7 +2601,8 @@ _Static_assert((int)VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT == N48DP_FEAT_SAMPLED &&
 _Static_assert((int)MTLTextureUsageShaderRead == N48DP_USE_READ && (int)MTLTextureUsageShaderWrite == N48DP_USE_WRITE && (int)MTLTextureUsageRenderTarget == N48DP_USE_RT && (int)MTLTextureUsagePixelFormatView == N48DP_USE_PFV, "MTLTextureUsage values (depth)");
 _Static_assert((int)MTLStorageModeShared == N48DP_ST_SHARED && (int)MTLStorageModeManaged == N48DP_ST_MANAGED && (int)MTLStorageModePrivate == N48DP_ST_PRIVATE && (int)MTLStorageModeMemoryless == N48DP_ST_MEMORYLESS, "MTLStorageMode values");
 #pragma clang diagnostic pop
-_Static_assert((int)MTLTextureType2D == N48DP_T_2D && (int)MTLTextureType2DMultisample == N48DP_T_2DMS, "MTLTextureType values (depth)");
+_Static_assert((int)MTLTextureType2D == N48DP_T_2D && (int)MTLTextureType2DArray == N48DP_T_2DARRAY && (int)MTLTextureType2DMultisample == N48DP_T_2DMS &&
+               (int)MTLTextureTypeCube == N48DP_T_CUBE, "MTLTextureType values (depth; bundle 46 adds 2D array and cube)");
 _Static_assert((int)MTLStoreActionDontCare == N48SA_DONTCARE && (int)MTLStoreActionStore == N48SA_STORE && (int)MTLStoreActionMultisampleResolve == N48SA_RESOLVE &&
                (int)MTLStoreActionStoreAndMultisampleResolve == N48SA_STORE_RESOLVE && (int)MTLStoreActionUnknown == N48SA_UNKNOWN && (int)MTLStoreActionCustomSampleDepthStore == N48SA_CUSTOM, "MTLStoreAction values");
 _Static_assert((int)MTLLoadActionDontCare == N48LA_DONTCARE && (int)MTLLoadActionLoad == N48LA_LOAD && (int)MTLLoadActionClear == N48LA_CLEAR, "MTLLoadAction values");

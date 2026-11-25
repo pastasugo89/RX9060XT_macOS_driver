@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         check(table_line_has(src, "{ MTLPixelFormatR32Uint,", "VK_FORMAT_R32_UINT", "N48F_UINT"), "n48_fmts: R32Uint -> VK_FORMAT_R32_UINT, N48F_UINT");
         check(table_line_has(src, "{ MTLPixelFormatRG16Uint,", "VK_FORMAT_R16G16_UINT", "N48F_UINT"), "n48_fmts: RG16Uint unchanged");
         check(strstr(src, "static unsigned n48_uint_bits(MTLPixelFormat f)") != NULL, "n48_uint_bits(MTLPixelFormat) defined");
-        check(strstr(src, "f == MTLPixelFormatR8Uint ? 8u : f == MTLPixelFormatR32Uint ? 32u : 16u") != NULL, "n48_uint_bits: 8 for R8Uint, 32 for R32Uint, 16 otherwise");
+        check(strstr(src, "f == MTLPixelFormatR8Uint || f == MTLPixelFormatRGBA8Uint) ? 8u : f == MTLPixelFormatR32Uint ? 32u : 16u") != NULL, "n48_uint_bits: 8 for R8Uint and RGBA8Uint, 32 for R32Uint, 16 otherwise");
         check(strstr(src, "const unsigned ub = n48_uint_bits([t pixelFormat]);") != NULL, "integer attachment clear reads the texture's own format width");
         check(strstr(src, "n48if_clear_u(c.red, ub), n48if_clear_u(c.green, ub), n48if_clear_u(c.blue, ub), n48if_clear_u(c.alpha, ub)") != NULL, "integer clear uses ub for all four channels");
         check(strstr(src, "n48if_clear_u(c.red, 16)") == NULL, "the hard-coded 16-bit integer clear is gone");

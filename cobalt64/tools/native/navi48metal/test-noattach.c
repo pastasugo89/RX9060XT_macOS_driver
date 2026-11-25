@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
         free(m);
     }
     char *pl = slurp(dir, "Info.plist");
-    CHECK(pl && strstr(pl, "<key>CFBundleVersion</key>\n\t<string>45</string>") != NULL, "Info.plist names bundle 45 (CFBundleVersion)");
+    CHECK(pl && strstr(pl, "<key>CFBundleVersion</key>\n\t<string>46</string>") != NULL, "Info.plist names bundle 46 (CFBundleVersion)");
     free(pl);
 
     printf("test-noattach: %d checks, %d failed\n", checks, fails);

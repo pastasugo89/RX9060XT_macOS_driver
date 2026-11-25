@@ -17,7 +17,7 @@ enum { N48DP_ASP_COLOR = 1, N48DP_ASP_DEPTH = 2, N48DP_ASP_STENCIL = 4 };       
 enum { N48DP_FEAT_SAMPLED = 0x1, N48DP_FEAT_DS_ATT = 0x200 };                                  // VkFormatFeatureFlagBits
 enum { N48DP_USE_READ = 1, N48DP_USE_WRITE = 2, N48DP_USE_RT = 4, N48DP_USE_PFV = 0x10 };      // MTLTextureUsage
 enum { N48DP_ST_SHARED = 0, N48DP_ST_MANAGED = 1, N48DP_ST_PRIVATE = 2, N48DP_ST_MEMORYLESS = 3 };   // MTLStorageMode
-enum { N48DP_T_2D = 2, N48DP_T_2DMS = 4 };                                                     // MTLTextureType
+enum { N48DP_T_2D = 2, N48DP_T_2DARRAY = 3, N48DP_T_2DMS = 4, N48DP_T_CUBE = 5 };              // MTLTextureType (bundle 46: 2D array and cube depth textures)
 
 typedef struct {
     const char *why;      // refusal text (return value 0)
@@ -49,7 +49,8 @@ static inline unsigned n48dp_copy_aspect(unsigned aspects) { return (aspects == 
 
 // Texture descriptor rules for the depth/stencil formats.  feats = the device's optimalTilingFeatures for the format.  1 = accepted; 0 with *why.
 static inline int n48dp_check(unsigned long texType, unsigned long usage, unsigned long storage, unsigned feats, const char **why) {
-    if (texType != N48DP_T_2D && texType != N48DP_T_2DMS) { *why = "depth/stencil textures are 2D or 2D multisample only (no cube, array, 1D or 3D)"; return 0; }
+    // bundle 46: 2D, 2D array, 2D multisample and cube (six faces: one VkImage with CUBE_COMPATIBLE) are accepted. Cube arrays, 1D and 3D are refused.
+    if (texType != N48DP_T_2D && texType != N48DP_T_2DARRAY && texType != N48DP_T_2DMS && texType != N48DP_T_CUBE) { *why = "depth/stencil textures are 2D, 2D array, 2D multisample or cube only (no cube array, 1D or 3D)"; return 0; }
     if (storage != N48DP_ST_PRIVATE) { *why = "depth/stencil textures are Private storage only (Shared / Managed / Memoryless are refused)"; return 0; }
     if (usage & N48DP_USE_WRITE) { *why = "ShaderWrite on a depth/stencil texture is not supported (a depth image cannot be a storage image)"; return 0; }
     if ((usage & N48DP_USE_RT) && !(feats & N48DP_FEAT_DS_ATT)) { *why = "the device lacks depth/stencil attachment support for this format"; return 0; }
