@@ -1,6 +1,6 @@
 # Handoff for another AI agent (kept current by the orchestrator)
 
-Last update: 2026-11-25, after staging the 0.0.683 fix for Basemark startup. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
+Last update: 2026-11-25, after installing the 0.0.683 fix for Basemark startup. Repo: github.com/pastasugo89/RX9060XT_macOS_driver (branch `main`, protected:
 only the owner account pushes directly; others via PR with 1 approval). Licence: PolyForm Noncommercial 1.0.0
 (root LICENSE); upstream parts keep MIT/BSD-3/LGPL (see README "Licences"). The user writes in Italian; answer in Italian.
 
@@ -53,8 +53,14 @@ All 12 host test programs passed. OpenCore validation and a simulated EFI
 install and restore passed. The payload retains the Metal 43 pins and replaces
 only the kernel entry in the OpenCore configuration.
 
-The new kernel is staged. After installation and reboot, confirm that 0.0.683
-loaded and repeat the 128 MiB shared-buffer allocation before testing Basemark.
+The 0.0.683 kernel and matching activation guard were installed on 2026-11-25.
+The installer verified the live EFI inventory after replacing the kernel entry.
+The 0.0.682 EFI backup is
+`/Library/Application Support/Navi44/efi-backup-20261125T160827Z`.
+The original guard was backed up at
+`/Library/Application Support/Navi44/accelerated-trial/accelerated-reboot-trial.pre-683-20261125T160827Z.sh`.
+The machine is still running 0.0.682. After reboot, confirm that 0.0.683 loaded
+and repeat the 128 MiB shared-buffer allocation before testing Basemark.
 Benchmark execution and thermal behavior under benchmark load remain unverified.
 
 ## Candidates prepared on 2026-11-25
