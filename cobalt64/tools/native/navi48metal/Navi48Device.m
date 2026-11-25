@@ -2524,6 +2524,9 @@ static const N48Fmt n48_fmts[] = {
     // IOSurface-backed shader-write textures and were refused: "pixel format 53 is not in the format table" (bundle 34 logs, 2026-11-01 and 2026-11-05).
     { MTLPixelFormatR8Uint,          VK_FORMAT_R8_UINT,                  1, N48F_UINT },
     { MTLPixelFormatR32Uint,         VK_FORMAT_R32_UINT,                 4, N48F_UINT },
+    // bundle 45: RGBA8Uint (73). Its colour pipelines were refused ("pixel format 73 has no Vulkan mapping"): each draw of such a pass then failed its command
+    // buffer (ENCODE ERROR: draw without a render pipeline state), and its heap textures were refused too. RADV features are checked as for every entry.
+    { MTLPixelFormatRGBA8Uint,       VK_FORMAT_R8G8B8A8_UINT,            4, N48F_UINT },
     { (MTLPixelFormat)84,            VK_FORMAT_R8G8B8A8_UNORM,           4, N48F_ARGB },   // bundle 29 fix 4 (ARGB8, private format value): sampling only; refused as a colour attachment
 };
 #define N48_NOUINT_FILE "/private/tmp/n48m-nouint"   // bundle 19: exists -> the integer formats are refused as before (nil), read ONCE per process
@@ -2572,7 +2575,7 @@ static const N48Fmt *n48_fmt(MTLPixelFormat f) {
     return NULL;
 }
 // bundle 35: the bits per channel of an unsigned-integer colour format (the Metal clear converts each channel to that width). R8Uint = 8, R32Uint = 32, RG16Uint (and any other) = 16.
-static unsigned n48_uint_bits(MTLPixelFormat f) { return f == MTLPixelFormatR8Uint ? 8u : f == MTLPixelFormatR32Uint ? 32u : 16u; }
+static unsigned n48_uint_bits(MTLPixelFormat f) { return (f == MTLPixelFormatR8Uint || f == MTLPixelFormatRGBA8Uint) ? 8u : f == MTLPixelFormatR32Uint ? 32u : 16u; }   // bundle 45: RGBA8Uint has 8-bit channels
 // bundle 10: the depth / stencil formats live in their OWN table, so n48_fmt (colour targets, IOSurface- and buffer-backed textures, views, heaps' colour sizing) answers for them exactly as before: NULL.
 // Depth24Unorm_Stencil8 is not in it (AMD has no D24S8 on this path).  The numbers are tied to n48_depth.h by the asserts below.
 #define N48F_DS 2u
@@ -5547,7 +5550,7 @@ N48_DNR(N48CommandBuffer)
             NSUInteger align = p->type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? N48R.lim.minUniformBufferOffsetAlignment : N48R.lim.minStorageBufferOffsetAlignment;
             for (uint32_t k = 0; k < p->count; k++) {
                 uint32_t ix = p->binding + k; N48BufSlot s = ix < 31 ? st->buf[ix] : (N48BufSlot){ nil, 0 }; N48Buffer *b = s.b; NSUInteger off = s.off;
-                if (!b) { N48LOG("WARN %s buffer(%u) is used by the shader but was never bound: zero-filled dummy", nm, ix); b = n48_dummy_buffer(dev); off = 0; }
+                if (!b) { N48LOGR("WARN %s buffer(%u) is used by the shader but was never bound: zero-filled dummy", nm, ix); b = n48_dummy_buffer(dev); off = 0; }
                 if (!b) { [self n48Fail:@"no dummy buffer"]; return NO; }
                 if (align && off % align) { [self n48Fail:[NSString stringWithFormat:@"%s buffer(%u) offset %lu is not a multiple of %lu", nm, ix, (unsigned long)off, (unsigned long)align]]; return NO; }
                 [self n48Retain:b];
@@ -5559,7 +5562,7 @@ N48_DNR(N48CommandBuffer)
             w[i].pImageInfo = &ii[nii];
             for (uint32_t k = 0; k < p->count; k++) {
                 uint32_t ix = p->binding - 32 + k; N48Texture *t = ix < 128 ? st->tex[ix] : nil;
-                if (!t) { N48LOG("WARN %s texture(%u) is used by the shader but was never bound: 1x1 dummy", nm, ix); t = n48_dummy_texture(dev); }
+                if (!t) { N48LOGR("WARN %s texture(%u) is used by the shader but was never bound: 1x1 dummy", nm, ix); t = n48_dummy_texture(dev); }
                 if (!t) { [self n48Fail:@"no dummy texture"]; return NO; }
                 if (([t n48Samples] > 1) != p->multisampled) { [self n48Fail:[NSString stringWithFormat:@"%s texture(%u): sample count %lu does not match the shader image type (multisampled=%d)", nm, ix, (unsigned long)[t n48Samples], p->multisampled]]; return NO; }
                 VkImageView tv = [t n48SampleView];
@@ -5579,7 +5582,7 @@ N48_DNR(N48CommandBuffer)
                 VkSampler vs = p->stat;
                 if (!vs) {
                     uint32_t ix = p->binding - 160 + k; N48SamplerState *s = ix < 16 ? st->smp[ix] : nil;
-                    if (!s) { N48LOG("WARN %s sampler(%u) is used by the shader but was never bound: default nearest/clamp sampler", nm, ix); s = n48_dummy_sampler(dev); }
+                    if (!s) { N48LOGR("WARN %s sampler(%u) is used by the shader but was never bound: default nearest/clamp sampler", nm, ix); s = n48_dummy_sampler(dev); }
                     if (!s) { [self n48Fail:@"no dummy sampler"]; return NO; }
                     [self n48Retain:s]; vs = [s vkSampler];
                     if (!vs) {   // bundle 29 fix 1: a sampler without a VkSampler is replaced by the default sampler (logged once); the old code wrote a NULL sampler
@@ -5724,11 +5727,41 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
     N48RenderPipelineState *_pso; N48StageState _sv, _sf; MTLViewport _vp; MTLScissorRect _sr; float _blend[4]; MTLCullMode _cull; MTLWinding _wind;
     n48dc_enc _dc; BOOL _dcOn;   // P5b: per-draw redundancy state (_dcOn = the n48m-drawopt switch as latched at device creation)
     n48occ *_occ; VkQueryPool _qp; uint32_t _qbase;   // build 18 (P2): this pass's occlusion bookkeeping (owned by the command buffer), its query pool and the first of its N48OCC_MAXQ reserved query indices
-    uint32_t _clrm; NSUInteger _dvc;   // #12 D2: attachments whose load action was Clear and not yet consumed by a presentable draw; vertex/index count of the draw being prepared (diagnostic)
+    uint32_t _clrm; NSUInteger _dvc; BOOL _noop;   // #12 D2: attachments whose load action was Clear and not yet consumed by a presentable draw; vertex/index count of the draw being prepared (diagnostic)
 }
 - (instancetype)initWithCommandBuffer:(id)cb descriptor:(MTLRenderPassDescriptor *)d;
 @end
 
+// bundle 45: what a pass without attachments (or a refused one) carried, as the driver received it. A nil texture was refused by the driver or never given to it.
+// Rate limited by N48LOGR (the first 8 lines of each kind, then every 1024th).
+static NSString *n48_tex_brief(id<MTLTexture> t) {
+    if (!t) return @"nil";
+    NSMutableString *s = [NSMutableString stringWithString:NSStringFromClass([t class])];
+    if ([t respondsToSelector:@selector(pixelFormat)]) [s appendFormat:@" pf %lu", (unsigned long)t.pixelFormat];
+    if ([t respondsToSelector:@selector(width)]) [s appendFormat:@" %lux%lu", (unsigned long)t.width, (unsigned long)t.height];
+    if ([t respondsToSelector:@selector(textureType)]) [s appendFormat:@" type %lu", (unsigned long)t.textureType];
+    if ([t respondsToSelector:@selector(mipmapLevelCount)]) [s appendFormat:@" levels %lu", (unsigned long)t.mipmapLevelCount];
+    if ([t respondsToSelector:@selector(storageMode)]) [s appendFormat:@" storage %lu", (unsigned long)t.storageMode];
+    return s;
+}
+static void n48_rp_dump(MTLRenderPassDescriptor *d) {
+    if (!d) { N48LOGR("render pass dump: no descriptor"); return; }
+    for (NSUInteger i = 0; i < 8; i++) {
+        MTLRenderPassColorAttachmentDescriptor *ca = d.colorAttachments[i];
+        if (!ca || (!ca.texture && !ca.resolveTexture && ca.loadAction == MTLLoadActionDontCare && ca.storeAction == MTLStoreActionDontCare)) continue;
+        N48LOGR("render pass dump: colour %lu: %s; level %lu slice %lu depthPlane %lu; load %lu store %lu; resolve %s", (unsigned long)i, n48_tex_brief(ca.texture).UTF8String,
+                (unsigned long)ca.level, (unsigned long)ca.slice, (unsigned long)ca.depthPlane, (unsigned long)ca.loadAction, (unsigned long)ca.storeAction, n48_tex_brief(ca.resolveTexture).UTF8String);
+    }
+    MTLRenderPassDepthAttachmentDescriptor *da = d.depthAttachment;
+    MTLRenderPassStencilAttachmentDescriptor *sa = d.stencilAttachment;
+    N48LOGR("render pass dump: depth %s; load %lu store %lu clear %g; stencil %s; load %lu store %lu clear %u", n48_tex_brief(da.texture).UTF8String,
+            (unsigned long)da.loadAction, (unsigned long)da.storeAction, da.clearDepth, n48_tex_brief(sa.texture).UTF8String, (unsigned long)sa.loadAction, (unsigned long)sa.storeAction, (unsigned)sa.clearStencil);
+    N48LOGR("render pass dump: renderTarget %lux%lu layers %lu defaultRasterSampleCount %lu tile %lux%lu imageblockSampleLength %lu threadgroupMemoryLength %lu rateMap %s visibility %s",
+            (unsigned long)d.renderTargetWidth, (unsigned long)d.renderTargetHeight, (unsigned long)d.renderTargetArrayLength, (unsigned long)d.defaultRasterSampleCount,
+            (unsigned long)d.tileWidth, (unsigned long)d.tileHeight, (unsigned long)d.imageblockSampleLength, (unsigned long)d.threadgroupMemoryLength,
+            d.rasterizationRateMap ? NSStringFromClass([(id)d.rasterizationRateMap class]).UTF8String : "nil",
+            d.visibilityResultBuffer ? [NSString stringWithFormat:@"%@ %lu bytes", NSStringFromClass([(id)d.visibilityResultBuffer class]), (unsigned long)[(id)d.visibilityResultBuffer length]].UTF8String : "nil");
+}
 // bundle 44: a refused pass returns nil AFTER the base encoder was initialised. Metal's -[_MTLCommandEncoder dealloc] reports an encoder that was never ended,
 // and the release at `return nil` runs that dealloc inside the failing init (Basemark abort, 2026-11-25 17:18). Nothing is recorded for this encoder, so only the
 // base endEncoding runs here: no render pass, resolve or barrier is recorded.
@@ -5821,12 +5854,29 @@ static void n48_use_many(N48CommandBuffer *cb, NSMutableDictionary *decl, const 
     }
     if (!_encSamples) _encSamples = 1;
     uint32_t layers = 1;
-    if (!na && !_nd) {   // bundle 44: a pass without attachments (Metal renderTargetWidth/Height/ArrayLength, defaultRasterSampleCount): size, layers and samples come from the descriptor
+    if (!na && !_nd) {   // bundle 44: a pass without attachments takes its size, layers and samples from the descriptor. bundle 45: a zero width or height is an empty target
         n48na_t nr = n48na_decide((uint64_t)d.renderTargetWidth, (uint64_t)d.renderTargetHeight, (uint64_t)d.renderTargetArrayLength, (uint64_t)d.defaultRasterSampleCount,
                                   N48R.lim.framebufferNoAttachmentsSampleCounts & n48_ms_mask(), N48R.lim.maxFramebufferWidth, N48R.lim.maxFramebufferHeight, N48R.lim.maxFramebufferLayers);
-        if (!nr.ok) { N48LOG("render pass without attachments: %s; refused", nr.why); N48_INIT_REFUSE(); }
-        _w = nr.w; _h = nr.h; layers = nr.layers; _encSamples = nr.samples;
-        N48LOGR("render pass without attachments: %u x %u, %u layer(s), %u sample(s)", _w, _h, layers, _encSamples);
+        if (!nr.ok) { N48LOG("render pass without attachments: %s; refused", nr.why); n48_rp_dump(d); N48_INIT_REFUSE(); }
+        _encSamples = nr.samples;
+        if (nr.noop) {
+            _noop = YES; _w = 0; _h = 0;
+            N48LOGR("render pass without attachments with a zero render target (%lu x %lu): an empty target, its draws do nothing", (unsigned long)d.renderTargetWidth, (unsigned long)d.renderTargetHeight);
+            n48_rp_dump(d);
+        } else {
+            _w = nr.w; _h = nr.h; layers = nr.layers;
+            N48LOGR("render pass without attachments: %u x %u, %u layer(s), %u sample(s)", _w, _h, layers, _encSamples);
+        }
+    }
+    if (_noop) {   // bundle 45: an empty target has no Vulkan render pass, framebuffer or query pool; it produces no fragment
+        _rp1 = VK_NULL_HANDLE; _fb = VK_NULL_HANDLE; _na = 0;
+        _vp = (MTLViewport){ 0, 0, 0, 0, 0, 1 }; _sr = (MTLScissorRect){ 0, 0, 0, 0 };
+        id vb = d.visibilityResultBuffer;
+        if (vb && [vb isKindOfClass:[N48Buffer class]] && [(N48Buffer *)vb contents]) {   // Metal resets visibility results when the encoder is created; Accumulate keeps them
+            int acc = 0; if ([d respondsToSelector:@selector(visibilityResultType)]) acc = (long)[(id)d visibilityResultType] == 1;
+            if (!acc) memset([(N48Buffer *)vb contents], 0, [vb length]);
+        }
+        return self;
     }
     _na = na;
     for (uint32_t i = 0; i < na + _nd; i++) _curLay[i] = _ads[i].initialLayout;
@@ -5959,7 +6009,7 @@ N48_DNR(N48RenderEncoder)
 
 // ---- state ----
 - (void)setRenderPipelineState:(id)pso {
-    if (![pso isKindOfClass:[N48RenderPipelineState class]]) { N48LOG("setRenderPipelineState: not an N48RenderPipelineState"); return; }
+    if (![pso isKindOfClass:[N48RenderPipelineState class]]) { N48LOGR("setRenderPipelineState: not an N48RenderPipelineState"); return; }
     _pso = pso; [_cb n48Retain:pso];
 }
 - (void)setCullMode:(MTLCullMode)m { _cull = m; }
@@ -5991,6 +6041,7 @@ N48_DNR(N48RenderEncoder)
 // A barrier between draws of one encoder = end the Vulkan render pass (the next draw starts a LOADing continuation pass; the pass-split machinery already
 // exists for layout changes) plus a full memory barrier, which orders everything before it against everything after it.
 - (void)n48Barrier:(const char *)what {
+    if (_noop) return;   // bundle 45: nothing to order in an empty target
     if (_ended) return;
     if (_inPass) { [self n48EndPass]; }
     n48_full_barrier([_cb vk]);
@@ -6112,6 +6163,7 @@ N48_ENCODER_USE(nil)
 }
 // ---- draws ----
 - (BOOL)n48PrepareDraw:(VkPrimitiveTopology)topo {
+    if (_noop) return NO;   // bundle 45: an empty target draws nothing (no pipeline or pass is needed)
     if (_ended) { [_cb n48Fail:@"draw after endEncoding"]; return NO; }
     if ([_cb n48Error]) return NO;
     if (!_pso) { [_cb n48Fail:@"draw without a render pipeline state"]; return NO; }
@@ -6237,6 +6289,7 @@ N48_ENCODER_USE(nil)
 - (void)drawPrimitives:(MTLPrimitiveType)t vertexStart:(NSUInteger)s vertexCount:(NSUInteger)c { [self drawPrimitives:t vertexStart:s vertexCount:c instanceCount:1 baseInstance:0]; }
 - (void)drawPrimitives:(MTLPrimitiveType)t vertexStart:(NSUInteger)s vertexCount:(NSUInteger)c instanceCount:(NSUInteger)ic { [self drawPrimitives:t vertexStart:s vertexCount:c instanceCount:ic baseInstance:0]; }
 - (void)drawIndexedPrimitives:(MTLPrimitiveType)t indexCount:(NSUInteger)c indexType:(MTLIndexType)it indexBuffer:(id)ib indexBufferOffset:(NSUInteger)off instanceCount:(NSUInteger)ic baseVertex:(NSInteger)bv baseInstance:(NSUInteger)bi {
+    if (_noop) return;   // bundle 45: an empty target draws nothing
     if (![ib isKindOfClass:[N48Buffer class]]) { [_cb n48Fail:@"drawIndexedPrimitives: index buffer is not an N48Buffer"]; return; }
     NSUInteger isz = it == MTLIndexTypeUInt32 ? 4 : 2;
     if (off % isz) { [_cb n48Fail:@"index buffer offset is not a multiple of the index size"]; return; }
@@ -6254,6 +6307,7 @@ N48_ENCODER_USE(nil)
 }
 - (void)endEncoding {
     if (_ended) return;
+    if (_noop) { _ended = YES; [super endEncoding]; return; }   // bundle 45: an empty target records nothing
     if (!_begun && ![_cb n48Error]) [self n48BeginPass];   // a clear-only encoder still has to run its load action
     _ended = YES;
     if (_dcOn) {   // P5b: fold this encoder's counters into the device totals

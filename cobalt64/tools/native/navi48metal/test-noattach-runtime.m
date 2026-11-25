@@ -1,10 +1,12 @@
-// Runtime regression for render passes without attachments (bundle 44). Basemark's passes name only renderTargetWidth and renderTargetHeight.
-// The probe checks:
-//   1. a draw into an attachment-less pass stores into a device buffer and the buffer reads back (8 x 2 target, one store per fragment);
+// Runtime regression for render passes without attachments (bundle 44) and their empty-target case and the RGBA8Uint colour format (bundle 45).
+// Basemark's passes name only renderTargetWidth and renderTargetHeight. The probe checks:
+//   1. a draw into a sized attachment-less pass (8 x 2) stores into a device buffer and the buffer reads back;
 //   2. defaultRasterSampleCount 4 with a rasterSampleCount 4 pipeline draws the same way;
 //   3. a visibility result buffer on an attachment-less pass receives a nonzero Boolean result;
 //   4. renderTargetArrayLength 2 is accepted;
-//   5. refused descriptors (no size, sample count 3) return nil, the process survives, and a later pass on the same command buffer completes.
+//   5. an empty target (no attachments, no size) is an encoder whose draws store nothing, and the command buffer completes;
+//   6. a refused descriptor (sample count 3) returns nil, and a later pass on the same command buffer completes;
+//   7. a colour pipeline with pixel format RGBA8Uint (73) is created, draws, and reads back (1, 2, 3, 4).
 // The bundle is loaded only into the probe process. Pass its absolute path as the sole argument.
 // Exit: 0 = every check passed, 1 = a check failed, 2 = setup failed (no bundle, no device, no library or pipeline).
 // Build (x86_64, the PC's architecture; from this directory):
@@ -26,7 +28,8 @@ static NSString *const kSource =
     "    const float2 p[3] = { {-1, -1}, {3, -1}, {-1, 3} };\n"
     "    return float4(p[v], 0, 1);\n"
     "}\n"
-    "fragment void store(device uint *out [[buffer(0)]]) { out[0] = 0x5EEDu; }\n";
+    "fragment void store(device uint *out [[buffer(0)]]) { out[0] = 0x5EEDu; }\n"
+    "fragment uint4 wu() { return uint4(1, 2, 3, 4); }\n";
 
 static int failures;
 static void report(BOOL ok, const char *what) {
@@ -80,6 +83,12 @@ int main(int argc, const char *argv[]) {
         pd.rasterSampleCount = 4;
         id<MTLRenderPipelineState> pso4 = [dev newRenderPipelineStateWithDescriptor:pd error:&error];
         if (!pso1 || !pso4) { NSLog(@"pipeline %@", error); return 2; }
+        MTLRenderPipelineDescriptor *ud = [MTLRenderPipelineDescriptor new];
+        ud.vertexFunction = [lib newFunctionWithName:@"vs"];
+        ud.fragmentFunction = [lib newFunctionWithName:@"wu"];
+        ud.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA8Uint;
+        id<MTLRenderPipelineState> psoU = [dev newRenderPipelineStateWithDescriptor:ud error:&error];
+        if (!psoU) { NSLog(@"RGBA8Uint pipeline %@", error); return 2; }
         id<MTLCommandQueue> q = [dev newCommandQueue];
         if (!q) return 2;
         id<MTLBuffer> out = [dev newBufferWithLength:256 options:MTLResourceStorageModeShared];
@@ -111,14 +120,27 @@ int main(int argc, const char *argv[]) {
         st = run_pass(q, lp, pso1, out, nil);
         report(st == MTLCommandBufferStatusCompleted && *(uint32_t *)out.contents == 0x5EEDu, "attachment-less pass with two layers is accepted and draws");
 
-        // 5. refused descriptors: nil, no abort, and the command buffer that follows still completes
+        // 5. an empty target: the encoder exists, its draw stores nothing, and the command buffer completes
+        memset(out.contents, 0, out.length);
+        id<MTLCommandBuffer> ecb = [q commandBuffer];
+        id<MTLRenderCommandEncoder> eenc = [ecb renderCommandEncoderWithDescriptor:attachmentless(0, 0, 0)];
+        report(eenc != nil, "a pass without attachments and with a zero render target is an encoder (an empty target)");
+        if (eenc) {
+            [eenc setRenderPipelineState:pso1];
+            [eenc setFragmentBuffer:out offset:0 atIndex:0];
+            [eenc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+            [eenc endEncoding];
+        }
+        [ecb commit];
+        [ecb waitUntilCompleted];
+        report(ecb.status == MTLCommandBufferStatusCompleted && *(uint32_t *)out.contents == 0u, "the empty target's draw stores nothing and its command buffer completes");
+
+        // 6. a refused descriptor: nil, and a later pass on the same command buffer still completes
         id<MTLCommandBuffer> cb = [q commandBuffer];
-        id<MTLRenderCommandEncoder> refused0 = [cb renderCommandEncoderWithDescriptor:attachmentless(0, 0, 0)];
-        report(refused0 == nil, "a pass without a render target size is refused with nil");
         id<MTLRenderCommandEncoder> refused3 = [cb renderCommandEncoderWithDescriptor:attachmentless(8, 2, 3)];
         report(refused3 == nil, "a pass with three samples is refused with nil");
         id<MTLRenderCommandEncoder> enc = [cb renderCommandEncoderWithDescriptor:attachmentless(8, 2, 0)];
-        report(enc != nil, "a valid pass after two refusals on the same command buffer is created");
+        report(enc != nil, "a valid pass after a refusal on the same command buffer is created");
         memset(out.contents, 0, out.length);
         if (enc) {
             [enc setRenderPipelineState:pso1];
@@ -128,7 +150,34 @@ int main(int argc, const char *argv[]) {
         }
         [cb commit];
         [cb waitUntilCompleted];
-        report(cb.status == MTLCommandBufferStatusCompleted && *(uint32_t *)out.contents == 0x5EEDu, "the command buffer after the refusals completes and its pass stores");
+        report(cb.status == MTLCommandBufferStatusCompleted && *(uint32_t *)out.contents == 0x5EEDu, "the command buffer after the refusal completes and its pass stores");
+
+        // 7. RGBA8Uint colour attachment: the pipeline exists, draws, and reads back (1, 2, 3, 4)
+        id<MTLTexture> utex = nil;
+        MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Uint width:8 height:2 mipmapped:NO];
+        td.storageMode = MTLStorageModeManaged;
+        td.usage = MTLTextureUsageRenderTarget;
+        utex = [dev newTextureWithDescriptor:td];
+        report(utex != nil, "an RGBA8Uint render target texture is created");
+        if (utex) {
+            MTLRenderPassDescriptor *up = [MTLRenderPassDescriptor renderPassDescriptor];
+            up.colorAttachments[0].texture = utex;
+            up.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+            up.colorAttachments[0].storeAction = MTLStoreActionStore;
+            id<MTLCommandBuffer> ucb = [q commandBuffer];
+            id<MTLRenderCommandEncoder> uenc = [ucb renderCommandEncoderWithDescriptor:up];
+            if (uenc) {
+                [uenc setRenderPipelineState:psoU];
+                [uenc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+                [uenc endEncoding];
+            }
+            [ucb commit];
+            [ucb waitUntilCompleted];
+            uint8_t px[8 * 2 * 4] = { 0 };
+            [utex getBytes:px bytesPerRow:8 * 4 fromRegion:MTLRegionMake2D(0, 0, 8, 2) mipmapLevel:0];
+            report(ucb.status == MTLCommandBufferStatusCompleted && px[0] == 1 && px[1] == 2 && px[2] == 3 && px[3] == 4 && px[60] == 1,
+                   "an RGBA8Uint colour pass draws and reads back (1, 2, 3, 4)");
+        }
 
         printf("test-noattach-runtime: %s (%d failed)\n", failures ? "FAILED" : "passed", failures);
         return failures ? 1 : 0;
