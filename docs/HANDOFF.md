@@ -153,6 +153,13 @@ run and desktop validation after reboot remain pending.
   Agent running: bundle 44 = attachment-less render passes + safe nil paths -> research/builds/macos-20261125/bundle44-noattach/.
 - Agent running: kernel 0.0.684 = Linux display clock floors (DALSMC) so UCLK can switch without OPTC underflows,
   plus boot logging of display clocks around ufmon events -> research/builds/macos-20261125/kernel-684/.
+- 19:05 bundle 44 installed (attachment-less passes): runtime probe 8/8 OK as normal user. Basemark now reaches the
+  first image and loading bar, then stops: its passes have no attachments AND renderTargetWidth/Height 0 (refused ->
+  "draw without a render pipeline state" -> command buffer aborted), plus ~8000 "fragment texture(0) never bound".
+  Agent running: bundle 45 (diagnostics of those descriptors + semantics) -> research/builds/macos-20261125/bundle45-basemark/.
+- Kernel 0.0.684 committed (696f530), payload research/builds/macos-20261125/kernel-684/kernel-payload-v20, NOT installed
+  (install needs the user's explicit go-ahead; live guard f88cb144 -> 9ffec241, 5 lines; script
+  research/builds/macos-20261125/install684.sh to be generated like install678.sh).
 
 ## Next planned steps
 
